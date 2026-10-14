@@ -13,6 +13,7 @@
   - The build, oracle tier through the driver: artifact contract, typed-edge primitive, motif alphabet, statistics, IO, events, producer, `run_7.py` — `p7_motifs/status-7.md` "Build order"
   - `P-I3`'s registered null permutes a label that is a function of the correlated score; replaced by a matched-control null that enumerates — `p7_motifs/status-7.md` "Findings from implementation"
   - A mean+kσ hub rule cannot find a hub at n ≤ 4; an absent projector is not a zero channel; a missing null is not a cleared one — `p7_motifs/status-7.md` "Findings from implementation"
+  - B-pre (2026-10-13): none of `P-ST1`, `P-AB1`, `P-I3` is a cheaper first adjudication than B0. `P-AB1` has no producer; `P-ST1`'s precondition ratio is above 2 (an informative-pair rate below 0.32) at every cell at steps 0 and 1000 and at 163 of 168 at 143000; on 7d's causal set `P-I3` can score only five weak members. Every row needs a rung — `p7_motifs/status-7.md` "B-pre (2026-10-13)"
 - **Superseded / wrong:**
   - This file said nothing had run against a model and listed `P-I1` as "not run"; all 19 tables were written by 2026-09-03 and `P-I1` scored 2026-09-04 — `p7_motifs/status-7.md` "Corrections received"
   - "p = 0.1414" was quoted as `P-I1`'s result in four documents; it is 0.14 at K = 50 and 0.89 at K = 100 — §3.45
@@ -28,10 +29,10 @@
   - `P-I5`'s problem moved from the control to the readout; no construction found yet — §3.34
   - `P-ST1`, `P-AB1`, `P-I3` each need a sweep meeting its own pre-computed requirement — `claims/EVALUABILITY.md`
 - **After Phase 10:**
-  - Check whether the 19 tables on disk meet `P-I3`'s and `P-AB1`'s pre-computed requirements, without scoring them (free)
+  - `P-ST1` on the long passages: does the cloud's rank rise enough to make cells readable *(free)*
   - Decide `P-I5`'s target (`L3H6` is not an induction head by attention score; 70m's matcher is `L0H3`): a new registration on `L0H3` on a named battery version, or withdraw (free, the user's decision). Its battery is pinned (2026-09-29)
   - Wire the rotational channel from 2b's Schur blocks and rebuild the tables (forward pass: `run_7.py`, about 16 min per checkpoint × 19)
-- **Reviewed:** 2026-09-30 · body `68b2290d90`
+- **Reviewed:** 2026-10-13 · body `399932763d`
 <!-- /phase-card -->
 
 **Registered predictions (9):** e-value — `P-ST1` (`steering_gate.py`),
@@ -68,6 +69,47 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
 - 2026-09-19 · `P-I5` iterates the live battery, so since v2 it gates on 20 prompts, not the 8 it was calibrated on · `LESSONS.md`
 - 2026-09-23 · `design-7.md`'s "cone collapse is universal" rests on a 1b result 1b says not to cite · `p1b_hemisphere/status-1b.md`
 - 2026-09-24 · `P-I5`'s target, 70m `L3H6`, was picked as "the `L7H8` analogue" (§3.32, 2026-09-16), but Phase 8 had found on 2026-09-13 that 70m has no relay-fed matcher: no head above +1.0 has induction score over 0.024, and the only strong matcher is `L0H3`, in layer 0. `L3H6`'s induction score is 0.009 at both 16000 and 143000, `P-I5`'s own step (`wide`, `data/analysis/prev_token_profile_pythia-70m.json`); `P-I5` says "ablating an induction head". Found by the Phase 8 card review; recorded, not acted on · `p8_scale_ladder/status-8.md` "The self-repair chain at 70m"
+
+## B-pre (2026-10-13): none of `P-ST1`, `P-AB1`, `P-I3` is a cheaper first adjudication than B0
+
+`docs/ROADMAP.md` §7 asked whether the three built, calibrated, unrun rows can be scored as built
+(the user's Blocked 40 (b)). Each row's pre-computed requirement (`claims/EVALUABILITY.md` "What
+the pilot must produce") was read against what is on disk. **No gate statistic was computed**:
+nothing was injected or ablated, and no motif rate was read. **Input:** Phase 2's OV projectors
+(`data/phase12/*/ov_projectors_pythia-410m-step{0,1000,143000}.npz`), the v1 sweep's activations
+for the 7 scored prompts at those steps (runs in the record), 7d's causal induction set
+(`p7d_redundancy/status-7d.md` "Q1"), and `data/analysis/behavioural_series.json`
+(`series_excl_repeated`). **Producer:** `tools/run/b_pre_check.py`; record
+`data/phase7/b_pre_2026-10-13.json`. The registry's `P-ST1` note that neither input "exists in
+this repository" is stale (both on disk since 2026-08-31; `LESSONS.md` 1).
+
+| row | as built? | what blocks it | what would unblock it |
+|---|---|---|---|
+| `P-ST1` | code and inputs yes; **readable almost nowhere** | the gate's precondition: `dim U_pos` (Schur-attractive projector's trace) against the centred cloud's raw effective rank. The gate's calibration puts the informative-pair rate at 0.71 / 0.32 / 0.03 / 0.005 / 0 at ratios 1.5 / 2 / 3 / 4 / 6, and it needs ≥ 5 informative pairs. On disk the ratio is ≥ 3.5 at step 0 (median 5.3), ≥ 2.7 at 1000 (median 3.8), and at 143000 median 4.0 with **5 of 168 cells ≤ 2** (1.72–1.92: L2 and L4, the three 465–512-token prompts). `U_pos + U_neg` spans all 1,024 dimensions at every cell, so the union refusal never fires | fix (step, layer, prompts) before any injection, a rung (below); expect refusals at most cells. Longer passages may raise the rank (Parked) |
+| `P-AB1` | **no** | no producer writes its input: per-prompt, per-ablation-point divergence curves for a real ablation and a matched random-direction ablation of equal magnitude (`core/intervention.py` has the hook, nothing calls `p_value_p_ab1`); no known-answer dry run; the magnitude and fit window that keep both arms power-law are unknown until the intervention runs | B0's harness (an ablation primitive with a matched-direction control is B0's own design), then a known-answer dry run, then the regime check (≥ 6 informative prompts, odd ablation points, `n + W ≤ L`) |
+| `P-I3` | inputs yes (19 tables, behavioural series); **no known-answer dry run** | the registered key `score_and_layer` needs two controls below and two above each induction head in behavioural score **within its layer**. On 7d's causal set (a classification not cut on that score, as required) the four substantial members never straddle: `L5H2`, `L8H6` and `L12H5` sit at or near the bottom of their layer, `L7H8` at the top (0 of 4 at 16000 and 143000). At 7d's +0.05 cut five weak members straddle (`L8H9`, `L15H14`, `L7H1`, `L9H13`, `L10H9`, effects +0.05 to +0.13), so a run would be about those five only | a known-answer dry run; the user fixes the classification (cut and step), the scored checkpoint and `independence_source` before any motif rate is read; a rung |
+
+**The rung, for all three.** None of the rows names one; they predate the rule that 410m and 70m
+are exploration rungs (`CLAUDE.md` "Phases and tests"). Phase 7's tables, the projectors and the
+activations are all 410m, so a score on disk is tier 1 unless the user's Blocked 7 decision says
+otherwise. On this machine: 70m, 410m, 1.4b, `gpt2-large` and 410m seeds 1–9 (step 0 and 143000
+only) are cached.
+
+**Reading.** B-pre's question was whether any of the three is a cheaper first adjudication than
+B0 (`docs/ROADMAP.md` §7, §10.4). It is not: `P-AB1` needs B0 itself, `P-ST1`'s precondition
+ratio is above 2 at 499 of 504 cells, and `P-I3` can only score five weak members. Track B starts from
+B0, with `P-AB1`'s producer as a natural second use of the harness.
+
+**Not checked.** `P-ST1`'s attainable floor per layer (it needs the null draws, which the gate
+computes from injections). Sym projectors in place of Schur (`sym` traces sit nearer 512, so at the cells checked the
+ratio is no better). 70m and 1.4b projectors (none on disk).
+
+**Parked** (why / cost / the decision it could change):
+- `P-ST1`'s ratio on the 8 long passages (1,032–2,041 tokens; `p1e_energy_field/status-1e.md`) / free, the same
+  producer on the stored long-passage activations / whether more tokens raise the rank enough to
+  make more cells readable, which decides whether `P-ST1` is worth a registration decision at all.
+
+**How to re-run:** `python tools/run/b_pre_check.py --data <main>/data --out <json>` (~2 min).
 
 ## E-value audit, Phase 7 (2026-09-19)
 

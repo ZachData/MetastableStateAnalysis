@@ -148,6 +148,12 @@ world moves, nobody updates the line, and the next session acts on it.
   `origin/main` and did not fast-forward the main tree, so the hook printed #189's `STATE.md` a
   second time. Caught by Start step 1; the main tree was fast-forwarded (`git pull --ff-only`) at
   the cleanup step. Rule: the session that removes a merged worktree also fast-forwards `main`.
+- 2026-10-13 (B-pre): `claims/registry.json`'s `P-ST1` says twice that its activations and Phase 2's
+  projectors "do not exist in this repository"; both have been on disk since 2026-08-31
+  (`data/phase12/*/ov_projectors_*`, the v1 sweep). The registry is not edited outside a
+  registration, so the stale line stays; `p7_motifs/status-7.md` "B-pre (2026-10-13)" is where
+  the current fact lives. Rule: a registry note about what exists is checked against the disk
+  before it is acted on.
 - 2026-10-11 (10.5): a card open thread outlived the work that answered it. `status-10.md`'s
   card said "no row here is re-read on" 1d's tie-free level-set HDBSCAN, written 2026-10-01;
   R0–R9 (2026-10-05 to 10-09) read every row on c2a–c3x, which are built on that tree

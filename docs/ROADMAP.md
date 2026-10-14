@@ -145,7 +145,10 @@ operator's sign channels"), with nine `H-BRIDGE` rows: `P-I1` ran (INSUFFICIENT)
 reuses what holds. **A candidate first unit, B-pre (free):** check whether those three registered
 rows can still be scored as built (inputs on disk, rung, gates; `P-AB1` and `P-I3` have no
 known-answer dry run). If they can, they may be a cheaper first adjudication than A5 and a
-better start for B than B0 (§10.4).
+better start for B than B0 (§10.4). **Done 2026-10-13: none is** (`p7_motifs/status-7.md` "B-pre (2026-10-13)"):
+`P-AB1` has no producer (it needs B0's harness), `P-ST1`'s precondition ratio is above 2 at 499 of
+504 cells, and on 7d's causal set `P-I3` can score only five weak members; all three need a rung
+(§10.7). B starts from B0.
 
 | # | unit | what | done when |
 |---|---|---|---|
