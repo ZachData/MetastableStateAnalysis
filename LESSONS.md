@@ -457,6 +457,17 @@ well-formed but empty/zero result. It looks exactly like a real result.
   21. Rule: a counter is tested on every record shape its event takes in real
   transcripts, and a baseline comes from the same function as what it is
   compared with.
+- 2026-10-14 (B0): the first-step check was launched as `a && mkdir && (gpu) & (cpu) &`; `&`
+  backgrounds the whole `&&` chain, so the CPU arm started before its directory existed, the log
+  redirect failed and G2 never ran, unreported until the log was opened. Same session: STATE.md
+  was edited by a Python script, against CLAUDE.md's Edit-tool rule. Rule: **create the output
+  directory in its own command before launching parallel arms, and wait on each arm's exit.**
+- 2026-10-14 (B0, `/challenge-pr` on #198): `core.nudge.Stack` called GPT-NeoX layers the
+  4.44.2 way (the conda `mets` env, where the gate and the smoke test ran); the nightly installs
+  4.57.6, where the call crashes and the obvious fix silently drops the causal mask. Rule: **code
+  that calls a library's internals passes its smoke test in both environments (`mets` and
+  `.venv`) before the PR, and states the contract it relies on (here: the mask is passed, never
+  assumed).**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
@@ -1048,6 +1059,13 @@ of a design before running it, and print it on every record
   and would have read **survives**. Amended before any record was read (a linear `S_c~x` must
   agree). Rule: **the planted no-effect case for a matching statistic includes the covariate's
   tail (the matched set concentrated in one extreme), and runs before the rule is committed.**
+- 2026-10-14 (B0, G4b): the gate's structured null (another prompt's loss gradient, ranked among
+  32 random directions) assumed an unrelated on-distribution direction ranks like a random one.
+  At 143000 it ranks first 17 times in 224 (bound 12), and the gradients alone give the same 17:
+  loss gradients share a direction across prompts (mean |cos| 0.031 against 0.025). The arm
+  measured the model, not the harness; it had no planted case of "a correct harness on aligned
+  directions". Rule: **a null meant to test an instrument is checked against what the
+  instrument's own linear theory predicts for that null before it is given a pass bar.**
 
 ## 7. Literature found after the construction was built
 
