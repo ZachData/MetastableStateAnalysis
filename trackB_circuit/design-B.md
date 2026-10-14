@@ -16,7 +16,8 @@ as ROADMAP wrote it. If the user meant otherwise, B1 is the unit to change.
 
 - **Exit:** B1 has a verdict, "the instrument sees `L5H2`'s signature switch on inside
   (512, 4000]" or "it does not", with the signature's size recorded as the yardstick for "small"
-  (ROADMAP §7 B1). On "does not", Track B stops on these instruments and the next unit is fixing
+  (ROADMAP §7 B1). *The window is the first rule's; the pass rule below (revised after
+  `/challenge-pr` on #197, finding 1) is what B1 is judged by, and B1 read on at 512.* On "does not", Track B stops on these instruments and the next unit is fixing
   them (ROADMAP §9's gate).
 - **Budget: 3 units.** (1) this design, the scan and the `sympy` check; (2) B0, the harness and its
   calibration gate; (3) B1. At the budget the track's opening closes at what it knows.

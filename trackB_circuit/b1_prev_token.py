@@ -1,5 +1,5 @@
 """B1, `L5H2` as positive control (`trackB_circuit/design-B.md` "B1"): does the nudge harness see
-`L5H2`'s previous-token signature switch on inside (512, 4000]? Tier 1, 410m (an exploration
+`L5H2`'s previous-token signature switch on (off at step 0, on at 1000–8000: "Pass (exit)")? Tier 1, 410m (an exploration
 rung), no registration.
 
     python trackB_circuit/b1_prev_token.py run    --out <dir> --gate <B0 records> [--steps ...] [--first-only]
@@ -32,8 +32,8 @@ under deterministic algorithms): per (prompt, j), the larger of (i) the max ‖�
 the six tokens between the base row of the 65-row batch and the same block run on the base
 alone (another batch shape), and (ii) float32's eps times the largest ‖y‖ there (one ulp of the
 readout). A σ_k(h) whose median ‖A‖ is ≤ 10× the floor is *below floor*; in s, a σ under the
-floor itself is replaced by it (a detection limit: a sharp head's softmax weight underflows to
-exactly 0 a few tokens back in float32, so σ_k = 0 occurs; *set after the first run refused on
+floor itself is replaced by it (a detection limit: a sharp head's attention weight a few tokens back
+is ~1e-7–1e-10, so the ± change there is under float32 resolution and cancels to exactly 0; *set after the first run refused on
 it, step 1000, before any verdict was read*). A prompt cannot count
 as on where `L5H2`'s σ₁ is below floor at more than half its 32 j (the verdict would rest on
 rounding); below-floor counts for every head and k are reported.
