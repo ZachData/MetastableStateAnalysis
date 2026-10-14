@@ -148,14 +148,14 @@ footer code { color: var(--ink-2); }
     <div class="answer">
       <div class="k">U1 · the field at the tokens</div>
       <h3>One well</h3>
-      <p>At β 3.5, every trained layer band at every step has a single basin holding every token, except L1–8 at step 128. Across 1.6–5.6 the only exceptions are at step 128. A few wells appear near β 10 and many by β 20.</p>
+      <p>At β 3.5, every trained layer band at every step has a single basin holding every token, except L1–8 at step 128. Across 1.6–5.6 the only exceptions are at step 128. A few wells appear near β 10 and many by β 20 (the β 20–100 sweep is not audited).</p>
       <p>The field's density is lumpier than a matched Gaussian cloud's, already at step 0. It is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge.</p>
     </div>
   </section>
 
   <section class="decision">
-    <div class="eyebrow">Blocked 30 · (a), recorded 2026-10-08 as recommended; the user to confirm</div>
-    <p><b>U3 is closed: there are no wells at the measured β.</b> U3 was to read the saddles between U1's wells. At β 1.6–5.6 there is one basin, so U1's result is U3's answer. Reading wells at β ≈ 10, or in the cloud-centred frame, would mean choosing a β or a frame in order to find wells, which is the placed-bar problem 1e was opened to avoid. U4 stays fenced until P-S1 is scored; U5 stays parked.</p>
+    <div class="eyebrow">Blocked 30 · (a), recorded 2026-10-08 as recommended; confirmed by the user</div>
+    <p><b>U3 is closed: there are no wells at the measured β.</b> U3 was to read the saddles between U1's wells. At β 1.6–5.6 there is one basin, so U1's result is U3's answer. Reading wells at β ≈ 10, or in the cloud-centred frame, would mean choosing a β or a frame in order to find wells, which is the placed-bar problem 1e was opened to avoid. At the phase's close (2026-10-13), U4 and U5 are not pursued (below).</p>
   </section>
 
   <section class="stack">
@@ -197,7 +197,7 @@ footer code { color: var(--ink-2); }
     <div class="fig">
       <div class="legend" id="sweep-legend"></div>
       <div class="charts-3" id="sweep"></div>
-      <p style="font-size:0.86rem;color:var(--ink-2)">Over all 432 sweep cells (3 layers × 18 steps × 8 passages) at β 10, 196 have 2–20 wells, 111 have one and 125 more than 20. At β 20, 382 have more than 20. The merge tolerance does not change the count: at 1e-4 and 1e-2, 0 of 10,368 long-passage cells change.</p>
+      <p style="font-size:0.86rem;color:var(--ink-2)">Over all 432 sweep cells (3 layers × 18 steps × 8 passages) at β 10, 196 have 2–20 wells, 111 have one and 125 more than 20. At β 20, 382 have more than 20. The β 10 counts were checked against the fixed well finder (10 of 432 cells change, no bin moves); the β 1.6, 5.6 and 20–100 points were not audited. The merge tolerance does not change the count: at 1e-4 and 1e-2, 0 of 10,368 long-passage cells change.</p>
     </div>
   </section>
 
@@ -220,15 +220,16 @@ footer code { color: var(--ink-2); }
   </section>
 
   <section class="stack">
-    <h2>What is still open</h2>
+    <h2>Closed 2026-10-13: where each open question went</h2>
     <ul class="open">
-      <li><b>One well, as the theory expects?</b> Whether a single basin at β 3.5 is what the theory predicts for n ≈ 2,000 tokens in d = 1,024 is unread. A reading of the single-cluster thresholds in 2312.10794 would make this result the theory's expectation rather than a null.</li>
-      <li><b>The late split between heads and their sum.</b> It could be heads moving tokens towards where other heads attend, or a few large heads. The saved means cannot split them.</li>
-      <li><b>The two wells in L1–8 at step 128,</b> the one trained exception. They sit inside U2's 32–256 window and are free to read from the saved labels.</li>
-      <li><b>Wells at β ≈ 10</b>, the one range with a few, are parked and labelled off the measured β (1.8× its interval's top).</li>
-      <li><b>U4 (repulsive regions)</b> stays fenced until P-S1 is scored: its mean pairwise inner product is P-S1's degree-1 moment. <b>U5</b> (correlated against anti-correlated token pairs) needs a corpus for co-occurrence counts.</li>
+      <li><b>One well, as the theory expects?</b> Whether a single basin at β 3.5 is what 2312.10794's single-cluster thresholds predict for n ≈ 2,000 tokens in d = 1,024 is unread. Carried to Track A (A1).</li>
+      <li><b>The late split between heads and their sum</b>: heads moving tokens towards where other heads attend, or a few large heads. Carried to Track A (A2), with the sink's share and a second sink.</li>
+      <li><b>Why the regime changes at 2000–4000</b>, just after the OV spectrum turns repulsive at 1000–2000. Carried to Track A (A3), the joint timeline.</li>
+      <li><b>The centred wells against Phase 10's groups</b>: is the agreement more than two proximity groupings agreeing? Carried to C1, the null-model audit.</li>
+      <li><b>The two wells in L1–8 at step 128</b> and the NEB bands: dropped. One cell, and U3 at β 10 was read beside the measured β only.</li>
+      <li><b>U4 (repulsive regions)</b>: not pursued, fenced on P-S1, which is not scored. <b>U5</b> (correlated against anti-correlated token pairs): not pursued, since there is no corpus on the machine.</li>
     </ul>
-    <p class="col" style="color:var(--ink-2)">Next in the project: Phase 10's re-read of every row on c3x, the definition chosen under Blocked 27 (a).</p>
+    <p class="col" style="color:var(--ink-2)">Next in the project: Track B's first units (B-pre, then the nudge harness and the <code>L5H2</code> positive control), then Track A. Full account: <code>status-1e.md</code> "The phase on one page (closed 2026-10-13)".</p>
   </section>
 
   <footer>

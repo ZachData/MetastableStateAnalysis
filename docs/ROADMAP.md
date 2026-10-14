@@ -20,7 +20,7 @@ Numbers are quoted with a pointer to the file that owns them.
 | The OV spectrum goes fully repulsive at 1000–2000 (62 % of heads exactly repulsive at 1000) | measured, never set beside the energy curve | `PROJECT.md` §3.12 A |
 | Cutting each head's OV to its attractive part collapses the stream at 16000 (2.5–3.4 groups against ~15) | large, global; the sign-versus-distance split is muddy | `p10_cluster_function/status-10.md` §1.37–§1.39 |
 | The trained cloud at the theory's scale is one cone plus outliers; cluster structure sits near a matched Gaussian | the cluster object is weak in trained Pythia | `p1d_cluster_ensemble/status-1d.md`; `p1b_hemisphere/status-1b.md` |
-| At the measured β (3.5 [1.6, 5.6]) the field has one well; its structure is mostly there at init | small effects (`|X|` ≤ 0.06) | `p1e_energy_field/status-1e.md` |
+| At the measured β (3.5 [1.6, 5.6]) the field has one well; its structure is mostly there at init (Phase 1e closed 2026-10-13) | small effects (`|X|` ≤ 0.06) | `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)" |
 | Phase 10's group-level effects are small, often carried by step 0, and c3x's groups are never singled out (Phase 10 closed 2026-10-11) | many tier-1 labels, none registered | `p10_cluster_function/status-10.md` "The phase on one page (10.5, closed 2026-10-11)" |
 | The induction set on 410m: ~4 substantial members in L5–15, formed in (512, 4000]; `L5H2` relays the previous token to `L7H8`; MLP 6 is an OR-gate with `L5H2`; `L11H14` leaves the core | causal (ablation) | `p7d_redundancy/status-7d.md`, `p7e_consolidation/status-7e.md` |
 | 39 registered predictions, zero adjudications | the registry has never scored a real run | `STATE.md` "Where things stand" |
@@ -104,8 +104,8 @@ close-out.
 
 | item | cost | action |
 |---|---|---|
-| Stale worktrees `../Mets-work` (uncommitted `STATE.md` edit, superseded), `../Mets-sign`, `../Mets-dose` | minutes | the user's; all three branches are merged |
-| Phase 1e close-out | writing | its headline is in; U4 stays fenced on P-S1 and U5 parked (no corpus), both marked *not pursued* with why; Blocked 30's open line dropped |
+| Stale worktrees | minutes | **done**: `../Mets-sign`, `../Mets-dose` removed 2026-10-10, `../Mets-roadmap` 2026-10-13 (`STATE.md` "Open PRs and branches") |
+| Phase 1e close-out | writing | **done 2026-10-13** (Blocked 40 (a)): `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)"; U4 and U5 *not pursued*; Parked items carried to A1 (1), A2 (3), A3 (1), B0 (1), C1 (1); 5 dropped, 3 done |
 | Claim (a), step 0 against the random criteria | check first | Phase 2's steps 8–64 may already answer it; if so, write it up and adjudicate |
 | `P-gamma2` / `T_eff` | check first | 1c says no `beta_eff` in any run dir; β is now measured (Blocked 9). Goes to A1 if it needs a run |
 | Normed-rank re-report (Blog 1's ~250) | free | A, as a Blog 1 retest |
@@ -123,9 +123,9 @@ sink and bias at that β.
 
 | # | unit | what | done when |
 |---|---|---|---|
-| A1 | β per head × checkpoint; `T_eff` against `t*` (`P-gamma2`); H-WARP (from Phase 10 at close: F0b, the `beta_eff` slope) | does the trained net integrate far enough to collapse at all? | `P-gamma2` has a number, or a recorded reason it cannot |
-| A2 | per-component dissipation at the measured β, then mean-ablation (from Phase 10 at close: `attention-10.md`'s row A5, paid against received attention, the sink's part) | which heads and MLPs push apart, from which step; ablate the top ones: does energy turn monotone, do tokens re-cluster, at what loss? (`PROJECT.md` §3.8.3's exact split) | "these N components carry the anti-collapse force" is supported or refused |
-| A3 | one timeline (from Phase 10 at close: R6f's embedding move at 512 → 2000 against the n-gram stage) | the energy break, the OV repulsive phase, the induction formation window, n-gram milestones (triage M2) and weights-only D1 / D3 / D4 (`FUTURE_IDEAS.md`) on the same 18 checkpoints | the curves are side by side, with their alignment or misalignment stated |
+| A1 | β per head × checkpoint; `T_eff` against `t*` (`P-gamma2`); H-WARP (from Phase 10 at close: F0b, the `beta_eff` slope; from 1e at close: is one well at β 3.5 what 2312.10794's thresholds predict at n ≈ 2,000, d = 1,024) | does the trained net integrate far enough to collapse at all? | `P-gamma2` has a number, or a recorded reason it cannot |
+| A2 | per-component dissipation at the measured β, then mean-ablation (from Phase 10 at close: `attention-10.md`'s row A5, paid against received attention, the sink's part; from 1e at close: the late sum-over-heads ascent, cooperating heads or a few large ones; the sink's value ≤ 0.05 of the shared update; a second sink on a newline, so whether "sink-only" means any fixed key) | which heads and MLPs push apart, from which step; ablate the top ones: does energy turn monotone, do tokens re-cluster, at what loss? (`PROJECT.md` §3.8.3's exact split) | "these N components carry the anti-collapse force" is supported or refused |
+| A3 | one timeline (from Phase 10 at close: R6f's embedding move at 512 → 2000 against the n-gram stage; from 1e at close: U2's regime change at 2000–4000 beside the OV turn) | the energy break, the OV repulsive phase, the induction formation window, n-gram milestones (triage M2) and weights-only D1 / D3 / D4 (`FUTURE_IDEAS.md`) on the same 18 checkpoints | the curves are side by side, with their alignment or misalignment stated |
 | A4 | claim (a) and the Blog 1 retests | §5 rows 3–5 | adjudicated or recorded as unadjudicable |
 | A5 | generality | register one prediction (e.g. "the energy break falls in [128, 512]") on the rung §10.7 picks or on PolyPythias seeds, then run it | the project's first adjudication |
 
@@ -149,7 +149,7 @@ better start for B than B0 (§10.4).
 
 | # | unit | what | done when |
 |---|---|---|---|
-| B0 | the nudge harness (from Phase 10 at close: one shared position correction in `core/`, where Phase 10 had three) | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass |
+| B0 | the nudge harness (from Phase 10 at close: one shared position correction in `core/`, where Phase 10 had three; from 1e at close: whether a GPU-against-CPU comparison is allowed on long passages, ~1e-4 at 143000's deep layers) | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass; its NUMERICS say whether a GPU-against-CPU comparison is allowed on long passages (from 1e) |
 | B0′ | optional: ALBERT or random GPT-2 (from Phase 10 at close: 5c's flip on ALBERT with the sink out, both arms) | the clustering instruments where the theory's collapse is vivid | large effects there, or the instruments are suspect |
 | B1 | positive control: `L5H2` | its particle signature (each token pulled toward its left neighbour inside `L5H2`'s output subspace) should switch on inside (512, 4000] | it does (the instruments see a real mechanism, and "small" has a yardstick) or it does not (fix the instruments first) |
 | B2 | spectra from the weights (from Phase 10 at close: `⟨Qx, Ky⟩` per head, F18's `V`-spectrum atlas, `attention-10.md`'s A3) | each member's symmetrised OV and QK spectra across checkpoints; dominant negative eigenpairs (the d = 2 reduction); principal angles between members (7e's free item); 2d's gradient-flow regime test per member; Phase 6's `U_neg` / `U_A` split on the circuit's subspace | a per-member table across training |
@@ -167,7 +167,7 @@ triage M3), own small models (triage M1).
 
 | # | paper | inputs | when |
 |---|---|---|---|
-| C1 | "What counts as a token cluster?", a null-model audit | 1d, Phase 10 §1, F13 (10.2); the 8 items carried to C1 at Phase 10's close, each needed only if C1 quotes the reading it refines (`p10_cluster_function/handoff-10.md` "At close (10.5)") | after Phase 10 closes |
+| C1 | "What counts as a token cluster?", a null-model audit | 1d, Phase 10 §1, F13 (10.2); the 8 items carried to C1 at Phase 10's close, and 1e's (c3x purity in the centred frame against any proximity partition), each needed only if C1 quotes the reading it refines (`p10_cluster_function/handoff-10.md` "At close (10.5)") | after Phase 10 closes |
 | C2 | the anti-collapse force along Pythia's training axis | Track A | after A2 and A5 |
 | C3 | particles in a known circuit | Track B | after B4 |
 
@@ -196,8 +196,8 @@ that yardstick less than the cluster rows did, and B-pre may give an adjudicatio
 3. **F14 and the rung policy** (10.3; Phase 10 closed without it, so this now joins item 7). The policy keeps 410m exploration-only; `status-10.md`'s
    card holds 12 prompts out on 410m as a confirmation set. Either F14 runs exploratory on 410m,
    or it registers on a reserved rung, or the policy gets an exception on the record.
-4. **Track order after Phase 10**: B0–B1 first (§9), B-pre first (§7), or A first; and whether
-   the December target for C2 stands.
+4. *Decided 2026-10-13 (Blocked 40, the user's):* **1e's close-out, then B-pre, then B0 + B1, then
+   Track A (A1).** Whether the December target for C2 stands is still open.
 5. **`L5H2` as the positive control and first anchor** (B1).
 6. **`P-I5`'s target** (`STATE.md` Blocked 2) before Track B registers anything.
 7. **Which rung carries the first registration** (`STATE.md` Blocked 7): A5, `P-I7` and F14

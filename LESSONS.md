@@ -144,6 +144,10 @@ world moves, nobody updates the line, and the next session acts on it.
   **Again 2026-10-11 (10.5, after #193):** 27 commits behind (`d7bebf7`, #189); the hook
   printed Stage 3's close, Blocked 37 open, when the user's prompt named Blocked 39. Caught by
   Start step 1 (`git show origin/main:STATE.md`); the hook fix is still the user's.
+  **Again 2026-10-13 (1e close, after #194):** the same `d7bebf7`: the 10-11 session read
+  `origin/main` and did not fast-forward the main tree, so the hook printed #189's `STATE.md` a
+  second time. Caught by Start step 1; the main tree was fast-forwarded (`git pull --ff-only`) at
+  the cleanup step. Rule: the session that removes a merged worktree also fast-forwards `main`.
 - 2026-10-11 (10.5): a card open thread outlived the work that answered it. `status-10.md`'s
   card said "no row here is re-read on" 1d's tie-free level-set HDBSCAN, written 2026-10-01;
   R0–R9 (2026-10-05 to 10-09) read every row on c2a–c3x, which are built on that tree
