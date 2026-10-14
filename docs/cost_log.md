@@ -383,4 +383,5 @@ running median of the rows above it gets a line under the table saying why.
 | 2026-10-13 | 1e close-out (Blocked 40 (a); /challenge-pr findings 1-7 taken; re-taken after /challenge-pr) · subagents: general-purpose opus-5-5 1.0M | 44 | 144k | 3.7M | 38k | #195 |
   This session also ran the #194 cleanup and goes on to B-pre and B0 + B1 at the user's request (three units in one session, against "one session per unit"); later rows count cumulatively from this transcript.
 | 2026-10-13 | B-pre (Blocked 40 (b); /challenge-pr findings 1-5 taken; re-taken after /challenge-pr); cumulative from the #195 transcript · subagents: general-purpose opus-5-5 2.5M | 90 | 230k | 12.5M | 64k | #196 |
-| 2026-10-13 | Track B design (Blocked 40 (c), unit 1 of 3); taken before /challenge-pr; cumulative from the #195 transcript · subagents: general-purpose opus-5-5 2.5M | 109 | 264k | 17.2M | 70k | #197 |
+| 2026-10-13 | Track B design (Blocked 40 (c), unit 1 of 3; /challenge-pr findings 1-6 taken; re-taken after /challenge-pr); cumulative from the #195 transcript · subagents: general-purpose opus-5-5 3.7M | 114 | 275k | 18.5M | 71k | #197 |
+  Three units in one session at the user's request: the cumulative total is ~3× the running median, the cost "one session per unit" exists to avoid (LESSONS 9).

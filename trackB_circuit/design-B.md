@@ -56,9 +56,10 @@ Run on B1's design points (below), at all four ε:
 | arm | planted | passes when |
 |---|---|---|
 | G1, arithmetic | `d` at layer ℓ, read at layer ℓ | `A = εd` and `S = 0` at every token of T to float tolerance (the hook adds what it says) |
-| G2, linear response | `d` random, read at ℓ + 1 | at c = 0.01, `A/ε` agrees with `torch.func.jvp` of the same block (CPU, float64) to ≤ 5 % relative, at ≥ 90 % of tokens; reported at every c, so the plateau's departure is seen, not assumed away |
-| G3, planted effect | `d = ∇ₓ L_i` (the next-token loss at position i, w.r.t. `resid_pre` at ℓ, token i), normalised | the loss's `A/ε` is within 10 % of `‖∇ₓ L_i‖` at c = 0.01, and `d` ranks first of K + 1 on `|A|` of the loss at every c ≥ 0.03 in ≥ 6 of 7 prompts |
-| G4, planted null | `d` one more random direction | over 200 leave-one-out draws from the K + 1 pool (no extra passes), the rank test rejects at ≤ 0.05 + its binomial 2σ, at every ε and readout |
+| G2, linear response | `d` random, read at ℓ + 1 | on **CPU float64 throughout** (the ± passes and `torch.func.jvp` of the same block on one device, so no cross-device comparison): at c = 0.01, `A/ε` agrees with the JVP to ≤ 5 % relative at ≥ 90 % of tokens; reported at every c, so the plateau's departure is seen, not assumed away. The GPU run's own check is G2′: its ± passes against its own base, the floor below |
+| G3, planted effect | `d = ∇ₓ L_i` (the next-token loss at position i, w.r.t. `resid_pre` at ℓ, token i), normalised | the loss's `A/ε` is within 10 % of `‖∇ₓ L_i‖` at c = 0.01, and `d` ranks first of K + 1 on `|A|` of the loss at every c ≥ 0.03 in ≥ 6 of 7 prompts. Near-guaranteed while the response is linear: it checks the harness's arithmetic and ranking, not its power |
+| G4a, structural null | nudge token j, read the loss and the state at every position i < j | `A = S = 0` exactly (causality): an arm that fails if the harness leaks across positions |
+| G4b, structured null | `d = ∇ₓ L` of a token in **another prompt** (a structured, on-distribution direction unrelated to this token) | over 7 prompts × 32 positions, its rank among the K random directions on the loss's `|A|` rejects (rank 1) at ≤ 1/(K+1) + binomial 2σ at every c. *Changed after `/challenge-pr` on #197, finding 2: the first G4 drew one random direction against the others, which rejects at 1/33 whatever the harness does* |
 
 If any arm fails, B0 is not done and B1 does not run.
 
@@ -70,22 +71,33 @@ the four ε); read **`L5H2`'s own output at token i** (its per-head attention ou
 `W_O` slice, hooked inside block 5), for `j = i − k`, `k ∈ {0, 1, 2, 3, 4, 5}`. Forwards are
 truncated after block 5. Per (step, prompt, i, k): `σ_k = median_d ‖A‖ / ε` over the K directions.
 
-- **Statistic:** `s = log(σ₁ / median(σ₂ … σ₅))`, position-corrected per prompt (`core/position.py`),
-  then the median over 32 positions `i` (drawn once, seeded, from `i ≥ 8`; the same positions at
-  every step) at the gate's c.
+- **Statistic:** `s = log(σ₁ / median(σ₂ … σ₅))`, with `σ_k` read at `i = j + k` from one nudge of
+  token `j`; the median over 32 nudge positions `j` (drawn once, seeded, from `j ≥ 8` with `j + 5`
+  inside the prompt; the same positions at every step), **at c = 0.03**, fixed here; the other
+  three c beside. No position correction: `s` is a ratio of offsets at the same position, and a
+  per-head intercept would centre every head's median at zero (`/challenge-pr` on #197, finding 3).
 - **Null for "on":** the same statistic for **every other head of layer 5** (15 heads) at that
-  step, prompt and c. A step is **on** when `L5H2`'s `s` exceeds all 15 in ≥ 6 of 7 prompts
-  (sign-test floor 8/128 = 0.0625 per prompt count; the "all 15" rank has floor 1/16 per prompt).
-  **Leans** at 5 of 7. Otherwise off.
-- **Beside, not labelled:** `cos(A, W_OV^{L5H2} d)` at k = 1 (is the response the OV-mapped nudge),
-  and `σ₁` in absolute units (the yardstick).
-- **Inputs:** `pythia-410m`, the 18 Stage 0 steps, the 7 scored v1 prompts (hash pinned at run
+  step, prompt and c. A step is **on** when `L5H2`'s `s` exceeds **at least 14 of the 15** in
+  ≥ 6 of 7 prompts; **leans** at 5 of 7; otherwise off. "14 of 15" because layer 5 has a second
+  previous-token head, `L5H9` (`data/analysis/prev_token_profile.json`, 0.55–0.62 against
+  `L5H2`'s 0.93–0.97, quoted by the review; finding 4), known before this rule was fixed.
+- **What `s` is, to first order:** `L5H2`'s offset −1 attention ratio times its OV gain, which the
+  stored attention arrays already carry. B1 is an instrument check because that answer is known.
+- **Beside, not labelled:** `cos(A, W_OV^{L5H2} d)` at k = 1 (is the response the OV-mapped nudge);
+  the yardstick in **residual units**, `‖A‖` of `L5H2`'s contribution to the residual at token i
+  over the RMS token norm at block 5's output, the units B2–B4 read.
+- **Inputs:** `pythia-410m`, 1e's 18 steps (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000,
+  4000, 8000, 16000, 32000, 54000, 143000; Stage 0's index also has step 1, not read), the 7 scored v1 prompts (hash pinned at run
   time from `core/prompts.py`), not the held-out 12; GPU float32.
-- **Pass (exit):** on at every step from some step in (512, 4000] onward to at least 8000, and
-  off at 0 and at every step ≤ 512. **Recorded before any reading** (`lit-B.md` §1): the expected
-  onset is (512, 1000]. A late fade (7d: 15 % of the causal effect retained at 143000) is
-  expected and does not fail the pass; it is reported.
-- **Fail:** on at step 0 or ≤ 512 (the instrument reads something `L5H2` is not), or never on.
+- **Pass (exit):** off at step 0, and on at every step from 1000 through 8000. *Changed after
+  `/challenge-pr` on #197, finding 1: the first rule also failed on "on at ≤ 512", but
+  2607.06621 reports previous-token behaviour already at 0.37 at step 512, so a working
+  instrument could read 256–512 as on or lean.* Steps 2–512 place the onset; they are recorded,
+  not judged. **Recorded before any reading** (`lit-B.md` §1, 7d): the onset falls in
+  (256, 1000]. A late fade (7d: 15 % of the causal effect retained at 143000) is expected and
+  does not fail the pass; it is reported.
+- **Fail:** on or leaning at step 0 (the instrument reads something `L5H2` is not), or off or
+  leaning anywhere in 1000–8000.
 
 ## Units (each its own PR)
 
@@ -93,7 +105,7 @@ truncated after block 5. Per (step, prompt, i, k): `σ_k = median_d ‖A‖ / ε
 |---|---|---|
 | 1. this design | `design-B.md`, `lit-B.md`, the `sympy` check | writing |
 | 2. B0 | `core/nudge.py`, `core/position.py`, tests, the gate's record | GPU minutes |
-| 3. B1 | `trackB_circuit/b1_prev_token.py`, record, `status-B.md` | 18 steps × 7 prompts × 6 offsets × 32 positions × 33 directions × 2 signs × 4 ε of 6-layer forwards; batched on the GPU, ~1 h (estimate) |
+| 3. B1 | `trackB_circuit/b1_prev_token.py`, record, `status-B.md` | the base pass caches block 5's input once per (step, prompt); each nudge of token j runs **block 5 only** and reads every offset `i = j + k` from that one pass: 18 steps × 7 prompts × 32 positions × 33 directions × 2 signs × 4 ε ≈ 1.1 M single-block passes, batched; minutes to an hour on the RTX 3080 (estimate, checked on the first step before the batch). *Corrected after `/challenge-pr` on #197, finding 5: the first estimate was for 6.4 M six-layer passes* |
 
 ## Fences
 
