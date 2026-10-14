@@ -15,7 +15,14 @@ seeded nudge positions per prompt, K = 32 random directions, the four c. Tier 1.
 | G2 | block 5's output, CPU float64; positions J[0:4], direction R[0], tokens i ≥ j | at c = 0.01, ‖A/ε − Jd‖ ≤ 5 % of ‖Jd‖ at ≥ 90 % of the pooled tokens of the 7 prompts |
 | G3 | loss at i = J[0]; d = ∇ₓL_i at token i, normalised | per prompt: A/ε within 10 % of ‖∇ₓL_i‖ at c = 0.01, and rank 1 of 33 on \\|A\\| at every c ≥ 0.03; ≥ 6 of 7 prompts |
 | G4a | nudge J[0] by R[0]; every later layer's input and the loss, at every i < j | A = S = 0 exactly |
-| G4b | loss at j, every j in J; d = unit ∇ₓL at the same-index position of the next prompt in V1_SCORED (cyclic) | over the ranked (prompt, j), the rank-1 rate ≤ 1/33 + 2·sqrt(p₀(1−p₀)/N) at every c |
+| G4b | loss at j, every j in J; d = unit ∇ₓL at the same-index position of the next prompt in V1_SCORED (cyclic) | at c = 0.01, over the ranked (prompt, j), the nudged rank-1 set equals the linear response's (rank of \\|∇ₓL_j·d\\| among \\|∇ₓL_j·R_k\\|, no nudge). The rank-1 rate and the old bound 1/33 + 2·sqrt(p₀(1−p₀)/N) are reported at every c, not judged |
+
+**G4b changed after output** (Blocked 43 (a), the user's, 2026-10-14): the frozen rank-1 bound
+failed at 143000 (17/224, bound 12) and the gradients alone, with no nudge, give the same 17
+(`status-B.md` "B0 (2026-10-14)"), so the bound tested the model's gradient geometry, not the
+harness. What G4b can test is that the nudged ranking is the one the linear response predicts.
+Its false-fail rate over 18 steps is not derived: a correct harness fails only on a near-tie at
+rank 1 inside G3's linear error. It overlaps G2 and G3.
 
 **Floor** (NUMERICS): every batch of one comparison has the same shape and carries a base row
 (row 0); the four c's batches are four base passes of one shape, and the floor is their max
@@ -53,6 +60,7 @@ G0_TOL = 1e-5
 G1_ULPS = 8.0
 G2_C, G2_REL, G2_SHARE, G2_POS = 0.01, 0.05, 0.90, 4
 G3_C, G3_REL, G3_PROMPTS = 0.01, 0.10, 6
+G4B_C = 0.01
 U32 = float(np.finfo(np.float32).eps)
 
 
@@ -235,7 +243,8 @@ def run_step(step: int, out: Path) -> Dict:
         ids, x, r, J, R = sites[key]
         other = V1_SCORED[(a + 1) % len(V1_SCORED)]
         rec["prompts"][key]["G4b"] = {"other": other, "arms": [
-            dict(loss_arm(st, x, ids, int(j), np.vstack([grads[other][k], R]), r), j=int(j))
+            dict(loss_arm(st, x, ids, int(j), np.vstack([grads[other][k], R]), r), j=int(j),
+                 lin_rank=nd.exact_rank(abs(grads[key][k] @ grads[other][k]), np.abs(R @ grads[key][k])))
             for k, j in enumerate(J)]}
     rec["seconds"] = time.monotonic() - t0
     del model
@@ -297,7 +306,15 @@ def verdict_step(gpu: Dict, cpu: Optional[Dict]) -> Dict:
         top = all(a["c"][str(c)]["rank"] == 1 for c in nd.C_GRID if c >= 0.03)
         g3_ok += lin and top
     v["G3"], v["G3_prompts"] = g3_ok >= G3_PROMPTS, g3_ok
-    v["G4b"] = {}
+    arms = [arm for p in P.values() for arm in p["G4b"]["arms"]]
+    lin = [(arm["c"][str(G4B_C)]["rank"], arm["lin_rank"]) for arm in arms
+           if arm["c"][str(G4B_C)]["rank"] is not None]
+    v["G4b_lin"] = {"N": len(lin), "below_floor": len(arms) - len(lin),
+                    "rank1_nudged": sum(a == 1 for a, _ in lin), "rank1_linear": sum(b == 1 for _, b in lin),
+                    "rank1_mismatch": sum((a == 1) != (b == 1) for a, b in lin),
+                    "rank_exact": sum(a == b for a, b in lin), "rank_within_1": sum(abs(a - b) <= 1 for a, b in lin)}
+    v["G4b_pass"] = bool(lin) and v["G4b_lin"]["rank1_mismatch"] == 0
+    v["G4b"] = {}   # the rank-1 rate against the old bound: reported, not judged
     for c in nd.C_GRID:
         ranks = [arm["c"][str(c)]["rank"] for p in P.values() for arm in p["G4b"]["arms"]]
         ranked = [k for k in ranks if k is not None]
@@ -305,8 +322,7 @@ def verdict_step(gpu: Dict, cpu: Optional[Dict]) -> Dict:
         rate = sum(k == 1 for k in ranked) / N if N else None
         bound = p0 + 2 * np.sqrt(p0 * (1 - p0) / N) if N else None
         v["G4b"][str(c)] = {"N": N, "below_floor": len(ranks) - N, "rate": rate, "bound": bound,
-                            "pass": bool(N and rate <= bound)}
-    v["G4b_pass"] = all(x["pass"] for x in v["G4b"].values())
+                            "over_bound": bool(N and rate > bound)}
     if cpu is not None:
         n_tok = sum(r["c"][str(G2_C)]["n_tokens"] for p in cpu["prompts"].values() for r in p["positions"])
         n_ok = sum(r["c"][str(G2_C)]["n_ok"] for p in cpu["prompts"].values() for r in p["positions"])
@@ -342,7 +358,9 @@ def cmd_run(a) -> int:
         tmp.rename(path)
         v = verdict_step(rec, None)
         print(f"done step {step} in {rec['seconds']:.0f}s: G0 {v['G0']} G1 {v['G1']} G3 {v['G3_prompts']}/7 "
-              f"G4a {v['G4a']} G4b " + " ".join(f"{c}:{x['rate']:.3f}/{x['bound']:.3f}"
+              f"G4a {v['G4a']} G4b {v['G4b_pass']} (rank-1 nudged/linear/mismatch "
+              f"{v['G4b_lin']['rank1_nudged']}/{v['G4b_lin']['rank1_linear']}/{v['G4b_lin']['rank1_mismatch']}) "
+              f"rate " + " ".join(f"{c}:{x['rate']:.3f}/{x['bound']:.3f}"
                                                for c, x in v["G4b"].items() if x["N"]), flush=True)
         if a.first_only:
             return 0
@@ -389,14 +407,16 @@ def cmd_report(a) -> int:
     summary = {"code": code_sha(), "prompts_hash": prompts_hash(), "complete": len(rows) == len(STEPS),
                "pass": bool(ok and len(rows) == len(STEPS)), "steps": rows}
     (a.out / "gate.json").write_text(json.dumps(summary, indent=1, default=float) + "\n")
-    print("| step | G0 | G1 | G2 share | G3 | G4a | G4b rate (bound) at c = " +
-          ", ".join(map(str, nd.C_GRID)) + " | pass |")
-    print("|---|---|---|---|---|---|---|---|")
+    print("| step | G0 | G1 | G2 share | G3 | G4a | G4b (rank-1 nudged / linear / mismatch; exact, ±1 of N) "
+          "| rank-1 rate (old bound, not judged) at c = " + ", ".join(map(str, nd.C_GRID)) + " | pass |")
+    print("|---|---|---|---|---|---|---|---|---|")
     for step, v in rows.items():
+        L = v["G4b_lin"]
         g4b = ", ".join("—" if not x["N"] else f"{x['rate']:.3f} ({x['bound']:.3f})"
                         for x in v["G4b"].values())
-        print(f"| {step} | {v['G0']} | {v['G1']} | {v['G2_share']:.3f} | {v['G3_prompts']}/7 | "
-              f"{v['G4a']} | {g4b} | {v['pass']} |")
+        print(f"| {step} | {v['G0']} | {v['G1']} | {v['G2_share']:.3f} | {v['G3_prompts']}/7 | {v['G4a']} | "
+              f"{v['G4b_pass']} ({L['rank1_nudged']} / {L['rank1_linear']} / {L['rank1_mismatch']}; "
+              f"{L['rank_exact']}, {L['rank_within_1']} of {L['N']}) | {g4b} | {v['pass']} |")
     print(f"gate: {'PASS' if summary['pass'] else 'FAIL'}" + ("" if summary["complete"] else " (incomplete)"))
     return 0 if summary["pass"] else 1
 
