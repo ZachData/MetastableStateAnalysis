@@ -148,9 +148,23 @@ class Stack:
         return self.body.emb_dropout(self.body.embed_in(t))
 
     def block(self, l: int, x):
-        """Block ``l`` on ``x`` (B, n, D): the call ``GPTNeoXModel.forward`` makes, unpadded."""
-        pos = self.torch.arange(x.shape[1], device=x.device)[None]
-        return self.layers[l](x, position_ids=pos, use_cache=False)[0]
+        """Block ``l`` on ``x`` (B, n, D): the call ``GPTNeoXModel.forward`` makes, unpadded.
+
+        The causal mask is always passed, additive (0 on and below the diagonal, the dtype's min
+        above), the form HF's own forward builds: transformers 4.44's eager attention also masks
+        by itself, 4.57's masks only by what it is given, so leaving it out there would let every
+        token see later ones with no error. 4.57's layers also take the rotary ``(cos, sin)``
+        from the model (``position_embeddings``); 4.44's compute it inside."""
+        torch = self.torch
+        n = x.shape[1]
+        pos = torch.arange(n, device=x.device)[None]
+        mask = torch.full((n, n), torch.finfo(x.dtype).min, device=x.device, dtype=x.dtype)
+        kw = {"attention_mask": mask.triu(1)[None, None], "position_ids": pos, "use_cache": False}
+        rot = getattr(self.body, "rotary_emb", None)
+        if rot is not None:
+            kw["position_embeddings"] = rot(x, pos)
+        out = self.layers[l](x, **kw)
+        return out[0] if isinstance(out, tuple) else out
 
     def run(self, x, start: int, stop: Optional[int] = None, keep: Iterable[int] = (),
             delta=None, loss_ids: Optional[Sequence[int]] = None,

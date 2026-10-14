@@ -462,6 +462,12 @@ well-formed but empty/zero result. It looks exactly like a real result.
   redirect failed and G2 never ran, unreported until the log was opened. Same session: STATE.md
   was edited by a Python script, against CLAUDE.md's Edit-tool rule. Rule: **create the output
   directory in its own command before launching parallel arms, and wait on each arm's exit.**
+- 2026-10-14 (B0, `/challenge-pr` on #198): `core.nudge.Stack` called GPT-NeoX layers the
+  4.44.2 way (the conda `mets` env, where the gate and the smoke test ran); the nightly installs
+  4.57.6, where the call crashes and the obvious fix silently drops the causal mask. Rule: **code
+  that calls a library's internals passes its smoke test in both environments (`mets` and
+  `.venv`) before the PR, and states the contract it relies on (here: the mask is passed, never
+  assumed).**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

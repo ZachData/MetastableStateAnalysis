@@ -15,12 +15,18 @@ Budget: 3 units (`design-B.md` "Exit condition and budget").
 
 ## B0 (2026-10-14): the gate at its first step
 
-**Input:** `pythia-410m` step 143000; the 7 scored v1 prompts (`b0_gate.V1_SCORED`, hash
-`prompts_hash()` in each record), ≤ 512 tokens; `resid_pre` at layer 5; B1's 32 positions per
-prompt (`core.nudge.draw_positions`); K = 32 directions seeded per (prompt, `resid_pre`, 5).
-GPU float32 on the RTX 3080, deterministic, TF32 off (torch 2.10.0+cu130, transformers 4.44.2);
-G2 on CPU float64. Code `b0_gate.code_sha()`. Records: `/run/media/system/HDD_1TB/mets_data/
-trackB_b0/2026-10-14/{gpu,cpu}_step143000.json`. GPU 660 s for the step, G2 27 s.
+**Input:** `pythia-410m` step 143000; the 7 scored v1 prompts (`b0_gate.V1_SCORED`, prompts
+hash `976b62d677bc`), ≤ 512 tokens; `resid_pre` at layer 5; B1's 32 positions per prompt
+(`core.nudge.draw_positions`); K = 32 directions seeded per (prompt, `resid_pre`, 5). GPU
+float32 on the RTX 3080, deterministic, TF32 off (torch 2.10.0+cu130, transformers 4.44.2); G2
+on CPU float64. Code `329eba22f8c6`. Records: `/run/media/system/HDD_1TB/mets_data/trackB_b0/
+2026-10-14b/{gpu,cpu}_step143000.json`. GPU 660 s for the step, G2 27 s.
+
+**Re-run after `/challenge-pr` on #198** (finding 1: `Stack.block` crashed on transformers 4.57,
+and 4.57's eager attention masks only by what it is passed; the block now always passes an
+explicit causal mask and 4.57's rotary embeddings; smoke tests pass on 4.44.2 and 4.57.6): the
+first record (code `db4804772c65`, `2026-10-14/`) and the re-run agree in all 5,870 GPU and 388
+CPU fields but timings. `report` now refuses a record from other code.
 
 | arm | rule (`b0_gate.py` docstring, fixed before output) | at 143000 |
 |---|---|---|
@@ -47,12 +53,22 @@ any other step.
 **Re-run:** `python trackB_circuit/b0_gate.py run --out <dir> --steps 143000`, then `g2`,
 then `report` (it needs all 18 steps for a verdict).
 
+## Fences (from B0's gate)
+
+- **B4 brings an on-distribution null.** Loss gradients at layer 5 share a direction across
+  prompts: mean \|cos\| over cross-prompt pairs 0.031 against 0.025 for random directions; the
+  median \|projection\| of a unit gradient on the mean gradient direction is 0.068 (a random unit
+  vector: ~0.025). So "a structured direction ranked among random ones" is biased upward by the
+  model itself, and B4's eigen-directions against random ones would read that bias as a finding.
+  (`/challenge-pr` on #198, finding 3; carried from Parked.)
+- **B1's floor.** The same-shape base floor is exactly 0 under deterministic algorithms (it
+  measures repeatability, not rounding), so "below floor" never fires. B1's offsets k = 2…5 can
+  sit near float32 rounding; B1 fixes a rounding floor before its run (e.g. the same pass in
+  float64, or in another batch shape). (`/challenge-pr` on #198, risk 1.)
+
 ## Parked
 
-- **Cross-prompt gradient alignment at layer 5** (discovery): mean \|cos\| 0.031 against 0.025
-  random at 143000. Why: a shared loss-sensitive direction would also inflate any
-  structured-direction comparison in B2–B4. Cost: free from the gate's gradients. Could change:
-  how B2–B4 choose their nulls (random against on-distribution directions).
+(none)
 
 ## Corrections received
 

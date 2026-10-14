@@ -381,6 +381,9 @@ def cmd_report(a) -> int:
         gpu, cpu = json.loads(g.read_text()), json.loads(c.read_text())
         if gpu["prompts_hash"] != prompts_hash() or cpu["prompts_hash"] != prompts_hash():
             raise GateError(f"step {step}: a record ran on another prompt set")
+        if gpu["code"] != code_sha() or cpu["code"] != code_sha():
+            raise GateError(f"step {step}: a record ran on other code ({gpu['code']}, {cpu['code']}; "
+                            f"now {code_sha()}): re-run it")
         rows[step] = verdict_step(gpu, cpu)
         ok &= rows[step]["pass"]
     summary = {"code": code_sha(), "prompts_hash": prompts_hash(), "complete": len(rows) == len(STEPS),
