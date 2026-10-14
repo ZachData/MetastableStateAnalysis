@@ -119,7 +119,8 @@ close-out.
 
 Kept from the triage (its §4.1 and §6a); what changed since 2026-09-29 is that β is decided
 (Blocked 9: 3.5 [1.6, 5.6], unit LN1) and 1e's U2 split each block's update into attention, MLP,
-sink and bias at that β.
+sink and bias at that β. **Opened 2026-10-14: `trackA_force/design-A.md`** (A1: exit condition,
+a 3-unit budget, the instrument, its gate, the reading rule), scan `trackA_force/lit-A.md`.
 
 | # | unit | what | done when |
 |---|---|---|---|

@@ -13,6 +13,7 @@
   - `P-H1` measured: the cone is feasible at every layer on step 143000, the margin is smallest at layer 0 and grows with depth, well above the i.i.d. reference — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
   - A, B and F are blocked by missing artifact keys, not physics; β is derivable with no forward pass, and its scale convention is worth a factor of 8 and undecided — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
 - **Superseded / wrong:**
+  - `integration_time.py`'s "t* ~ 4.2, near-invariant in β" holds only from an orthogonal start and for β ≲ 5.6; from mean cosine 0.3, t* ≈ 1.5 — `trackA_force/design-A.md` "t* before any output"
   - "kmeans is the only clusterer whose centroids Phase 1 persists" is false on disk: 0/152 directories carry centroids — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
   - "Open item 1 is a hard blocker" overstates it: β is derivable from existing artifacts — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
   - `lit-1c.md`'s "scholarly hosts are blocked" and its α·Δτ ≈ 0.025 preemption are both false — `status-1c.md` "E-value audit, Phase 1c (2026-09-19)"
@@ -36,7 +37,7 @@
   - Re-cluster at matched k from `activations.npz` and run `P-S1` (free)
   - `run_1.py --sublayer` reruns for `h_attn_only` (forward pass, 410m)
   - Regenerate the energy-trajectory PNGs (free)
-- **Reviewed:** 2026-09-28 · body `aa618fa468`
+- **Reviewed:** 2026-10-14 · body `2590724884`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -52,6 +53,7 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-23.
 - 2026-08-23 · the energy-trajectory PNGs bake a wrong citation into three suptitles · `math-1c.md` §11
 - 2026-09-24 · `P-S1`'s gate defaults to 500 null draws, so E ≤ 11.2 and it cannot reach E ≥ 20 alone (the dry run's "floor is attainable" tests p ≤ α); and finding 2 below calls the ×8 β the non-comparable "raw slope" while `core/beta_eff.py` calls it the comparable one · `docs/PHASE_SYNTHESIS.md` "3.1 Attainable E per adjudicable row", `docs/PHASE_SYNTHESIS.md` "3.2 The remaining decisions, checked against the code first (Parked 7)"
 - 2026-09-26 · finding 2's β 0.50 (410m, `wiki_paragraph`) is `beta_raw` ÷ 8: `beta_raw` on unit LN1 rows is 4.00 [2.05, 6.01], reproduced to the digit, and is already the β of `softmax(β⟨u_i,u_j⟩)` (the fit sees the model's `1/√d_h`); across 7 prompts, 3.88 [1.92, 5.94], R² 0.18 · `p1d_cluster_ensemble/status-1d.md` "Attention communities against three nulls" ("β, measured on the way", "β for Blocked 9")
+- 2026-10-14 · `integration_time.py`'s "t* ~ 4.2, near-invariant in beta" holds only from an orthogonal start and for β ≲ 5.6 (8.7 at β 7, n = 467); from a start at mean cosine 0.3 t* ≈ 1.5 at every β, so `P-gamma2`'s comparator depends on the start; and (6.9) has no causal mask: simulated causally (n = 467), t* is 5.2 at β 3.5 and 14.8 at 5.6 against 4.3 and 5.4 (the card's "causal vs non-causal, never compared", for the comparator) · `trackA_force/design-A.md` "t* before any output"
 
 **Registered predictions:** `P-gamma1`, `P-gamma2` (needs-null — bracket and
 point-estimate readings with no null built), `P-H1` (measurement — no valid

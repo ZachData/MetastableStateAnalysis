@@ -148,6 +148,10 @@ world moves, nobody updates the line, and the next session acts on it.
   `origin/main` and did not fast-forward the main tree, so the hook printed #189's `STATE.md` a
   second time. Caught by Start step 1; the main tree was fast-forwarded (`git pull --ff-only`) at
   the cleanup step. Rule: the session that removes a merged worktree also fast-forwards `main`.
+  **Again 2026-10-14 (Track A's opening, after #200):** the main tree at `edc8e8c` (#194), 21
+  commits behind; the hook printed Phase 10's close with Blocked 40 undecided. No session since
+  10-13 removed a worktree (refused by the permission check), so the rule above never fired.
+  Caught by Start step 1; the main tree was not fast-forwarded (another session may be in it).
 - 2026-10-13 (B-pre): `claims/registry.json`'s `P-ST1` says twice that its activations and Phase 2's
   projectors "do not exist in this repository"; both have been on disk since 2026-08-31
   (`data/phase12/*/ov_projectors_*`, the v1 sweep). The registry is not edited outside a
