@@ -1085,6 +1085,12 @@ of a design before running it, and print it on every record
   measured the model, not the harness; it had no planted case of "a correct harness on aligned
   directions". Rule: **a null meant to test an instrument is checked against what the
   instrument's own linear theory predicts for that null before it is given a pass bar.**
+- 2026-10-14 (A1a, G3): the design set 5 % on the recovered step for planted steps up to h = 0.5
+  without computing the estimator's own bias: the tangent part of a retracted step is
+  `V/√(1+|V|²)`, 6.4 % low on the largest. The second-order term was knowable from one line
+  of algebra; the gate found it instead (`trackA_force/status-A.md` "A1a's gate"). The same
+  instance as B0's G4b, one order up. Rule: **a recovery bar is set after the estimator's
+  leading bias at the planted range is computed, and is quoted beside the bar.**
 
 ## 7. Literature found after the construction was built
 

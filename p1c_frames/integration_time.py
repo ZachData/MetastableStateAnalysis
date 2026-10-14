@@ -208,6 +208,48 @@ def step_sizes(raw_states: np.ndarray, beta: float,
     }
 
 
+def unit_steps(U: np.ndarray, U_next: np.ndarray, X: np.ndarray, lift: str = "tangent") -> dict:
+    """
+    Per-token step sizes for a move between two UNIT configurations, in
+    whatever frame the caller built them (Track A: unit LN1 rows of the
+    reading block at both ends, `trackA_force/design-A.md` "A1a").
+
+    U, U_next : (n, d) unit rows, one token per row, same order
+    X         : (n, d) the field evaluated on U (`sa_field`)
+
+    With Δ_tan the move's part tangent to the sphere at U:
+        disp = |Δ_tan|                 (1c's displacement)
+        cal  = |Δ_tan| / |X|           (1c's calibrated step)
+        proj = <Δ_tan, X> / |X|^2      (the move ALONG the field)
+    For Δ = hX + ξ with ξ ⊥ X, proj = h and cal = sqrt(h² + |ξ|²/|X|²):
+    the calibrated step counts motion off the field as time
+    (`tools/math_checks/a1_collapse_time.py`, item 4). A token whose field
+    is below 1e-9 gets NaN for cal and proj.
+
+    ``lift``: ``tangent`` takes Δ_tan of the chord, which returns V/sqrt(1+|V|²)
+    for a tangent move V followed by retraction (A1a's gate, G3: up to 6 % low
+    on its largest steps); ``log`` rescales Δ_tan to the arc length
+    arccos<U, U_next> (the sphere's log map, exact for motion along a great
+    circle; 4.3 % at most on the same cells).
+    """
+    U = np.asarray(U, dtype=np.float64)
+    U1 = np.asarray(U_next, dtype=np.float64)
+    D = U1 - U
+    D = D - np.sum(D * U, axis=1, keepdims=True) * U
+    if lift == "log":
+        nt = np.linalg.norm(D, axis=1, keepdims=True)
+        th = np.arccos(np.clip(np.sum(U * U1, axis=1, keepdims=True), -1.0, 1.0))
+        D = D / np.maximum(nt, 1e-300) * th
+    elif lift != "tangent":
+        raise ValueError(f"unknown lift {lift!r}")
+    X = np.asarray(X, dtype=np.float64)
+    xx = np.sum(X * X, axis=1)
+    safe = np.where(xx < 1e-18, np.nan, xx)
+    disp = np.linalg.norm(D, axis=1)
+    return {"disp": disp, "cal": disp / np.sqrt(safe),
+            "proj": np.sum(D * X, axis=1) / safe}
+
+
 def cumulative_time(h: np.ndarray) -> np.ndarray:
     """
     T_eff(l) — the time coordinate of each layer boundary, starting at 0.
