@@ -148,6 +148,9 @@ Fixed before the re-gate's output (`a1a_gate.py` docstring is the spec):
 - If the gate passes, A1a's batch runs (unchanged otherwise); if it fails, A1 goes back to the
   user before any real output.
 
+**Ran 2026-10-14: fails on G4 at 3 frames** (step 143000, blocks 20–22; numbers in `status-A.md`
+"A1a's re-gate"); back to the user before any real output (STATE Blocked 47).
+
 ## A1b, the reading (unit 3; unit 4 after Blocked 46)
 
 **The family, fixed before output:** 18 steps × 7 v1 prompts; the statistic is `T_proj`
@@ -184,7 +187,8 @@ against the causal t* from the measured cloud per (step, prompt).
 |---|---|---|
 | 1 | this design, `lit-A.md`, `a1_collapse_time.py`, `tstar_table.py`, `sa_sim.py` | done (#201); frozen 2026-10-14 (Blocked 45) |
 | 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | built 2026-10-14; **the gate fails (G3, G4)**, the batch not run; Blocked 46 |
-| 3 | A1b: the reading, H-WARP and 1e's question beside | after A1a's gate |
+| 3 | A1a's re-gate (Blocked 46 (b)) and batch | re-gate ran 2026-10-14, **fails on G4 at 3 frames**; Blocked 47 |
+| 4 | A1b: the reading, H-WARP and 1e's question beside | after A1a's gate |
 
 ## Fences
 

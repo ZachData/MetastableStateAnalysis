@@ -35,6 +35,7 @@ import argparse
 import hashlib
 import json
 import math
+import multiprocessing as mp
 import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -279,14 +280,36 @@ def _sweep_job(args) -> Dict:
     return out
 
 
+def _one_thread() -> None:
+    from threadpoolctl import threadpool_limits
+    threadpool_limits(1)
+
+
+def _pool(workers: int) -> ProcessPoolExecutor:
+    """One BLAS thread per worker, set inside it: 8 workers at numpy's default (16 threads each)
+    put the load at ~110 and took the sweep 1h52m (2026-10-14, LESSONS 2). An environment
+    variable set around the constructor does not reach them: the executor starts its workers at
+    the first submit, after it is restored."""
+    return ProcessPoolExecutor(max_workers=workers, mp_context=mp.get_context("spawn"), initializer=_one_thread)
+
+
 def sweep(lns: Dict, workers: int) -> List[Dict]:
+    """Each line prints both ends and the count outside G4's bar: a min alone hid every
+    overshoot of the first re-gate (2026-10-14, LESSONS 2). The record keeps every cell."""
     jobs = [(s, l, lns["w"][i, l], lns["b"][i, l], lns["eps"]) for i, s in enumerate(STEPS) for l in range(N_BLOCKS)]
     rows = []
-    with ProcessPoolExecutor(max_workers=workers) as pool:
+    with _pool(workers) as pool:
         for r in pool.map(_sweep_job, jobs):
-            lo = min(c[LIFT] for c in r["cells"])
-            print(f"sweep step {r['step']} block {r['block']}: min T_proj/T {lo:.3f}", flush=True)
+            v = [c[LIFT] for c in r["cells"]]
+            bad = sum(abs(x - 1.0) > TOL["G4_T"] for x in v)
+            tag = "" if r["block"] in T_BLOCKS else " (beside)"
+            print(f"sweep step {r['step']} block {r['block']}{tag}: T_proj/T {min(v):.3f}-{max(v):.3f}, "
+                  f"{bad} of {len(v)} outside", flush=True)
             rows.append(r)
+    out = [(r["step"], r["block"], c["beta"], c["g0"], round(c[LIFT], 3))
+           for r in rows if r["block"] in T_BLOCKS for c in r["cells"] if abs(c[LIFT] - 1.0) > TOL["G4_T"]]
+    print(f"sweep: {len(out)} of {sum(len(r['cells']) for r in rows if r['block'] in T_BLOCKS)} gated cells "
+          f"outside (step, block, beta, g0, T_proj/T): {out}", flush=True)
     return rows
 
 
