@@ -84,6 +84,7 @@ packages = [
     "p7d_redundancy",
     "p7e_consolidation",
     "p8_scale_ladder",
+    "trackA_force",
     "trackB_circuit",
 ]
 
