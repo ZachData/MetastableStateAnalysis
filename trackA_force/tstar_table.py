@@ -19,6 +19,10 @@ G0S = (0.0, 0.3, 0.6)
 
 
 def tstar(n: int, beta: float, g0: float = 0.0, target: float = 0.9) -> float:
+    """Refuses a start at or above the target or at or below the simplex point -1/(n-1),
+    where the event never fires and inf would read as "T is below t*" (#201, finding 4)."""
+    if not (-1.0 / (n - 1) < g0 < target):
+        raise ValueError(f"g0 = {g0} outside (-1/(n-1), {target})")
     ev = lambda t, g: g[0] - target
     ev.terminal = True
     s = solve_ivp(lambda t, g: [gamma_rhs_sa(g[0], n, beta)], (0.0, 1e7), [g0],

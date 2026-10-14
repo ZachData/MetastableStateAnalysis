@@ -22,6 +22,12 @@ project's own scans (`p1c_frames/lit-1c.md`, `p1e_energy_field/lit-1e.md`,
   d, large β only on the circle. **Bearing:** 1e's question (one well at β 3.5) has a candidate
   closed form here; A1b does not derive it (`design-A.md` A1b, beside), and a count at d = 1024
   is not stated in the summaries read.
+- Karagodin, Polyanskiy, Rigollet, *Clustering in Causal Attention Masking* (arXiv 2411.04990,
+  2024; surfaced in this scan's first search, missed in its first draft, `/challenge-pr` on #201
+  finding 2): the causal system is not a mean-field gradient flow, and its clustering differs
+  from the full-attention one the paper's (6.9) describes. **Bearing:** A1's t* comes from a
+  causal simulation (`trackA_force/sa_sim.py`), not from (6.9): at β 5.6, n = 467 the causal
+  time is 14.8 against (6.9)'s 5.4 (`design-A.md` "t* before any output"). Theorems not read.
 - *Multiscale analysis of mean-field transformers* (arXiv 2509.25040): β growing with the number
   of tokens. **Bearing:** the long passages (n ≈ 2,000) at fixed β are the other regime; not used.
 
@@ -57,6 +63,7 @@ project's own scans (`p1c_frames/lit-1c.md`, `p1e_energy_field/lit-1e.md`,
 
 ## What changed in the design because of this scan
 
-- t* is computed from the measured start and over the head-β bracket, not quoted as 4.2 (§1).
+- t* is simulated with the causal mask from the measured cloud, over the head-β bracket, not
+  quoted as 4.2 (§1).
 - The step is angle per unit field, never raw displacement (§2); its depth profile is read.
 - The 1e question stays *beside*: a closed form exists in §1's papers but is not yet derived here.

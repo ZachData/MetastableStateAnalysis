@@ -18,8 +18,10 @@ Budget: 3 units (`design-A.md` "Exit condition and budget").
 No model, no data. **Input:** eq. (6.9) only. **Producer:** `python -m trackA_force.tstar_table`;
 the table is in `design-A.md` "t* before any output" (one copy). What it fixed: the registered
 t* ≈ 4.2 is the orthogonal-start time; from a start at mean cosine 0.3 it is ≈ 1.5 at every β,
-and from g0 = 0 it is flat in β only to ≈ 5.6. `sympy`: `tools/math_checks/a1_collapse_time.py`,
-4 of 4 pass.
+and from g0 = 0 it is flat in β only to ≈ 5.6. With the causal mask (6.9) lacks
+(`python -m trackA_force.sa_sim`, after `/challenge-pr` on #201), t* rises steeply with β (14.8
+at 5.6, n = 467), so A1's comparator is the causal simulation from the measured cloud.
+`sympy`: `tools/math_checks/a1_collapse_time.py`, 4 of 4 pass; tests `tests/test_trackA_tstar.py`.
 
 ## Parked
 
