@@ -674,6 +674,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-14, Track B B0 (the other side: a rule that rejects a correct instrument): Blocked 43
+  (a) made G4b an exact equality of rank-1 sets, nudged against linear, knowing a near-tie inside
+  the linear error would fail it and leaving that rate "not derived". Over 18 steps it fired once,
+  at 1 arm of 4,032 (margin 1.05e-4, linear error 1.4e-3), so a 3.5 h run ends in a waiver
+  (Blocked 44). Rule: **an equality on ranks carries a tie clause sized by the error the same gate
+  already measures, written before the run**; a named failure mode left unbounded is a rule
+  still open.
 - 2026-10-11, Phase 10 LCo (caught by the calibration gate, before any real record): N0 failed at
   2.08 %, even on both sides, and no change to the statistic could fix it: the sign rule's own
   null rate is 2·2⁻ⁿ, 3.1 % with 6 readable passages, and 53 % of c3x's cells have 6. LC's N0 had
