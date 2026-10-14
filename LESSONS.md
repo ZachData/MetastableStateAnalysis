@@ -141,6 +141,16 @@ world moves, nobody updates the line, and the next session acts on it.
   **Again 2026-10-06 (after #156):** still at `6abbcb8`, now 5 merges behind (#152–#156): the
   five sessions in between each read `origin/main` and none fast-forwarded the main tree. The
   hook printed R6's `STATE.md` again; Start step 1 caught it, and the main tree was fast-forwarded.
+  **Again 2026-10-11 (10.5, after #193):** 27 commits behind (`d7bebf7`, #189); the hook
+  printed Stage 3's close, Blocked 37 open, when the user's prompt named Blocked 39. Caught by
+  Start step 1 (`git show origin/main:STATE.md`); the hook fix is still the user's.
+- 2026-10-11 (10.5): a card open thread outlived the work that answered it. `status-10.md`'s
+  card said "no row here is re-read on" 1d's tie-free level-set HDBSCAN, written 2026-10-01;
+  R0–R9 (2026-10-05 to 10-09) read every row on c2a–c3x, which are built on that tree
+  (`design-10.md` "c2a"), and each of their sessions re-stamped the card without touching the
+  thread. Found only because the close-out had to give every thread a home. Rule: when a
+  unit answers a card's open thread, the same commit says so on the thread; the stamp checks
+  that someone looked, not what the threads say.
 - 2026-09-24: `handoff-10.md` said its fixed guard `pgrep -f 'python -m
   tools.run.stage0_chunk'` "now matches only the python process". Run inside
   one `bash -c` with the rest of the block, it matched that shell and printed

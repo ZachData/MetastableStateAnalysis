@@ -2895,6 +2895,24 @@ cheap and would resolve it.**
 
 ---
 
+## 3.55 Phase 10 closed: the clusters came out small, the force is global (2026-10-11)
+
+**`p10_cluster_function/status-10.md` "The phase on one page (10.5, closed 2026-10-11)"** holds
+the phase's findings, its hypotheses at close and what it did not establish; this section only
+says why it is project-wide. Tier 1 throughout, `pythia-410m`, nothing registered.
+
+- Three numbers the project inherited from Blog 1 and Phase 1 were the instrument's: the
+  attention flip (the causal mask and position 0, on 410m and `gpt2-large`), the ~50-cluster
+  carrying capacity (a repeated-token count at layer 0), and HDBSCAN's noise floor (float32
+  distances). Quote them corrected: `README.md`, `docs/AXES.md` and `docs/PHASE_SYNTHESIS.md`
+  still quoted the old readings and were corrected at close (`/challenge-pr` on #194, finding 4);
+  older dated sections of this file keep theirs as history.
+- Asked of particular clusters, every instrument came out small and carried by position,
+  token frequency or step 0; the one large effect (an OV cut that collapses the stream at 16000)
+  is global. This is the reading `docs/ROADMAP.md` §1 builds Tracks A and B on.
+- What the phase left open went to named homes (`handoff-10.md` "At close (10.5)"): C1 (the
+  null-model audit write-up), Tracks A and B, B0′ and the first-registration decision.
+
 ## 3.54 A scoped thread, with its own handoff: what clusters are made of (2026-09-20)
 
 **`p10_cluster_function/handoff-10.md`** is the ordered plan and

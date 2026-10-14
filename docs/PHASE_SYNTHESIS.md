@@ -13,8 +13,8 @@ work should land, so that it lands once.
 
 | # | question | asked in | state | owner |
 |---|---|---|---|---|
-| D1 | Is the attention flip real or causal mask? | 5c; 10 A0 | answered on 410m (~94 % mask), 5c's GPT-2/ALBERT number stands for those models (`archive/p5c_unclustered/status-5c.md` card) | 10, closed |
-| D2 | Carrying capacity (how many clusters fit) | 1 (50–55); 10 F14 / Lemma C.1 | 10 has the formula (`p10_cluster_function/math-10.md` §5.4); 1's number is its only data point | 10 F14 |
+| D1 | Is the attention flip real or causal mask? | 5c; 10 A0 | answered on 410m (~94 % mask; later, R3: trained, position 0 plus one massive token, `p10_cluster_function/status-10.md` §1.17); on `gpt2-large` it does not survive the sink out (§1.19); ALBERT never re-read | 10, closed |
+| D2 | Carrying capacity (how many clusters fit) | 1 (50–55); 10 F14 / Lemma C.1 | 10 has the formula (`p10_cluster_function/math-10.md` §5.4); 1's number is its only data point, and mostly a repeated-token count at layer 0 (`p10_cluster_function/status-10.md` §1.8) | F14, at the first-registration decision (Phase 10 closed without it) |
 | D3 | Is an HDBSCAN partition reproducible? | 1d (archived ensemble); 10 §3 (ARI p5 0.347); `CLAIM-C`'s two HDBSCAN metrics; 9 E9 (timescales against the floor) | measured once in 10; `CLAIM-C` never compared against it | 10 (`status-10.md` §5 open item). Rebuild 1d only after (`archive/p1d_cluster_ensemble/`) |
 | D4 | Does steering along a geometric direction move the output? | 3 (`archive/p3_crosscoder/steering.py`); 5b (manifold steering); 7 `P-ST1` | only `P-ST1` is registered and gated; 5b needs an ordered-concept positive control first | 7 `P-ST1`; 5b's control is a prerequisite, not a rival |
 | D5 | Force clusters to form or dissolve | 5c Group D; 9 E3 (force-collapse, force-disperse); 10 F7 (centroid substitution only) | none run; E3's arms reached no phase (`p9_metric_intervention/status-9.md` card) | one intervention unit, after 10's F4 says what a cluster is (`p10_cluster_function/notes-10.md` §9) |
