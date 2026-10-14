@@ -104,8 +104,8 @@ close-out.
 
 | item | cost | action |
 |---|---|---|
-| Stale worktrees `../Mets-work` (uncommitted `STATE.md` edit, superseded), `../Mets-sign`, `../Mets-dose` | minutes | the user's; all three branches are merged |
-| Phase 1e close-out | writing | **done 2026-10-13** (Blocked 40 (a)): `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)"; U4 and U5 *not pursued*; Parked items carried to A1 (1), A2 (3), A3 (1), B0 (1), C1 (1), the rest dropped or done |
+| Stale worktrees | minutes | **done**: `../Mets-sign`, `../Mets-dose` removed 2026-10-10, `../Mets-roadmap` 2026-10-13 (`STATE.md` "Open PRs and branches") |
+| Phase 1e close-out | writing | **done 2026-10-13** (Blocked 40 (a)): `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)"; U4 and U5 *not pursued*; Parked items carried to A1 (1), A2 (3), A3 (1), B0 (1), C1 (1); 5 dropped, 3 done |
 | Claim (a), step 0 against the random criteria | check first | Phase 2's steps 8–64 may already answer it; if so, write it up and adjudicate |
 | `P-gamma2` / `T_eff` | check first | 1c says no `beta_eff` in any run dir; β is now measured (Blocked 9). Goes to A1 if it needs a run |
 | Normed-rank re-report (Blog 1's ~250) | free | A, as a Blog 1 retest |
@@ -149,7 +149,7 @@ better start for B than B0 (§10.4).
 
 | # | unit | what | done when |
 |---|---|---|---|
-| B0 | the nudge harness (from Phase 10 at close: one shared position correction in `core/`, where Phase 10 had three; from 1e at close: whether a GPU-against-CPU comparison is allowed on long passages, ~1e-4 at 143000's deep layers) | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass |
+| B0 | the nudge harness (from Phase 10 at close: one shared position correction in `core/`, where Phase 10 had three; from 1e at close: whether a GPU-against-CPU comparison is allowed on long passages, ~1e-4 at 143000's deep layers) | choose a direction, in the weights (a head's OV moved to `K ± ε·S₊`, one eigenvector's weight) or in the activations (a subspace, one token's state); nudge by ±ε; read each token's displacement, energy change and next-token loss; null = random directions of the same size; for small ε the ± distances agree to second order, so the antisymmetric response is the sign effect with no matching (a `sympy` check). Passes the calibration gate (§3 rule 4) before any real read | planted null and planted effect pass; its NUMERICS say whether a GPU-against-CPU comparison is allowed on long passages (from 1e) |
 | B0′ | optional: ALBERT or random GPT-2 (from Phase 10 at close: 5c's flip on ALBERT with the sink out, both arms) | the clustering instruments where the theory's collapse is vivid | large effects there, or the instruments are suspect |
 | B1 | positive control: `L5H2` | its particle signature (each token pulled toward its left neighbour inside `L5H2`'s output subspace) should switch on inside (512, 4000] | it does (the instruments see a real mechanism, and "small" has a yardstick) or it does not (fix the instruments first) |
 | B2 | spectra from the weights (from Phase 10 at close: `⟨Qx, Ky⟩` per head, F18's `V`-spectrum atlas, `attention-10.md`'s A3) | each member's symmetrised OV and QK spectra across checkpoints; dominant negative eigenpairs (the d = 2 reduction); principal angles between members (7e's free item); 2d's gradient-flow regime test per member; Phase 6's `U_neg` / `U_A` split on the circuit's subspace | a per-member table across training |

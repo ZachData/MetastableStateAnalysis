@@ -14,7 +14,7 @@
   - Splitting each block's update by a hooked pass, the MLP supplies most of the shared update and its shared part ascends too (24 of 31 windows by the rule fixed before output; the sink's value and the biases supply almost none); on the long passages attention's token-specific part never ascends the field in layers 1–22 and descends from step 256 on (v1 ascends at 8–32); the late token-specific ascent in L1–16 goes with the MLP's — `p1e_energy_field/status-1e.md` "U2's attention arm"
   - Against each head's own attention kernel instead of the idealised field, attention's token-specific move descends at steps 128–2000, in the sum and head by head; from 4000–8000 the sum over heads ascends while more heads still descend their own kernel than ascend it (10 of 13 windows; a majority of heads in only 2), so the late ascent is a property of the sum, not of the heads; the shared ascent is the MLP's up to 1000 and attention's mean pull from 2000 in the last layers (4 windows replicated on v1) — `p1e_energy_field/status-1e.md` "U2's per-head arm"
   - U2's reading is split by training stage (the user's decision): up to step 1000 the shared ascent is the MLP's and the token interactions descend their heads' kernels; from 2000 the shared ascent is attention's mean pull in the last layers, and from 4000 only the sum over heads follows its kernels, while more heads still descend their own than ascend it — `p1e_energy_field/status-1e.md` "U2's per-head arm"
-  - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); a few wells appear only at about twice that β and many by four times, so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, even after correcting that comparison's own bias, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge; by the end of training only the last layers are more uneven than at init — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
+  - At the measured β the field over the tokens has a single well in every trained layer band and step (one exception, the early layers at step 128); a few wells appear only near β 10 (about three times the measured β) and many by β 20 (that sweep not audited), so the probe's few wells were another frame's. Its density is more uneven than a matched Gaussian cloud's at every step, init included, even after correcting that comparison's own bias, and is mostly each token's closeness to the cloud's mean: punctuation at the centre, content words at the edge; by the end of training only the last layers are more uneven than at init — `p1e_energy_field/status-1e.md` "U1, the field at the tokens"
   - The saddle unit is closed at the measured β, since there are no wells there to find saddles between (the user confirmed); the phase's results are on one page — `p1e_energy_field/status-1e.md` "Blocked 30 decided"
   - Read beside that, at a β about three times the measured one, and in a frame with the cloud's mean removed. Both find wells: a few to hundreds early in training and one dominant well late at the higher β, and 2–4 late in the centred frame, the probe's count; at init the count depends on the passage length (15–17 on the long passages, up to one per token on the short ones). The probe's own frame (the residual centred without layer norm) agrees with it cell by cell, gives the same labels, and on the probe's own passages reproduces its 2–4 late wells. In both, the wells exist at init and sort by content. At the higher β, the comparison with a matched Gaussian is mostly forced, because the Gaussian has one well. Against init, training adds wells at steps 64–8000 and deepens them in the last layers, and both are gone by 16000. The rule's step-0 test compares labels only, so it calls almost none of this learned. In the centred frame, Phase 10's groups sit inside single wells well above chance, partly because both group tokens by proximity. A defect in the well finder (a float32 merge) was found and fixed on the way, and the measured-β result was audited clean — `p1e_energy_field/status-1e.md` "Blocked 30 (b) and (c)"
   - Phase 1e closed at tier 1 (2026-10-13, Blocked 40 (a)). On one page: the frozen labels are mostly an update every token shares, the MLP's early and attention's mean pull late; token interactions descend their heads' kernels at 128–2000 and follow only as a sum over heads from 4000; at the measured β the field has one well; its lumpiness is there from init. U4 and U5 not pursued; every Parked item carried or dropped — `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)"
@@ -31,7 +31,7 @@
 - **After Phase 10:**
   - U4 from stored activations, only if P-S1 is ever scored (with Track A); not pursued at close *(free)*
   - U5, after a corpus download and a co-occurrence count; not pursued at close *(free)*
-- **Reviewed:** 2026-10-13 · body `d6c6a8837b`
+- **Reviewed:** 2026-10-13 · body `9acbccdb20`
 <!-- /phase-card -->
 
 The 2026-10-06 probe that prompted this phase ran under Phase 10's handoff
@@ -56,15 +56,17 @@ field (attraction) or descend it (repulsion)? (`design-1e.md`, top.)
 | 1 | **The frozen labels are mostly an update every token shares.** Each block's update "ascends" in 35 of 54 cells, but that is the field's β = 0 mean term; the shuffle null cannot see a shared update, which carries both the early ascent and 143000's descent | "U2's block arm", "Corrections received" (2026-10-07) |
 | 2 | **The shared update is the MLP's early, attention's mean pull late.** Up to step 1000 the MLP supplies it (the sink's value and biases almost nothing); from 2000 attention's mean pull in the last layers (4 windows replicated on v1) | "U2's attention arm", "U2's per-head arm" |
 | 3 | **Token interactions repel early, follow only as a sum late.** Attention's token-specific move descends its heads' own kernels at 128–2000, head by head; from 4000–8000 the sum over heads ascends while more heads still descend their own kernel than ascend it | "U2's per-head arm" |
-| 4 | **One well at the measured β.** In every trained band and step but one (L1–8 at 128); a few wells only at ~3× β, many at ~4×. The probe's 2–4 wells were the centred frame's | "U1, the field at the tokens", "Blocked 30 (b) and (c)" |
+| 4 | **One well at the measured β.** In every trained band and step but one (L1–8 at 128), across 1.6–5.6; a few wells only near β 10 (2.9× β 3.5), many by β 20 (not audited, below). The probe's 2–4 wells were the centred frame's | "U1, the field at the tokens", "Blocked 30 (b) and (c)" |
 | 5 | **The density is lumpy from init, and it is mostly distance to the mean.** Lumpier than a matched Gaussian at every step, step 0 included (after that comparison's own bias is corrected); punctuation at the centre, content words at the edge; at the end only the last layers are lumpier than at init | "U1, the field at the tokens" |
 | 6 | **Beside: wells exist in other frames, and at init too.** At β 10, a few to hundreds early, one dominant late; centred, 2–4 late (the probe's own frame reproduces its count). Training adds wells over init's at 64–8000 and loses them from 16000. c3x groups sit inside centred wells above chance, partly because both group by proximity | "Blocked 30 (b) and (c)" |
 | 7 | **An instrument defect, fixed.** U1's well finder merged rows by a float32 dot at its own tolerance; fixed, the measured-β result audited clean (810 cells, 0 differ) | "Blocked 30 (b) and (c)" |
 
 **The reading.** At the theory's own β, Pythia's token cloud is one basin, and what each block
-does to it is mostly a move every token shares. The particle-level part is small (cosine excess
-≤ 0.16) and changes regime at 2000–4000, the same window as Phase 10's late cluster object and the
-OV spectrum's turn (`PROJECT.md` §3.12 A); whether these are one event is A3's.
+does to it is mostly a move every token shares. The token-specific part is small (`|X|` ≤ 0.06, ≤ 0.035 per
+head; "U2's attention arm", "U2's per-head arm") and changes regime at 2000–4000: just after the OV
+spectrum turns repulsive (1000–2000, `PROJECT.md` §3.12 A), and where Phase 10's cluster lineages
+start (89 % after 2000, `p10_cluster_function/status-10.md` "The phase on one page" #2). Whether
+these are one event is A3's.
 
 **What it did not establish.**
 - That one well at β 3.5 is what the theory predicts at n ≈ 2,000, d = 1,024 (unread; carried to A1).
@@ -86,14 +88,15 @@ OV spectrum's turn (`PROJECT.md` §3.12 A); whether these are one event is A3's.
 | U4 | **not pursued**: fenced on P-S1, whose draws are not raised (`docs/ROADMAP.md` §5). If P-S1 is ever scored (with Track A), U4 is free from the stored activations |
 | U5 | **not pursued**: no corpus on the box. Its alternative (Pythia's own next-token distribution) measures the model, not the data. Reopens only with a downloaded corpus |
 
-**Every Parked item** (the six Parked lists below, in order):
+**Every Parked item** (the six Parked lists below, in order; 15):
 
 | item | fate |
 |---|---|
-| GPU vs CPU ~1e-4 at 143000's deep layers on long passages | **carried to B0**: the harness's NUMERICS must say whether a cross-device comparison is allowed (`docs/ROADMAP.md` §7) |
+| GPU vs CPU ~1e-4 at 143000's deep layers on long passages | **carried to B0**, in its "done when": the harness's NUMERICS say whether a cross-device comparison is allowed (`docs/ROADMAP.md` §7) |
+| The last two blocks at 143000 (struck in its list) | **done**: the attention arm |
 | L9–16's descent at init (shared, not token-specific) | **dropped**: step 0 is already every unit's null; no planned unit reads a shared update's sign at init |
 | Who supplies the shared ascent | **done**: the per-head arm (Blocked 29 (c)) |
-| v1's early attention ascent (8–32) against the long passages' mixed | **dropped**: v1 is a CPU continuity check, not a replication; no decision reads the early sign by length |
+| v1's early attention ascent (8–32) against the long passages' mixed | **dropped**: v1 is a CPU continuity check, not a replication; no decision reads the early sign by length. Its device half (GPU long against CPU v1) is B0's NUMERICS item above |
 | The sink's value ≤ 0.05 of the shared update | **carried to A2** (with `attention-10.md`'s A5, the sink's part) |
 | The late split between heads and their sum | **carried to A2**: per-component dissipation answers cooperating against a few large heads |
 | Why the regime changes at 2000–4000, beside the OV spectrum | **carried to A3** (the joint timeline) |
@@ -102,7 +105,7 @@ OV spectrum's turn (`PROJECT.md` §3.12 A); whether these are one event is A3's.
 | The two wells in L1–8 at step 128 | **dropped**: one cell; no unit reads wells at the measured β again; quoted as the exception, not explained |
 | One well at β 3.5 against 2312.10794's thresholds | **carried to A1** (β and `T_eff` against the paper's thresholds) |
 | c3x purity in the centred frame against any proximity partition | **carried to C1** (the null-model audit) |
-| (a)'s β 1.6 / 5.6 wells and β 20–100 sweep, not audited | **dropped unless quoted**: whoever quotes them runs the audit flag first (~1 h); the 1e page's sweep panel carries "not audited" by this line |
+| (a)'s β 1.6 / 5.6 wells and β 20–100 sweep, not audited | **dropped; quoted only as "not audited"**: the card, finding 4 and the page's sweep panel say so (republished at close); a reading that leans on them runs the audit (`u1_audit`, ~1 h) first |
 | NEB bands ending below the graph | **dropped**: U3 at β 10 was beside and is closed |
 
 **Exit condition.** 1e opened (2026-10-06) before the phase rule (`docs/ROADMAP.md` §3) asked for
