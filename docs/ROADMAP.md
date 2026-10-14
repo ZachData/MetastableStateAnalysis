@@ -145,7 +145,11 @@ operator's sign channels"), with nine `H-BRIDGE` rows: `P-I1` ran (INSUFFICIENT)
 reuses what holds. **A candidate first unit, B-pre (free):** check whether those three registered
 rows can still be scored as built (inputs on disk, rung, gates; `P-AB1` and `P-I3` have no
 known-answer dry run). If they can, they may be a cheaper first adjudication than A5 and a
-better start for B than B0 (§10.4).
+better start for B than B0 (§10.4). **Done 2026-10-13** (`p7_motifs/status-7.md` "B-pre (2026-10-13)"): on 410m none
+can be an adjudication (an exploration rung, and `P-I1` already read `P-I3`'s motif side).
+`P-AB1` needs B0's harness; `P-I3` meets its requirement only with weak members; `P-ST1` is built
+and, on the reserved rung, the one candidate cheaper than B0 (projectors from weights, one forward
+pass, linear algebra), its readability open. B starts from B0; `P-ST1` goes to §10.7.
 
 | # | unit | what | done when |
 |---|---|---|---|
