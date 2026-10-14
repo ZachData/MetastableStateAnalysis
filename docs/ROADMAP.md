@@ -142,7 +142,7 @@ are not cached at all.
 particles' interaction graph ("a two-stage relay of attention forces, split into the value
 operator's sign channels"), with nine `H-BRIDGE` rows: `P-I1` ran (INSUFFICIENT); `P-ST1`,
 `P-AB1`, `P-I3` are built and calibrated but unrun. B's design reads `p7_motifs/` first and
-reuses what holds. **A candidate first unit, B-pre (free):** check whether those three registered
+reuses what holds. **Opened 2026-10-13: `trackB_circuit/design-B.md`** (B0 and B1: exit condition, a 3-unit budget, the harness, its gate, B1's rule), scan `trackB_circuit/lit-B.md`. **A candidate first unit, B-pre (free):** check whether those three registered
 rows can still be scored as built (inputs on disk, rung, gates; `P-AB1` and `P-I3` have no
 known-answer dry run). If they can, they may be a cheaper first adjudication than A5 and a
 better start for B than B0 (§10.4). **Done 2026-10-13** (`p7_motifs/status-7.md` "B-pre (2026-10-13)"): on 410m none
@@ -202,7 +202,7 @@ that yardstick less than the cluster rows did, and B-pre may give an adjudicatio
    or it registers on a reserved rung, or the policy gets an exception on the record.
 4. *Decided 2026-10-13 (Blocked 40, the user's):* **1e's close-out, then B-pre, then B0 + B1, then
    Track A (A1).** Whether the December target for C2 stands is still open.
-5. **`L5H2` as the positive control and first anchor** (B1).
+5. *Taken 2026-10-13 with Blocked 40 (c):* **`L5H2` as the positive control and first anchor** (B1; `trackB_circuit/design-B.md`).
 6. **`P-I5`'s target** (`STATE.md` Blocked 2) before Track B registers anything.
 7. **Which rung carries the first registration** (`STATE.md` Blocked 7): A5, `P-I7` and F14
    compete for it.

@@ -13,7 +13,8 @@ long-form record behind it.**
 | 1 | `p1_mstate_tracking/` | Complete |
 | 1b | `p1b_hemisphere/` | Complete |
 | 1d | `p1d_cluster_ensemble/` | What a cluster is, before Phase 10 resumes (active 2026-09-25 to 2026-10-06; its working definition is what Phase 10 re-reads on). Seven tuned clustering families, a graded consensus, `P-C1`–`P-C4` (never registered). Code restored from its tag; read `status-1d.md` "Revived 2026-09-25" first |
-| 1e | `p1e_energy_field/` | **Opened and frozen 2026-10-06**: the residual stream as the theory's field `φ_β` at the measured β, its wells, crests and saddles, and whether each update ascends or descends it, on 8 long passages (`long_prompts_1e.py`; extractor `extract_long8.py`). Start at `design-1e.md`; scan `lit-1e.md`; status `status-1e.md` |
+| 1e | `p1e_energy_field/` | **Closed 2026-10-13** (`status-1e.md` "The phase on one page"); opened and frozen 2026-10-06: the residual stream as the theory's field `φ_β` at the measured β, its wells, crests and saddles, and whether each update ascends or descends it, on 8 long passages (`long_prompts_1e.py`; extractor `extract_long8.py`). Start at `design-1e.md`; scan `lit-1e.md`; status `status-1e.md` |
+| B | `trackB_circuit/` | **Track B, particles in a known circuit; opened 2026-10-13** (Blocked 40 (c)): B0, the ± nudge harness and its calibration gate, then B1, `L5H2` as positive control. Start at `design-B.md`; scan `lit-B.md`; status `status-B.md`; plan `docs/ROADMAP.md` §7 |
 | 1c | `p1c_frames/` | Implemented and validated on synthetic data. **Audited 2026-09-19 (§3.40): E run against Pythia artifacts (`P-H1` measured), A/B/F blocked on inputs no run directory carries** |
 | 2 | `p2_eigenspectra/` | Complete; the Pythia rerun is done and the 19-step sweep is on disk |
 | 2b | `p2b_imaginary/` | Complete *(directory name is canonical; on-disk artifacts still say "2i")* |
