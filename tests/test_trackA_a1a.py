@@ -107,3 +107,25 @@ def test_batch_refuses_a_failing_or_foreign_gate(tmp_path):
             a1a.check_gate(p, "c")
     p.write_text(json.dumps({"code": "c", "lift": a1a.LIFT, "passes": True}))
     a1a.check_gate(p, "c")
+
+
+def test_block_steps_recovers_a_planted_step_through_the_real_path():
+    """`block_steps` (the batch's path): position 0 dropped, each block's own β, the LN frame."""
+    from p1c_frames.integration_time import sa_field
+    rng = np.random.default_rng(5)
+    n, d, h, beta = 7, 32, 0.01, 2.0
+    hs = rng.standard_normal((a1a.N_BLOCKS + 1, n, d))
+    hs -= hs.mean(axis=2, keepdims=True)              # centred rows: unit LN with w=1, b=0 is unit(x)
+    hs *= 5.0 / np.linalg.norm(hs, axis=2, keepdims=True)
+    moves = {}
+    for L in range(a1a.N_BLOCKS):
+        U = hs[L][1:] / 5.0
+        V = np.zeros_like(hs[L])
+        V[1:] = 5.0 * h * sa_field(U, beta, causal=True)
+        moves[L] = {"block": V, "attn": 0.5 * V}
+    ln = {"w": np.ones((a1a.N_BLOCKS, d)), "b": np.zeros((a1a.N_BLOCKS, d)), "eps": 0.0}
+    rows = a1a.block_steps(hs, moves, ln, np.full(a1a.N_BLOCKS, beta))
+    for r in rows:
+        assert r["proj"] == pytest.approx(h, rel=1e-3) and r["cal"] == pytest.approx(h, rel=1e-3)
+        assert r["attn_proj"] == pytest.approx(h / 2, rel=1e-3)
+    assert a1a.totals(rows)["T_proj"] == pytest.approx(23 * h, rel=1e-3)

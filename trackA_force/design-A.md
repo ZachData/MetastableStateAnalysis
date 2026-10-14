@@ -120,14 +120,11 @@ per-token steps). Recorded here, before any real output:
 
 ### The gate's first run (2026-10-14): fails, G3 and G4 (STATE Blocked 46)
 
-`trackA_force/status-A.md` "A1a's gate (2026-10-14)" has the numbers. G0, G1, G2 pass. **G3** fails
-on its largest steps: the tangent part of a retracted step is `V/√(1+|V|²)`, up to 6.4 % low
-(a second-order bias this design did not compute before fixing 5 %); the sphere's log map
-(`lift="log"`) halves the bias and passes (≤ 4.3 %). **G4** fails from the orthogonal start at
-β 7 (7 of 7 prompts) and at β 3.5 (1 of 7, n = 511), with either lift, and **always low**: the
-LN1 frame reads `T_proj/T` = 0.74–0.84 at β 7, 0.875–0.96 at β 3.5; from cosine 0.3 it is within
-0.8 % everywhere. A low T pushes a cell toward *below*, `P-gamma2`'s side. The real batch has
-not run; nothing real was read.
+The numbers are in `trackA_force/status-A.md` "A1a's gate (2026-10-14)" (one copy). G0–G2 pass.
+**G3** fails on its largest steps by the tangent lift's second-order bias, which this design did
+not compute before fixing its bar; the log lift passes. **G4** fails from orthogonal starts at high
+β, always low, with either lift; it plants raw-frame dynamics, while the reading's field is on
+LN1 rows (`/challenge-pr` on #202, finding 1). The real batch has not run; nothing real was read.
 
 ## A1b, the reading (unit 3)
 

@@ -19,9 +19,10 @@ gate; whether finishing A1a takes a fourth unit is part of Blocked 46.
 **Input:** synthetic only, at the v1 design points (n = 241, 285, 445, 464, 466, 481, 511;
 d = 1024; β ∈ {0, 3.5, 7}; starts at pairwise cosine 0 and 0.3; 23 planted steps,
 h log-uniform in [0.02, 0.5], `SEED` 20261014); G4's frame is step 143000's block-5 LN1.
-**Producer:** `python -m trackA_force.a1a_gate --lift {tangent,log} --out <dir>`;
-records `data/trackA/a1a_gate_2026-10-14/a1a_gate_{tangent,log}.json` (code and gate hashes in
-each; ~5 min per lift on CPU, G0 on the GPU).
+**Producer:** `python -m trackA_force.a1a_gate --lift {tangent,log} --out <dir>` at #202's
+first commit (`12633c1`; `a1a.code_sha` `1cd68a0b4ba1`, gate `258cb1cb6894`, both in each record);
+records `data/trackA/a1a_gate_2026-10-14/a1a_gate_{tangent,log}.json` (~5 min per lift on CPU,
+G0 on the GPU). A first run on uncommitted code gave identical numbers.
 
 | arm | bar | tangent lift (as designed) | log lift |
 |---|---|---|---|
@@ -34,8 +35,13 @@ each; ~5 min per lift on CPU, G0 on the GPU).
 **G3's failure is a known second-order bias, not a code defect:** the tangent part of a step
 `V` followed by retraction is `V/√(1+|V|²)`; G3's ξ doubles `|V|²`, and the 4 cells are the
 ones whose cloud collapses furthest (end cosine 0.73–0.99, so the field and the steps are
-largest). The gnomonic lift `U'/⟨U', U⟩ − U` inverts G1–G3's planting rule exactly (0.0 %), so
-it is circular and not offered. Per-step only: on T, the tangent lift's worst is 2.3 %.
+largest). All three lifts are functions of the angle θ a token turns: tangent `sin θ`, log `θ`,
+gnomonic `tan θ` (`U'/⟨U', U⟩ − U`). The gnomonic lift is exact for one Euler step followed by
+renormalisation (0.0 % on G1–G3), which is also how a block acts if its move is tangent (`/challenge-pr`
+on #202, finding 4: not circular, as first written here). The log lift measures arc length, the
+continuous-time step that the simulated t* counts; its bias at the planted range is about 2/3 of
+the tangent lift's (≤ 4.3 % against ≤ 6.4 %), not half. Per-step only: on T, the tangent lift's
+worst is 2.3 %.
 
 **G4 by start and β** (`T_proj/T`, range over the 7 prompts; both lifts within 0.002):
 
@@ -49,6 +55,12 @@ Always low. The likely mechanism (not tested): LN1's bias adds a common directio
 LN frame a near-orthogonal raw cloud has a field with a large part along it that raw dynamics
 never follow. G4's premise (dynamics in the raw frame) is one of two; a V = I head acts on LN1
 rows, bias included, which this arm does not plant.
+
+**What the gate does not test** (`/challenge-pr` on #202, findings 2 and 5): G4 uses one LN1
+(block 5 at 143000; at step 0 the bias is 0, so the factor there is likely near 1, elsewhere it
+could be below 0.742); G2's random tangent directions cannot align with the field in 1,023
+dimensions, so G2 cannot fail, while a drift shared by all tokens (the confound that matters,
+since at positive mean cosine the field points at the cloud's mean) is not planted.
 
 **What did not run:** the real batch (β over 18 steps, the hooked pass, t*). No real T, t*, β
 or cosine has been read, so Blocked 46 is decided before any real output.
