@@ -42,10 +42,12 @@ def test_rank_and_turn_on():
     assert nd.rms_norm(np.array([[3.0, 4.0], [0.0, 0.0]])) == pytest.approx(np.sqrt(12.5))
 
 
-def _gpu(rate_hits: int, n: int = 224, g3_bad: int = 0):
+def _gpu(rate_hits: int, n: int = 224, g3_bad: int = 0, lin_off: int = 0, lin_miss: int = 0):
     from trackB_circuit import b0_gate as bg
     ranks = [1] * rate_hits + [5] * (n - rate_hits)
-    arms = [{"c": {str(c): {"rank": k} for c in nd.C_GRID}} for k in ranks]
+    lin = [2 if i < lin_off else k for i, k in enumerate(ranks)]   # first lin_off rank-1 hits unpredicted
+    lin = [1 if rate_hits <= i < rate_hits + lin_miss else q for i, q in enumerate(lin)]   # predicted, not hit
+    arms = [{"c": {str(c): {"rank": k} for c in nd.C_GRID}, "lin_rank": q} for k, q in zip(ranks, lin)]
     per = len(arms) // 7
     P = {}
     for a, key in enumerate(bg.V1_SCORED):
@@ -62,7 +64,12 @@ def test_gate_verdict_rules():
     v = _gpu(rate_hits=6)
     assert v["pass"] and v["G3_prompts"] == 7 and v["G2"]
     assert v["G4b"]["0.01"]["bound"] == pytest.approx(1 / 33 + 2 * np.sqrt((1 / 33) * (32 / 33) / 224))
-    assert not _gpu(rate_hits=20)["pass"]                     # 20/224 = 0.089 > 0.053
+    v20 = _gpu(rate_hits=20)                                  # 20/224 = 0.089 > 0.053: reported only
+    assert v20["pass"] and v20["G4b"]["0.01"]["over_bound"] and v20["G4b_lin"]["rank1_nudged"] == 20
+    v1 = _gpu(rate_hits=6, lin_off=1)                         # one rank-1 hit the linear response misses
+    assert not v1["pass"] and v1["G4b_lin"]["rank1_mismatch"] == 1 and v1["G4b_lin"]["rank_within_1"] == 224
+    v2 = _gpu(rate_hits=6, lin_miss=1)                        # step 128's way round: linear 1, nudged 5
+    assert not v2["pass"] and v2["G4b_lin"]["rank1_mismatch"] == 1 and v2["G4b_lin"]["rank1_linear"] == 7
     assert _gpu(rate_hits=6, g3_bad=1)["pass"]                # 6 of 7
     assert not _gpu(rate_hits=6, g3_bad=2)["pass"]
 
