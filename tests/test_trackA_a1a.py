@@ -99,14 +99,37 @@ def test_ov_share(tmp_path):
 
 def test_batch_refuses_a_failing_or_foreign_gate(tmp_path):
     p = tmp_path / "g.json"
-    for g in ({"code": "c", "lift": a1a.LIFT, "passes": False},
-              {"code": "other", "lift": a1a.LIFT, "passes": True},
-              {"code": "c", "lift": "chord", "passes": True}):
-        p.write_text(json.dumps(g))
+    from trackA_force.a1a_gate import gate_sha
+    ok = {"code": "c", "gate_code": gate_sha(), "lift": a1a.LIFT, "passes": True}
+    for bad in ({"passes": False}, {"code": "other"}, {"lift": "chord"}, {"gate_code": "older"}):
+        p.write_text(json.dumps({**ok, **bad}))
         with pytest.raises(SystemExit):
             a1a.check_gate(p, "c")
-    p.write_text(json.dumps({"code": "c", "lift": a1a.LIFT, "passes": True}))
+    p.write_text(json.dumps(ok))
     a1a.check_gate(p, "c")
+
+
+def test_gnomonic_lift_inverts_one_add_and_renormalise_step():
+    U, X, xi, h = _setup()
+    V = h * X + xi
+    U1 = (U + V) / np.linalg.norm(U + V, axis=1, keepdims=True)
+    s = unit_steps(U, U1, X, lift="gnomonic")
+    assert np.allclose(s["disp"], np.linalg.norm(V, axis=1), rtol=1e-12)
+    assert np.allclose(s["proj"], h, rtol=1e-12)
+
+
+def test_ln_plant_in_an_affine_free_frame_is_g1():
+    """G4's plant with w = 1, b = 0 reads exactly what G1 reads from the centred start."""
+    from trackA_force.a1a_gate import D, ln_plant, planted_h, read, trajectory
+    rng = np.random.default_rng(3)
+    U0 = start(40, 0.0, rng)
+    h = planted_h(1)[:5]
+    g4 = ln_plant(U0, h, 3.5, {"w": np.ones(D), "b": np.zeros(D), "eps": 0.0})
+    C = U0 - U0.mean(axis=1, keepdims=True)
+    g1 = read(trajectory(C / np.linalg.norm(C, axis=1, keepdims=True), h, 3.5, "field", rng), 3.5)
+    for l in ("log", "tangent", "gnomonic"):
+        assert np.allclose(g4[l]["proj"], g1[l]["proj"], rtol=1e-9)
+    assert np.allclose(g4["gnomonic"]["proj"], h, rtol=1e-9)
 
 
 def test_block_steps_recovers_a_planted_step_through_the_real_path():

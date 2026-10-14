@@ -230,17 +230,24 @@ def unit_steps(U: np.ndarray, U_next: np.ndarray, X: np.ndarray, lift: str = "ta
     for a tangent move V followed by retraction (A1a's gate, G3: up to 6 % low
     on its largest steps); ``log`` rescales Δ_tan to the arc length
     arccos<U, U_next> (the sphere's log map, exact for motion along a great
-    circle; 4.3 % at most on the same cells).
+    circle; 4.3 % at most on the same cells, bias ≈ |V|²/3); ``gnomonic`` takes
+    U_next/<U_next, U> − U, which inverts one add-and-renormalise step exactly
+    (a tangent V back to V; a radial part a gives V/(1+a)); NaN where
+    <U_next, U> ≤ 0.
     """
     U = np.asarray(U, dtype=np.float64)
     U1 = np.asarray(U_next, dtype=np.float64)
-    D = U1 - U
+    if lift == "gnomonic":
+        c = np.sum(U * U1, axis=1, keepdims=True)
+        D = U1 / np.where(c > 0, c, np.nan) - U
+    else:
+        D = U1 - U
     D = D - np.sum(D * U, axis=1, keepdims=True) * U
     if lift == "log":
         nt = np.linalg.norm(D, axis=1, keepdims=True)
         th = np.arccos(np.clip(np.sum(U * U1, axis=1, keepdims=True), -1.0, 1.0))
         D = D / np.maximum(nt, 1e-300) * th
-    elif lift != "tangent":
+    elif lift not in ("tangent", "gnomonic"):
         raise ValueError(f"unknown lift {lift!r}")
     X = np.asarray(X, dtype=np.float64)
     xx = np.sum(X * X, axis=1)

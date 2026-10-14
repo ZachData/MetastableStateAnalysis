@@ -21,7 +21,9 @@ d = 1,024" (`p1e_energy_field/status-1e.md` "The phase on one page"); 1c's instr
   reason it cannot. H-WARP and 1e's question are read beside it if the budget allows, else carried.
 - **Budget: 3 units.** (1) this design, the scan, the `sympy` check and the t* table; (2) A1a:
   the β producer over 18 steps and the T_eff instrument extended, with its calibration gate;
-  (3) A1b: the reading. At the budget A1 closes at what it knows.
+  (3) A1b: the reading. At the budget A1 closes at what it knows. **Extended to 4 units on the
+  record (Blocked 46 (b), the user's, 2026-10-14):** unit 3 is the re-gate and A1a's batch,
+  unit 4 is A1b.
 
 ## The math
 
@@ -126,7 +128,27 @@ not compute before fixing its bar; the log lift passes. **G4** fails from orthog
 β, always low, with either lift; it plants raw-frame dynamics, while the reading's field is on
 LN1 rows (`/challenge-pr` on #202, finding 1). The real batch has not run; nothing real was read.
 
-## A1b, the reading (unit 3)
+### Blocked 46 decided (2026-10-14, the user's: (b), a 4th unit on the record)
+
+Fixed before the re-gate's output (`a1a_gate.py` docstring is the spec):
+
+- **G4 re-planted as a V = I head acts in the reading's frame**: the field on `unit(LN1(x))`, the
+  raw move `h·|Cx|·X` added to the raw residual, read back through the same LN1. The scale makes
+  the affine-free frame G1 exactly (tested). The radial part a literal V = I head would add
+  (`⟨U, ΣAU⟩U`) is left out, so G4 isolates LN1's w and b. Bar unchanged (T within 10 %), on block
+  5 at 143000 for all 42 cells **and** on every block 0–22 × step LN1 (432 frames, block 23
+  beside) for `latex_monograph`'s six (β, start) cells (the first G4's lowest prompt). The first
+  G4 is kept beside as `G4raw`.
+- **Lift: log** (arc length, the continuous time t* counts); its leading bias ≈ |V|²/3, quoted
+  beside G3's 5 % bar. Gnomonic and tangent are read beside from the same trajectories.
+- **G2s, shared drift, beside G2 (not gated)**: the same norms per token, all toward one fixed
+  random direction; reported as `T_proj/T`. No bar: at positive mean cosine the field points at
+  the mean, so a shared drift projects onto it by geometry; the arm says by how much.
+- **`check_gate`** also requires the gate file's own hash (`gate_code`).
+- If the gate passes, A1a's batch runs (unchanged otherwise); if it fails, A1 goes back to the
+  user before any real output.
+
+## A1b, the reading (unit 3; unit 4 after Blocked 46)
 
 **The family, fixed before output:** 18 steps × 7 v1 prompts; the statistic is `T_proj`
 against the causal t* from the measured cloud per (step, prompt).
