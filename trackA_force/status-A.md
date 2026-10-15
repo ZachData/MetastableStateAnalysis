@@ -1,7 +1,30 @@
 <!-- trackA_force/status-A.md -->
 # Track A — STATUS
 
-No card yet (`docs/phase_card.md`); one is added with A1b's reading.
+<!-- phase-card -->
+## Card
+
+- **Question:** Does trained `pythia-410m` move its tokens far enough along the self-attention field (the identity-weight dynamics at each layer's measured β, causal mask) to reach the collapse time t* from where its own cloud starts, at each of 18 training steps (`P-gamma2`'s "never integrates far enough" against "resists")?
+- **Inputs:** `pythia-410m`, the 18 Stage 0 steps, the 7 scored v1 prompts (prompts hash `976b62d677bc`), A1a's 126 records (code `a08544e9b644`, `data/trackA/a1a_batch_2026-10-15`), GPU float32 — `trackA_force/status-A.md` "A1a's gate and batch, Blocked 48 (a)"
+- **Results:**
+  - Opened 2026-10-14 with a scan, a `sympy` check, the t* table and a frozen design (budget 3, extended to 5 on the record) — `trackA_force/design-A.md` "Exit condition and budget"
+  - Where the cloud starts, the causal mask and how β is reduced over heads each move t* several-fold; t* is the causal simulator's time from the measured cloud — `trackA_force/design-A.md` "t* before any output (no model, no data)"
+  - The instrument passes its calibration gate (planted effect, null, mixed, LN1 chain) after two failed gates; a sustained shared drift is not a null and can only add to the projected step — `trackA_force/status-A.md` "A1a's gate and batch, Blocked 48 (a)"
+  - `P-gamma2` has a number on 410m: the projected integration time is *below* t* at all 18 steps (125 of 126 cells, one *straddles* at 143000), *far below* to step 16000, and rising toward t* late; the net moves several times t* in total, but over 90 % of that motion is off the field — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
+  - H-WARP does not collapse the curves, and at the measured β (6.9) has one sigmoid, so 1e's one well is the identity-weight dynamics' own answer there — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
+- **Superseded / wrong:** none
+- **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication — `trackA_force/design-A.md` "Fences"
+- **Depends on:** none
+- **Feeds:** none
+- **Open threads:**
+  - The verdict rests on the projected step: on the calibrated step every cell is above t*, so "too shallow" and "resists" are told apart only by the field's direction — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
+  - t* assumes V = I, while from 1000 to 4000 most heads have no attractive part — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
+  - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
+- **After Phase 10:**
+  - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
+  - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
+- **Reviewed:** 2026-10-15 · body `77e10d7068`
+<!-- /phase-card -->
 
 ## Units
 
@@ -11,10 +34,90 @@ No card yet (`docs/phase_card.md`); one is added with A1b's reading.
 | 2. A1a, the β producer over 18 steps and the T_eff instrument, with its gate | **built 2026-10-14; the gate fails (G3, G4); the real batch has not run** (Blocked 46) | `a1a.py`, `a1a_gate.py`, `p1c_frames/integration_time.unit_steps`; "A1a's gate" below |
 | 3. A1a's re-gate (Blocked 46 (b)) and the chain re-gate (Blocked 47 (d)) | **done**: the re-gate failed G4 at 3 frames (#203); 47 (d)'s gate: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), its planted drift not a null (#204; Blocked 48) | "A1a's gate, Blocked 47 (d)", "A1a's re-gate" below |
 | 4. The gate with G2s beside (Blocked 48 (a)) and A1a's batch | **done 2026-10-15: the gate passes; the batch ran, 126 of 126 records** | "A1a's gate and batch, Blocked 48 (a)" below |
-| 5. A1b, the reading (H-WARP and 1e's question beside) | not started; next | `design-A.md` "A1b" |
+| 5. A1b, the reading (H-WARP and 1e's question beside) | **done 2026-10-15: below t* at all 18 steps; A1 closed at its exit condition** | "A1b, the reading", "A1 on one page" below |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
-first 3, then 4 by Blocked 46 (b)). Units 1–4 spent; A1b is the last.
+first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
+
+## A1 on one page (closed 2026-10-15)
+
+**Asked:** does trained 410m move its tokens far enough along the self-attention field to
+collapse (`P-gamma2`)? **Exit met:** `P-gamma2` has a number (below), within the 5-unit budget.
+
+**Established (tier 1, 410m, the 7 v1 prompts, 18 steps):**
+
+1. **Below t\* at every step.** `T_proj`, the integration time along the field, is below the
+   shortest causal t* the β bracket allows in 125 of 126 cells (one *straddles*), *far below*
+   (under half) in every cell to step 16000. P-gamma2's number: the median `T_proj / t*` is
+   ≤ 0.39 to 16000, then 0.56, 0.74, 0.82 at 32000, 54000, 143000 (at the bracket's top β:
+   ≤ 0.33 at every step). The late rise is the net moving further along the field, not t*
+   shrinking much (t* at p10 3.6 → 2.6).
+2. **The net moves far, but not along this field.** The calibrated step `T_cal` (22–30) is
+   above t* at p90 in all 126 cells (by ≥ 1.37×); over 90 % of it is off the field. So the shortfall is one of
+   direction, not depth: on 1c's step the same data would read *not below* everywhere.
+3. **No collapse at the last block** at 17 of 18 steps (median mean cosine at state 23
+   0.45–0.85 to 256, 0.26–0.49 from 512). At step 16, 3 of 7 prompts reach 0.90 with `T_proj` ≈ 1.1, so that collapse is not
+   the field's integration.
+4. **H-WARP refused:** cumulative `T_proj` does not line the per-block cosine curves up across
+   steps better than depth does (2 of 18 steps pass against 12 needed).
+5. **1e's one well** is what (6.9) gives at the measured β: its t* leaves the one-sigmoid
+   regime (doubles) only at β ≈ 6.9 (n 467) to 8.3 (n 2,041) from g0 = 0, 8.6–10.4 from the
+   measured start; the measured layer β at 143000 is ≤ 6.1 (p90).
+
+**Not established:**
+
+- **That P-gamma2's "never integrates far enough" holds.** Reading 1 rests on `h_proj`, which
+  A1 introduced (`design-A.md` "Worth challenging" 3); reading 2 is the falsifier's own case
+  ("T_eff ≥ t* and no collapse") on the registered step. Which step is the registry's `T_eff` is
+  a registration question (A5); h0's wording against its statement stays the user's (Blocked 45).
+- **The comparator's V = I.** t* is the identity-weight dynamics; at 1000–4000 the layer's OV
+  attractive share is 0 for most heads (`a1a_report.txt`), the steps where the model is least
+  like the comparator.
+- **The layer's β as the head median**, the causal mask's other reductions, and anything at
+  another rung or on held-out prompts. The long passages (the design's continuity check) were
+  not run: A1a's batch is v1 only.
+- **That `T_attn_proj` is drift-robust**, and what the last block's negative step means.
+
+**Parked at close:** every item below is carried or dropped ("Parked").
+
+## A1b, the reading (2026-10-15)
+
+**Input:** A1a's 126 records (`data/trackA/a1a_batch_2026-10-15/records`, code `a08544e9b644`,
+prompts `976b62d677bc`); the rule as frozen (`design-A.md` "A1b"), the choices left to the code
+in "A1b, before output" (committed and pushed before the run, `e65dd1b`). **Producer:** `python
+-m trackA_force.a1b --records data/trackA/a1a_batch_2026-10-15 --out data/trackA/a1b_2026-10-15`
+(2 s, CPU; `a1b_report.txt` holds the tables, its one copy; `a1b.json` sha256 `53e5760b99a0`).
+Steps 0 and 2 are different checkpoints that differ only in the third decimal (checked).
+
+**The reading:** *below* at all 18 steps (≥ 6 of 7 prompts each). 126 of 126 cells read (no
+t* infinite or refused); 125 *below*, 1 *straddles* (143000, `paper_excerpt`: `T_proj` 2.65
+against t* 2.61 at p10, 7.51 at p90); none *not below*. *Far below* in 7 of 7 at every step to
+16000, then 2, 1, 1. Median `T_proj / t*(p10)` [prompt range]: 0.10–0.33 at 8–64, ≤ 0.10 in
+absolute value at 0–4 and 128–4000 (`T_proj` near 0 or negative), 0.16 at 8000, 0.39 at 16000,
+0.56 [0.34, 0.61] at 32000, 0.74 [0.45, 0.79] at 54000, 0.82 [0.40, 1.01] at 143000. At the
+registered comparator ((6.9) from g0 = 0) the same ratios are smaller late (0.53 at p10 at
+143000), since the measured start (g0 0.017–0.094) shortens (6.9)'s time but the causal mask
+lengthens it.
+
+**Beside (medians over prompts, `a1b_report.txt`):**
+
+- **Off-field share** `1 − T_proj / T_cal`: 0.92–1.01 at every step (cells 0.91–1.03; above 1
+  where `T_proj` is negative).
+- **Attention's part:** `T_attn_proj` is 0.36–1.12 at 1000–8000 while the block's `T_proj` is
+  −0.05–0.47, so the MLP's move cancels attention's along-field part there (1e's MLP finding,
+  `status-1e.md` "U2's per-head arm"); late, attention carries about half of `T_proj`.
+- **The drift row:** `T_proj_c / T_proj` 0.69–1.37 where `T_proj` is not near 0 (meaningless at
+  0–4 and 1000–4000, where it is). A drift can only add to `T_proj` ("A1b, before output"), so it
+  does not threaten a *below*.
+- **Blocks 20–22 at 143000** carry −0.05 of `T_proj` (median; −0.21 to 0.03), so G4c's per-block
+  over-read there (1.10–1.36 of h) moves the total by almost nothing.
+- **Block 23** (outside T): its projected step is −0.68 at 143000 (median), against the field.
+- **Collapse at state 23:** none at 17 steps; step 16, 3 of 7 (0.901–0.905).
+- **H-WARP:** the LOSO error on the T axis is ≤ ½ of the depth axis's at 2 of 18 steps (2000,
+  4000), > 1× at 10; the null (17 shifted profiles) reaches 2 at most, ≥ 2 in 1 of 17.
+- **1e's question:** the table at the report's end; in words, item 5 above. The caveat: (6.9) is
+  the equal-cosine, full-attention ODE, so it has one cluster by construction; the multi-cluster
+  count (`lit-A.md` §1, Bruno et al.) is not derived.
 
 ## A1b, before output (2026-10-15)
 
@@ -242,27 +345,29 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 
 ## Parked
 
-- *The 2D spike* (the user's, 2026-10-14): homed as ROADMAP §7 B2a with its exit and budget;
-  its slot (before A1b, or B2a after A1 closes) is picked at A1a's close.
-- *G0–G3 on the GPU* (2026-10-15): they stay numpy on the CPU (~5 of the gate's 6 min); a
-  torch port like G4c's would cut a re-gate to ~2 min. Why: the user's GPU rule; cost: half a
-  unit with its own numpy check; changes no decision, only wall time.
-- *t\* at a negative β* (2026-10-15, A1a's batch): the bracket's p10 is below 0 in 97 of 126
-  cells (every step to 8000). The rule's ordering holds: t* at p10 ≤ t* at p90 in 126 of 126
-  (`/challenge-pr` on #205, finding 1, re-checked on `tstar` and `beta.bracket` only); where p10 < 0
-  the two ends nearly coincide (median ratio 0.994), so few such cells can read *straddles*.
-  Open: what `sa_sim`'s collapse at β < 0 means against (6.9)'s. Cost: a look in A1b before its
-  output; could change how cells to 8000 are worded, not the ordering. Carried to A1b.
-- *A shared drift and the field* (`/challenge-pr` on #205, finding 2): on the gate's sustained
-  drift `proj` reads 0.12–0.87 of T and `proj_c` 0.08–0.70, so neither read separates a drift
-  held over many steps from the field (`proj_c` is blind to one only on one step from an
-  unconverged cloud). Why: A1b's off-field rows are read beside a real stream whose drift is
-  unmeasured; cost: one row, named before A1b's output (whether `T_attn_proj` is drift-robust is
-  itself unchecked); could change how far `T_proj` is trusted. Carried to A1b.
-- *`a1a.ln_from` duplicates `u2_attn.ln_from`* (`/challenge-pr` on #205, finding 4): import it,
-  and test on a real `GPTNeoXModel` rather than a mock, the next time `a1a.py` changes for
-  another reason (changing it now would change the code hash and orphan the 126 records).
-  Cost: minutes; changes no number.
+At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)*.
+
+- *The 2D spike* (the user's, 2026-10-14): **done**, its slot picked (Blocked 49 (a)): B2a
+  after A1 (ROADMAP §7 B2a).
+- *G0–G3 on the GPU* (2026-10-15): **dropped**: A1 is closed and no re-gate is planned; if an
+  A1a-style gate is ever re-run, port it then (half a unit, wall time only).
+- *t\* at a negative β* (2026-10-15): **done** before A1b's output ("A1b, before output"):
+  still a collapse, at about the β = 0 time; the rule unchanged.
+- *A shared drift and the field* (`/challenge-pr` on #205, finding 2): **done** for `T_proj`
+  (a drift can only add to it; the row beside); **carried to A2**: whether `T_attn_proj` is
+  drift-robust (A2 reads the per-component moves).
+- *`a1a.ln_from` duplicates `u2_attn.ln_from`* (`/challenge-pr` on #205, finding 4):
+  **carried to A2**, which is the next code likely to extend `a1a.py`'s pass; changes no number.
+- *The off-field share* (A1b, 2026-10-15): over 90 % of every block's move is off the
+  identity-weight field. **Carried to A2**: which components carry it is A2's question.
+- *Attention against the MLP at 1000–8000* (A1b): attention's projected step is positive where
+  the block's is near 0. **Carried to A2** (per-component dissipation).
+- *Block 23's negative step at 143000* (A1b): −0.68, outside T. **Carried to A2**.
+- *Step 16's collapse at state 23* in 3 of 7 prompts with `T_proj` ≈ 1.1 (A1b). **Carried to
+  A3** (the joint timeline: what moves at 16 is a timeline row, not an A1 reading).
+- *The long passages beside* (the design's continuity check, never run): **carried to A2** as
+  an input choice, since A1 is closed. Cost: β needs `attentions.npz`, stored for v1 only, so
+  a new extraction plus `a1a.py`'s pass at n up to 2,041 (GPU hours, not minutes).
 
 ## Corrections received
 

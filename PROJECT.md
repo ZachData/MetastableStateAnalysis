@@ -2895,6 +2895,23 @@ cheap and would resolve it.**
 
 ---
 
+## 3.56 Track A's A1 closed: the net moves far, but not along the collapse field (2026-10-15)
+
+**`trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+the 7 v1 prompts, 18 steps, nothing registered.
+
+- `P-gamma2` ("never integrates far enough" against "resists") has its first number: measured
+  along the identity-weight field at each layer's β, the integration time is below the causal
+  collapse time at every step, and far below it until step 16000.
+- The same data read on 1c's calibrated step (the size of each move, any direction) is above
+  the collapse time everywhere. Which step is the registry's `T_eff` decides the verdict, so it
+  is a registration question (A5), not a reading A1 can settle.
+- Over 90 % of every block's move is off the field the theory integrates. That moves Track A's
+  question from "how far" to "along what": A2's per-component split is where it goes next.
+
+---
+
 ## 3.55 Phase 10 closed: the clusters came out small, the force is global (2026-10-11)
 
 **`p10_cluster_function/status-10.md` "The phase on one page (10.5, closed 2026-10-11)"** holds

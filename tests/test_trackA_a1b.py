@@ -4,6 +4,8 @@ import pytest
 
 from trackA_force import a1b
 
+pytestmark = pytest.mark.deps  # numpy, scipy (tstar_table)
+
 
 def test_cell_rule():
     assert a1b.read_cell(1.0, 2.0, 3.0) == "below"

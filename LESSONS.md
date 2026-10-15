@@ -157,6 +157,8 @@ world moves, nobody updates the line, and the next session acts on it.
   **Again 2026-10-15 (A1a's batch, after #204):** still `edc8e8c`, now 30+ commits behind; the hook
   printed 10-11's `STATE.md`. Caught by Start step 1 (`git show origin/main:STATE.md`). The
   cleanup command this time includes `git pull --ff-only` and goes to the user.
+  **Again 2026-10-15 (A1b, after #205):** still `edc8e8c`; the hook printed 10-11's `STATE.md`.
+  Caught by Start step 1 (`git show origin/main:STATE.md`); the pull is still the user's.
 - 2026-10-13 (B-pre): `claims/registry.json`'s `P-ST1` says twice that its activations and Phase 2's
   projectors "do not exist in this repository"; both have been on disk since 2026-08-31
   (`data/phase12/*/ov_projectors_*`, the v1 sweep). The registry is not edited outside a
@@ -1194,6 +1196,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   landed unchanged by #162. Rule: **a stacked PR stays a draft until its base has merged and
   its base reads `main`**; after any merge, run `git merge-base --is-ancestor <tip> origin/main`
   (already the rule; not run here).
+- 2026-10-15 (A1b): an Edit to `status-A.md` and the `git commit` meant to carry it went out in
+  one parallel batch; the Edit failed (file not yet read), the commit landed without the
+  pre-output note. Caught from the commit's stat before push, amended, then pushed. Rule: **a
+  commit is never in the same batch as the edits it records**; check `git show --stat` first.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
