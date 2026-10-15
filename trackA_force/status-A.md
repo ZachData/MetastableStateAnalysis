@@ -16,6 +16,36 @@ No card yet (`docs/phase_card.md`); one is added with A1b's reading.
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). Units 1–4 spent; A1b is the last.
 
+## A1b, before output (2026-10-15)
+
+Written before `trackA_force/a1b.py` ran. The family and the rule are `design-A.md` "A1b"
+(frozen); this section answers the two Parked items carried to A1b and records where the code
+left a choice. **Disclosure:** while reading the record format, one cell's totals were seen
+(143000, `camus_letranger`: `T_proj` 2.22, causal t* 2.81 at p10, 6.47 at p90). Nothing below
+was changed after that.
+
+- **t\* at a negative β** (Parked). With V = I the field is still a pull toward a weighted mean
+  of the other tokens; β < 0 only weights the far ones more, so the cloud still collapses and the
+  time barely moves: causal `sa_sim`, n = 467, d = 1024, Gaussian start, seed 0: t* 3.78 at β
+  −2.5, 3.79 at −1, 3.82 at 0, 3.93 at 1; (6.9) from g0 = 0: 4.165 at −2.5 against 4.172 at 0.
+  So a cell with p10 < 0 is read against (about) the uniform-attention time, as written; the
+  rule needs no change. What β < 0 says about the real heads (they favour dissimilar tokens) is
+  not a statement about the comparator.
+- **How far a shared drift can pass for the field** (Parked). On the gate's sustained drift
+  (G2s) `proj` read 0.12–0.87 of the planted T and `proj_c` 0.08–0.70, both positive: a drift
+  held over many blocks moves the cloud toward its target, which is along the field. So a drift
+  in the real stream can only **add** to `T_proj`: a *below* cell is not threatened by it; a
+  *not below* or *straddles* cell may be partly drift. The row beside: `T_proj_c / T_proj` per
+  step (how much survives one shared vector removed per block); whether `T_attn_proj` is
+  drift-robust stays unchecked.
+- **Where the code chose** (`a1b.py` docstring is the spec): the ratio `T_proj / t*` is reported
+  at both bracket ends; "far below" is against t* at p10 (the shorter). H-WARP: points are
+  (cumulative `T_proj` before block l, mean cosine of block l's input), blocks 0–23, the 7
+  prompts pooled; isotonic **increasing**; error is the mean absolute error on the left-out step;
+  the depth axis is x = l; the null's 17 draws give every step the profile k steps along (k =
+  1…17). 1e's question: the β at which (6.9)'s t* doubles its β = 0 value, at n 467 and 2,041,
+  from g0 = 0 and from 143000's median measured g0.
+
 ## A1a's gate and batch, Blocked 48 (a) (2026-10-15)
 
 **Input:** gate as below (synthetic; `ln_sha` `eea24ba8de2b`, `SEED` 20261014); batch: the 7 v1
