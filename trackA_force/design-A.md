@@ -151,6 +151,42 @@ Fixed before the re-gate's output (`a1a_gate.py` docstring is the spec):
 **Ran 2026-10-14: fails on G4 at 3 frames** (step 143000, blocks 20–22; numbers in `status-A.md`
 "A1a's re-gate"); back to the user before any real output (STATE Blocked 47).
 
+### Blocked 47 decided (2026-10-15, the user's: (d); the drift-removed read gated)
+
+Fixed before the gate's output (`a1a_gate.py` docstring is the spec). Answers 46 (b)'s open
+question: one step per frame, as the reading takes it.
+
+- **G4's sweep replaced by the chain (G4c)**: per training step, the planted cloud passes block
+  0 to 23 in turn, one planted step per block in that block's LN1 frame (field on
+  `unit(LN1_l(x))`, raw move `h_l·|Cx|·X`, read back through LN1_l), exactly as
+  `a1a.block_steps` reads the real stream. 24 planted h per cell (log-uniform, as before);
+  **T = Σ h over blocks 0–22**, block 23 read beside. Cells: all 7 v1 prompts × β {0, 3.5, 7} ×
+  start {0, 0.3} × the 18 steps' LN1 = 756 gated totals. Bar unchanged (within 10 %). The
+  one-frame sweep is dropped (its numbers stay in `status-A.md` "A1a's re-gate"); G4 on block 5
+  at 143000 and G4raw stay.
+- **The drift-removed read `proj_c`**: per step, the least-squares h in `Δ_i = h·X_i + c + ξ_i`,
+  one shared vector c (`integration_time.drift_free_slope`; positions 1…n−1, lifted as `proj`).
+  Exact for a planted field step (gnomonic lift), blind to a constant drift. **Gated**, beside
+  `proj`, at the same bars: G1 (h ≤ 5 %, T ≤ 3 %), G2 (|T| ≤ 0.1 T), G3 (h ≤ 5 %), G4 and G4c
+  (T within 10 %), and **G2s gets a bar for `proj_c` only**: |T_c| ≤ 0.1 T (plain `proj` on G2s
+  stays beside: it reads a shared drift by geometry). The gate passes only if every arm passes
+  on both reads (log lift).
+- **The batch records `proj_c` and `attn_proj_c` per block** (`a1a.block_steps`; their sums in
+  `totals`), so A1b can read T with the drift removed.
+- **`check_gate` compares `ln_sha`**, and the batch refuses a step whose model LN1 differs from
+  the gate's cache.
+- **Device:** G4c runs in torch float64 on the GPU (the user, 2026-10-15: use the GPU wherever
+  it can run); a test holds it to the numpy path (`ln_chain_np`) within 1e-9, and the gate
+  checks one cell against numpy before its sweep. G0–G3 stay numpy.
+
+**Ran 2026-10-15: G0–G4c pass (G4c 756 of 756, both reads); fails on G2s's `proj_c` bar (38 of
+42)**, and the planted drift turns out not to be a null: sustained for 23 steps it collapses the
+cloud onto its target, where a drift and the field are the same move (`status-A.md` "A1a's gate,
+Blocked 47 (d)"). Back to the user before any real output (STATE Blocked 48). Per block, step
+143000's blocks 20–22 still read 1.10–1.36 of h inside the passing totals (`/challenge-pr` on
+#204, finding 1). **`proj_c`'s role in A1b, for now:** beside `T_proj`, not in the reading
+(the reading stays on `T_proj` alone, as frozen); Blocked 48 decides whether it stays so.
+
 ## A1b, the reading (unit 3; unit 4 after Blocked 46)
 
 **The family, fixed before output:** 18 steps × 7 v1 prompts; the statistic is `T_proj`
@@ -187,7 +223,7 @@ against the causal t* from the measured cloud per (step, prompt).
 |---|---|---|
 | 1 | this design, `lit-A.md`, `a1_collapse_time.py`, `tstar_table.py`, `sa_sim.py` | done (#201); frozen 2026-10-14 (Blocked 45) |
 | 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | built 2026-10-14; **the gate fails (G3, G4)**, the batch not run; Blocked 46 |
-| 3 | A1a's re-gate (Blocked 46 (b)) and batch | re-gate ran 2026-10-14, **fails on G4 at 3 frames**; Blocked 47 |
+| 3 | A1a's re-gate (Blocked 46 (b), then 47 (d)) and batch | re-gate ran 2026-10-14, fails on G4 at 3 frames (Blocked 47); 47 (d)'s gate ran 2026-10-15, **G4c passes, G2s fails on `proj_c`**; Blocked 48 |
 | 4 | A1b: the reading, H-WARP and 1e's question beside | after A1a's gate |
 
 ## Fences

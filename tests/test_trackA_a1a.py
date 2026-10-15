@@ -152,3 +152,74 @@ def test_block_steps_recovers_a_planted_step_through_the_real_path():
         assert r["proj"] == pytest.approx(h, rel=1e-3) and r["cal"] == pytest.approx(h, rel=1e-3)
         assert r["attn_proj"] == pytest.approx(h / 2, rel=1e-3)
     assert a1a.totals(rows)["T_proj"] == pytest.approx(23 * h, rel=1e-3)
+
+
+def test_drift_free_slope_is_exact_for_a_field_step_and_blind_to_a_constant_drift():
+    """Gnomonic inverts add-and-renormalise of a tangent V; V = hX + c with c ⊥ every row is tangent."""
+    from p1c_frames.integration_time import drift_free_slope
+    U, X, xi, h = _setup()
+    Q, _ = np.linalg.qr(U.T)
+    c = np.random.default_rng(1).standard_normal(U.shape[1])
+    c -= Q @ (Q.T @ c)                                   # ⊥ span(U): tangent at every row
+    c *= 0.2 / np.linalg.norm(c)
+    for V, want in ((h * X, h), (h * X + c, h), (np.tile(c, (U.shape[0], 1)), 0.0)):
+        U1 = (U + V) / np.linalg.norm(U + V, axis=1, keepdims=True)
+        assert drift_free_slope(U, U1, X, lift="gnomonic") == pytest.approx(want, abs=1e-9)
+    X0 = X.copy()
+    X0[0] = 0.0                                          # a row without field is left out, as in unit_steps
+    U1 = (U + h * X0) / np.linalg.norm(U + h * X0, axis=1, keepdims=True)
+    assert drift_free_slope(U, U1, X0, lift="log") == pytest.approx(
+        drift_free_slope(U[1:], U1[1:], X0[1:], lift="log"), abs=1e-15)
+
+
+def test_ln_chain_torch_matches_numpy_and_affine_free_chain_recovers_h():
+    from trackA_force.a1a_gate import D, ln_chain, ln_chain_np, planted_h
+    rng = np.random.default_rng(7)
+    U0 = start(30, 0.0, rng)
+    h = planted_h(2, 4)
+    w = 1.0 + 0.3 * rng.standard_normal((4, D))
+    b = 0.1 * rng.standard_normal((4, D))
+    ref = ln_chain_np(U0, h, 3.5, w, b, 1e-5)
+    got = ln_chain(U0, h, 3.5, np.stack([w, w]), np.stack([b, b]), 1e-5, "cpu")
+    for g in got:
+        for l in ("log", "tangent", "gnomonic"):
+            for r in ("proj", "proj_c"):
+                assert np.allclose(g[l][r], ref[l][r], rtol=0, atol=1e-9)
+        assert np.allclose(g["frame_g"], ref["frame_g"], atol=1e-12)
+    af = ln_chain_np(U0, h, 3.5, np.ones((4, D)), np.zeros((4, D)), 0.0)
+    assert np.allclose(af["gnomonic"]["proj"], h, rtol=1e-9)
+    assert np.allclose(af["gnomonic"]["proj_c"], h, rtol=1e-9)
+
+
+def test_block_steps_records_the_drift_free_read():
+    from p1c_frames.integration_time import sa_field
+    rng = np.random.default_rng(5)
+    n, d, h, beta = 9, 32, 0.01, 2.0
+    hs = rng.standard_normal((a1a.N_BLOCKS + 1, n, d))
+    hs -= hs.mean(axis=2, keepdims=True)
+    hs *= 5.0 / np.linalg.norm(hs, axis=2, keepdims=True)
+    moves = {}
+    for L in range(a1a.N_BLOCKS):
+        V = np.zeros_like(hs[L])
+        V[1:] = 5.0 * h * sa_field(hs[L][1:] / 5.0, beta, causal=True)
+        moves[L] = {"block": V, "attn": 0.5 * V}
+    rows = a1a.block_steps(hs, moves, {"w": np.ones((a1a.N_BLOCKS, d)), "b": np.zeros((a1a.N_BLOCKS, d)),
+                                       "eps": 0.0}, np.full(a1a.N_BLOCKS, beta))
+    for r in rows:
+        assert r["proj_c"] == pytest.approx(h, rel=1e-3) and r["attn_proj_c"] == pytest.approx(h / 2, rel=1e-3)
+    assert "T_proj_c" in a1a.totals(rows)
+
+
+def test_batch_refuses_a_gate_for_other_ln_weights(tmp_path):
+    from trackA_force.a1a_gate import gate_sha
+    p = tmp_path / "g.json"
+    p.write_text(json.dumps({"code": "c", "gate_code": gate_sha(), "lift": a1a.LIFT, "passes": True,
+                             "ln_sha": "aaa"}))
+    with pytest.raises(SystemExit):
+        a1a.check_gate(p, "c", "bbb")
+    a1a.check_gate(p, "c", "aaa")
+    w = np.ones((len(a1a.STEPS), a1a.N_BLOCKS, 4))
+    cache = {"w": w, "b": 0 * w, "eps": 1e-5}
+    a1a.check_ln({"w": w[0], "b": 0 * w[0], "eps": 1e-5}, cache, 0)
+    with pytest.raises(SystemExit):
+        a1a.check_ln({"w": 2 * w[0], "b": 0 * w[0], "eps": 1e-5}, cache, 0)
