@@ -9,12 +9,52 @@ No card yet (`docs/phase_card.md`); one is added with A1b's reading.
 |---|---|---|
 | 1. design, scan, `sympy` check, t* table | **done 2026-10-14** (#201); frozen 2026-10-14 (Blocked 45, with the OV attractive share row beside the reading) | `design-A.md`, `lit-A.md`, `tools/math_checks/a1_collapse_time.py`, `tstar_table.py` |
 | 2. A1a, the β producer over 18 steps and the T_eff instrument, with its gate | **built 2026-10-14; the gate fails (G3, G4); the real batch has not run** (Blocked 46) | `a1a.py`, `a1a_gate.py`, `p1c_frames/integration_time.unit_steps`; "A1a's gate" below |
-| 3. A1a's re-gate (Blocked 46 (b)) and batch | **re-gate ran 2026-10-14: fails on G4 at 3 frames only; the batch has not run** (Blocked 47) | "A1a's re-gate" below |
+| 3. A1a's re-gate (Blocked 46 (b)), the chain re-gate (Blocked 47 (d)) and batch | **47 (d)'s gate ran 2026-10-15: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), whose planted drift turns out not to be a null; the batch has not run** (Blocked 48) | "A1a's gate, Blocked 47 (d)" below |
 | 3. A1b, the reading (H-WARP and 1e's question beside) | not started; runs only after A1a's gate passes | `design-A.md` "A1b" |
 
 Budget: 3 units (`design-A.md` "Exit condition and budget"). Unit 2 is spent without a passing
 gate; whether finishing A1a takes a fourth unit is part of Blocked 46.
-4 units on the record since Blocked 46 (b); unit 3 is open (its batch waits on Blocked 47).
+4 units on the record since Blocked 46 (b); unit 3 is open (its batch waits on Blocked 48).
+
+## A1a's gate, Blocked 47 (d) (2026-10-15)
+
+**Input:** synthetic only: the v1 design points as below, the LN1 of every block at the 18 steps
+(`ln_sha` `eea24ba8de2b`), `SEED` 20261014; G4c's 24 planted h per cell from seed + 5.
+**Producer:** `python -m trackA_force.a1a_gate --out <dir>` at `8b64953` (`a1a.code_sha`
+`a931b83caa19`, gate `185b34a482e3`); record `data/trackA/a1a_gate_d_2026-10-15/a1a_gate.json`,
+log beside. **366 s in all; G4c 57 s on the GPU** (torch float64; against numpy on one cell
+1.3e-10); G0–G3 numpy on the CPU. Spec: `design-A.md` "Blocked 47 decided".
+**Verdict (log lift): fails on G2s only.**
+
+| arm | bar | `proj` (log) | `proj_c` (log) |
+|---|---|---|---|
+| G0, 21 cells | ≤ 3 %, dt converged | pass (21 of 21) | – |
+| G1, 42 cells | h ≤ 5 %, T ≤ 3 % | pass (h ≤ 2.3 %, T ≤ 0.7 %) | pass (2.2 %, 1.0 %) |
+| G2, planted null | \|T\| ≤ 0.1 T | pass (≤ 0.0013 T) | pass (≤ 0.0027 T) |
+| G2s, shared drift | \|T_c\| ≤ 0.1 T (`proj_c` only) | 0.121–0.870 of T (beside) | **fails 38 of 42** (0.077–0.696) |
+| G3, mixed | ≤ 5 % | pass (≤ 4.3 %) | pass (≤ 4.1 %) |
+| G4, block 5 at 143000 | T within 10 % | pass (0.988–1.004) | pass (0.986–1.003) |
+| **G4c, the chain, 756 totals** | T within 10 % | **pass, 0 outside** (0.978–1.057) | **pass, 0 outside** (0.981–1.057) |
+
+Tangent and gnomonic beside: the same, except tangent fails G3 (as before). **G4c by step**
+(`proj`, log): 0.994–1.001 at every step to 16000, 0.988–1.000 at 32000, 0.978–1.002 at
+54000, **1.001–1.056 at 143000** (high, as the one-frame sweep was, but inside the bar).
+Block 23 (beside): 0.983–1.507 of its h. So the one-frame sweep's 7 failures were its
+whole-trajectory-in-one-frame planting, not the reading's per-block sum (Blocked 47's question).
+
+**G2s is not a null as planted (checked after the run, synthetic only, `homer_iliad`):** the
+arm moves every token toward one fixed direction for 23 steps, so the cloud converges on it
+(mean cosine 0.3 → 0.96 at β 3.5 from 0.3; 0 → 0.68 at β 0 from 0). On its first step the
+drift reads `proj_c`/h ≈ 0.01; by its last, 0.80 (β 3.5) and 0.99 (β 0): once the cloud has
+collapsed onto the drift's target, the field points there too, and a drift and an attraction
+are the same move. The 4 passing cells are β 7 from cosine 0, where the cloud barely
+converges (mean cosine ≤ 0.003; still 0.15–0.38 of h by the last step). The bar was set
+without asking what a sustained drift does to the cloud (`LESSONS.md` 6). What `proj_c` does
+remove (one step from an unconverged cloud) is not what the arm measured.
+
+**What did not run:** the real batch. No real T, t*, β or cosine has been read.
+
+**How to re-run:** the same command (needs CUDA; `--device cpu` for a slow CPU run).
 
 ## A1a's gate (2026-10-14)
 
@@ -125,6 +165,9 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 
 - *The 2D spike* (the user's, 2026-10-14): homed as ROADMAP §7 B2a with its exit and budget;
   its slot (before A1b, or B2a after A1 closes) is picked at A1a's close.
+- *G0–G3 on the GPU* (2026-10-15): they stay numpy on the CPU (~5 of the gate's 6 min); a
+  torch port like G4c's would cut a re-gate to ~2 min. Why: the user's GPU rule; cost: half a
+  unit with its own numpy check; changes no decision, only wall time.
 
 ## Corrections received
 

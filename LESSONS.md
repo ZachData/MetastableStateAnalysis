@@ -138,6 +138,8 @@ world moves, nobody updates the line, and the next session acts on it.
   next one always lags by the merge that came after. The hook fix is still the user's.
   **Again 2026-10-06 (after #152):** 5 commits behind (`6abbcb8`, #151's merge); the hook
   printed R6's in-PR `STATE.md`. Caught by Start step 1 (read `git show origin/main:STATE.md`).
+  **Again 2026-10-15:** the main tree at #194, 9 merges behind (#195–#203); the hook printed
+  Phase 10's close-out `STATE.md` while Track A sat at Blocked 47. Caught by Start step 1.
   **Again 2026-10-06 (after #156):** still at `6abbcb8`, now 5 merges behind (#152–#156): the
   five sessions in between each read `origin/main` and none fast-forwarded the main tree. The
   hook printed R6's `STATE.md` again; Start step 1 caught it, and the main tree was fast-forwarded.
@@ -1106,6 +1108,13 @@ of a design before running it, and print it on every record
   of algebra; the gate found it instead (`trackA_force/status-A.md` "A1a's gate"). The same
   instance as B0's G4b, one order up. Rule: **a recovery bar is set after the estimator's
   leading bias at the planted range is computed, and is quoted beside the bar.**
+- 2026-10-15 (A1a, G2s, Blocked 47 (d)): a bar (|T_c| ≤ 0.1 T) was put on the shared-drift arm
+  without asking what the drift does to the cloud over 23 steps. Held toward one direction, it
+  collapses the cloud onto that direction, where the field points too, so the "null" becomes a
+  planted collapse (first step 0.01 of h, last 0.80–0.99); 38 of 42 cells failed. A look at the
+  arm's own trajectory (its mean cosine per step) would have shown it before the bar was set.
+  Rule: **a planted null is checked to stay a null over its whole trajectory (the statistic
+  per step, not only its sum) before it gets a bar.**
 
 ## 7. Literature found after the construction was built
 

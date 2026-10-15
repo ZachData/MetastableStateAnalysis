@@ -179,6 +179,11 @@ question: one step per frame, as the reading takes it.
   it can run); a test holds it to the numpy path (`ln_chain_np`) within 1e-9, and the gate
   checks one cell against numpy before its sweep. G0–G3 stay numpy.
 
+**Ran 2026-10-15: G0–G4c pass (G4c 756 of 756, both reads); fails on G2s's `proj_c` bar (38 of
+42)**, and the planted drift turns out not to be a null: sustained for 23 steps it collapses the
+cloud onto its target, where a drift and the field are the same move (`status-A.md` "A1a's gate,
+Blocked 47 (d)"). Back to the user before any real output (STATE Blocked 48).
+
 ## A1b, the reading (unit 3; unit 4 after Blocked 46)
 
 **The family, fixed before output:** 18 steps × 7 v1 prompts; the statistic is `T_proj`
@@ -215,7 +220,7 @@ against the causal t* from the measured cloud per (step, prompt).
 |---|---|---|
 | 1 | this design, `lit-A.md`, `a1_collapse_time.py`, `tstar_table.py`, `sa_sim.py` | done (#201); frozen 2026-10-14 (Blocked 45) |
 | 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | built 2026-10-14; **the gate fails (G3, G4)**, the batch not run; Blocked 46 |
-| 3 | A1a's re-gate (Blocked 46 (b)) and batch | re-gate ran 2026-10-14, **fails on G4 at 3 frames**; Blocked 47 |
+| 3 | A1a's re-gate (Blocked 46 (b), then 47 (d)) and batch | re-gate ran 2026-10-14, fails on G4 at 3 frames (Blocked 47); 47 (d)'s gate ran 2026-10-15, **G4c passes, G2s fails on `proj_c`**; Blocked 48 |
 | 4 | A1b: the reading, H-WARP and 1e's question beside | after A1a's gate |
 
 ## Fences
