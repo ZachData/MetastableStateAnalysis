@@ -235,6 +235,17 @@ def unit_steps(U: np.ndarray, U_next: np.ndarray, X: np.ndarray, lift: str = "ta
     (a tangent V back to V; a radial part a gives V/(1+a)); NaN where
     <U_next, U> ≤ 0.
     """
+    D = lifted_move(U, U_next, lift)
+    X = np.asarray(X, dtype=np.float64)
+    xx = np.sum(X * X, axis=1)
+    safe = np.where(xx < 1e-18, np.nan, xx)
+    disp = np.linalg.norm(D, axis=1)
+    return {"disp": disp, "cal": disp / np.sqrt(safe),
+            "proj": np.sum(D * X, axis=1) / safe}
+
+
+def lifted_move(U: np.ndarray, U_next: np.ndarray, lift: str = "tangent") -> np.ndarray:
+    """(n, d) per-token move tangent at U, lifted as in `unit_steps` (NaN rows where gnomonic is undefined)."""
     U = np.asarray(U, dtype=np.float64)
     U1 = np.asarray(U_next, dtype=np.float64)
     if lift == "gnomonic":
@@ -249,12 +260,29 @@ def unit_steps(U: np.ndarray, U_next: np.ndarray, X: np.ndarray, lift: str = "ta
         D = D / np.maximum(nt, 1e-300) * th
     elif lift not in ("tangent", "gnomonic"):
         raise ValueError(f"unknown lift {lift!r}")
+    return D
+
+
+def drift_free_slope(U: np.ndarray, U_next: np.ndarray, X: np.ndarray, lift: str = "tangent") -> float:
+    """
+    The move along the field with one shared drift removed: the least-squares h in
+    ``Δ_i = h·X_i + c + ξ_i`` (c one vector for all tokens), i.e.
+    ``Σ⟨Δ_i − Δ̄, X_i − X̄⟩ / Σ|X_i − X̄|²`` over the rows where Δ and the field are defined (Track A,
+    Blocked 47). Exact for ``Δ = hX`` (or ``hX + c``); a constant drift reads 0. A drift that
+    is only nearly constant (a tangent projection, per-token norms) leaks through; A1a's gate
+    G2s measures how much.
+    """
+    D = lifted_move(U, U_next, lift)
     X = np.asarray(X, dtype=np.float64)
-    xx = np.sum(X * X, axis=1)
-    safe = np.where(xx < 1e-18, np.nan, xx)
-    disp = np.linalg.norm(D, axis=1)
-    return {"disp": disp, "cal": disp / np.sqrt(safe),
-            "proj": np.sum(D * X, axis=1) / safe}
+    # rows `unit_steps` leaves NaN: an undefined lift, or no field (the first causal token, whose
+    # log-lift move is arccos round-off ~1e-8, not a move)
+    ok = np.all(np.isfinite(D), axis=1) & (np.sum(X * X, axis=1) >= 1e-18)
+    if ok.sum() < 2:
+        return float("nan")
+    Dc = D[ok] - D[ok].mean(axis=0)
+    Xc = X[ok] - X[ok].mean(axis=0)
+    den = float(np.sum(Xc * Xc))
+    return float(np.sum(Dc * Xc) / den) if den > 1e-18 else float("nan")
 
 
 def cumulative_time(h: np.ndarray) -> np.ndarray:

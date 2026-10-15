@@ -14,7 +14,8 @@ Per (step, v1 prompt), one record:
   against the causal field at the layer's β on ``f_l(x_l)`` by
   `p1c_frames.integration_time.unit_steps`: ``disp``, ``cal``, ``proj`` for the block's whole
   move, ``attn_cal`` (the design's ``h_attn``) and ``attn_proj`` (beside) for attention's part.
-  Each is the median over tokens; T is the sum over blocks 0–22, block 23 beside (state 24 is
+  Each is the median over tokens; ``proj_c`` and ``attn_proj_c`` are the same moves' slope on
+  the field with one shared drift removed (`integration_time.drift_free_slope`, Blocked 47); T is the sum over blocks 0–22, block 23 beside (state 24 is
   post-final-LN, so block 23's end is rebuilt as ``x_23 + attn + mlp``).
 - **t\***: `sa_sim.tstar` from ``f_0(x_0)`` (the embedding in block 0's frame, position 0 out),
   causal, ``check_dt``, at the bracket's p10 and p90 β; beside, eq. (6.9) at the cloud's mean
@@ -59,7 +60,7 @@ RUNS = {0: "2026-09-01_13-30-37", 2: "2026-08-31_11-42-56", 4: "2026-08-31_12-17
 FIRST = 143000
 N_BLOCKS = 24
 T_BLOCKS = tuple(range(23))         # blocks whose steps enter T; 23 is beside
-KINDS = ("disp", "cal", "proj", "attn_cal", "attn_proj")
+KINDS = ("disp", "cal", "proj", "attn_cal", "attn_proj", "proj_c", "attn_proj_c")
 #: The step's lift (`integration_time.unit_steps`): "log" (arc length, the continuous time t*
 #: counts), Blocked 46 (b); "tangent" as first designed failed G3; "gnomonic" read beside in the gate.
 LIFT = "log"
@@ -136,19 +137,23 @@ def block_steps(hs: np.ndarray, moves: Dict[int, Dict[str, np.ndarray]], ln: Dic
     magnitude and the mean cosine of ``f_l(x_l)``. ``moves[l]`` holds ``block`` and ``attn``
     (n, d) raw updates; the block's end is ``x_l + block`` (state 24 is post-final-LN).
     """
-    from p1c_frames.integration_time import sa_field, unit_steps
+    from p1c_frames.integration_time import drift_free_slope, sa_field, unit_steps
     rows = []
     for L in range(N_BLOCKS):
         w, b, eps = ln["w"][L], ln["b"][L], ln["eps"]
         X = hs[L].astype(np.float64)
         U = frame(X, w, b, eps)[1:]
         F = sa_field(U, float(layer_beta[L]), causal=True)
-        whole = unit_steps(U, frame(X + moves[L]["block"], w, b, eps)[1:], F, lift=lift)
-        attn = unit_steps(U, frame(X + moves[L]["attn"], w, b, eps)[1:], F, lift=lift)
+        Uw = frame(X + moves[L]["block"], w, b, eps)[1:]
+        Ua = frame(X + moves[L]["attn"], w, b, eps)[1:]
+        whole = unit_steps(U, Uw, F, lift=lift)
+        attn = unit_steps(U, Ua, F, lift=lift)
         vals = {"disp": whole["disp"], "cal": whole["cal"], "proj": whole["proj"],
                 "attn_cal": attn["cal"], "attn_proj": attn["proj"]}
         rows.append({"block": L, "beta": float(layer_beta[L]),
                      **{k: float(np.nanmedian(v)) for k, v in vals.items()},
+                     "proj_c": drift_free_slope(U, Uw, F, lift=lift),
+                     "attn_proj_c": drift_free_slope(U, Ua, F, lift=lift),
                      "field": float(np.median(np.linalg.norm(F, axis=1))),
                      "mean_cos": mean_cos(U),
                      "n_nan": int(np.isnan(whole["proj"]).sum())})
@@ -242,15 +247,26 @@ def check_beta_repro(rec: Dict) -> Optional[float]:
     return float(np.max(np.abs(mine[ok] - theirs[ok]))) if ok.any() else None
 
 
-def check_gate(path: Path, code: str) -> None:
+def check_gate(path: Path, code: str, ln_sha: Optional[str] = None) -> Dict:
     """The batch runs only behind a passing gate record for this code and lift (`design-A.md`:
-    "If any arm fails, A1a is not done")."""
+    "If any arm fails, A1a is not done"), and, given ``ln_sha``, for the LN1 weights the gate
+    planted in (Blocked 47). Returns the record."""
     g = json.loads(Path(path).read_text())
     gate = hashlib.sha256((REPO / "trackA_force/a1a_gate.py").read_bytes()).hexdigest()[:12]
-    if g.get("code") != code or g.get("gate_code") != gate or g.get("lift") != LIFT or not g.get("passes"):
+    if (g.get("code") != code or g.get("gate_code") != gate or g.get("lift") != LIFT or not g.get("passes")
+            or (ln_sha is not None and g.get("ln_sha") != ln_sha)):
         raise SystemExit(f"refusing: gate {path}: code {g.get('code')} (this {code}), gate "
                          f"{g.get('gate_code')} (this {gate}), lift {g.get('lift')} (this {LIFT}), "
-                         f"passes {g.get('passes')}")
+                         f"ln_sha {g.get('ln_sha')} (this {ln_sha}), passes {g.get('passes')}")
+    return g
+
+
+def check_ln(ln: Dict, cache: Dict, step: int) -> None:
+    """The model's LN1 at ``step`` is the one the gate planted in (its cache, `a1a_gate.ln_all`)."""
+    i = STEPS.index(step)
+    if not (np.array_equal(ln["w"], cache["w"][i]) and np.array_equal(ln["b"], cache["b"][i])
+            and ln["eps"] == cache["eps"]):
+        raise SystemExit(f"refusing: step {step}'s LN1 differs from the gate's cache")
 
 
 # ---------------------------------------------------------------- the batch
@@ -279,8 +295,10 @@ def run(a) -> int:
     torch.backends.cudnn.allow_tf32 = False
     if not torch.cuda.is_available():
         raise SystemExit("refusing: no CUDA device (A1a's pass is the GPU's)")
+    from .a1a_gate import ln_all
     code, ph = code_sha(), prompts_hash()
-    check_gate(Path(a.gate), code)
+    lns = ln_all()
+    check_gate(Path(a.gate), code, lns["sha"])
     steps = [int(s) for s in a.steps] if a.steps else [FIRST] + [s for s in STEPS if s != FIRST]
     if a.first_only:
         steps = steps[:1]
@@ -307,6 +325,7 @@ def run(a) -> int:
         if next(model.parameters()).dtype != torch.float32:
             raise SystemExit("refusing: model is not float32")
         ln = ln_from(model)
+        check_ln(ln, lns, step)
         futs = {p: pool.submit(_beta_job, (str(run_dir(step, p)), ln)) for p in todo}
         hk = Hooked(model)
         dev = next(model.parameters()).device
