@@ -10,11 +10,11 @@ No card yet (`docs/phase_card.md`); one is added with A1b's reading.
 | 1. design, scan, `sympy` check, t* table | **done 2026-10-14** (#201); frozen 2026-10-14 (Blocked 45, with the OV attractive share row beside the reading) | `design-A.md`, `lit-A.md`, `tools/math_checks/a1_collapse_time.py`, `tstar_table.py` |
 | 2. A1a, the β producer over 18 steps and the T_eff instrument, with its gate | **built 2026-10-14; the gate fails (G3, G4); the real batch has not run** (Blocked 46) | `a1a.py`, `a1a_gate.py`, `p1c_frames/integration_time.unit_steps`; "A1a's gate" below |
 | 3. A1a's re-gate (Blocked 46 (b)), the chain re-gate (Blocked 47 (d)) and batch | **47 (d)'s gate ran 2026-10-15: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), whose planted drift turns out not to be a null; the batch has not run** (Blocked 48) | "A1a's gate, Blocked 47 (d)" below |
-| 3. A1b, the reading (H-WARP and 1e's question beside) | not started; runs only after A1a's gate passes | `design-A.md` "A1b" |
+| 4. A1b, the reading (H-WARP and 1e's question beside) | not started; runs only after A1a's gate passes | `design-A.md` "A1b" |
 
-Budget: 3 units (`design-A.md` "Exit condition and budget"). Unit 2 is spent without a passing
-gate; whether finishing A1a takes a fourth unit is part of Blocked 46.
-4 units on the record since Blocked 46 (b); unit 3 is open (its batch waits on Blocked 48).
+Budget: 4 units on the record since Blocked 46 (b) (`design-A.md` "Exit condition and budget";
+first 3). Unit 3 is open and has spent two PRs (#203, #204) without its batch; whether a third
+gate fits inside it, or the budget is extended, is part of Blocked 48.
 
 ## A1a's gate, Blocked 47 (d) (2026-10-15)
 
@@ -39,15 +39,26 @@ log beside. **366 s in all; G4c 57 s on the GPU** (torch float64; against numpy 
 Tangent and gnomonic beside: the same, except tangent fails G3 (as before). **G4c by step**
 (`proj`, log): 0.994–1.001 at every step to 16000, 0.988–1.000 at 32000, 0.978–1.002 at
 54000, **1.001–1.056 at 143000** (high, as the one-frame sweep was, but inside the bar).
-Block 23 (beside): 0.983–1.507 of its h. So the one-frame sweep's 7 failures were its
-whole-trajectory-in-one-frame planting, not the reading's per-block sum (Blocked 47's question).
+Block 23 (beside): 0.983–1.507 of its h. **Per block the bias is still there** (`/challenge-pr`
+on #204, finding 1, checked on the record): at 143000, blocks 20–22 read 1.10–1.36 of their
+planted h in 96 of the 17,388 gated block readings; every other (step, block) reads 0.94–1.05.
+The totals pass because each block carries ~1/23 of the planted T. So the one-frame sweep's
+failures were real per-block bias at those frames, which the reading's sum dilutes; the total
+stays inside 10 % only while those three blocks carry a small share of T. A1b has to report
+that share (Blocked 48).
 
 **G2s is not a null as planted (checked after the run, synthetic only, `homer_iliad`):** the
 arm moves every token toward one fixed direction for 23 steps, so the cloud converges on it
 (mean cosine 0.3 → 0.96 at β 3.5 from 0.3; 0 → 0.68 at β 0 from 0). On its first step the
 drift reads `proj_c`/h ≈ 0.01; by its last, 0.80 (β 3.5) and 0.99 (β 0): once the cloud has
 collapsed onto the drift's target, the field points there too, and a drift and an attraction
-are the same move. The 4 passing cells are β 7 from cosine 0, where the cloud barely
+are the same move. **One step, checked after the review** (`/challenge-pr` on #204, finding 2;
+n = 300, β 3.5, h 0.1, log lift): a drift in a random direction reads ≤ 0.017 of h on both
+reads at start cosines 0, 0.3, 0.6, so a one-step re-plant of G2s would pass without testing
+`proj_c`; a drift toward the cloud's mean reads 0.71 (`proj`) and −0.03 (`proj_c`) from cosine
+0, but 0.99 / 0.96 from 0.3 and 1.00 / 0.99 from 0.6. `proj_c` differs from `proj` only on a
+near-orthogonal cloud: at positive mean cosine the field points at the mean, so a drift toward
+the mean is the field's own direction and no per-step projection can separate them. The 4 passing cells are β 7 from cosine 0, where the cloud barely
 converges (mean cosine ≤ 0.003; still 0.15–0.38 of h by the last step). The bar was set
 without asking what a sustained drift does to the cloud (`LESSONS.md` 6). What `proj_c` does
 remove (one step from an unconverged cloud) is not what the arm measured.

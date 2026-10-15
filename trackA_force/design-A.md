@@ -182,7 +182,10 @@ question: one step per frame, as the reading takes it.
 **Ran 2026-10-15: G0–G4c pass (G4c 756 of 756, both reads); fails on G2s's `proj_c` bar (38 of
 42)**, and the planted drift turns out not to be a null: sustained for 23 steps it collapses the
 cloud onto its target, where a drift and the field are the same move (`status-A.md` "A1a's gate,
-Blocked 47 (d)"). Back to the user before any real output (STATE Blocked 48).
+Blocked 47 (d)"). Back to the user before any real output (STATE Blocked 48). Per block, step
+143000's blocks 20–22 still read 1.10–1.36 of h inside the passing totals (`/challenge-pr` on
+#204, finding 1). **`proj_c`'s role in A1b, for now:** beside `T_proj`, not in the reading
+(the reading stays on `T_proj` alone, as frozen); Blocked 48 decides whether it stays so.
 
 ## A1b, the reading (unit 3; unit 4 after Blocked 46)
 
