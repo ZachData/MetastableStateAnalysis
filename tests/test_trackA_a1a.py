@@ -223,3 +223,25 @@ def test_batch_refuses_a_gate_for_other_ln_weights(tmp_path):
     a1a.check_ln({"w": w[0], "b": 0 * w[0], "eps": 1e-5}, cache, 0)
     with pytest.raises(SystemExit):
         a1a.check_ln({"w": 2 * w[0], "b": 0 * w[0], "eps": 1e-5}, cache, 0)
+
+
+def test_ln_from_reads_the_bare_model_and_the_lm_alike():
+    """`core.models.load_model` returns the bare GPTNeoXModel; the gate's cache the LM (the batch crash fixed in #205)."""
+    torch = pytest.importorskip("torch")
+
+    class LN(torch.nn.LayerNorm):
+        pass
+
+    class Layer(torch.nn.Module):
+        def __init__(self, k):
+            super().__init__()
+            self.input_layernorm = LN(4, eps=1e-5)
+            torch.nn.init.constant_(self.input_layernorm.weight, k)
+
+    bare = torch.nn.Module()
+    bare.layers = torch.nn.ModuleList([Layer(1.0), Layer(2.0)])
+    lm = torch.nn.Module()
+    lm.gpt_neox = bare
+    for m in (bare, lm):
+        ln = a1a.ln_from(m)
+        assert ln["w"].shape == (2, 4) and ln["w"][1, 0] == 2.0 and ln["eps"] == 1e-5

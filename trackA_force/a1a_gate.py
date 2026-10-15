@@ -28,8 +28,9 @@ d = 1024), planted trajectories of 23 forward-Euler steps:
 
 Every arm is read twice: ``proj`` (median over tokens) and ``proj_c`` (the slope on the field
 with one shared drift removed, `integration_time.drift_free_slope`; Blocked 47), both gated at
-the same bars. G2s, a shared drift, is gated on ``proj_c`` only (|T_c| ≤ 0.1 T); ``proj`` reads
-it by geometry and stays beside. Three lifts (`integration_time.unit_steps`): the verdict is
+the same bars. G2s, a shared drift, is beside on both reads with no bar (Blocked 48 (a): held 23
+steps the drift collapses the cloud onto its target, where drift and field are the same move, so
+it is not a null; its numbers are recorded, ``G2s_within_0.1`` beside the verdict). Three lifts (`integration_time.unit_steps`): the verdict is
 ``LIFT`` (log, Blocked 46 (b)); tangent and gnomonic beside.
 
     python -m trackA_force.a1a_gate --out <dir> [--device cuda]
@@ -269,7 +270,6 @@ def planted_arms(ln5: Dict) -> List[Dict]:
                         and m["G1"]["T_proj_rel"] <= TOL["G1_T"] and m["G1"]["T_cal_rel"] <= TOL["G1_T"]
                         and m["G1"]["T_proj_c_rel"] <= TOL["G1_T"],
                         "G2": abs(m["G2"]["T_proj_over_T"]) <= TOL["G2_T"] and abs(m["G2"]["T_proj_c_over_T"]) <= TOL["G2_T"],
-                        "G2s": abs(m["G2s"]["T_proj_c_over_T"]) <= TOL["G2_T"],
                         "G3": m["G3"]["h_proj_rel"] <= TOL["G3_h"] and m["G3"]["h_proj_c_rel"] <= TOL["G3_h"]
                         and m["G3"]["h_cal_rel_sqrt2"] <= TOL["G3_h"],
                         "G4": abs(m["G4"]["T_proj_over_T"] - 1.0) <= TOL["G4_T"]
@@ -457,14 +457,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     verdicts = {}
     for l in LIFTS:
         v = {"G0": all(r["pass"] for r in g0),
-             **{g: all(r["by_lift"][l]["pass"][g] for r in rows) for g in ("G1", "G2", "G2s", "G3", "G4")},
+             **{g: all(r["by_lift"][l]["pass"][g] for r in rows) for g in ("G1", "G2", "G3", "G4")},
              "G4c": all(abs(x["T_over_T"][l][r] - 1.0) <= TOL["G4_T"] for x in ch for r in READS)}
         verdicts[l] = v
+    g2s_beside = {l: sum(abs(r["by_lift"][l]["G2s"]["T_proj_c_over_T"]) <= TOL["G2_T"] for r in rows)
+                  for l in LIFTS}
     verdict = verdicts[LIFT]
     rec = {"code": code_sha(), "gate_code": gate_sha(), "lift": LIFT, "lifts": LIFTS, "reads": READS,
            "ln_sha": lns["sha"], "seed": SEED, "tol": TOL, "ns": NS, "betas": BETAS, "starts": STARTS,
            "device": a.device, "chain_probe": probe, "chain_seconds": t_chain,
            "verdict": verdict, "verdicts_beside": verdicts, "passes": all(verdict.values()),
+           "G2s_within_0.1": {"cells": len(rows), "proj_c_within": g2s_beside, "gated": False},
            "G0": g0, "planted": rows, "chain": ch, "seconds": time.monotonic() - t0}
     a.out.mkdir(parents=True, exist_ok=True)
     (a.out / "a1a_gate.json").write_text(json.dumps(rec, indent=1) + "\n")

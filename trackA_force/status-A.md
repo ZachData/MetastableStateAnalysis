@@ -9,12 +9,50 @@ No card yet (`docs/phase_card.md`); one is added with A1b's reading.
 |---|---|---|
 | 1. design, scan, `sympy` check, t* table | **done 2026-10-14** (#201); frozen 2026-10-14 (Blocked 45, with the OV attractive share row beside the reading) | `design-A.md`, `lit-A.md`, `tools/math_checks/a1_collapse_time.py`, `tstar_table.py` |
 | 2. A1a, the β producer over 18 steps and the T_eff instrument, with its gate | **built 2026-10-14; the gate fails (G3, G4); the real batch has not run** (Blocked 46) | `a1a.py`, `a1a_gate.py`, `p1c_frames/integration_time.unit_steps`; "A1a's gate" below |
-| 3. A1a's re-gate (Blocked 46 (b)), the chain re-gate (Blocked 47 (d)) and batch | **47 (d)'s gate ran 2026-10-15: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), whose planted drift turns out not to be a null; the batch has not run** (Blocked 48) | "A1a's gate, Blocked 47 (d)" below |
-| 4. A1b, the reading (H-WARP and 1e's question beside) | not started; runs only after A1a's gate passes | `design-A.md` "A1b" |
+| 3. A1a's re-gate (Blocked 46 (b)) and the chain re-gate (Blocked 47 (d)) | **done**: the re-gate failed G4 at 3 frames (#203); 47 (d)'s gate: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), its planted drift not a null (#204; Blocked 48) | "A1a's gate, Blocked 47 (d)", "A1a's re-gate" below |
+| 4. The gate with G2s beside (Blocked 48 (a)) and A1a's batch | **done 2026-10-15: the gate passes; the batch ran, 126 of 126 records** | "A1a's gate and batch, Blocked 48 (a)" below |
+| 5. A1b, the reading (H-WARP and 1e's question beside) | not started; next | `design-A.md` "A1b" |
 
-Budget: 4 units on the record since Blocked 46 (b) (`design-A.md` "Exit condition and budget";
-first 3). Unit 3 is open and has spent two PRs (#203, #204) without its batch; whether a third
-gate fits inside it, or the budget is extended, is part of Blocked 48.
+Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
+first 3, then 4 by Blocked 46 (b)). Units 1–4 spent; A1b is the last.
+
+## A1a's gate and batch, Blocked 48 (a) (2026-10-15)
+
+**Input:** gate as below (synthetic; `ln_sha` `eea24ba8de2b`, `SEED` 20261014); batch: the 7 v1
+prompts (prompts hash `976b62d677bc`) × the 18 steps, `RUNS` in `a1a.py` (`data/phase12`),
+pythia-410m float32 on the GPU, TF32 off. **Producer:** at `cd0a0b6` (`a1a.code_sha`
+`a08544e9b644`, gate `86d5a49e6a7b`): `python -m trackA_force.a1a_gate --out
+data/trackA/a1a_gate_48a_2026-10-15` (**353 s; G4c 56 s on the GPU**, against numpy 1.3e-10),
+then `python -m trackA_force.a1a run --gate <that>/a1a_gate.json --out
+data/trackA/a1a_batch_2026-10-15 --workers 3` (**46.6 min**, 151–170 s per step), then
+`python -m trackA_force.a1a report --out <same>` (`a1a_report.txt`, the table's one copy).
+Env: `METS_REPO=<worktree> METS_DATA=<main>/data`, HF offline, GPU visible.
+
+**The gate passes (log lift):** G0–G4c as in 47 (d)'s run, both reads (G4c 0.978–1.057 on 756
+of 756); **G2s beside, no bar**: `proj_c` within 0.1 T in 4 of 42 cells (the same 4 as before).
+Tangent fails G3 (beside, as always).
+
+**The batch:** 126 of 126 records. First record (143000, `camus_letranger`) populated; over all
+records every head's β is finite at all 18 steps (the report's "heads finite"); `fe_full` at 143000 matches 1d's refit within 1.4e-14 (all 7
+prompts); the hooked pass against the stored unit rows ≤ 2.6e-7 to step 2000, rising to 7.9e-5
+at 143000 (the GPU against the CPU, as 1e's probe found; **close to `check_pass`'s 1e-4**, so a
+re-run on another GPU or driver may refuse at that step, finding 5); causal t* exists at both ends of the
+bracket in all 126 cells. **The layer-β bracket and the OV attractive share by step: in
+`a1a_report.txt` (its one copy).** In words: the bracket sits near 0 to step 128, widens at
+256–4000, and is positive from 16000; **its p10 is negative at every step to 8000** (Parked); the
+OV share falls to 0 around 1000–4000 and recovers.
+
+**What this is not:** no T has been set against t*; the reading is A1b's (unit 5), on the
+family fixed in `design-A.md` "A1b".
+
+**Fixed on the way:** the batch's first launch crashed on its first model load (`a1a.ln_from`
+read `model.gpt_neox`, but `core.models.load_model` returns the bare model); fixed to the idiom
+`Hooked` uses (same weights, no number moves), tested on both shapes, and the gate re-run
+because the code hash changed. The first gate record (`code` `a931…`, at `d7e8cfe`) and the
+crashed batch's empty output are kept under `data/trackA/*_d7e8cfe`, `*_crashed`.
+
+**How to re-run:** the three commands above; the batch resumes from its records and refuses
+records written by other code.
 
 ## A1a's gate, Blocked 47 (d) (2026-10-15)
 
@@ -179,6 +217,22 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 - *G0–G3 on the GPU* (2026-10-15): they stay numpy on the CPU (~5 of the gate's 6 min); a
   torch port like G4c's would cut a re-gate to ~2 min. Why: the user's GPU rule; cost: half a
   unit with its own numpy check; changes no decision, only wall time.
+- *t\* at a negative β* (2026-10-15, A1a's batch): the bracket's p10 is below 0 in 97 of 126
+  cells (every step to 8000). The rule's ordering holds: t* at p10 ≤ t* at p90 in 126 of 126
+  (`/challenge-pr` on #205, finding 1, re-checked on `tstar` and `beta.bracket` only); where p10 < 0
+  the two ends nearly coincide (median ratio 0.994), so few such cells can read *straddles*.
+  Open: what `sa_sim`'s collapse at β < 0 means against (6.9)'s. Cost: a look in A1b before its
+  output; could change how cells to 8000 are worded, not the ordering. Carried to A1b.
+- *A shared drift and the field* (`/challenge-pr` on #205, finding 2): on the gate's sustained
+  drift `proj` reads 0.12–0.87 of T and `proj_c` 0.08–0.70, so neither read separates a drift
+  held over many steps from the field (`proj_c` is blind to one only on one step from an
+  unconverged cloud). Why: A1b's off-field rows are read beside a real stream whose drift is
+  unmeasured; cost: one row, named before A1b's output (whether `T_attn_proj` is drift-robust is
+  itself unchecked); could change how far `T_proj` is trusted. Carried to A1b.
+- *`a1a.ln_from` duplicates `u2_attn.ln_from`* (`/challenge-pr` on #205, finding 4): import it,
+  and test on a real `GPTNeoXModel` rather than a mock, the next time `a1a.py` changes for
+  another reason (changing it now would change the code hash and orphan the 126 records).
+  Cost: minutes; changes no number.
 
 ## Corrections received
 
