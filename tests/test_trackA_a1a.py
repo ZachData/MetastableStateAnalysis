@@ -226,7 +226,7 @@ def test_batch_refuses_a_gate_for_other_ln_weights(tmp_path):
 
 
 def test_ln_from_reads_the_bare_model_and_the_lm_alike():
-    """`core.models.load_model` returns the bare GPTNeoXModel; the gate's cache the LM (#205's crash)."""
+    """`core.models.load_model` returns the bare GPTNeoXModel; the gate's cache the LM (the batch crash fixed in #205)."""
     torch = pytest.importorskip("torch")
 
     class LN(torch.nn.LayerNorm):

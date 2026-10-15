@@ -32,14 +32,15 @@ Env: `METS_REPO=<worktree> METS_DATA=<main>/data`, HF offline, GPU visible.
 of 756); **G2s beside, no bar**: `proj_c` within 0.1 T in 4 of 42 cells (the same 4 as before).
 Tangent fails G3 (beside, as always).
 
-**The batch:** 126 of 126 records. First record (143000, `camus_letranger`) populated: every
-head's β finite at all 18 steps; `fe_full` at 143000 matches 1d's refit within 1.4e-14 (all 7
+**The batch:** 126 of 126 records. First record (143000, `camus_letranger`) populated; over all
+records every head's β is finite at all 18 steps (the report's "heads finite"); `fe_full` at 143000 matches 1d's refit within 1.4e-14 (all 7
 prompts); the hooked pass against the stored unit rows ≤ 2.6e-7 to step 2000, rising to 7.9e-5
-at 143000 (the GPU against the CPU, as 1e's probe found); causal t* exists at both ends of the
-bracket in all 126 cells. **The layer-β bracket** (p10 / p50 / p90, median over prompts) sits at
-about ±0.1 to step 128, widens at 256–4000 (p10 down to −2.47 at 2000), and turns positive from
-16000 (143000: 1.14 / 3.15 / 6.10). **The p10 is negative at every step to 8000.** The OV
-attractive share falls from 0.50 to 0 at 1000–4000 and recovers to 0.39 at 143000.
+at 143000 (the GPU against the CPU, as 1e's probe found; **close to `check_pass`'s 1e-4**, so a
+re-run on another GPU or driver may refuse at that step, finding 5); causal t* exists at both ends of the
+bracket in all 126 cells. **The layer-β bracket and the OV attractive share by step: in
+`a1a_report.txt` (its one copy).** In words: the bracket sits near 0 to step 128, widens at
+256–4000, and is positive from 16000; **its p10 is negative at every step to 8000** (Parked); the
+OV share falls to 0 around 1000–4000 and recovers.
 
 **What this is not:** no T has been set against t*; the reading is A1b's (unit 5), on the
 family fixed in `design-A.md` "A1b".
@@ -216,11 +217,22 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 - *G0–G3 on the GPU* (2026-10-15): they stay numpy on the CPU (~5 of the gate's 6 min); a
   torch port like G4c's would cut a re-gate to ~2 min. Why: the user's GPU rule; cost: half a
   unit with its own numpy check; changes no decision, only wall time.
-- *t\* at a negative β* (2026-10-15, A1a's batch): the bracket's p10 is below 0 at every step to
-  8000, and the reading's *below* uses t* at p10 as the shortest the bracket allows (t* rising
-  with β). Why: t* exists there, but whether `sa_sim`'s collapse at β < 0 means what (6.9)'s does
-  was never checked; cost: a look in A1b before its output; could change which cells read
-  *below* to 8000. Carried to A1b.
+- *t\* at a negative β* (2026-10-15, A1a's batch): the bracket's p10 is below 0 in 97 of 126
+  cells (every step to 8000). The rule's ordering holds: t* at p10 ≤ t* at p90 in 126 of 126
+  (`/challenge-pr` on #205, finding 1, re-checked on `tstar` and `beta.bracket` only); where p10 < 0
+  the two ends nearly coincide (median ratio 0.994), so few such cells can read *straddles*.
+  Open: what `sa_sim`'s collapse at β < 0 means against (6.9)'s. Cost: a look in A1b before its
+  output; could change how cells to 8000 are worded, not the ordering. Carried to A1b.
+- *A shared drift and the field* (`/challenge-pr` on #205, finding 2): on the gate's sustained
+  drift `proj` reads 0.12–0.87 of T and `proj_c` 0.08–0.70, so neither read separates a drift
+  held over many steps from the field (`proj_c` is blind to one only on one step from an
+  unconverged cloud). Why: A1b's off-field rows are read beside a real stream whose drift is
+  unmeasured; cost: one row, named before A1b's output (whether `T_attn_proj` is drift-robust is
+  itself unchecked); could change how far `T_proj` is trusted. Carried to A1b.
+- *`a1a.ln_from` duplicates `u2_attn.ln_from`* (`/challenge-pr` on #205, finding 4): import it,
+  and test on a real `GPTNeoXModel` rather than a mock, the next time `a1a.py` changes for
+  another reason (changing it now would change the code hash and orphan the 126 records).
+  Cost: minutes; changes no number.
 
 ## Corrections received
 

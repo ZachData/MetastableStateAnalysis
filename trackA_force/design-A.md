@@ -168,7 +168,8 @@ question: one step per frame, as the reading takes it.
   at 143000 and G4raw stay.
 - **The drift-removed read `proj_c`**: per step, the least-squares h in `Δ_i = h·X_i + c + ξ_i`,
   one shared vector c (`integration_time.drift_free_slope`; positions 1…n−1, lifted as `proj`).
-  Exact for a planted field step (gnomonic lift), blind to a constant drift. **Gated**, beside
+  Exact for a planted field step (gnomonic lift), blind to a constant drift on one step from an
+  unconverged cloud, not to one held over many steps (`status-A.md` Parked). **Gated**, beside
   `proj`, at the same bars: G1 (h ≤ 5 %, T ≤ 3 %), G2 (|T| ≤ 0.1 T), G3 (h ≤ 5 %), G4 and G4c
   (T within 10 %), and **G2s gets a bar for `proj_c` only**: |T_c| ≤ 0.1 T (plain `proj` on G2s
   stays beside: it reads a shared drift by geometry). The gate passes only if every arm passes
@@ -200,6 +201,9 @@ Blocked 47 (d)"). Back to the user before any real output (STATE Blocked 48). Pe
 - **A1b reports, beside its reading, the share of `T_proj` carried by step 143000's blocks
   20–22** (the blocks that read 1.10–1.36 of h in G4c's per-block chain).
 - Re-run the gate, then the batch; budget 5 units (above).
+- **Not taken, on the record** (`/challenge-pr` on #205, finding 3): re-planting G2s with the
+  drift direction redrawn every block (no sustained target, so no collapse onto it). If `proj_c`
+  ever enters the reading, it is gated on such an arm first.
 
 ## A1b, the reading (unit 5 since Blocked 48 (a))
 
