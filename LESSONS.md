@@ -154,6 +154,9 @@ world moves, nobody updates the line, and the next session acts on it.
   commits behind; the hook printed Phase 10's close with Blocked 40 undecided. No session since
   10-13 removed a worktree (refused by the permission check), so the rule above never fired.
   Caught by Start step 1; the main tree was not fast-forwarded (another session may be in it).
+  **Again 2026-10-15 (A1a's batch, after #204):** still `edc8e8c`, now 30+ commits behind; the hook
+  printed 10-11's `STATE.md`. Caught by Start step 1 (`git show origin/main:STATE.md`). The
+  cleanup command this time includes `git pull --ff-only` and goes to the user.
 - 2026-10-13 (B-pre): `claims/registry.json`'s `P-ST1` says twice that its activations and Phase 2's
   projectors "do not exist in this repository"; both have been on disk since 2026-08-31
   (`data/phase12/*/ov_projectors_*`, the v1 sweep). The registry is not edited outside a
@@ -597,6 +600,13 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   always made that directory first. A new `--out` crashed the batch at launch
   (cost: one relaunch and a fix commit, `cddcba7`). A stage that writes
   makes its own directory; no test ran `run` on a fresh `--out`.
+- 2026-10-15, A1a's batch (Track A unit 4): `a1a.ln_from` read `model.gpt_neox.layers`, but
+  `core.models.load_model` returns the bare `GPTNeoXModel`; the gate's LN cache loads the LM
+  (`b0_gate.load`), so the gate never touched the batch's loader. The batch crashed on its first
+  load, before any record (cost: one gate re-run, 6 min, since the fix changed the code hash the
+  gate checks). `Hooked` already had `getattr(model, "gpt_neox", model)`. Two loaders return two
+  shapes. A batch whose gate is tied to its code hash cannot run before its gate, so whatever the
+  batch takes from the model gets a test on the object `load_model` actually returns.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a

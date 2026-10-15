@@ -23,7 +23,9 @@ d = 1,024" (`p1e_energy_field/status-1e.md` "The phase on one page"); 1c's instr
   the β producer over 18 steps and the T_eff instrument extended, with its calibration gate;
   (3) A1b: the reading. At the budget A1 closes at what it knows. **Extended to 4 units on the
   record (Blocked 46 (b), the user's, 2026-10-14):** unit 3 is the re-gate and A1a's batch,
-  unit 4 is A1b.
+  unit 4 is A1b. **Extended to 5 units on the record (Blocked 48 (a), the user's, 2026-10-15):**
+  unit 3 is the two gates (#203, #204), unit 4 the gate with G2s beside and A1a's batch, unit 5
+  is A1b.
 
 ## The math
 
@@ -187,7 +189,19 @@ Blocked 47 (d)"). Back to the user before any real output (STATE Blocked 48). Pe
 #204, finding 1). **`proj_c`'s role in A1b, for now:** beside `T_proj`, not in the reading
 (the reading stays on `T_proj` alone, as frozen); Blocked 48 decides whether it stays so.
 
-## A1b, the reading (unit 3; unit 4 after Blocked 46)
+### Blocked 48 decided (2026-10-15, the user's: (a))
+
+- **G2s beside on both reads, no bar.** The bar is dropped after its output, for a reason shown
+  on synthetic geometry, not data: held 23 steps the planted drift collapses the cloud onto its
+  target, so it is not a null, and a one-step re-plant would pass without testing anything
+  (`/challenge-pr` on #204, finding 2). The gate records the count within 0.1 T
+  (`G2s_within_0.1`) beside its verdict. G0–G4c stay gated on `proj` and `proj_c`.
+- **`proj_c` stays beside `T_proj` in A1b**, not in the reading.
+- **A1b reports, beside its reading, the share of `T_proj` carried by step 143000's blocks
+  20–22** (the blocks that read 1.10–1.36 of h in G4c's per-block chain).
+- Re-run the gate, then the batch; budget 5 units (above).
+
+## A1b, the reading (unit 5 since Blocked 48 (a))
 
 **The family, fixed before output:** 18 steps × 7 v1 prompts; the statistic is `T_proj`
 against the causal t* from the measured cloud per (step, prompt).
@@ -223,8 +237,9 @@ against the causal t* from the measured cloud per (step, prompt).
 |---|---|---|
 | 1 | this design, `lit-A.md`, `a1_collapse_time.py`, `tstar_table.py`, `sa_sim.py` | done (#201); frozen 2026-10-14 (Blocked 45) |
 | 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | built 2026-10-14; **the gate fails (G3, G4)**, the batch not run; Blocked 46 |
-| 3 | A1a's re-gate (Blocked 46 (b), then 47 (d)) and batch | re-gate ran 2026-10-14, fails on G4 at 3 frames (Blocked 47); 47 (d)'s gate ran 2026-10-15, **G4c passes, G2s fails on `proj_c`**; Blocked 48 |
-| 4 | A1b: the reading, H-WARP and 1e's question beside | after A1a's gate |
+| 3 | A1a's re-gate (Blocked 46 (b), then 47 (d)) | re-gate ran 2026-10-14, fails on G4 at 3 frames (Blocked 47, #203); 47 (d)'s gate ran 2026-10-15, **G4c passes, G2s fails on `proj_c`** (Blocked 48, #204) |
+| 4 | the gate with G2s beside (Blocked 48 (a)) and A1a's batch | `status-A.md` "A1a's gate and batch, Blocked 48 (a)" |
+| 5 | A1b: the reading, H-WARP and 1e's question beside | after A1a's batch |
 
 ## Fences
 
