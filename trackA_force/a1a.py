@@ -25,7 +25,7 @@ The OV attractive share row (Blocked 45's addition) is read at report time from
 against t* is A1b's.
 
 Tier 1: exploratory, unregistered.
-    python -m trackA_force.a1a run --gate <a1a_gate_<lift>.json> --out <dir> [--steps 143000 ...] [--first-only]
+    python -m trackA_force.a1a run --gate <a1a_gate.json> --out <dir> [--steps 143000 ...] [--first-only]
     python -m trackA_force.a1a report --out <dir>
 """
 
@@ -60,9 +60,9 @@ FIRST = 143000
 N_BLOCKS = 24
 T_BLOCKS = tuple(range(23))         # blocks whose steps enter T; 23 is beside
 KINDS = ("disp", "cal", "proj", "attn_cal", "attn_proj")
-#: The step's lift (`integration_time.unit_steps`): "tangent" as designed; the gate's G3 fails it
-#: on its largest steps and passes "log" (STATE Blocked 46, open).
-LIFT = "tangent"
+#: The step's lift (`integration_time.unit_steps`): "log" (arc length, the continuous time t*
+#: counts), Blocked 46 (b); "tangent" as first designed failed G3; "gnomonic" read beside in the gate.
+LIFT = "log"
 TARGET = 0.9
 T_MAX = 200.0                       # placed: sa_sim's horizon; beyond it t* is inf, the cell "not read"
 BETA_REPRO_TOL = 1e-4               # placed: fe_full at 143000 against 1d's stored refit (same inputs)
@@ -246,9 +246,11 @@ def check_gate(path: Path, code: str) -> None:
     """The batch runs only behind a passing gate record for this code and lift (`design-A.md`:
     "If any arm fails, A1a is not done")."""
     g = json.loads(Path(path).read_text())
-    if g.get("code") != code or g.get("lift") != LIFT or not g.get("passes"):
-        raise SystemExit(f"refusing: gate {path}: code {g.get('code')} (this {code}), lift "
-                         f"{g.get('lift')} (this {LIFT}), passes {g.get('passes')}")
+    gate = hashlib.sha256((REPO / "trackA_force/a1a_gate.py").read_bytes()).hexdigest()[:12]
+    if g.get("code") != code or g.get("gate_code") != gate or g.get("lift") != LIFT or not g.get("passes"):
+        raise SystemExit(f"refusing: gate {path}: code {g.get('code')} (this {code}), gate "
+                         f"{g.get('gate_code')} (this {gate}), lift {g.get('lift')} (this {LIFT}), "
+                         f"passes {g.get('passes')}")
 
 
 # ---------------------------------------------------------------- the batch
@@ -386,7 +388,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--out", type=Path, required=True)
     r.add_argument("--steps", nargs="*", default=None)
     r.add_argument("--first-only", action="store_true")
-    r.add_argument("--gate", type=Path, required=True, help="a1a_gate_<lift>.json; must pass")
+    r.add_argument("--gate", type=Path, required=True, help="a1a_gate.json; must pass")
     r.add_argument("--workers", type=int, default=7)
     p = sub.add_parser("report")
     p.add_argument("--out", type=Path, required=True)

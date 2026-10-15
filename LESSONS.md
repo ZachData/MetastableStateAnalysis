@@ -287,6 +287,21 @@ done (a warning lint is proposed in `docs/PHASE_REVIEW.md`); 📋 protocol in `C
 well-formed but empty/zero result. It looks exactly like a real result.
 
 **Instances.**
+- 2026-10-14, Track A A1a re-gate, a progress log that hid the failure: each sweep line printed
+  only the *min* T_proj/T, and every one read 0.913 or more, so the log read as a pass. The bar
+  is two-sided, and the 7 gated cells outside it are all overshoots (to 1.344, step 143000,
+  blocks 20–22); only the JSON showed them. Rule: a progress line prints the gate's own test
+  (both ends and the count outside the bar), and the run ends by naming the failing cells; the
+  JSON is the record, the log is never read as one (`a1a_gate.sweep` now does both).
+- 2026-10-14, the same run, a pool that oversubscribed: 8 `ProcessPoolExecutor` workers each
+  ran OpenBLAS at its default 16 threads on 16 cores (load ~110). Said to take ~10 minutes and
+  run on the GPU; it took 1h52m on the CPU (the gate is synthetic numpy; only A1a's real pass
+  is the GPU's). The first fix (set `OPENBLAS_NUM_THREADS` around the constructor, as
+  `arch_null.py` does for `mp.Pool`) did nothing: the executor starts its workers at the first
+  submit, after the variable is restored. Now `threadpool_limits(1)` in each worker's
+  initializer: 8 jobs in 21 s against 124 s, values within 3e-11. Rule: a pool sets one BLAS
+  thread *inside* the worker, and a pilot checks the load (≈ the worker count) and one job's
+  time before the estimate is quoted; "GPU" in an estimate names the step that uses it.
 - 2026-10-14, Track B B1, the converse: the populated check refused any σ = 0, and the first step
   (1000) was refused, rightly, but on a real zero. `L5H2`'s attention weight a few tokens back is
   ~1e-7–1e-10, so the ± change there is under float32 resolution and A is exactly 0. (The first
@@ -1241,6 +1256,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-10-14, Track A A1a re-gate (#203, `/challenge-pr` finding 1): the write-up read "G4 fails at
+  blocks 20–22" as the reading's error there and recommended re-planting the start cosine. The
+  sweep runs all 23 planted steps through one frame; the reading takes one step per block's frame
+  and sums. The author never set the gate's statistic beside `block_steps`. Also miscounted (2,592
+  gated cells for 2,484; "6 of 7" orthogonal for 7 of 7). Rule: before reading a gate's failure,
+  write the reading's statistic and the gate's side by side; counts come from the record by code.
 - 2026-10-10, Phase 10 F13r (#188, `/challenge-pr`): the write-up was drafted from a compact grid
   the author printed for f, and it called 2000 L1–8 *unclear* though the report's cls column read
   *carries* there (and at 512). It also measured the linear statistics' shrink against the binned

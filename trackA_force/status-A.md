@@ -9,10 +9,12 @@ No card yet (`docs/phase_card.md`); one is added with A1b's reading.
 |---|---|---|
 | 1. design, scan, `sympy` check, t* table | **done 2026-10-14** (#201); frozen 2026-10-14 (Blocked 45, with the OV attractive share row beside the reading) | `design-A.md`, `lit-A.md`, `tools/math_checks/a1_collapse_time.py`, `tstar_table.py` |
 | 2. A1a, the β producer over 18 steps and the T_eff instrument, with its gate | **built 2026-10-14; the gate fails (G3, G4); the real batch has not run** (Blocked 46) | `a1a.py`, `a1a_gate.py`, `p1c_frames/integration_time.unit_steps`; "A1a's gate" below |
+| 3. A1a's re-gate (Blocked 46 (b)) and batch | **re-gate ran 2026-10-14: fails on G4 at 3 frames only; the batch has not run** (Blocked 47) | "A1a's re-gate" below |
 | 3. A1b, the reading (H-WARP and 1e's question beside) | not started; runs only after A1a's gate passes | `design-A.md` "A1b" |
 
 Budget: 3 units (`design-A.md` "Exit condition and budget"). Unit 2 is spent without a passing
 gate; whether finishing A1a takes a fourth unit is part of Blocked 46.
+4 units on the record since Blocked 46 (b); unit 3 is open (its batch waits on Blocked 47).
 
 ## A1a's gate (2026-10-14)
 
@@ -64,6 +66,49 @@ since at positive mean cosine the field points at the cloud's mean) is not plant
 
 **What did not run:** the real batch (β over 18 steps, the hooked pass, t*). No real T, t*, β
 or cosine has been read, so Blocked 46 is decided before any real output.
+
+## A1a's re-gate (2026-10-14, Blocked 46 (b))
+
+**Input:** as "A1a's gate" below, plus the LN1 weights of every block at the 18 steps (`ln_sha`
+`eea24ba8de2b`); the sweep's prompt `latex_monograph`. **Producer:**
+`python -m trackA_force.a1a_gate --out <dir> --workers 8` at `8c1c0b6` (`a1a.code_sha`
+`dd20504f0cf4`, gate `45aca91d844f`); record `data/trackA/a1a_regate_2026-10-14/a1a_gate.json`,
+1h52m (CPU; see "How to re-run"). **Verdict (log lift): G0–G3 pass, G4 fails.**
+
+| arm | bar | log (the verdict) | tangent | gnomonic |
+|---|---|---|---|---|
+| G1, 42 cells | h ≤ 5 %, T ≤ 3 % | pass (h ≤ 2.3 %) | pass (3.4 %) | pass (0.0 %) |
+| G3, 42 cells | ≤ 5 % | **pass** (≤ 4.3 %) | fails 4 | pass (0.0 %) |
+| G4, 42 cells, block 5 at 143000 | \|T_proj/T − 1\| ≤ 0.1 | **pass** (0.988–1.004) | pass | pass |
+| G4 sweep, blocks 0–22 × 18 steps, 2,484 cells | same | **fails 7** (0.913–1.344) | fails 7 | fails 7 |
+| G4raw (the first G4, beside) | – | 0.742–0.998 | same | same |
+| G2s, shared drift (beside, no bar) | – | **0.121–0.870 of T** | 0.121–0.868 | 0.121–0.874 |
+
+**Where G4 fails** (`T_proj/T`, log): only step 143000, blocks 20–22, always *high*, all 7 from
+the orthogonal start: block 20 β 0/3.5/7 at g0 = 0: 1.139, 1.107, 1.332; block 21 β 7: 1.183;
+block 22 β 0/3.5/7: 1.162, 1.114, 1.344. From g0 = 0.3 every gated cell passes (0.913–1.076).
+Without step 143000 the sweep is 0.933–1.055. Block 23 (beside) reaches 1.517 at 143000 and
+1.129 at 54000. The 3 worst (β 7, g0 = 0) are cells whose planted cloud barely moves (frame cosine 0.012 →
+0.042); the 4 at β 0 and 3.5 collapse (to 0.88–0.91), so that is not the mechanism; none tested.
+
+**What the sweep does not test** (`/challenge-pr` on #203, finding 1): it runs all 23 planted steps
+through one frame and gates their total. The reading (`a1a.block_steps`) reads block l's one step
+in block l's frame and sums over blocks. So "fails at blocks 20–22" is not "the reading fails
+there"; the record keeps totals only, so it cannot say what one step per frame would give.
+
+**G2s** says a drift shared by all tokens reads as 12–87 % of T in `T_proj`. Beside by design
+(no bar), but it is the confound the reading has to answer. A1a's batch keeps per-block medians
+only, so a drift-removed statistic has to be added to `a1a.py` (and planted in the gate) before
+the batch, not computed in A1b (`/challenge-pr` on #203, finding 2).
+
+**How to re-run:** the same command. Since this record, `a1a_gate.py` changed only in its pool
+(one BLAS thread per spawned worker; 8 jobs 21 s against 124 s; values within 3e-11) and its sweep
+lines (both ends, the count outside the bar, the failing cells at the end); `gate_code` is now
+different, so `check_gate` needs a re-run before any batch (deferred to Blocked 47's re-gate,
+which changes the gate anyway; `/challenge-pr` on #203, finding 4). `check_gate` does not compare
+`ln_sha`, and the batch takes LN1 from the model, not the gate's cache (finding 5; carried to the
+same re-gate). ~20 min expected, not yet measured
+end to end.
 
 ## Before any output (2026-10-14)
 
