@@ -279,7 +279,7 @@ def _beta_job(args) -> List[List[float]]:
 
 
 def ln_from(model) -> Dict:
-    lay = model.gpt_neox.layers
+    lay = getattr(model, "gpt_neox", model).layers      # the LM or the bare model (`load_model`)
     return {"w": np.stack([l.input_layernorm.weight.detach().double().cpu().numpy() for l in lay]),
             "b": np.stack([l.input_layernorm.bias.detach().double().cpu().numpy() for l in lay]),
             "eps": float(lay[0].input_layernorm.eps)}
