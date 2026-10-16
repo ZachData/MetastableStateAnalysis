@@ -890,6 +890,15 @@ def cmd_real(a) -> int:
 OCC_RUNGS = (2, 64)
 OCC_RATIO = 2.0                           # placed (Blocked 53 (a), before any output): a step is read
                                           # when some head's U₂ share is above twice random, 4/1024
+                                          # (D/d is the mean; `chance_ratio` is the median's, below)
+
+
+def chance_ratio(D: int, d: int = D_MODEL) -> float:
+    """The median token share in a Haar D-subspace of R^d, over D/d: a unit token's share is
+    Beta(D/2, (d − D)/2), whose median is below its mean (0.69 at D = 2, 0.79 at D = 3;
+    `/challenge-pr` on #210, finding 1). `occupancy()` is a median, so this is its chance level."""
+    from scipy.stats import beta
+    return float(beta.median(D / 2, (d - D) / 2) / (D / d))
 
 
 def rung_at(lad: List[Dict], D: int) -> Optional[Dict]:
@@ -907,7 +916,8 @@ def occ_row(us: Sequence[np.ndarray], lad: List[Dict]) -> Dict:
             row[str(D)] = None
             continue
         s = occupancy(us, x["U"])
-        row[str(D)] = {"D": x["D"], "share": s, "ratio": s / (x["D"] / d)}
+        row[str(D)] = {"D": x["D"], "share": s, "ratio": s / (x["D"] / d),
+                       "chance_ratio": chance_ratio(x["D"], d)}
     return row
 
 
@@ -936,6 +946,8 @@ def cmd_occupancy(a) -> int:
     rec.update(_env("cuda"), prompts=list(V1), prompts_hash=prompts_hash(), pass_="cuda:float32",
                heads=list(heads()), occ_ratio=OCC_RATIO)
     rec.setdefault("steps", {})
+    if 143000 in a.steps and str(143000) not in rec["steps"] and not a.unit2:
+        raise SystemExit("refusing: 143000 without --unit2 (its occupancy must reproduce unit 2's)")
     need = sorted({parse_head(h)[0] for h in heads()})
     for step in a.steps:
         if str(step) in rec["steps"]:
@@ -996,7 +1008,12 @@ def report_occupancy(out: Path) -> None:
         print(f"U{k}  " + " ".join(f"{s:>6s}" for s in steps))
         for h in x["heads"]:
             cells = [x["steps"][s][h][str(k)] for s in steps]
-            print(f"{h:8s} " + " ".join("     —" if c is None else f"{c['ratio']:6.2f}" for c in cells))
+            # a cell whose rung moved up (U₃ for U₂) is marked with its D
+            print(f"{h:8s} " + " ".join("     —" if c is None else
+                                        f"{c['ratio']:6.2f}" + ("" if c["D"] == k else f"@{c['D']}")
+                                        for c in cells))
+        print(f"chance (median, over D/d): D=2 {chance_ratio(2):.2f}, D=3 {chance_ratio(3):.2f}, "
+              f"D=64 {chance_ratio(64):.2f}")
 
 
 def constants() -> Dict:
@@ -1094,6 +1111,9 @@ def cmd_report(a) -> int:
     out = Path(a.out)
     if (out / "occupancy.json").exists():
         report_occupancy(out)
+    have = [f for f in ("occupancy.json", "real.json", "gate.json") if (out / f).exists()]
+    if not have:
+        raise SystemExit(f"refusing: no records in {out}")
     if (out / "real.json").exists():
         report_real(out)
     if not (out / "gate.json").exists():

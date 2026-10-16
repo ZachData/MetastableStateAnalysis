@@ -171,6 +171,13 @@ already met at 143000 (`L18H1` U₃ 29×, `L5H2` 5.3×), where unit 2 read no D\
 necessary, not sufficient; it is applied as decided. The rule runs on **all 14 heads** at each
 selected step other than 143000 (not only the heads above the bar: the family is fixed, and a
 head's verdict at a step is cheap), with `real --step`, on a gate rerun at this code.
+**Amended after `/challenge-pr` on #210 (the user's pick, 2026-10-16, before any rule output at
+these steps):** `occupancy()` is a median, and a Haar subspace's median share is 0.69 (D = 2) to
+0.79 (D = 3) of D/d, not D/d (`chance_ratio`), so the 11 steps the bar skipped were not shown to be
+at chance. The rule runs on all 14 heads at those 11 steps too (0, 2, 4, 8, 16, 64, 128, 256,
+4000, 8000, 16000), so "no D\* ≥ 1" rests on the rule at all 18 steps, not on the screen. Code
+`939e114f7afb` adds `chance_ratio`, refuses an empty `report` and a 143000 pass without `--unit2`;
+the rule's code is unchanged from `37d4f2487738` (the 6 steps already read keep their records).
 
 NUMERICS: float64 on CPU for the gate (small); unit 2–3's hooked pass on the GPU float32, as A1a,
 with every comparison inside one process and device. The real attention's check against the stored
