@@ -56,6 +56,9 @@ BANDS = {"L1-8": range(1, 9), "L9-16": range(9, 17), "L17-23": range(17, 24), "L
 TOL_A1A = 1e-9
 TOL_B2A = 1e-6
 TOL_TPROJ = 1e-6                    # placed here: A1a's own pass at its own βs, same GPU and code path
+#: Post hoc (`/challenge-pr` on #213, finding 1): the bands without the code and LaTeX prompts,
+#: where M1 is negative mid-depth. Beside only; the rule and the primary use all 7.
+PROSE = tuple(p for p in V1 if p not in ("hdbscan_code", "latex_monograph"))
 ESTIMATORS = ("m1", "fe")
 SUBSETS = ("all", "kept")
 
@@ -269,10 +272,12 @@ def refit_step(step: int, ln: Dict, device: str, workers: int) -> Dict:
                       "kept_heads": int(np.sum(pr2[list(T_BLOCKS)] >= FLOOR))})
     return {"step": step, "cells": cells, "rule": rule(cells),
             "bands_m1": band_betas([np.array(c["m1_heads"], dtype=float) for c in cells]),
-            "bands_fe": band_betas([fe[p]["beta"] for p in V1])}
+            "bands_fe": band_betas([fe[p]["beta"] for p in V1]),
+            "bands_m1_prose": band_betas([np.array(c["m1_heads"], dtype=float) for c in cells
+                                          if c["prompt"] in PROSE])}
 
 
-def a1b_rerun(step: int, layer_beta: Dict[str, List[float]], device: str) -> List[Dict]:
+def a1b_rerun(step: int, layer_beta: Dict[str, List[float]]) -> List[Dict]:
     """A1a's pass at ``step``; per prompt, A1b's cell at A1a's βs (must reproduce its record) and
     at the refit layer βs."""
     import torch
@@ -326,6 +331,16 @@ def a1b_rerun(step: int, layer_beta: Dict[str, List[float]], device: str) -> Lis
     return out
 
 
+def have(f: Path, code: str) -> bool:
+    """An output this code wrote is reused; one from other code refuses the resume."""
+    if not f.exists():
+        return False
+    got = json.loads(f.read_text()).get("code")
+    if got != code:
+        raise SystemExit(f"refusing to resume: {f} was written by code {got}, this is {code}")
+    return True
+
+
 def run(a) -> int:
     import torch
     from core.holdout import refuse_held_out
@@ -342,7 +357,7 @@ def run(a) -> int:
     lns = ln_all()
     if FIRST in steps:
         f = out / "check_b2a.json"
-        if not f.exists():
+        if not have(f, code):
             t0 = time.monotonic()
             c = check_b2a(device)
             f.write_text(json.dumps({"code": code, **c}, indent=1) + "\n")
@@ -352,7 +367,7 @@ def run(a) -> int:
             raise SystemExit(f"refusing: check (a): B2a's beta_full off by {c['max_abs']:.1e}")
     for step in steps:
         f = out / f"refit_step{step}.json"
-        if f.exists():
+        if have(f, code):
             print(f"have step {step}", flush=True)
             continue
         i = STEPS.index(step)
@@ -365,10 +380,10 @@ def run(a) -> int:
         print(f"step {step}: rule {r['rule']} ({r['seconds']:.0f}s)", flush=True)
     if not a.no_a1b and FIRST in steps:
         f = out / "a1b_step143000.json"
-        if not f.exists():
+        if not have(f, code):
             r = json.loads((out / f"refit_step{FIRST}.json").read_text())
             lb = {c["prompt"]: c["refit"]["m1/all"]["layer"] for c in r["cells"]}
-            rows = a1b_rerun(FIRST, lb, "cuda")
+            rows = a1b_rerun(FIRST, lb)
             from .a1b import read_step
             f.write_text(json.dumps({"code": code, "step": FIRST, "cells": rows,
                                      "step_a1a": read_step([x["a1a"]["reading"] for x in rows]),
@@ -414,12 +429,15 @@ def report(out: Path) -> int:
                          f"{x['kept_heads']} of {len(T_BLOCKS) * 16}")
         lines += ["", f"β per band, heads × prompts pooled, median [p10, p90] (convention "
                       f"{CONVENTION[0]}–{CONVENTION[1]}, fe_full):",
-                  "band | M1 | fe_full | n | M1 outside convention", "---|---|---|---|---"]
+                  "band | M1 | fe_full | n | M1 outside convention | M1, prose only (post hoc) | outside",
+                  "---|---|---|---|---|---|---"]
         for b in BANDS:
-            m, e = r["bands_m1"][b], r["bands_fe"][b]
+            m, e, q = r["bands_m1"][b], r["bands_fe"][b], r["bands_m1_prose"][b]
             lines.append(f"{b} | {m['p50']:.2f} [{m['p10']:.2f}, {m['p90']:.2f}] | "
                          f"{e['p50']:.2f} [{e['p10']:.2f}, {e['p90']:.2f}] | {m['n']} | "
-                         f"{'YES' if m['outside_convention'] else 'no'}")
+                         f"{'YES' if m['outside_convention'] else 'no'} | "
+                         f"{q['p50']:.2f} [{q['p10']:.2f}, {q['p90']:.2f}] | "
+                         f"{'YES' if q['outside_convention'] else 'no'}")
         lines.append("")
     f = out / "a1b_step143000.json"
     if f.exists():

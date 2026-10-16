@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `60e612323b`
+- **Reviewed:** 2026-10-16 · body `b67bdcedcb`
 <!-- /phase-card -->
 
 ## Units
@@ -421,4 +421,4 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 
 ## Corrections received
 
-(none)
+- 2026-10-16: B2a unit 2's "A1a's β against M1's" (6 of 14 heads, M1 −, A1a +) is the code and LaTeX prompts pulling the pooled M1 fit, not a bias of A1a's `fe_full`: fitted per prompt, those heads are positive on all five prose prompts (`L6H4` 2.1–3.1, `L15H7` 3.4–5.0) and negative on `hdbscan_code` and `latex_monograph` only. B2a's verdicts do not read β's sign, so none moves — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)".

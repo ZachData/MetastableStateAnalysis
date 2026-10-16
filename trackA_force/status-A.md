@@ -25,7 +25,7 @@
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `fd3758b5c4`
+- **Reviewed:** 2026-10-16 · body `4d86995c30`
 <!-- /phase-card -->
 
 ## Units
@@ -46,7 +46,8 @@ first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exi
 ## A2 unit 2, the β refit at 143000 (2026-10-16)
 
 Design `design-A2.md` "Unit 2" (frozen 2026-10-16, Blocked 56 (a)); code `trackA_force/a2_beta.py`
-(`87358ccfe397`); inputs A1a's records at 143000 (`a08544e9b644`), v1 (`976b62d677bc`), the
+(`59e4193e0dde`; the first run, `87358ccfe397`, gave the same numbers, kept as
+`a2_beta_2026-10-16_87358cc/`); inputs A1a's records at 143000 (`a08544e9b644`), v1 (`976b62d677bc`), the
 stored `attentions.npz`, A1a's unit LN1 rows (LN cache `ln1_18steps.npz`), position 0 out;
 output `data/trackA/a2_beta_2026-10-16/` (main tree; `a2_beta_report.txt`). 5 min (M1 fits
 float64 on the GPU, `fe_full` on 7 CPU workers, A1a's hooked pass float32 GPU, TF32 off).
@@ -58,7 +59,10 @@ converged (gradient ≤ 1e-6 per row; some ran to the 60-iteration cap). A1a's p
 βs reproduces A1a's `T_proj` and t* exactly (0) before the refit βs are read.
 
 **The rule (primary M1, all heads; p50 outside A1's [p10, p90] in ≥ 4 of 7): 2 of 7, does
-not move** (`hdbscan_code`, `latex_monograph`, both below). Layer-β bracket p10 / p50 / p90:
+not move** (`hdbscan_code`, `latex_monograph`, both below). The bar reads the bracket's middle,
+which A1's cell rule never uses (it reads t\* at p10 and p90); what A1's card quotes does move,
+and every change strengthens *below* (next paragraph but one; `/challenge-pr` on #213, finding
+2). That, not the bar, is why no 18-step refit is needed. Layer-β bracket p10 / p50 / p90:
 
 | prompt | A1 (`fe_full`, all) | M1 all | M1 kept | `fe_full` kept | kept heads (0–22) |
 |---|---|---|---|---|---|
@@ -76,16 +80,26 @@ layers (count in brackets), so they are beside only. What the 2 × 2 says: **the
 prompts); **the floor raises it** (`fe_full` kept 6–9, as 1d found at 0.10). On the code and
 LaTeX prompts M1 is negative at most mid layers (136 and 182 of 368 heads below −5, layers
 5–20; head-level correlation with `fe_full` 0.26 and 0.20, against 0.73–0.82 on the other
-five): a sign the two estimators disagree on, not a small shift.
+five): a sign the two estimators disagree on, not a small shift. **This is where B2a's "sign
+bias" came from** (`/challenge-pr` on #213, finding 1, checked here from the per-prompt fits):
+B2a's negative pooled heads are positive on every prose prompt (`L6H4` 2.1–3.1, `L15H7`
+3.4–5.0) and negative on code and LaTeX only (−9 to −34); `L18H1` is mixed. So it is not a bias
+of `fe_full` on prose; `trackB_circuit/status-B.md` "Corrections received".
 
 **A1b's cell at 143000, re-run at M1's layer βs** (design: whatever the bar says): step reading
 *below* → *below*, 6 of 7 → 7 of 7. `T_proj` falls 5–32 % (the field's direction changes with
 β); t\*(p10) barely moves (2.44–2.88), t\*(p90) falls from 3.3–23.9 to 2.5–3.5, so the bracket
-narrows; `paper_excerpt` *straddles* → *below*. Median `T_proj / t*(p10)` 0.82 → 0.72.
+narrows. `paper_excerpt` *straddles* → *below* **through `T_proj`** (2.65 → 2.18, under its
+t\*(p10) 2.60), not through t\*. Median `T_proj / t*(p10)` 0.82 → 0.72. Negative layer βs enter
+the field and t\* as they are: t\* stays near 2.5 (the identity-weight model collapses at any β),
+but on the two negative-β prompts the field at those layers points toward the *least* similar
+tokens, which matters for unit 3's split of "against" from "off" (finding 3).
 
 **β per band (heads × prompts pooled, beside; convention 3.5 [1.6, 5.6], Blocked 9):** M1
 L1–8 2.71, L9–16 2.04, **L17–23 0.88 (outside)**, L1–23 1.97; `fe_full` 4.36, 3.65, 2.37, 3.46
-(1d's numbers, reproduced). Sent to the user as Blocked 57; nothing changed.
+(1d's numbers, reproduced). **Post hoc, on the five prose prompts only** (finding 1): M1 3.12,
+2.79, **1.66**, 2.70, every band inside the convention; the 0.88 comes from pooling in code and
+LaTeX. Sent to the user as Blocked 57; nothing changed.
 
 Not done, by the rule: the refit at all 18 steps and a "Corrections received" line (only if
 it moves). Not established: which estimator is right on the code and LaTeX prompts (M1's φ may
