@@ -7,7 +7,10 @@ of 2026-10-14, can a head's dynamics be read in the paper's d = 2 reduction (`tr
 throughout: exploratory, unregistered; 410m is an exploration rung.
 
 **Not frozen.** Blocked 50 (`STATE.md`) asks the user to freeze it and decide the two choices
-below marked *(50)*.
+below marked *(50)*. **Revised after `/challenge-pr` on #207 (accept with changes), before any
+output:** V's ladder on its nonzero spectrum by `|λ|` (1); position 0 out and rows renormalised
+(2); β and the offset profile fitted per rung by cross-entropy, A1a's β beside (3); 320 nulls and
+G3 as a false-pass rate (4); the reference pool stated (5).
 
 ## The paper, corrected
 
@@ -48,16 +51,16 @@ convention, `cos(x_i, x_j) = v_i · v_j`, so β carries over unchanged (one line
 |---|---|
 | frame | A1's: block ℓ's unit LN1 rows, `u_i = unit(LN1_ℓ(x_i))`, positions 1 … n−1 (position 0 out, as A1a) |
 | V of head h | the complete path back to the frame (2609.28448 §6.2): `V_h = diag(g_ℓ) C W_O^h W_V^h`, with `g_ℓ` LN1's gain, C the centring projector (LN's mean removal), biases out; LN's 1/σ is a scalar γ absorbs. Rank ≤ 64, nonsymmetric |
-| β of head h | A1a's `fe_full` for that (step, prompt, head), as recorded (`trackA_force/a1a.py`) |
+| β of head h | fitted per rung (below); A1a's `fe_full` for that (step, prompt, head) beside, as recorded (`trackA_force/a1a.py`) |
 | γ of head h | `γ / (1 − γ)` = the median over tokens of `‖diag(g_ℓ) C o_i^h / σ_i‖ / ‖LN1_ℓ(x_i)‖`, head h's own output `o^h` mapped into the frame (σ_i LN1's scale at token i) (read in unit 2; for unit 1's weights-only ordering, γ = 0.1, placed, with the ordering by `Re λ` beside, which is γ's small-γ limit) |
-| V's ladder | real Schur form of `V_h`; invariant blocks (a real eigenline, D += 1; a complex pair, D += 2, kept whole) ordered by `|b_a| = |1 − γ + γ λ_a|`, largest first. `U_D` = the span of the first blocks with total dimension D. Ladder D ∈ {0, 1, 2, 3, 4, 6, 8, 16, 32, 64}, a rung that would split a pair is moved up by one |
-| reduced attention (M1, primary *(50)*) | `log Â_ij = β · cos(Uᵀu_i, Uᵀu_j) + φ_h(i − j) − log Z_i`, causal, `j ≤ i`, j ≥ 1. `φ_h` is the head's offset profile, the per-offset fixed effects of the `fe_full` model, refitted on the other 6 prompts (leave one prompt out, so the profile is not fitted on the row it predicts). `D = 0` is `φ_h` alone, the positional rung |
+| V's ladder | real Schur form of `V_h`, **its nonzero spectrum only** (rank ≤ 64; the ≥ 960-dimensional kernel is the part of the frame the head does not act on, and at `b = 1 − γ` it would outrank every direction with Re λ < 0, `/challenge-pr` on #207 finding 1); invariant blocks (a real eigenline, D += 1; a complex pair, D += 2, kept whole) ordered by `|λ_a|`, largest first. `U_D` = the span of the first blocks with total dimension D. Ladder D ∈ {0, 1, 2, 3, 4, 6, 8, 16, 32, 64} capped at the rank, a rung that would split a pair is moved up by one. Beside, weights only: the paper's selection order `|b_a|` at the head's γ, and whether any nonzero block beats the kernel's `1 − γ` (if none does, the paper's selection mechanism does not operate in that head) |
+| reduced attention (M1, primary *(50)*) | `log Â_ij = β_D · cos(Uᵀu_i, Uᵀu_j) + φ_h(i − j) − log Z_i`, causal, keys `1 ≤ j ≤ i`. **Position 0 out as key and query, and the real rows renormalised over keys j ≥ 1** (A1a's convention; induction heads and `L10H7` put 47–93 % on position 0 at 143000, finding 2); the sink mass per head is reported beside. **`β_D` and `φ_h` are fitted per rung** by minimising the cross-entropy of `Â` against the renormalised real rows on the other 6 prompts (leave one prompt out), so the fit and the TV score read the same object and no rung is held at the full frame's sharpness (finding 3); A1a's `fe_full` β is reported beside, and M1 at full D must reproduce it in sign and order. `D = 0` is `φ_h` alone, the positional rung |
 | M1 at full D | the same with U = I (`fe_full`'s own isotropic model): how well the paper's class fits the head at all |
 | head's own QK (M2, beside *(50)*) | the real logit with `y → U Uᵀ y` in both slots, biases and rotary kept; on V's ladder and on the QK read-space ladder (SVD of `[W_Q; W_K]`, exact at its rank ≤ 128) |
 | real attention | recomputed from the weights on the hooked pass's LN1 rows; **G0** checks it against the stored `attentions.npz` |
 | faithfulness | per query row i ≥ 1, total variation `TV_i = ½ Σ_j |A_ij − Â_ij|`; the head's statistic is the mean over rows and the 7 prompts |
-| null | K = 32 Haar-random D-dimensional subspaces of the frame per (head, D, prompt), seeded; same β and `φ_h` |
-| beside | (a) **occupancy**: the median share `‖Uᵀu_i‖²` (random: D/1024), the paper's attraction question; (b) **motion**: the cosine between the reduced update `γ W Σ_j Â_ij v_j` lifted by U and head h's real output in the frame, tangent part; (c) the type of `U_2` (degenerate negative, rotation pair, mixed) and `ρ_⊥ = |b_3| / |b_2|`; (d) β refitted on the projected cosines (lenient; the primary keeps A1a's β) |
+| null | K = 320 Haar-random D-dimensional subspaces of the frame per (head, D), seeded, each with its own fitted `β_D` and `φ_h` by the same procedure. 320 so that "below all nulls" is 1/321 per rung and ≤ 0.03 over the ≤ 10 rungs the rule tries (finding 4) |
+| beside | (a) **occupancy**: the median share `‖Uᵀu_i‖²` (random: D/1024), the paper's attraction question; (b) **motion**: the cosine between the reduced update `γ W Σ_j Â_ij v_j` lifted by U and head h's real output in the frame, tangent part; (c) the type of `U_2` (degenerate negative, rotation pair, mixed) and `|λ_3| / |λ_2|`; (d) A1a's β against `β_D`; (e) the position-0 mass |
 
 ## The rule (fixed before any output)
 
@@ -67,7 +70,7 @@ For each named head at each step read:
    *outside the paper's class* (its attention is not isotropic content plus position) and has no
    M1 verdict; M2 is reported for it.
 2. **D\*.** Otherwise D\* is the smallest D on V's ladder with mean TV(D) ≤ TV(full) + 0.05
-   *(placed)* **and**, for D ≥ 1, below all 32 nulls at that D (rank 1 of 33, ties counted
+   *(placed)* **and**, for D ≥ 1, below all 320 nulls at that D (rank 1 of 321, ties counted
    against; D = 0 has no subspace to randomise, so it passes on the TV clause alone).
    **D\* = 0** reads "positional: no content subspace". **D\* = 2** reads "the circle case" and
    names `U_2`'s type. No D ≤ 64 passing reads "no small invariant subspace".
@@ -86,7 +89,7 @@ No lean is recorded for the other heads.
 | previous-token | `L5H2` | B1's positive control |
 | induction members | `L7H8`, `L12H5`, `L8H6`, `L11H14` | 7d's substantial members (`p7d_redundancy/status-7d.md` "Q1") |
 | negative interactor | `L10H7` | ROADMAP B6; the most negative 7d effect |
-| reference | 8 heads drawn from the other 378 with `numpy` seed 20261015, layers 0–22 | the population a named head is compared with |
+| reference | 8 heads drawn from the other 362 heads of layers 0–22 (A1's blocks; 368 less the 6 named) with `numpy` seed 20261015 | the population a named head is compared with |
 
 Prompts: v1's 7 (`trackA_force.a1a.V1`, A1a's β exists only there; `prompts_hash` recorded). Long
 passages are not read (no stored β). Steps: 143000 in unit 2; all 18 in unit 3 for the heads with
@@ -105,11 +108,11 @@ a D\* (including D\* = 0) at 143000; the reference heads always.
 
 | arm | planted | passes when |
 |---|---|---|
-| G1, circle | V with a degenerate pair `−ν I₂` (ν = 2) as its top-`|b|` block, the rest of the spectrum of the same rank-64 shape at `|λ| ≤ 0.5`; tokens run through the paper's causal map at β = 4, γ = 0.3 for 20 steps from a Gaussian start, so they lie near the plane; attention by the paper's model at full d | D\* = 2, `U_2` within 1e-3 rad of the planted plane, type "degenerate negative" |
+| G1, circle | V of rank 64 with a degenerate pair `−ν I₂` (ν = 2) as its largest-`|λ|` block, the rest of its nonzero spectrum at `|λ| ≤ 0.5`; tokens run through the paper's causal map at β = 4, γ = 0.3 for 20 steps from a Gaussian start, so they lie near the plane; attention by the paper's model at full d | D\* = 2, `U_2` within 1e-3 rad of the planted plane, type "degenerate negative" |
 | G1r, rotation | as G1 with `W = R_φ`, φ = 2.5 | D\* = 2, type "rotation" |
 | G1d, D = 4 | a degenerate negative block of dimension 4 | D\* = 4 |
 | G2, positional | attention from an offset profile alone (a previous-token peak) | D\* = 0 |
-| G3, null | tokens isotropic Gaussian on the sphere, V a random Gaussian rank-64 map, attention by the paper's model at full d | D\* ≥ 16 or none |
+| G3, null | tokens isotropic Gaussian on the sphere, V a random Gaussian rank-64 map unrelated to the attention, attention by the paper's model at full d; 20 seeds | D\* = none in ≥ 19 of 20 (V's ladder is no better than a random subspace, so a pass is a false pass; finding 4) |
 | G4, out of class | attention from a random full-rank `Qᵀ K` (not isotropic) | "outside the paper's class" |
 | G5, arithmetic | M1 at U = I equals the full model; M2 on the QK read-space at its full rank equals the real logit | max abs diff ≤ 1e-10 (float64) |
 
@@ -124,9 +127,10 @@ with every comparison inside one process and device. The real attention's check 
   (2609.28448 §6.2). The motion row (b) is the only V-side read.
 - **Selection is not tested.** Occupancy (a) describes where the real tokens are; it does not show
   that the dynamics attracts them there.
-- **The offset profile is fitted.** M1 has `|φ_h|` free parameters per head (leave one prompt
-  out); M2 has none. A positional head's D\* = 0 rests on that fit.
-- **β is A1a's**, fitted on the same 7 prompts with all of the frame; M1 inherits its fit.
+- **The offset profile and β are fitted.** M1 has `|φ_h| + 1` free parameters per rung (leave
+  one prompt out); M2 has none. A positional head's D\* = 0 rests on that fit. A1a's β enters
+  only beside, so B2a's dependence on A1a is now the frame and the beside row, not the rule.
+- **Position 0 is out.** The sink carries most of some heads' attention; B2a reads the rest.
 
 ## Worth challenging (for the freeze)
 
