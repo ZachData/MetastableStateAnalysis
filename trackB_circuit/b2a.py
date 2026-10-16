@@ -21,9 +21,11 @@ damped Newton, ridge `RIDGE`, fitted leave one prompt out. TV per row ``½ Σ_j 
 the head's statistic is the mean over prompts of the per-prompt mean over rows.
 
 **The rule** (design "The rule", constants placed there): outside the class if TV(full) > 0.5,
-or if M1's content term adds nothing and the head is not positional outright, TV(0) − TV(full) <
-0.05 and TV(full) > 0.05 (Blocked 51 (a), taken before any real token: attention M1 cannot express
-otherwise reads D* = 0, "positional"; gate arm G4w); else D* = the smallest rung with TV(D) ≤ TV(full) + 0.05 and, for D ≥ 1, below all 320 Haar
+or if neither M1's content term nor its offset profile adds anything and the head is not fitted
+outright: TV(0) − TV(full) < 0.05, TV(uniform) − TV(0) < 0.05 and TV(full) > 0.05 (Blocked 51 (a),
+before any real token: attention M1 cannot express otherwise reads D* = 0, "positional"; gate arm
+G4w; amended by Blocked 52 (a′) after one real head, `L5H2`, read "outside" under (a); arm G2n,
+a positional profile plus content noise, must read D* = 0); else D* = the smallest rung with TV(D) ≤ TV(full) + 0.05 and, for D ≥ 1, below all 320 Haar
 subspaces at that D (each fitted the same way; ties count against). Nulls run in chunks and stop
 at the first null that ties or beats V's rung (the verdict needs no more); ``--all-nulls`` runs
 every one.
@@ -99,8 +101,9 @@ G4_SD = 3.0                               # G4: logit = 3 uᵢᵀ G uⱼ, G stan
 PLANE_TOL = 1e-3                          # rad
 G0_TOL = G5_HF_TOL                        # placed (design "Fixed for unit 2"): G5 (iii)'s bound
 A1A_RECORDS = Path(os.environ.get("METS_DATA", str(REPO / "data"))) / "trackA/a1a_batch_2026-10-15/records"
-G4W_SD = (0.5, 1.0)                       # G4w (Blocked 51 (a)): weak random QK, must read outside
-ARMS = ("G1", "G1r", "G1d", "G2", "G3", "G4", "G4w", "G5")
+G4W_SD = (0.5, 1.0)                       # placed, G4w (Blocked 51 (a)): weak random QK, must read outside;
+                                          # G2n (Blocked 52 (a')): G2's profile plus it, must read D* = 0
+ARMS = ("G1", "G1r", "G1d", "G2", "G2n", "G3", "G4", "G4w", "G5")
 
 
 class B2aError(RuntimeError):
@@ -350,6 +353,13 @@ def tv(theta, c, s: Seq):
     return 0.5 * (P - s.A).abs().sum(-1).mean(-1)                       # (B,)
 
 
+def tv_uniform(s: Seq) -> float:
+    """TV of causal-uniform attention (keys j ≤ i) against the real rows, mean over rows."""
+    U = s.valid.to(s.A.dtype)
+    U = U / U.sum(-1, keepdim=True)
+    return float(0.5 * (U - s.A).abs().sum(-1).mean())
+
+
 def loo(us: Sequence, seqs: Sequence[Seq], Us) -> Dict:
     """Leave one prompt out: fit on the others, TV on the one left out. Us as in `cos_feat`."""
     import torch
@@ -396,10 +406,12 @@ def read_head(us: Sequence[np.ndarray], As: Sequence[np.ndarray], lad: List[Dict
     rec = {"tv_full": float(full["tv"][0]), "beta_full": float(full["beta"][0]),
            "rungs": rungs, "nulls": {}}
     tv0 = next(r["tv"] for r in rungs if r["D"] == 0)
+    tvu = float(np.mean([tv_uniform(s) for s in seqs]))
+    rec["tv_uniform"] = tvu
     if rec["tv_full"] > TV_OUT:
         rec.update(verdict="outside", outside_why="TV(full) > TV_OUT", D_star=None)
         return rec
-    if tv0 - rec["tv_full"] < TV_TOL and rec["tv_full"] > TV_TOL:
+    if tv0 - rec["tv_full"] < TV_TOL and tvu - tv0 < TV_TOL and rec["tv_full"] > TV_TOL:
         rec.update(verdict="outside", outside_why="content M1 cannot express", D_star=None)
         return rec
     rec.update(verdict="none", D_star=None)
@@ -580,12 +592,16 @@ def arm_data(arm: str, seed: int = 0, scale: Optional[float] = None) -> Dict:
             us = [_unit(g.standard_normal((G_N, G3_SUB)) @ S.T) for _ in range(G_PROMPTS)]
         else:
             us = [_unit(g.standard_normal((G_N, G_D))) for _ in range(G_PROMPTS)]
-        if arm == "G2":
+        if arm in ("G2", "G2n"):
             phi = np.zeros(G_N)
             phi[1] = G2_PEAK
             i = np.arange(G_N)
             L = phi[np.clip(i[:, None] - i[None, :], 0, G_N - 1)]
-            As = [_causal_softmax(L) for _ in us]
+            if arm == "G2":
+                As = [_causal_softmax(L) for _ in us]
+            else:
+                G = g.standard_normal((G_D, G_D))
+                As = [_causal_softmax(L + scale * (u @ G @ u.T)) for u in us]
         elif arm == "G3":
             As = [paper_attention(u) for u in us]
         elif arm in ("G4", "G4w"):
@@ -637,6 +653,10 @@ def arm_pass(arm: str, rec) -> Tuple[bool, str]:
         return rec["D_star"] == 4, f"D*={rec['D_star']}"
     if arm == "G2":
         return rec["D_star"] == 0, f"D*={rec['D_star']}"
+    if arm == "G2n":
+        return (all(r["D_star"] == 0 for r in rec),
+                "; ".join(f"scale {s}: D*={r['D_star']} ({r['verdict']}), TV(full) {r['tv_full']:.3f}, "
+                          f"TV(uniform) {r['tv_uniform']:.3f}" for s, r in zip(G4W_SD, rec)))
     if arm == "G3":
         none = sum(r["verdict"] == "none" for r in rec)
         return none >= G3_PASS, f"none in {none} of {len(rec)}"
@@ -892,8 +912,8 @@ def cmd_gate(a) -> int:
         t0 = time.monotonic()
         if arm == "G3":
             r = [run_arm("G3", a.device, a.all_nulls, s) for s in range(G3_SEEDS)]
-        elif arm == "G4w":
-            r = [run_arm("G4w", a.device, a.all_nulls, 0, s) for s in G4W_SD]
+        elif arm in ("G4w", "G2n"):
+            r = [run_arm(arm, a.device, a.all_nulls, 0, s) for s in G4W_SD]
         elif arm == "G5":
             r = {"i_m1_identity": g5_planted(a.device)}
         else:

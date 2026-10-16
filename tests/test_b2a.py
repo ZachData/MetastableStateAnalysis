@@ -154,6 +154,11 @@ def test_the_rule_on_small_planted_heads(monkeypatch):
     assert r["tv_full"] < b2a.TV_OUT
     assert r["verdict"] == "outside" and r["outside_why"] == "content M1 cannot express"
 
+    # Blocked 52 (a'): the same noise on a positional profile still reads D* = 0
+    Ln = phi[np.clip(i[:, None] - i[None, :], 0, n - 1)]
+    r = b2a.read_head(iso, [b2a._causal_softmax(Ln + 1.0 * (u @ G @ u.T)) for u in iso], lad, "t-posn", "cpu")
+    assert r["tv_full"] > b2a.TV_TOL and r["verdict"] == "D*" and r["D_star"] == 0
+
 
 def test_m1_attention_matches_the_fitted_model():
     """Unit 2's numpy Â (the beside rows) equals the torch M1 the rule fits, at a random θ."""

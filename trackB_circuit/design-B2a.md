@@ -76,6 +76,12 @@ For each named head at each step read:
    cannot express)*. Without it, weak attention M1 cannot express (random QK at logit scale
    0.5–1.0: TV(full) = TV(0) = 0.19–0.38) read D\* = 0, "positional" (`/challenge-pr` on #208,
    finding 1). Gate arm **G4w**: G4 at logit scale 0.5 and 1.0, must read outside.
+   **Amended (Blocked 52 (a′), the user's, 2026-10-16, after one real head):** outside also needs
+   the offset profile to add nothing, TV(uniform) − TV(0) < 0.05 (TV(uniform): causal-uniform
+   attention over keys 1 … i). A one-head smoke test, run to catch bugs before the gate, read
+   `L5H2` (B1's previous-token control) "outside" under (a) at TV(full) = TV(0) = 0.125; that
+   head's verdict is post hoc. Gate arm **G2n**: G2's profile plus G4w's content noise, must
+   read D\* = 0.
 2. **D\*.** Otherwise D\* is the smallest D on V's ladder with mean TV(D) ≤ TV(full) + 0.05
    *(placed)* **and**, for D ≥ 1, below all 320 nulls at that D (rank 1 of 321, ties counted
    against; D = 0 has no subspace to randomise, so it passes on the TV clause alone).
