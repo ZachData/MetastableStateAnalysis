@@ -23,10 +23,11 @@
   - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
   - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (Blocked 57 (a): card at `fe_full`, (i) beside) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few", and 16 nodes fail G0 on real block 0 (`/challenge-pr` on #214; STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
+  - A2 unit 4 (descriptive): against the field is a few MLPs at 12 of 18 steps (below the init band), the MLP cancels attention at 1000–8000, block 23's step against is its MLP, the off motion is the MLP's; unit 5's size-matched null is near degenerate (STATE Blocked 59) — `trackA_force/status-A.md` "A2 unit 4, the batch and the ranking (2026-10-16)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `cc7bc9cb19`
+- **Reviewed:** 2026-10-16 · body `b63725e42c`
 <!-- /phase-card -->
 
 ## Units
@@ -41,9 +42,103 @@
 | A2 1. design and scan | **frozen 2026-10-16 as revised** (Blocked 56 (a), the user's) | `design-A2.md`, `lit-A2.md` |
 | A2 2. the β refit at 143000 | **done 2026-10-16: A1's number does not move** (2 of 7 prompts outside, bar 4); A1b's 143000 cell re-run: still *below*, its one *straddles* reads *below* (Blocked 57 (a), the user's: card at `fe_full`, (i) beside) | "A2 unit 2, the β refit at 143000" below; `a2_beta.py` |
 | A2 3. the per-component instrument and its gate | **done 2026-10-16: the gate passes, G0–G4** (no real reading yet); every random init is already "few" (Blocked 58) | "A2 unit 3" below; `a2_comp.py`, `a2_gate.py` |
+| A2 4. the batch and the ranking (18 steps) | **done 2026-10-16** (Blocked 58 (a1), (b1), (c1)): against is few and MLP at 12 of 18 steps; the MLP cancels attention at 1000–8000; block 23's step against is its MLP; the null for unit 5 is near degenerate (Blocked 59) | "A2 unit 4" below; `a2_batch.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
+
+## A2 unit 4, the batch and the ranking (2026-10-16)
+
+Blocked 58, the user's: (a1) a set is **few** if its size is below the init band's 5 %, the
+band re-measured at unit 4's β (≤ 43 beside); (b1) the field at A1a's `fe_full` layer βs per
+(step, prompt), M1's beside at 143000 only; (c1) 64 nodes and a refusal on G0 > 1e-6.
+Descriptive: this unit ranks; it tests nothing (`design-A2.md` "Unit 4").
+
+**Built:** `a2_comp.py` at 64 nodes, refusing a block whose G0 > 1e-6; the top key chosen by mass
+received over its uniform-attention expectation, its token id recorded (#214 finding 5); `off_global`
+(a block's off shares × its mean `|o|²` over all blocks', so `S⁰` ranks across blocks; the design
+did not say how shares from 24 blocks combine) and `set_stats`. `a2_gate.py`'s G2 reads at given βs
+and records every set statistic's band. `trackA_force/a2_batch.py` (`band`, `run`, `report`),
+`scripts/a2_unit4.sh`.
+
+**Inputs:** code `05a989b874ec` (instrument), v1 prompts `976b62d677bc`, A1a's layer βs
+(`data/trackA/a1a_batch_2026-10-15/records`), M1's from `data/trackA/a2_beta_2026-10-16`. Gate at 64
+nodes `data/trackA/a2_gate64_2026-10-16/a2_gate.json` (**passes** G0–G4, G0 max 4.9e-14; 5,400 s);
+band `data/trackA/a2_batch_2026-10-16/a2_band.json` (5,261 s); 126 of 126 records, report
+`a2_batch_report.txt`, `a2_batch_summary.json` in the same directory (about 103 s per step). Real
+blocks: G0 ≤ 4.7e-11 (was 1.4e-3 at 16 nodes on block 0); stored-row match and reconstruction
+within their tolerances in every record.
+
+**The init band** (50 redraws + 1, 5–95 %), at step 0's βs (≈ 0; the cut) and at 3.5 (the gate, beside):
+
+| statistic | at step 0's β | at 3.5 | real step 0 |
+|---|---|---|---|
+| `\|S⁻\|` | 19.5–33.6 | 13.5–29.7 | 28 |
+| `\|S⁺\|` | 17.8–35.0 | 14.0–31.1 | 33 |
+| `\|S⁰\|` | 5–5 | 5–5 | 5 |
+| top-43 share of against | 0.574–0.666 | 0.602–0.719 | 0.621 |
+
+β moves the `|S⁻|` cut by 6. `S⁰`'s band has no width: at init five early MLPs carry half the off
+motion, so "few" cannot be read for `S⁰`.
+
+**The ranking** (median over 7 prompts per component; proj in field units per block step; the
+attention / MLP columns summed over blocks 0–22; **bold** = below the band's 5 % at step 0's β):
+
+| step | `\|S⁻\|` | `\|S⁺\|` | `\|S⁰\|` | top of `S⁻` | attention / MLP proj | attention proj, drift removed | sink bound (median over blocks) |
+|---|---|---|---|---|---|---|---|
+| 0 | 28 | 33 | 5 | MLPs, each ≈ −0.01 | +0.06 / −0.08 | +0.01 | 0.036 |
+| 2 | 28 | 33 | 5 | as 0 | +0.06 / −0.08 | +0.01 | 0.036 |
+| 4 | 26 | 34 | 5 | as 0 | +0.07 / −0.06 | +0.03 | 0.036 |
+| 8 | 20 | 32 | 4 | L0, L1 MLP | +0.18 / +0.16 | +0.16 | 0.035 |
+| 16 | **7** | 19 | 3 | L0 MLP, L0 heads | +0.46 / +0.63 | +0.42 | 0.032 |
+| 32 | **5** | 20 | 3 | L0 MLP | +0.44 / +0.63 | +0.42 | 0.031 |
+| 64 | **4** | **15** | 3 | L1, L0 MLP | +0.20 / +0.35 | +0.18 | 0.033 |
+| 128 | **3** | **8** | 3 | L1, L2 MLP | +0.11 / +0.25 | +0.14 | 0.034 |
+| 256 | 35 | **5** | 3 | L1, L0, L6 MLP | −0.11 / +0.34 | −0.20 | 0.031 |
+| 512 † | **9** | **9** | 3 | L5, L1, L3 MLP | −0.09 / −0.13 | −0.22 | 0.024 |
+| 1000 † | **16** | 25 | 5 | L1, L5, L4 MLP | +0.19 / −0.23 | −0.10 | 0.058 |
+| 2000 † | **7** | 33 | 8 | L1–L5, L7, L10 MLP | +0.90 / −0.94 | +0.44 | 0.134 |
+| 4000 | **7** | 33 | 11 | L1, L5, L3, L10 MLP | +1.05 / −1.07 | +0.84 | 0.173 |
+| 8000 | **5** | 28 | 12 | L1, L0, L5, L7, L3 MLP | +1.03 / −0.49 | +0.86 | 0.223 |
+| 16000 | **5** | **17** | 14 | L0, L1 MLP | +0.78 / +0.28 | +0.72 | 0.247 |
+| 32000 | **14** | **14** | 14 | L0, L6 MLP, L0 heads | +0.69 / +0.88 | +0.70 | 0.278 |
+| 54000 | 20 | **13** | 14 | heads L0, L9, L5, L7; L6 MLP | +0.82 / +1.26 | +0.75 | 0.268 |
+| 143000 | **6** | **12** | 11 | L23 MLP −0.49, L21.h12 −0.10, L22, L20 MLP | +0.90 / +1.48 | +0.70 | 0.249 |
+
+† LR warmup overlaps 512 and 1000–2000 (design "Fences"). Every `|S|` is ≤ 43 at every step.
+
+**Readings (descriptive, tier 1):**
+1. **Against is few, and MLP:** `|S⁻|` is below the band at 12 of 18 steps (all from 16 except
+   256 and 54000), and the most-against component is an MLP at 17 of 18 (54000: a block-0 head);
+   early MLPs (L0–L7) from 16 to 32000, the last block's MLP at 143000. At 3.5's band 1000 and
+   32000 would read cooperating (16 and 14 against a cut of 13.5): β-sensitive there only.
+2. **Attention against the MLP at 1000–8000 (A1b's carried item): the MLP cancels attention.**
+   Attention's summed proj is +0.19 to +1.05, the MLP's −0.23 to −1.07; the blocks net −0.06 to
+   +0.45. From 16000 both are along.
+3. **Attention's along step is drift-robust from 2000** (drift removed +0.44 to +0.86, the raw
+   sign); at 256–1000 it is negative both ways.
+4. **Block 23 at 143000 (carried): its step against the field is its MLP** (−0.49 of the block's
+   −0.56; next `h12` −0.02). Same at M1's βs (`L23.mlp` −0.47; `|S⁻|` 5, `|S⁺|` 14).
+5. **The off motion is the MLP's:** 0.68–0.92 of the pooled off motion; unweighted, the MLP's
+   per-block share averages 0.68–0.86 and is over half in 20–24 of 24 blocks. Block 0's MLP tops
+   `S⁰` at every step (block 0 is 17–32 % of the pooled off weight).
+6. **The sink's part is small in the field; ≤ 0.05 of the update is not shown after 1000:** its
+   summed proj is at most 0.14 in size (143000), but the bound Σ_h mean|sink_h| / mean|v| has a
+   median over blocks of 0.02–0.04 up to 512 and 0.06–0.28 from 1000. The bound cannot confirm 1e's
+   ≤ 0.05 there; the exact share was not measured. No single fixed top key: the commonest top-key
+   token ('.', or '\n' at 54000) covers 3–29 % of head × block.
+
+**Not established:** anything causal (unit 5); whether the sets carry over to the long passages
+(unit 5 re-ranks there); "few" for `S⁰` (its band has no width); whether 1000 and 32000 are
+few (β-sensitive).
+
+**For unit 5 (Blocked 59):** at 2000, 8000 and 143000 `S⁻` has 5–7 components, all in the top
+size decile (43 components, 24 of them the MLPs). A null matched on type, band and decile then
+draws from about 8 MLPs in the set's own band (early at 2000 and 8000, late at 143000), so its 20 random sets would mostly be the claim's own set.
+
+Re-run: `METS_DATA=<data> ./scripts/a2_unit4.sh` (gate, band, batch, report; the batch resumes).
+The first pass ran out of GPU memory at step 64 (each record was held across prompts). The runner
+freed it per record and resumed; the change touches memory only.
 
 ## A2 unit 3, the per-component instrument and its gate (2026-10-16)
 

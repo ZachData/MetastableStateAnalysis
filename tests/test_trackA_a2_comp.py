@@ -80,3 +80,21 @@ def test_mass_set_and_top_share():
     assert ac.mass_set(np.array([1.0]), -1).size == 0
     assert ac.top_share(v, -1, k=2) == pytest.approx(0.8)
     assert ac.gini(np.ones(4)) == pytest.approx(0.0)
+
+
+def test_off_global_and_set_stats():
+    rng = np.random.default_rng(3)
+    k = len(ac.COMPS)
+    rows = {}
+    for L in range(24):
+        off = rng.random(k)
+        rows[L] = {"off": list(off / off.sum()) + [0.0] * 4, "total": {"off_sq": float(rng.random() + 0.1)}}
+    g = ac.off_global(rows)
+    assert g.shape == (24 * k,) and abs(g.sum() - 1.0) < 1e-12
+    proj = rng.standard_normal(24 * k)
+    st = ac.set_stats(proj, g)
+    assert st["n_negative"] == int((proj < 0).sum())
+    sm = np.array(st["S_minus_idx"])
+    assert np.all(proj[sm] < 0) and proj[sm].sum() <= 0.5 * proj[proj < 0].sum() + 1e-12
+    assert st["S_minus"] == ac.mass_set(proj, -1).size and st["S_zero"] == ac.mass_set(g, +1).size
+    assert ac.comp_name(0) == "L0.h0" and ac.comp_name(k * 23 + k - 1) == "L23.mlp"

@@ -6,12 +6,16 @@ Per block l (Pythia's parallel residual) the update ``v = Σ_c v_c`` over 18 com
 head's own ``W_O^h`` slice of attention's output (value bias included, ``h0``…``h15``), the
 attention output bias ``b_O``, the MLP with its bias ``mlp``. Beside, never counted: each head's
 sink part ``A_i0 · v_0 W_O^h`` (``h*_sink0``) and the part through its most-received non-zero key
-``A_ij* · v_j* W_O^h`` (``h*_topkey``, j* by attention mass received over all queries; its token is
-recorded so a fixed key such as 1e's newline can be read).
+``A_ij* · v_j* W_O^h`` (``h*_topkey``; j* by mass received over its expectation under uniform causal
+attention, ``Σ_{i≥j} 1/(i+1)``, so early keys are not favoured where attention is near uniform
+(`/challenge-pr` on #214, finding 5); its position and token id are recorded so a fixed key such as
+1e's newline can be read).
 
 **The path integral (Aumann–Shapley).** In the block's frame ``f_l(x) = unit(LN1_l(x))``,
 ``Δ_c = ∫₀¹ J_l(x + s v) ds · v_c`` by Gauss–Legendre on ``NODES`` nodes, so ``Σ_c Δ_c`` is the frame
-chord ``f_l(x + v) − f_l(x)`` up to quadrature (G0 measures it per block). Positions 1…n−1, the field
+chord ``f_l(x + v) − f_l(x)`` up to quadrature (G0 measures it per block, and the pass refuses a
+block above ``G0_TOL``: 64 nodes, STATE Blocked 58 (c1); 16 failed on real block 0, whose update is
+15–48× its input). Positions 1…n−1, the field
 F the causal self-attention field on ``U = f_l(x)[1:]`` at the layer's β. Per component, linear in
 ``Δ_c`` and so additive over components:
 
@@ -24,7 +28,9 @@ F the causal self-attention field on ``U = f_l(x)[1:]`` at the layer's β. Per c
   ``|Δ_c^tan|``.
 
 The block's totals carry the lifted reads A1 used (log, its verdict; gnomonic, the design's text)
-and their ratio to the unlifted mean, beside.
+and their ratio to the unlifted mean, beside; ``off_sq`` (the mean ``|o_i|²``, which weights a block's
+off shares into shares of all 24 blocks' off motion, unit 4's ``S⁰``) and ``size`` (the mean raw
+``|v_i|``, the sink's share of the update).
 
 Tier 1: exploratory, unregistered. Torch float64; the pass float32, eager, TF32 off.
 """
@@ -42,7 +48,7 @@ from .a1a import REPO
 N_HEADS = 16
 COMPS = tuple(f"h{h}" for h in range(N_HEADS)) + ("b_O", "mlp")
 BESIDE = tuple(f"h{h}_sink0" for h in range(N_HEADS)) + tuple(f"h{h}_topkey" for h in range(N_HEADS))
-NODES = 16                          # placed (design "Unit 3")
+NODES = 64                          # placed (design "Unit 3" said 16; 64 by STATE Blocked 58 (c1))
 G0_TOL = 1e-6                       # placed: Σ_c Δ_c against the chord, relative (design G0)
 SPLIT_TOL = 1e-4                    # the pass: heads + b_O against attention's output (u2_attn's)
 MASS = 0.5                          # placed: the 50 % mass cut (design "Unit 4")
@@ -137,6 +143,8 @@ def read_block(x, parts, n_counted: int, w, b, eps: float, beta: float, nodes: i
         tot[f"proj_{lift}"] = float(val[torch.isfinite(val)].mean())
         tot[f"ratio_{lift}"] = tot[f"proj_{lift}"] / tot["proj"] if tot["proj"] != 0 else float("nan")
     tot["field"] = float(xx[ok].sqrt().mean())
+    tot["off_sq"] = float((o * o).sum(-1).mean())
+    tot["size"] = float(v[1:].norm(dim=-1).mean())
     tot["n_field"] = int(ok.sum())
     return {"proj": proj.cpu().numpy(), "proj_df": proj_df.cpu().numpy(), "off": off.cpu().numpy(),
             "size": parts[:, 1:].norm(dim=-1).mean(1).cpu().numpy(),
@@ -168,6 +176,27 @@ def gini(vals: np.ndarray) -> float:
     a = np.sort(np.abs(np.asarray(vals, dtype=np.float64)))
     n = a.size
     return float((2 * np.arange(1, n + 1) - n - 1) @ a / (n * a.sum())) if a.sum() > 0 else float("nan")
+
+
+def off_global(rows: Dict[int, Dict], n_blocks: int = 24) -> np.ndarray:
+    """(432,) each component's share of all blocks' off motion: its block's off share × the block's
+    mean ``|o|²`` over the blocks' total, so the 432 sum to 1 (unit 4's ``S⁰``)."""
+    w = np.array([rows[L]["total"]["off_sq"] for L in range(n_blocks)])
+    return flatten(rows, "off", n_blocks) * np.repeat(w / w.sum(), len(COMPS))
+
+
+def set_stats(proj: np.ndarray, off: np.ndarray) -> Dict:
+    """The statistics unit 4 reads on one (432,) ``proj`` and its ``off_global``."""
+    sm, sp, s0 = mass_set(proj, -1), mass_set(proj, +1), mass_set(off, +1)
+    return {"S_minus": int(sm.size), "S_plus": int(sp.size), "S_zero": int(s0.size),
+            "top43_minus": top_share(proj, -1), "top43_plus": top_share(proj, +1),
+            "top43_zero": top_share(off, +1), "n_negative": int((proj < 0).sum()), "gini": gini(proj),
+            "S_minus_idx": sm.tolist(), "S_plus_idx": sp.tolist(), "S_zero_idx": s0.tolist()}
+
+
+def comp_name(i: int) -> str:
+    """Block-major index into the 432 → ``L<block>.<component>``."""
+    return f"L{i // len(COMPS)}.{COMPS[i % len(COMPS)]}"
 
 
 # ---------------------------------------------------------------- the hooked pass
@@ -209,15 +238,19 @@ def _make_hooked():
             heads = torch.einsum("hij,hjk,dhk->hid", W, V, Wo)
             bO = att.dense.bias.to(dt)[None, :].expand(x.shape[0], -1)
             sink = torch.einsum("hi,hk,dhk->hid", W[:, :, 0], V[:, 0], Wo)
+            n = W.shape[1]
             recv = W[:, :, 1:].sum(1)                                          # mass received, keys 1…
-            jstar = recv.argmax(1) + 1                                         # (H,)
+            unif = torch.flip(torch.cumsum(torch.flip(1.0 / torch.arange(1, n + 1, dtype=dt, device=W.device), [0]), 0), [0])
+            jstar = (recv / unif[1:]).argmax(1) + 1                            # (H,): over uniform's share
             hh = torch.arange(H, device=W.device)
             top = torch.einsum("hi,hk,dhk->hid", W[hh, :, jstar], V[hh, jstar], Wo)
             P = torch.cat([heads, bO[None], mlp_out.to(dt)[None], sink, top], 0)
             scale = (attn.to(dt) + mlp_out.to(dt)).norm(dim=-1).max()
             chk = {"split_rel": float((heads.sum(0) + bO - attn.to(dt)).abs().max() / scale),
                    "jstar": jstar.tolist(),
-                   "jstar_mass": (recv[hh, jstar - 1] / W.shape[1]).tolist()}
+                   "jstar_tok": [int(self.ctx["ids"][j]) for j in jstar.tolist()],
+                   "jstar_mass": (recv[hh, jstar - 1] / n).tolist(),
+                   "jstar_over_unif": (recv[hh, jstar - 1] / unif[jstar]).tolist()}
             return x.to(dt), P, chk
 
         def _read(self, l: int, mlp_out) -> None:
@@ -228,13 +261,16 @@ def _make_hooked():
             if chk["split_rel"] > SPLIT_TOL:
                 raise SystemExit(f"refusing: block {l}: heads + b_O off attention's output by {chk['split_rel']:.1e}")
             r = read_block(x, P, len(COMPS), c["w"][l], c["b"][l], c["eps"], float(c["beta"][l]), c["nodes"])
+            if r["g0"] > G0_TOL:
+                raise SystemExit(f"refusing: block {l}: the path integral off the chord by {r['g0']:.1e} > {G0_TOL}")
             self.rows[l] = {**r, **chk, "sum_counted": P[:len(COMPS)].sum(0).float().cpu().numpy()}
 
         def run_read(self, ids, ln: Dict, beta: Sequence[float], nodes: int = NODES) -> tuple:
             """One pass; ``(hidden states (25, n, d) float32 CPU, {block: read})``."""
             import torch
             self.rows, self.cap = {}, {}
-            self.ctx = {"w": ln["w"], "b": ln["b"], "eps": ln["eps"], "beta": list(beta), "nodes": nodes}
+            self.ctx = {"w": ln["w"], "b": ln["b"], "eps": ln["eps"], "beta": list(beta), "nodes": nodes,
+                        "ids": ids[0].tolist()}
             try:
                 with torch.no_grad():
                     out = self.model(input_ids=ids, output_hidden_states=True, use_cache=False)

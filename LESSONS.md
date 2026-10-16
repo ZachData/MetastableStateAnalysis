@@ -506,6 +506,13 @@ well-formed but empty/zero result. It looks exactly like a real result.
   that calls a library's internals passes its smoke test in both environments (`mets` and
   `.venv`) before the PR, and states the contract it relies on (here: the mask is passed, never
   assumed).**
+- 2026-10-16 (A2 unit 4): the launch script had an apostrophe inside `${VAR:?msg}` and failed
+  `bash -n` before any stage ran (one runner round trip); the batch then ran out of GPU memory at
+  step 64, nine steps in, because each record was held across prompts (resumed). STATE Blocked 58
+  quoted the 64-node gate at 25 min; it took 90 (the G2 redraws scale with the nodes). STATE.md was
+  again edited by a Python script (one line deleted), against the Edit-tool rule. Rule: **`bash -n`
+  every launch script before handing it to the runner; a per-record GPU loop frees its record and
+  empties the cache each iteration; a wall-time quote scales every stage the change touches.**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

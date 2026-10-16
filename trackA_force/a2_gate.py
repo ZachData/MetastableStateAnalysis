@@ -198,18 +198,19 @@ def redraw(model, sig: Dict[str, float], seed: int, device: str) -> None:
                 p.normal_(0.0, sig[n], generator=g)
 
 
-def read_model(hk, ids_by: Dict[str, "object"], ln: Dict) -> Dict:
-    """Per prompt the 432 proj values; G0 and the pass's checks."""
-    per, g0, split, recon = {}, 0.0, 0.0, 0.0
+def read_model(hk, ids_by: Dict[str, "object"], ln: Dict, betas: Optional[Dict[str, Sequence[float]]] = None) -> Dict:
+    """Per prompt the 432 proj values and off shares (at β 3.5, or each prompt's layer βs); the
+    median over prompts' set statistics (`a2_comp.set_stats`); G0 and the pass's checks."""
+    per, offs, g0, split, recon = {}, {}, 0.0, 0.0, 0.0
     for p, ids in ids_by.items():
-        hs, rows = hk.run_read(ids, ln, [BETA] * N_BLOCKS)
-        per[p] = ac.flatten(rows, "proj")
+        hs, rows = hk.run_read(ids, ln, betas[p] if betas else [BETA] * N_BLOCKS)
+        per[p], offs[p] = ac.flatten(rows, "proj"), ac.off_global(rows)
         g0 = max(g0, max(r["g0"] for r in rows.values()))
         split = max(split, max(r["split_rel"] for r in rows.values()))
         recon = max(recon, ac.check_recon(hs, rows))
     med = np.median(np.stack([per[p] for p in ids_by]), axis=0)
-    return {"S_minus": int(ac.mass_set(med, -1).size), "top43_minus": ac.top_share(med, -1),
-            "S_plus": int(ac.mass_set(med, +1).size), "gini": ac.gini(med),
+    st = ac.set_stats(med, np.median(np.stack([offs[p] for p in ids_by]), axis=0))
+    return {**{k: v for k, v in st.items() if not k.endswith("_idx")},
             "g0_max": g0, "split_max": split, "recon_max": recon, "median_proj": med.tolist()}
 
 
@@ -220,7 +221,12 @@ def stored_match(hs: np.ndarray, rd: Path) -> float:
     return float(np.abs(unit(hs) - unit(st)).max())
 
 
-def g2(device: str, prompts: Sequence[str], n_seeds: int) -> Dict:
+BAND_KEYS = ("S_minus", "top43_minus", "S_plus", "top43_plus", "S_zero", "top43_zero", "n_negative", "gini")
+
+
+def g2(device: str, prompts: Sequence[str], n_seeds: int, betas: Optional[Dict[str, Sequence[float]]] = None) -> Dict:
+    """G2's redraws; ``betas`` (per prompt, 24 layer βs) reads the field there instead of at 3.5
+    (unit 4's init band, STATE Blocked 58 (a1)). The gated pair is ``S_minus``, ``top43_minus``."""
     import torch
     from transformers import AutoTokenizer
     from core.models import load_model
@@ -238,7 +244,7 @@ def g2(device: str, prompts: Sequence[str], n_seeds: int) -> Dict:
     match = stored_match(hs, run_dir(0, prompts[0]))
     if match > 1e-4:
         raise SystemExit(f"refusing: step 0's pass against its stored rows {match:.1e}")
-    step0 = read_model(hk, ids_by, ln)
+    step0 = read_model(hk, ids_by, ln, betas)
     step0["stored_match"] = match
     print(f"step 0 (beside): |S-| {step0['S_minus']}, top43 {step0['top43_minus']:.3f}, "
           f"g0 {step0['g0_max']:.1e}, split {step0['split_max']:.1e}, recon {step0['recon_max']:.1e}", flush=True)
@@ -246,7 +252,7 @@ def g2(device: str, prompts: Sequence[str], n_seeds: int) -> Dict:
     for k in range(n_seeds + 1):
         t0 = time.monotonic()
         redraw(model, sig, SEED + k, str(dev))
-        r = read_model(hk, ids_by, ln)
+        r = read_model(hk, ids_by, ln, betas)
         r.pop("median_proj")
         seeds.append({"seed": SEED + k, **r})
         print(f"G2 seed {k}: |S-| {r['S_minus']}, top43 {r['top43_minus']:.3f}, g0 {r['g0_max']:.1e}, "
@@ -254,7 +260,7 @@ def g2(device: str, prompts: Sequence[str], n_seeds: int) -> Dict:
     hk.close()
     ref, test = seeds[:n_seeds], seeds[n_seeds]
     out = {"step0": step0, "seeds": seeds, "sigmas": sig, "range": {}}
-    for key in ("S_minus", "top43_minus"):
+    for key in BAND_KEYS:
         lo, hi = np.percentile([s[key] for s in ref], [TOL["G2_lo"], TOL["G2_hi"]])
         out["range"][key] = {"lo": float(lo), "hi": float(hi), "test": test[key], "step0": step0[key],
                              "inside": bool(lo <= test[key] <= hi), "step0_inside": bool(lo <= step0[key] <= hi)}
@@ -287,7 +293,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
              + [rec["G2"]["g0_max"]])
     v = {"G0": g0 <= TOL["G0"],
          "G1": all(not c["G1"]["fails"] for c in syn.values()),
-         "G2": all(x["inside"] for x in rec["G2"]["range"].values()),
+         "G2": all(rec["G2"]["range"][k]["inside"] for k in ("S_minus", "top43_minus")),
          "G3": all(not c["G3"]["fails"] for c in syn.values()),
          "G4": all(not c["G4"]["fails"] for c in syn.values())}
     rec["verdict"] = {**v, "pass": all(v.values()), "g0_max": g0,
