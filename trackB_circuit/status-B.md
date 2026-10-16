@@ -12,6 +12,7 @@
   - Loss gradients at layer 5 are aligned across prompts at every step, most at 64–512, so a structured direction ranked against random ones is biased upward by the model itself — `trackB_circuit/status-B.md` "Fences (from B0's gate)"
   - B1 passes by its revised pass rule (off at 0, on at 1000–8000): `L5H2`'s signature reads off at steps 0–256 and on at every step from 512; the onset falls in (256, 512], inside the range recorded before the run and before ROADMAP's first window (512, 4000]; read from block 5 alone, on one head's output — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
   - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
+  - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights the circle-type top pair is rare (3 of 252 cells) and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -20,10 +21,11 @@
   - From step 1000 the statistic's size is a float32 detection limit, not a measurement, so only its rank is read — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
   - B1 reads one head's output after block 5 alone; the multi-layer path and the residual and loss readouts B2–B4 use are covered only by B0's gate — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
   - G4b's false-fail rate is not derived, and G2 was checked only at its four design positions — `trackB_circuit/status-B.md` "B0 over 18 steps"
+  - B2a's gate has no arm with a position-0 sink or with a content subspace only partly V's, both of which real heads have — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-15 · body `398dbbf278`
+- **Reviewed:** 2026-10-15 · body `5787012730`
 <!-- /phase-card -->
 
 ## Units
@@ -42,8 +44,45 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 
 | unit | state | where |
 |---|---|---|
-| 0. design, scan, `sympy` check | **done 2026-10-15**, not frozen (Blocked 50) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
-| 1. weights only, planted gate | not started | `design-B2a.md` "Unit 1's gate" |
+| 0. design, scan, `sympy` check | **done 2026-10-15**; frozen by the user 2026-10-15 (Blocked 50 (a): 4 units, M1 primary) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
+| 1. weights only, planted gate | **done 2026-10-15: every arm passes**; weights rows written | `trackB_circuit/b2a.py`; "B2a unit 1 (2026-10-15)" below |
+| 2. real tokens at 143000 | next | `design-B2a.md` "Units" |
+
+## B2a unit 1 (2026-10-15): the gate and the weights rows
+
+**Input:** code `b2a.code_sha()` = `72882e6f353d` (commit `32ddebd`), records
+`/run/media/system/WDS_500/Mets/data/b2a/2026-10-15/` (`gate.json`, `weights.json`, `run.log`).
+Gate: synthetic, d = 1024, n = 500, 7 prompts per arm, float64 on the RTX 3080, 9 min. Weights:
+the 18 steps, the 14 heads (`b2a.heads()`: the 6 named, then `L6H4`, `L9H8`, `L4H9`, `L15H7`,
+`L13H8`, `L9H1`, `L18H1`, `L10H14` drawn at seed 20261015), float64 CPU, 27 s. Constructions
+as built, not as the design's table: `design-B2a.md` "Unit 1's gate, as built".
+Re-run: `python -m trackB_circuit.b2a gate --out <dir>`, `... weights --out <dir>`, `... report --out <dir>`.
+
+**The gate: every arm passes, with the design's constants (TV 0.5, +0.05) unchanged.**
+
+| arm | verdict | numbers |
+|---|---|---|
+| G1, circle | D\* = 2, degenerate negative, angle 0 | TV(0) 0.566, TV(1) 0.448, TV(2) 0.0047; 320 nulls at D = 2: min 0.127, median 0.404 |
+| G1r, rotation | D\* = 2, rotation | TV(2) 0.0047; nulls min 0.108 |
+| G1d, D = 4 | D\* = 4 | TV(2) 0.389, TV(3) 0.260, TV(4) 0.0045; nulls min 0.245 |
+| G2, positional | D\* = 0 | TV 2e-9 |
+| G3, null | none in 20 of 20 | the best ladder rung's TV 0.099–0.152 against TV(full) ≈ 0, so no rung reached its null comparison |
+| G4, out of class | outside | TV(full) 0.815 |
+| G5 | (i) 1.6e-15; (ii) 1.2e-11; (iii) 0.81 of the bound (raw 3.8e-4, at `L18H1`'s \|logit\| 8.2e3) | (ii), (iii) in `weights.json` "g5_real" |
+
+The margins are wide: a faithful rung sits at 0.005 and the nearest random subspace at ≥ 0.1. The
+gate does not test a head whose content subspace is only partly V's (V's ladder is fixed), nor
+attention with a sink (synthetic prompts have no position 0).
+
+**Weights rows (252 cells; V in the LN1 frame at γ = 0.1, placed), descriptive:**
+
+| row | reading |
+|---|---|
+| \|λ₁\| | 0.013–1.93; ≈ 0.014 for every head at steps 0–256, then growing to a peak at 16000–54000 and falling at 143000 |
+| U₂'s type | rotation 120, mixed 129, degenerate negative 2 (`L12H5` at 512, `L15H7` at 4000), degenerate positive 1 (`L10H14` at 16000). At 143000: rotation for `L5H2`, `L12H5`, `L9H8`, `L4H9`, `L13H8`, `L10H14`; mixed for the rest. **The circle type is rare on the weights** |
+| kernel beaten | in 221 of 252 cells; the 31 where no block beats `1 − γ` are at 1000–32000 (10 at 1000, 8 at 2000, 7 at 4000), where the top block is a negative real: the OV repulsive phase on these heads (`PROJECT.md` §3.12 A) |
+| ρ_⊥ where beaten | 0.949–0.99999: at \|λ\| ≲ 2 and γ = 0.1, \|b\| ≈ 0.9 + 0.1 Re λ, so one application selects nothing; γ is read in unit 2 |
+| selection order | the paper's top block (by \|b\|) is V's top by \|λ\| in 64 of 252 cells (by Re λ, γ's small-γ limit: the same 64); V's ladder and the paper's selection order disagree in most cells, as the design expected for negative λ |
 
 ## B1 (2026-10-14): `L5H2` as positive control
 

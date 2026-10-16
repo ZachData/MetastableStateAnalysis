@@ -1134,6 +1134,16 @@ of a design before running it, and print it on every record
   arm's own trajectory (its mean cosine per step) would have shown it before the bar was set.
   Rule: **a planted null is checked to stay a null over its whole trajectory (the statistic
   per step, not only its sum) before it gets a bar.**
+- 2026-10-15 (B2a, unit 1's gate): two planted arms were written without simulating them. G1
+  ran the paper's own map to put tokens near a planted repulsive plane, but at the design's ν = 2
+  the plane's `|b| = 0.1` is below the kernel's 0.7 (the paper's selection rule, read in the same
+  scan), so the map moved tokens off it; at ν = 8 they collapsed and D\* = 0 was the right
+  answer. G3 used isotropic tokens, whose attention at β = 4 is near uniform, so D = 0 passes on
+  its TV clause and "none" was not reachable. Both were caught before any real token was read
+  (a 20-line scratch run; the first G1 run) and rebuilt (`design-B2a.md` "Unit 1's gate, as
+  built"). The same instance as A1a's G2s. Rule: **each planted arm is run once on a scratch
+  slice, and its configuration checked to be the one the arm names, before the gate's table
+  freezes.**
 
 ## 7. Literature found after the construction was built
 
