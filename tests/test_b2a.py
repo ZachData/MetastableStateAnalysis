@@ -40,7 +40,11 @@ def test_ladder_orders_by_modulus_keeps_pairs_whole_and_is_invariant():
     lad = b2a.ladder(left, right)
     assert [r["D"] for r in lad] == [0, 2, 3, 4]     # rung 1 moved up into the pair; capped at rank 4
     assert max(r["residual"] for r in lad) < 1e-12
-    assert b2a.plane_angle(lad[1]["U"], P[:, :2]) < 1e-10
+    # sin of the largest principal angle, exact to rounding; plane_angle's arccos near 1 resolves
+    # only to sqrt(2 eps) ~ 1.5e-8, which BLAS rounding reaches on some runners (CI, 2026-10-16)
+    U, P2 = lad[1]["U"], P[:, :2]
+    assert np.linalg.norm(U - P2 @ (P2.T @ U), 2) < 1e-10
+    assert b2a.plane_angle(U, P2) < 1e-7
 
 
 def test_u2_type():
