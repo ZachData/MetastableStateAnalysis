@@ -621,6 +621,12 @@ not fixed).
 ## 4. Tests that assert a property of the machine, not of the code
 
 **Instances.**
+- 2026-10-16, B2a unit 1 (#208, blocked a merge): `test_b2a` asserted a planted plane's angle
+  < 1e-10 through `plane_angle`, an arccos of the smallest singular value, which near 0 resolves
+  only to √(2 eps) ≈ 1.5e-8. The same commit passed on the PR run and failed on the push run at
+  1.49e-8 (BLAS rounding). Fixed by asserting sin of the angle, `‖U − PPᵀU‖₂`, exact to rounding
+  (`e947a04`). Rule: **a tolerance below an instrument's resolution tests the machine**; check the
+  resolution of the formula (arccos, sqrt near 0) before choosing the bound.
 - 2026-10-06, Phase 10 R7: check (d) compared a 2-token pass with the passage's 512-token pass
   at 1e-5, a tolerance borrowed from re-running the *same* input against Stage 0. At step 143000
   float32 sequence-length noise is 1.5e-5 even unbatched, so the gate refused `latex_monograph`
@@ -715,6 +721,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-16, B2a unit 2 (a rule fix gated on planted arms only, and a smoke test on real data):
+  Blocked 51 (a) closed the reviewer's band with "positional only if TV(full) ≤ 0.05", checked
+  against G2, whose planted profile M1 fits exactly. A real positional head is not fitted exactly:
+  a one-head smoke test of `b2a.py real` (run to catch bugs before the 20-minute gate, since the
+  gate binds the code hash) printed `L5H2`, B1's previous-token control, as "outside (content M1
+  cannot express)" at TV(full) = TV(0) = 0.125, before the gate reran. Two rules: **a threshold
+  that separates classes needs a planted arm at the realistic edge of each class** (an imperfect
+  positional head, not only an exact one); and **a smoke test on real inputs prints no verdict**
+  (run it with output to a file nobody reads, or on a planted input through the same path).
 - 2026-10-14, Track B B0 (the other side: a rule that rejects a correct instrument): Blocked 43
   (a) made G4b an exact equality of rank-1 sets, nudged against linear, knowing a near-tie inside
   the linear error would fail it and leaving that rate "not derived". Over 18 steps it fired once,
