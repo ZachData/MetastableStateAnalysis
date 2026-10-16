@@ -715,6 +715,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-16, B2a unit 2 (a rule fix gated on planted arms only, and a smoke test on real data):
+  Blocked 51 (a) closed the reviewer's band with "positional only if TV(full) ≤ 0.05", checked
+  against G2, whose planted profile M1 fits exactly. A real positional head is not fitted exactly:
+  a one-head smoke test of `b2a.py real` (run to catch bugs before the 20-minute gate, since the
+  gate binds the code hash) printed `L5H2`, B1's previous-token control, as "outside (content M1
+  cannot express)" at TV(full) = TV(0) = 0.125, before the gate reran. Two rules: **a threshold
+  that separates classes needs a planted arm at the realistic edge of each class** (an imperfect
+  positional head, not only an exact one); and **a smoke test on real inputs prints no verdict**
+  (run it with output to a file nobody reads, or on a planted input through the same path).
 - 2026-10-14, Track B B0 (the other side: a rule that rejects a correct instrument): Blocked 43
   (a) made G4b an exact equality of rank-1 sets, nudged against linear, knowing a near-tie inside
   the linear error would fail it and leaving that rate "not derived". Over 18 steps it fired once,

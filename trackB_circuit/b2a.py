@@ -809,7 +809,7 @@ def cmd_real(a) -> int:
     if a.g0_only:
         return 0
 
-    for h in heads():
+    for h in (a.heads or heads()):
         if h in rec["heads"]:
             print(f"have {h}", flush=True)
             continue
@@ -995,6 +995,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     x.add_argument("--step", type=int, default=143000)
     x.add_argument("--all-nulls", action="store_true")
     x.add_argument("--g0-only", action="store_true")
+    x.add_argument("--heads", nargs="+", choices=heads(), help="a slice (default: all 14)")
     r = sub.add_parser("report")
     r.add_argument("--out", required=True)
     a = ap.parse_args(argv)
