@@ -14,7 +14,7 @@
   - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
   - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights V's top pair is a D = 2 block (complex or degenerate) in 123 of 252 cells, near-repulsive in 10, and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
   - At step 143000 the reduction's premise fails: the real tokens hold about the random share of their norm² in V's invariant subspaces, so no head of 14 has D\* ≥ 1 (no circle); 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class (at the placed 0.5), 2 "none"; the isotropic cosine adds at most 0.08 of TV over position — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
-  - Over the 18 steps no head of 14 has D\* ≥ 1 at any step: U₂'s share is above twice random only at 7 steps, mostly barely, and the rule there reads D\* = 0 (the same 4 positional heads, in order from 512), outside, or none; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
+  - The rule at all 18 steps finds no head of 14 with D\* ≥ 1 at any step: to 256 attention is near uniform and every head reads outside (nothing to fit); positional heads appear from 512 (`L5H2`, `L4H9`), and V's subspaces never carry the content a head reads; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `0e0da5e6cb`
+- **Reviewed:** 2026-10-16 · body `3a44a5540e`
 <!-- /phase-card -->
 
 ## Units
@@ -49,45 +49,53 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | 0. design, scan, `sympy` check | **done 2026-10-15**; frozen by the user 2026-10-15 (Blocked 50 (a): 4 units, M1 primary) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
 | 1. weights only, planted gate | **done 2026-10-15: every arm passes**; weights rows written | `trackB_circuit/b2a.py`; "B2a unit 1 (2026-10-15)" below |
 | 2. real tokens at 143000 | **done 2026-10-16: a verdict for all 14 heads; no head has D\* ≥ 1** | "B2a unit 2 (2026-10-16)" below |
-| 3. the 18 steps | **done 2026-10-16 (Blocked 53 (a), occupancy first): no head has D\* ≥ 1 at any step read; B2a is at its exit, budget spent** | "B2a unit 3 (2026-10-16)" below |
+| 3. the 18 steps | **done 2026-10-16 (Blocked 53 (a), occupancy first; then the rule at all 18 steps after `/challenge-pr` on #210): no head has D\* ≥ 1 at any step; B2a is at its exit, budget spent** | "B2a unit 3 (2026-10-16)" below |
 
-## B2a unit 3 (2026-10-16): occupancy over 18 steps, the rule where it is above twice random
+## B2a unit 3 (2026-10-16): the 18 steps
 
-**Input:** code `37d4f2487738` (commit `c03076a`), v1's 7 prompts (`976b62d677bc`), Stage 0's runs
-at each step, the 14 heads; HF forward on the RTX 3080 float32 (TF32 off), rebuild and fits
-float64. Records `/run/media/system/WDS_500/Mets/data/b2a/2026-10-16-occ/` (`occupancy.json`,
-`gate.json`, `step<S>/real.json`, logs); 42 min, 12 of them the gate. Rule and choices:
-`design-B2a.md` "Unit 3 as built". Re-run: `python -m trackB_circuit.b2a occupancy --out <dir>
---unit2 <unit 2's real.json>`, `... gate --out <dir>`, then `... real --out <dir>/step<S> --gate
-<dir>/gate.json --step <S>` for each step in `occupancy.json` "read", `... report --out <dir>`.
+**Input:** v1's 7 prompts (`976b62d677bc`), Stage 0's runs at each step, the 14 heads; HF forward on
+the RTX 3080 float32 (TF32 off), rebuild and fits float64. Two batches (`design-B2a.md` "Unit 3 as
+built" and its amendment): the occupancy screen and the rule at its 6 steps, code `37d4f2487738`
+(commit `c03076a`), records `/run/media/system/WDS_500/Mets/data/b2a/2026-10-16-occ/`, 42 min; then,
+after `/challenge-pr` on #210 found the screen's baseline wrong (the user's pick), the rule at the
+other 11 steps, code `939e114f7afb` (commit `e0063b4`; the rule's code unchanged), records
+`.../2026-10-16-occ2/` (its `occupancy.json` is the one to read: it carries `chance_ratio`), 61 min;
+143000 is unit 2's. Re-run: `python -m trackB_circuit.b2a occupancy --out <dir> --unit2 <unit 2's
+real.json>`, `... gate --out <dir>`, `... real --out <dir>/step<S> --gate <dir>/gate.json --step <S>`
+per step, `... report --out <dir>`.
 
-**Checks.** The pass reproduces unit 2's rung occupancies at 143000 exactly (max |Δ| 0). Gate 9 of 9
-on this code. G0 passes at every step read (worst scaled 3.66, `L9H8`/`paper_excerpt` at 32; bound 10).
+**Checks.** Both passes reproduce unit 2's rung occupancies at 143000 exactly (max |Δ| 0). Gate 9 of 9
+on each code. G0 passes at all 17 steps (worst scaled 3.80, step 4; bound 10).
 
-**Occupancy** (U₂'s share over random 2/1024; U₃ where the ladder moves 2 up; `b2a report`):
-at steps 0–16 every head is 0.3–1.9×, and U₆₄ is 0.8–1.3× for all heads (chance). From 512, U₆₄
-rises to 1.2–2.2× in most heads (`L18H1` 5.3× at 143000). U₂ exceeds 2× in some head at 7 steps:
-32, 512, 1000, 2000, 32000, 54000, 143000, mostly by a small margin in one or two heads (2.0–3.5×).
-Only `L18H1` stands out: 5.7× at 1000, 29× at 143000.
+**Occupancy** (`b2a report`; the statistic is a median, whose Haar chance is 0.69 × D/d at D = 2 and
+0.79 × at D = 3, `chance_ratio`; U₂ moves up to U₃ for `L7H8`, `L9H1`, `L18H1` at 143000, and the set
+varies by step). Over chance, U₂ is 0.4–1.8× at step 0 (random weights: the spread of a median over
+7 prompts) and up to 2.7–3.4× in some head from 16 on; U₆₄ is at chance to 16, then 1.2–2.2× in most
+heads from 512. Only `L5H2` late (7.6× chance at 143000) and `L18H1` (8.2× at 1000, 37× at 143000)
+stand well outside step 0's spread. The screen (Blocked 53 (a)'s bar, set against the mean) chose
+7 steps; it did not decide anything, since the rule then ran at all 18.
 
-**The rule at the 6 new steps** (143000 is unit 2's):
+**The rule at every step** (143000 from unit 2):
 
-| step | D\* ≥ 1 | D\* = 0 | outside (by TV(full) > 0.5 / by the "nothing adds" clause) | none | largest V-rung gain over D = 0 |
+| step | D\* ≥ 1 | D\* = 0 | outside (TV(full) > 0.5 / nothing adds) | none | largest V-rung gain over D = 0 |
 |---|---|---|---|---|---|
-| 32 | 0 | 0 | 14 (0 / 14) | 0 | 0.003 |
+| 0, 2, 4, 8, 16 | 0 | 0 | 14 (0 / 14) | 0 | ≤ 0.001 |
+| 32, 64, 128, 256 | 0 | 0 | 14 (0 / 14) | 0 | 0.003, 0.010, 0.019, 0.015 |
 | 512 | 0 | 2 (`L5H2`, `L4H9`) | 12 (1 / 11) | 0 | 0.017 (`L18H1`) |
-| 1000 | 0 | 2 (`L5H2`, `L4H9`) | 12 (3 / 9) | 0 | 0.047 (`L18H1`, U₂ 5.7×) |
-| 2000 | 0 | 3 (+ `L12H5`) | 11 (10 / 1) | 0 | 0.092 (`L18H1`, U₂ 0.8×) |
-| 32000 | 0 | 4 (+ `L9H1`) | 9 (9 / 0) | 1 (`L10H7`) | 0.038 (`L9H8`) |
-| 54000 | 0 | 4 (same) | 9 (9 / 0) | 1 (`L10H7`) | 0.038 (`L9H8`) |
+| 1000 | 0 | 2 (same) | 12 (3 / 9) | 0 | 0.047 (`L18H1`) |
+| 2000 | 0 | 3 (+ `L12H5`) | 11 (10 / 1) | 0 | 0.092 (`L18H1`, U₂ 1.2× chance) |
+| 4000 | 0 | 3 (same) | 11 (10 / 1) | 0 | 0.058 (`L7H8`) |
+| 8000 | 0 | 5 (+ `L10H7`, `L6H4`) | 8 (7 / 1) | 1 (`L9H8`) | 0.047 (`L9H8`) |
+| 16000 | 0 | 5 (`L5H2`, `L12H5`, `L4H9`, `L6H4`, `L9H1`) | 8 (8 / 0) | 1 (`L10H7`) | 0.037 (`L9H8`) |
+| 32000, 54000 | 0 | 4 (`L5H2`, `L12H5`, `L4H9`, `L9H1`) | 9 (9 / 0) | 1 (`L10H7`) | 0.038 (`L9H8`) |
+| 143000 | 0 | 4 (same) | 8 (8 / 0) | 2 (`L7H8`, `L10H7`) | 0.037 (`L9H8`) |
 
 | reading | what it rests on |
 |---|---|
-| **No head has D\* ≥ 1 at any of the 7 steps read (no circle), and at the 11 others no head's U₂ share is above twice random, so B2a's reduction finds no 2D (or ≤ 64D) V-subspace mechanism in these 14 heads on v1 over training.** B2a is at its exit: a verdict per head per step read, and the reason (occupancy at chance) where none was read | `occupancy.json`, `step<S>/real.json` |
-| The occupancy bar was not selective: it was already met at 143000, where unit 2 read no circle, and at 32000–54000 the heads above it (`L5H2`, `L7H8`, `L9H1`, `L6H4`) read D\* = 0 or outside. `L18H1` at 1000 (U₂ 5.7×), the one large ratio at a new step, gains 0.047 of TV from V's ladder and reads outside (TV(full) 0.660) | the table |
-| At 32 attention is near uniform (TV(uniform) 0.075–0.132), and all 14 heads read "outside" by Blocked 51/52's clause (neither content nor position adds 0.05). The clause decided no head at 143000; at 32–1000 it decides most "outside" verdicts, so those are "M1 has nothing to fit", not "M1 fits badly" | `real.json` "outside_why", "tv_uniform" |
-| Positional heads appear in order: `L5H2` and `L4H9` by 512, `L12H5` by 2000, `L9H1` by 32000, the same 4 as at 143000. `L5H2`'s from 512 matches B1's onset in (256, 512] | the table; "B1 (2026-10-14)" |
-| `L7H8`, `L9H8`, `L10H7` and `L18H1` are where content adds most (up to 0.086 at 32000–54000), from 2000 on; no V subspace carries it at any step | "content adds" per step in `real.json` |
+| **No head of the 14 has D\* ≥ 1 at any of the 18 steps (no circle, and no V subspace up to D = 64 below its nulls), on v1.** This is the rule's verdict at every step, not the occupancy screen's. B2a is at its exit with its 4 units spent | `step<S>/real.json` in both record dirs |
+| To 256, attention is near uniform (TV(uniform) 0.06–0.32) and every head reads outside by Blocked 51/52's clause (neither content nor position adds 0.05): "M1 has nothing to fit", not "M1 fits badly". The clause decided no head at 143000 | `real.json` "outside_why", "tv_uniform" |
+| Positional heads appear from 512 (`L5H2`, `L4H9`; B1's onset for `L5H2` is (256, 512]), `L12H5` from 2000; `L10H7` (8000), `L6H4` (8000–16000) and `L9H1` (16000 on) come and go; 143000's 4 hold from 16000 | the table; "B1 (2026-10-14)" |
+| The largest gain any V rung gives over position alone is 0.092 (`L18H1` at 2000, where its U₂ share is 1.2× chance, inside step 0's spread); where content helps (`L7H8`, `L9H8`, `L10H7`, `L18H1`, up to 0.086 from 2000), no V subspace carries it at any step | "content adds", "rungs" per step |
 
 **Not established:** anything about heads outside the 14 or prompts outside v1; whether a token-matched
 null would change a verdict (no V rung beat its Haar nulls at any step, so there is nothing for it to demote).
@@ -130,7 +138,7 @@ TV(0) − TV(full), "position adds" = TV(uniform) − TV(0)):
 
 | reading | what it rests on |
 |---|---|
-| **The reduction's premise fails at 143000: the real tokens do not lie in V's invariant subspaces.** Their share of norm² in U₂ is ≤ 0.01 (below the random 2/1024 in 11 of 12 heads with a D = 2 rung; `L5H2` 5×), and in U₆₄ 0.6–5.3× the random 64/1024, ≤ 0.13. So no head has D\* ≥ 1 (no circle), and TV on V's ladder is flat in D (largest gain of any rung over D = 0: 0.037, `L9H8`); given the occupancy this is close to expected, not a separate finding (`/challenge-pr` on #209, finding 1) | `real.json` "rungs" "occupancy" |
+| **The reduction's premise fails at 143000: the real tokens do not lie in V's invariant subspaces.** Their share of norm² in U₂ is ≤ 0.01 (below the median's Haar chance, 0.69 × 2/1024, in 8 of the 11 heads whose U₂ is 2-dimensional; above it `L5H2` 7.6×, `L6H4`, `L12H5` near it; corrected 2026-10-16, `/challenge-pr` on #210, finding 1: it first read "below the random 2/1024 in 11 of 12", against the mean), and in U₆₄ 0.6–5.3× the random 64/1024, ≤ 0.13. So no head has D\* ≥ 1 (no circle), and TV on V's ladder is flat in D (largest gain of any rung over D = 0: 0.037, `L9H8`); given the occupancy this is close to expected, not a separate finding (`/challenge-pr` on #209, finding 1) | `real.json` "rungs" "occupancy" |
 | M1's isotropic cosine adds at most 0.079 of TV over the offset profile in any head; in 11 of 14 it adds < 0.01 (negative values, down to −0.029: the full model adds one parameter, β, and a β fitted on 6 prompts transfers worse to the 7th than none) | "content adds" |
 | 4 heads are positional (D\* = 0): `L5H2`, `L4H9` fitted well (0.125, 0.261), `L12H5`, `L9H1` only as well as M1 fits at all (0.41, 0.46). 8 are outside, **all by TV(full) > 0.5; the clause Blocked 51 and 52 added decided no head**, and the frozen rule gives the same 14 verdicts. Under 51 (a) as first built, all 4 positional heads would have read outside. **The 4 / 8 split rests on the placed 0.5:** `L6H4`, `L10H14`, `L9H8` are outside at 0.522–0.542; at 0.55 the first two would read D\* = 0 and `L9H8` would go to its nulls at D = 64. No D\* ≥ 1 either way | "position adds" ≥ 0.24 for the 4 |
 | `L7H8` and `L10H7` are "none": content helps (0.062, 0.072), but no V subspace carries it. `L10H7`'s D = 64 rung meets the TV clause (0.518 ≤ 0.519), and the first 32 Haar subspaces of dimension 64 all tie or beat it (min 0.499; occupancy V 0.07 against the nulls' median 0.06) | `real.json` "nulls" |

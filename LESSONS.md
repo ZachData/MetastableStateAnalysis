@@ -1165,8 +1165,14 @@ of a design before running it, and print it on every record
   the rule had read no circle, so it could not tell "the premise holds" from "noise in one of 14
   heads"; it selected 7 of 18 steps, mostly at 2.0–3.5× in one head. Cost: about 35 GPU minutes
   that a bar set from the known values would have spent the same way or not at all; no verdict is
-  wrong. Rule: **a bar placed on a statistic is checked against the values already recorded for it
-  (does it pass where the answer is known to be negative?) before it goes to the user.**
+  wrong. Worse, `/challenge-pr` on #210 found the bar's "random" was the mean share D/d while the
+  statistic is a median, whose Haar value is 0.69 × D/d (D = 2), so the 11 skipped steps were
+  called "at chance" on the wrong baseline, and unit 2's "below random in 11 of 12" with them; step
+  0 (random weights) read 0.79 and would have shown it. The rule was then run at all 18 steps
+  (61 GPU min). Rule: **a bar placed on a statistic is checked against the values already recorded
+  for it (does it pass where the answer is known to be negative?), and its chance level is the
+  statistic's own under the null (simulated or read off step 0), not a formula for a different
+  summary, before it goes to the user.**
 
 ## 7. Literature found after the construction was built
 
