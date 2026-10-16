@@ -22,7 +22,7 @@
   - #158's headline read the frozen labels as the token interactions ascending at 8–256 and descending ("repulsive") at 1000–8000 and 143000; the shuffle null cannot see an update every token shares, which carries both — `p1e_energy_field/status-1e.md` "Corrections received"
 - **Registry:** none, because the phase is exploratory and unregistered; it is fenced off P-S1, P-γ1/P-γ2 and P-M1 — `p1e_energy_field/design-1e.md` "Fences"
 - **Depends on:** 1d@4168cdd237, 10@216b01795b
-- **Feeds:** 10
+- **Feeds:** 10, A
 - **Open threads:**
   - Whether the late split between heads and their sum is heads cooperating or a few large heads (the saved means cannot split it); carried to Track A's A2 — `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)"
   - The correlated against anti-correlated question at the token level needs a corpus for co-occurrence; U5 not pursued — `p1e_energy_field/status-1e.md` "The phase on one page (closed 2026-10-13)"

@@ -2903,7 +2903,8 @@ the 7 v1 prompts, 18 steps, nothing registered.
 
 - `P-gamma2` ("never integrates far enough" against "resists") has its first number: measured
   along the identity-weight field at each layer's β, the integration time is below the causal
-  collapse time at every step, and far below it until step 16000.
+  collapse time at every step, and far below it until step 16000. The content is the trend:
+  about 0 or negative (against the field) to step 4000, rising to 0.82 of t* at 143000.
 - The same data read on 1c's calibrated step (the size of each move, any direction) is above
   the collapse time everywhere. Which step is the registry's `T_eff` decides the verdict, so it
   is a registration question (A5), not a reading A1 can settle.

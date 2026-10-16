@@ -1063,6 +1063,13 @@ needs the user to enable it on GitHub.
   labels unstable to the set's edges (`status-10.md` §1.32; `/challenge-pr` on #174). Rule:
   **before reading a reference, count what it holds fixed by construction (here: records where
   the matched count is all of them), and set the cells it forces apart.**
+- 2026-10-15, A1b (`/challenge-pr` on #206): the note written before the output said "a drift can only
+  add to `T_proj`", from the gate's one planted drift (sustained, toward a target). In the real
+  stream removing the shared part raised `T_proj` in 19 cells. The same unit read 1e's question
+  off (6.9), a model with one cluster by construction, while the design's own causal table
+  already put the doubling β inside the measured range. Rule: **a sign or bound shown on one
+  planted case is that case's; before it goes into a reading, check it on the data it will be
+  read beside (here one line: `T_proj_c > T_proj`).**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
