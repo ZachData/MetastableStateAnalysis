@@ -186,3 +186,36 @@ def test_renorm_refuses_a_row_with_all_mass_on_the_sink():
     A[2] = [1.0, 0.0, 0.0, 0.0]
     with pytest.raises(b2a.B2aError):
         b2a.renorm(A / A.sum(1, keepdims=True))
+
+
+def test_occupancy_moves_rung_2_up_and_selects_steps_above_twice_random():
+    g = np.random.default_rng(0)
+    d = 64
+    U3 = np.linalg.qr(g.standard_normal((d, 3)))[0]
+    lad = [{"D": 0, "U": np.zeros((d, 0))}, {"D": 1, "U": U3[:, :1]}, {"D": 3, "U": U3}]
+    u = U3 @ g.standard_normal((3, 50))
+    u = (u / np.linalg.norm(u, axis=0)).T
+    row = b2a.occ_row([u], lad)
+    assert row["2"]["D"] == 3 and math.isclose(row["2"]["share"], 1.0)
+    assert math.isclose(row["2"]["ratio"], d / 3) and row["64"] is None
+    lo = {"2": {"D": 2, "share": 3 / 1024, "ratio": 1.5}, "64": None}
+    hi = {"2": {"D": 2, "share": 5 / 1024, "ratio": 2.5}, "64": None}
+    rec = {"steps": {"0": {"a": lo, "b": lo}, "512": {"a": lo, "b": hi}, "8": {"a": hi, "b": lo}}}
+    assert b2a.steps_to_read(rec) == [8, 512]
+
+
+def test_chance_ratio_is_the_haar_median_of_the_occupancy_statistic():
+    g = np.random.default_rng(1)
+    d = 1024
+    u = g.standard_normal((4000, d))
+    u /= np.linalg.norm(u, axis=1, keepdims=True)
+    for D in (2, 3):
+        U = np.linalg.qr(g.standard_normal((d, D)))[0]
+        emp = np.median(np.sum((u @ U) ** 2, 1)) / (D / d)
+        assert abs(emp - b2a.chance_ratio(D, d)) < 0.05
+    assert 0.68 < b2a.chance_ratio(2) < 0.70 and 0.78 < b2a.chance_ratio(3) < 0.80
+
+
+def test_report_refuses_an_empty_directory(tmp_path):
+    with pytest.raises(SystemExit):
+        b2a.main(["report", "--out", str(tmp_path)])

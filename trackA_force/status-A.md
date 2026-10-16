@@ -23,8 +23,9 @@
   - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
+  - A2's first item: A1a's per-head β refit by M1's cross-entropy at 143000, since its sign bias where the cosine explains nothing could move A1's bracket (Blocked 54 (a)) *(free: one CPU pass over stored attention)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-15 · body `4dc7684d1a`
+- **Reviewed:** 2026-10-16 · body `515f6d6eb3`
 <!-- /phase-card -->
 
 ## Units
@@ -387,6 +388,12 @@ At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)
 - *The long passages beside* (the design's continuity check, never run): **carried to A2** as
   an input choice, since A1 is closed. Cost: β needs `attentions.npz`, stored for v1 only, so
   a new extraction plus `a1a.py`'s pass at n up to 2,041 (GPU hours, not minutes).
+- *A1a's β sign bias* (B2a unit 2, `/challenge-pr` on #209, finding 4; `trackB_circuit/status-B.md`
+  "A1a's β against M1's"): at 143000 A1a's per-head `fe_full` β is positive in 13 of 14 B2a heads,
+  and in the 6 where M1's cosine adds nothing M1's β is negative, A1a's positive. A1's layer β is
+  the median over 16 heads, so the bias can move A1's bracket and `P-gamma2`'s t*. **Carried to
+  A2 as its first item** (Blocked 54 (a), the user's, 2026-10-16): one CPU pass over stored
+  attention; could change A1's closed number.
 
 ## Corrections received
 

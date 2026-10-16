@@ -53,6 +53,7 @@ Tier 1: exploratory, unregistered.
     python -m trackB_circuit.b2a gate    --out <dir> [--device cuda] [--arms G1 ...] [--all-nulls]
     python -m trackB_circuit.b2a weights --out <dir> [--steps 143000 ...]
     python -m trackB_circuit.b2a real    --out <dir> --gate <gate.json> [--g0-only] [--all-nulls]
+    python -m trackB_circuit.b2a occupancy --out <dir> [--steps ...] [--unit2 <real.json>]
     python -m trackB_circuit.b2a report  --out <dir>
 """
 
@@ -884,6 +885,136 @@ def cmd_real(a) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- unit 3: occupancy first
+
+OCC_RUNGS = (2, 64)
+OCC_RATIO = 2.0                           # placed (Blocked 53 (a), before any output): a step is read
+                                          # when some head's U₂ share is above twice random, 4/1024
+                                          # (D/d is the mean; `chance_ratio` is the median's, below)
+
+
+def chance_ratio(D: int, d: int = D_MODEL) -> float:
+    """The median token share in a Haar D-subspace of R^d, over D/d: a unit token's share is
+    Beta(D/2, (d − D)/2), whose median is below its mean (0.69 at D = 2, 0.79 at D = 3;
+    `/challenge-pr` on #210, finding 1). `occupancy()` is a median, so this is its chance level."""
+    from scipy.stats import beta
+    return float(beta.median(D / 2, (d - D) / 2) / (D / d))
+
+
+def rung_at(lad: List[Dict], D: int) -> Optional[Dict]:
+    """The smallest rung of dimension ≥ D (D = 2 moves up to 3 when V's top block is a line and the
+    next a pair)."""
+    return next((x for x in lad if x["D"] >= D), None)
+
+
+def occ_row(us: Sequence[np.ndarray], lad: List[Dict]) -> Dict:
+    d = lad[0]["U"].shape[0]
+    row: Dict[str, Optional[Dict]] = {}
+    for D in OCC_RUNGS:
+        x = rung_at(lad, D)
+        if x is None:
+            row[str(D)] = None
+            continue
+        s = occupancy(us, x["U"])
+        row[str(D)] = {"D": x["D"], "share": s, "ratio": s / (x["D"] / d),
+                       "chance_ratio": chance_ratio(x["D"], d)}
+    return row
+
+
+def steps_to_read(rec: Dict) -> List[int]:
+    """Blocked 53 (a): the steps where any head's U₂ share is above `OCC_RATIO` × random."""
+    return sorted(int(s) for s, rows in rec["steps"].items()
+                  if any(r["2"] is not None and r["2"]["ratio"] > OCC_RATIO for r in rows.values()))
+
+
+def cmd_occupancy(a) -> int:
+    import torch
+    from core.holdout import refuse_held_out
+    from p1e_energy_field.u2_attn import token_ids
+    from trackA_force.a1a import V1, prompts_hash, run_dir
+    from trackB_circuit.b0_gate import load
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    if not torch.cuda.is_available():
+        raise SystemExit("refusing: no CUDA device (unit 3's pass is the GPU's, as unit 2)")
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    p = out / "occupancy.json"
+    rec = json.loads(p.read_text()) if p.exists() else {}
+    if rec and rec.get("code") != code_sha():
+        raise SystemExit(f"refusing: {p} is from code {rec.get('code')}, not {code_sha()}")
+    rec.update(_env("cuda"), prompts=list(V1), prompts_hash=prompts_hash(), pass_="cuda:float32",
+               heads=list(heads()), occ_ratio=OCC_RATIO)
+    rec.setdefault("steps", {})
+    if 143000 in a.steps and str(143000) not in rec["steps"] and not a.unit2:
+        raise SystemExit("refusing: 143000 without --unit2 (its occupancy must reproduce unit 2's)")
+    need = sorted({parse_head(h)[0] for h in heads()})
+    for step in a.steps:
+        if str(step) in rec["steps"]:
+            print(f"have {step}", flush=True)
+            continue
+        t0 = time.monotonic()
+        rds = [run_dir(step, q) for q in V1]
+        refuse_held_out(rds, context="b2a")
+        model, tok = load(step, "cuda", torch.float32)
+        lay = model.gpt_neox.layers
+        eps = float(lay[0].input_layernorm.eps)
+        hs = {}
+        for q, rd in zip(V1, rds):
+            man = json.loads((rd / "manifest.json").read_text())
+            if man.get("hf_revision") != f"step{step}":
+                raise SystemExit(f"refusing: {rd} manifest revision {man.get('hf_revision')}")
+            ids = torch.tensor([token_ids(tok, rd)], device="cuda")
+            with torch.no_grad():
+                o = model(ids, output_hidden_states=True)
+            hs[q] = {l: o.hidden_states[l][0].float().cpu().numpy() for l in need}
+        model.cpu()
+        rows = {}
+        for h in heads():
+            l, _ = parse_head(h)
+            W = head_weights(model, h)
+            ln = (lay[l].input_layernorm.weight.detach().double().numpy(),
+                  lay[l].input_layernorm.bias.detach().double().numpy())
+            us = [_unit(ln1(hs[q][l], *ln, eps)[0])[1:] for q in V1]
+            rows[h] = occ_row(us, ladder(W["left"], W["right"]))
+        del model
+        torch.cuda.empty_cache()
+        if step == 143000 and a.unit2:
+            # the pass must reproduce unit 2's occupancy at its rungs (same code path, same device)
+            u2 = json.loads(Path(a.unit2).read_text())["heads"]
+            diff = max(abs(rows[h][k]["share"] - next(x["occupancy"] for x in u2[h]["rungs"]
+                                                      if x["D"] == rows[h][k]["D"]))
+                       for h in heads() for k in ("2", "64") if rows[h][k] is not None)
+            rec["unit2_check"] = {"file": str(a.unit2), "max_abs_diff": diff}
+            print(f"unit 2 check: max |Δ share| {diff:.2e}", flush=True)
+            if diff > 1e-9:
+                raise SystemExit("refusing: the pass does not reproduce unit 2's occupancy")
+        rec["steps"][str(step)] = rows
+        rec["read"] = steps_to_read(rec)
+        p.write_text(json.dumps(rec, indent=1))
+        top = max(rows, key=lambda h: rows[h]["2"]["ratio"] if rows[h]["2"] else -1)
+        print(f"step {step}: max U2 ratio {rows[top]['2']['ratio']:.2f} ({top}) "
+              f"{time.monotonic() - t0:.0f}s", flush=True)
+    print(f"steps to read (U2 share > {OCC_RATIO} x random): {rec['read']}", flush=True)
+    return 0
+
+
+def report_occupancy(out: Path) -> None:
+    x = json.loads((out / "occupancy.json").read_text())
+    print(f"occupancy (code {x['code']}, prompts {x['prompts_hash']}): U2 share / random; "
+          f"read where any > {x['occ_ratio']}: {x['read']}")
+    steps = sorted(x["steps"], key=int)
+    for k in OCC_RUNGS:
+        print(f"U{k}  " + " ".join(f"{s:>6s}" for s in steps))
+        for h in x["heads"]:
+            cells = [x["steps"][s][h][str(k)] for s in steps]
+            # a cell whose rung moved up (U₃ for U₂) is marked with its D
+            print(f"{h:8s} " + " ".join("     —" if c is None else
+                                        f"{c['ratio']:6.2f}" + ("" if c["D"] == k else f"@{c['D']}")
+                                        for c in cells))
+        print(f"chance (median, over D/d): D=2 {chance_ratio(2):.2f}, D=3 {chance_ratio(3):.2f}, "
+              f"D=64 {chance_ratio(64):.2f}")
+
 
 def constants() -> Dict:
     return {k: globals()[k] for k in (
@@ -978,10 +1109,15 @@ def report_real(out: Path) -> None:
 
 def cmd_report(a) -> int:
     out = Path(a.out)
+    if (out / "occupancy.json").exists():
+        report_occupancy(out)
+    have = [f for f in ("occupancy.json", "real.json", "gate.json") if (out / f).exists()]
+    if not have:
+        raise SystemExit(f"refusing: no records in {out}")
     if (out / "real.json").exists():
         report_real(out)
-        if not (out / "gate.json").exists():
-            return 0
+    if not (out / "gate.json").exists():
+        return 0
     g = json.loads((out / "gate.json").read_text())
     print(f"gate (code {g['code']}, {g['device']}):")
     for arm in ARMS:
@@ -1019,10 +1155,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     x.add_argument("--all-nulls", action="store_true")
     x.add_argument("--g0-only", action="store_true")
     x.add_argument("--heads", nargs="+", choices=heads(), help="a slice (default: all 14)")
+    o = sub.add_parser("occupancy")
+    o.add_argument("--out", required=True)
+    o.add_argument("--steps", nargs="+", type=int, default=list(STEPS))
+    o.add_argument("--unit2", help="unit 2's real.json; at 143000 the pass must reproduce its occupancy")
     r = sub.add_parser("report")
     r.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    return {"gate": cmd_gate, "weights": cmd_weights, "real": cmd_real, "report": cmd_report}[a.cmd](a)
+    return {"gate": cmd_gate, "weights": cmd_weights, "real": cmd_real, "occupancy": cmd_occupancy,
+            "report": cmd_report}[a.cmd](a)
 
 
 if __name__ == "__main__":
