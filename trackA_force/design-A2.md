@@ -1,4 +1,4 @@
-<!-- Proposed 2026-10-16, not frozen: STATE Blocked 56. -->
+<!-- Proposed 2026-10-16, not frozen: STATE Blocked 56. Revised after /challenge-pr on #212 (findings 1–7 taken). -->
 # Track A — design: A2, which components push the tokens apart?
 
 **Question** (`docs/ROADMAP.md` §6 A2): which heads and MLPs move pythia-410m's tokens against
@@ -9,108 +9,136 @@ unregistered.
 
 What A1 left (`status-A.md` "A1 on one page"): the projected integration time `T_proj` is below
 t* at every step; the net moves several times t* in total but over 90 % of that is off the field;
-in 29 cells it moves against it. So "the anti-collapse force" has two parts A2 keeps apart:
-**against** (a negative projected step) and **off** (motion orthogonal to the field). A2 asks
-which components carry each, then tests the ranking by ablation.
+in 29 cells it moves against it. So two things are kept apart: **against** (a negative projected
+step, which is anti-collapse by definition) and **off** (motion orthogonal to the field, which is
+not anti-collapse by definition). The exit is about "against"; "off" is read beside.
 
 ## Exit condition and budget
 
-- **Exit:** "these N components carry the anti-collapse force" is **supported** or **refused**
-  on 410m at tier 1 by unit 5's rule below, or a recorded reason it cannot be read. Before that,
-  unit 2 says whether A1's closed number moves under the β refit.
+- **Exit:** unit 5's rule reads "these N components carry the anti-collapse force" as
+  **supported**, **refused** or **mixed** (one primary readout only, named), on 410m at tier 1;
+  or a recorded reason it cannot be read (e.g. the step-0 null or the planted control fails).
+  Before that, unit 2 says whether A1's closed number moves under the β refit.
 - **Budget: 5 units**, each its own PR, plus a close-out (writing only, as B2a's #211):
   (1) this design and the scan; (2) the β refit (Blocked 54 (a)); (3) the per-component
   instrument and its calibration gate; (4) the batch over 18 steps and the ranking; (5) the
-  ablation and the reading. At the budget A2 closes at what it knows.
+  ablation, its nulls and the reading. At the budget A2 closes at what it knows.
+
+Every threshold below marked *placed* is set by judgement before any output, not calibrated.
 
 ## Unit 2: the β refit at 143000 (Blocked 54 (a); free, CPU, stored attention)
 
-- **Estimator:** M1 at full D (`trackB_circuit/b2a.py`: `β cos(u_i, u_j) + φ(i − j)`, the
-  softmax's own cross-entropy, offset bins as B2a, fitted on all 7 prompts) per head, all
-  24 × 16 heads, on the same unit LN1 rows, position 0 out, as A1a's `fe_full`. Primary because
-  it is the likelihood of the attention the head actually produced, weighted by mass; `fe_full`
-  weights every pair equally, near-zero entries included (`lit-A2.md` §3).
-- **Beside:** A1a's `fe_full` restricted to heads with `partial_r2 ≥ 0.10` (placed now: the
-  floor ROADMAP names as the alternative; heads below it get no β, and a layer with fewer than
-  4 kept heads gets none).
+- **Estimators, a 2 × 2:** {M1 at full D, A1a's `fe_full`} × {all heads, heads with
+  `partial_r2 ≥ 0.10`} (*placed*; a layer with fewer than 4 kept heads gets no β, *placed*).
+  M1 is `trackB_circuit/b2a.py`'s `β cos(u_i, u_j) + φ(i − j)`, the softmax's own cross-entropy,
+  B2a's offset bins. **Primary: M1, all heads**, because it is the likelihood of the attention the
+  head produced, weighted by mass; `fe_full` weights every pair equally, near-zero entries
+  included (`lit-A2.md` §3). The 2 × 2 says whether a move is the estimator's or the floor's.
+- **Per prompt**, as A1's bracket is: each head fitted on one prompt's rows (B2a's Newton
+  `fit`, called on that prompt alone), so each prompt has its own 23 layer βs and bracket.
 - **Inputs:** A1a's records at 143000 (`data/trackA/a1a_batch_2026-10-15`, code `a08544e9b644`),
-  the 7 v1 prompts (`976b62d677bc`), the stored `attentions.npz` A1a read (`a1a.RUNS`).
-- **Check first:** run through B2a's own leave-one-prompt-out path, M1's β at full D reproduces
-  B2a unit 2's `beta_full` on its 14 heads (1e-6) or the unit refuses.
-- **The rule (fixed now):** per prompt, the refit layer βs (median over the layer's 16 heads,
-  blocks 0–22) give a refit bracket (p10 / p50 / p90), as A1's. **A1's number moves** if the
-  refit p50 lies outside A1's [p10, p90] at 143000 in ≥ 4 of 7 prompts. Then, in the same unit:
-  t* and `T_proj` re-run at 143000 with the refit layer βs (`a1a.py` with a β override; the
-  field at block l uses the refit layer β), the verdict against t* re-read, and the refit run at
-  all 18 steps (still free); a line goes under `status-A.md` "Corrections received". Otherwise
-  A1's number stands and the refit is recorded beside.
+  the 7 v1 prompts (`976b62d677bc`), the stored `attentions.npz` A1a read (`a1a.RUNS`), the same
+  unit LN1 rows, position 0 out.
+- **Checks first, or the unit refuses:** (a) B2a's own leave-one-prompt-out path through the
+  same `fit` reproduces B2a unit 2's `beta_full` on its 14 heads (1e-6); (b) the 2 × 2's
+  `fe_full`, all-heads cell reproduces A1a's stored layer βs at 143000 (1e-9).
+- **The rule (fixed now):** **A1's number moves** if the primary's refit p50 lies outside A1's
+  [p10, p90] at 143000 in ≥ 4 of 7 prompts (*placed*). Then, in the same unit, the refit at all
+  18 steps (still free) and a line under `status-A.md` "Corrections received". **Whatever the
+  bar says**, A1b's cell at 143000 is re-run with the primary's layer βs (t* and `T_proj`, the
+  field at block l at the refit layer β; `a1a.py` with a β override), since it is free and a
+  move below the bar can still flip a cell's verdict (Blocked 56 (b), recommended; `/challenge-pr`
+  on #212 agreed).
 - **What it also touches:** the project's β convention (Blocked 9: 3.5 [1.6, 5.6], `fe_full`,
-  1d's v1 bands) is the same estimator. The unit reads M1's β per band at 143000 beside; if it
-  falls outside [1.6, 5.6], that goes to the user as a new Blocked item (it would restale every
-  card reading β), and nothing is changed silently.
+  1d's v1 bands) is the same estimator. M1's β per band at 143000 is read beside; if it falls
+  outside [1.6, 5.6], that goes to the user as a new Blocked item (it would restale every card
+  reading β), and nothing is changed silently.
 
 ## Unit 3: the per-component instrument and its gate
 
-**Components** per block l: each head's own `W_O^h` slice of attention's output (16), the
-attention output bias, the MLP (with its bias); the sink's part is split out of each head as
-`A_i0 · v_0 W_O^h` (received attention × position 0's value, Phase 10's row A5). 24 × 18 = 432
-components per step (sink parts beside, not counted). This split is exact as a sum but is one
-choice of split (`lit-A2.md` §1, 2604.23681).
+**Components** per block l (Pythia's parallel residual): each head's own `W_O^h` slice of
+attention's output (16), the attention output bias, the MLP (with its bias): 24 × 18 = 432 per
+step. The sink's part is split out of each head (Phase 10's row A5) as `A_i0 · v_0 W_O^h`
+(received attention × position 0's value), and likewise for the head's most-received non-zero
+key when that key is a fixed token (1e's newline sink), so "sink-only" is read for any fixed key;
+sink parts are beside, not counted. The `W_O^h` split is exact as a sum but is one choice of
+split (`lit-A2.md` §1, 2604.23681).
 
-**Per-component step.** A1's step runs each update through the LN1 frame and takes medians, so
-it does not add over components. A2 linearises: `Δ_c = J_l(x) v_c`, the frame map's Jacobian at
-the block's input applied to component c's raw update, so `Σ_c Δ_c` is the block's first-order
-tangent move exactly. Per token, `proj_c = ⟨Δ_c, F⟩ / |F|²` and `off_c = |Δ_c − proj_c F| / |F|`
-(F the causal field at the block's layer β, after unit 2); per (block, component) the **mean**
-over positions 1…n−1, so the sum over components is the block's mean. Recorded per cell: the
-linearisation residual against A1's nonlinear mean step (as `PROJECT.md` §3.8.2 did; a block
-whose residual exceeds 0.5 is flagged and read beside, not dropped), and `proj_c` with the shared
-drift removed (A1's `drift_free_slope`, per component).
+**Per-component step: the path integral (Aumann–Shapley).** A1's step runs each update through
+the LN1 frame and takes medians, so it does not add over components. A2 integrates the frame
+map's Jacobian along the straight path from the block's input x to its end x + v (v the block's
+whole update): `Δ_c = ∫₀¹ J_l(x + s v) ds · v_c`, by Gauss–Legendre on 16 nodes (*placed*). Then
+`Σ_c Δ_c` is the frame chord `frame(x + v) − frame(x)` up to quadrature error, which G0 bounds,
+so no block is flagged or dropped for linearisation. The tangent projection at U is linear, so
+per token `proj_c = ⟨Δ_c^tan, F⟩ / |F|²` sums exactly to the block's; A1's gnomonic lift is
+applied to the total only, and its ratio to the unlifted total is recorded beside. F is the causal
+field at the block's layer β (unit 2's primary). Per (block, component) the **mean** over
+positions 1…n−1, so the sum over components is the block's mean.
+
+**Off the field, additively.** The per-token off-field vector `o_c = Δ_c^tan − proj_c F` sums
+over c to the block's `o`. A component's share is `⟨o_c, o⟩ / |o|²` (its projection on the total
+off-field move), which sums to 1, so components that cancel each other are not both counted.
+`proj_c` with the shared drift removed (A1's `drift_free_slope`, linear in the move) beside.
 
 **The gate** (`CLAUDE.md` "Calibration gate"; on the GPU, before any real reading), on a
 synthetic stack of 24 identity-QK blocks at β 3.5 with the measured start's spectrum:
-- G0: Σ_c over components equals the block's first-order move (1e-6 relative).
+- G0: Σ_c Δ_c equals the frame chord to 1e-6 relative (quadrature; *placed*).
 - G1 (planted effect): one head with V = −I among 15 with V = +I: that head reads negative and
   ranks first in "against" in every block it is planted in.
-- G2 (null): random-init weights: no component's `proj_c` outside the spread of 50 re-inits'
-  (a sign is not a reading at init).
-- G3 (off-field): one head whose V rotates in a plane orthogonal to the field: `off_c` ranks it
+- G2 (null, family-level): on a stack with Pythia's own init (normal at its σ, 50 seeds), the
+  statistic unit 4 reads, `|S⁻|` (the against set's size), and the share of the against mass in
+  its top 43 components, each fall inside the 50 seeds' 5–95 % range on a 51st seed. A sign at
+  init is not a reading; this asks that the ranking statistic, not each of 432 components, be
+  ordinary there.
+- G3 (off-field): one head whose V rotates in a plane orthogonal to the field: its off share ranks
   first, `proj_c` ≈ 0.
-- G4 (shared drift): a constant added to every token by the MLP: `proj_c` with drift removed
-  reads ≈ 0 for the MLP.
-- G5: the linearised step matches the nonlinear step within 0.1 relative on the planted stack
-  at the measured step size.
+- G4 (shared drift): a constant added to every token by the MLP: the MLP's drift-removed `proj_c`
+  reads ≈ 0.
 Any arm failing stops the unit; the fix is a Blocked item, not a silent change.
 
-## Unit 4: the batch and the ranking (18 steps, v1)
+## Unit 4: the batch and the ranking (18 steps, v1; descriptive)
 
-Over A1a's 18 steps and v1's 7 prompts, every component's mean `proj_c` and `off_c`, the median
+Over A1a's 18 steps and v1's 7 prompts, every component's mean `proj_c` and off share, the median
 over prompts per (step, block, component).
 - **Against set** `S⁻_t`: the fewest components whose negative `proj_c` sum to ≥ 50 % of all
-  negative `proj_c` at step t. **Off set** `S⁰_t`: likewise for `off_c`.
-- **Few** if `|S| ≤ 43` (10 % of 432); **cooperating** otherwise (1e's open thread, `lit-A2.md`
-  §4's prior). Gini over components beside.
+  negative `proj_c` at step t (*placed*). **Along set** `S⁺_t`: likewise for positive `proj_c`.
+  **Off set** `S⁰_t`: the fewest components whose off shares sum to ≥ 50 %.
+- **Few** if `|S| ≤ 43` (10 % of 432, *placed*); **cooperating** otherwise (1e's open thread,
+  `lit-A2.md` §4's prior). Gini over components beside.
 - Read beside, the carried items: attention against the MLP at 1000–8000; block 23 at 143000;
-  whether attention's `proj_c` is drift-robust; the sink's part; which component carries the
+  whether attention's `proj_c` is drift-robust; the sink's part, at position 0 and at any fixed
+  key, and whether it stays ≤ 0.05 of the shared update (1e at close); which component carries the
   off-field share (the MLP first, `lit-A2.md` §1).
+- This unit ranks; it tests nothing. Its v1 sets are not the ones unit 5 ablates.
 
-## Unit 5: the ablation and the reading
+## Unit 5: the ablation, its nulls and the reading
 
-- **Steps:** 2000, 8000, 143000 (the three regimes 1e and A1 found: OV turn, sum-over-heads
-  ascent, end). **Ablated:** `S⁻_t` and, as a second arm, `S⁰_t`, each mean-ablated (positions
-  1…n−1; position 0 untouched), the mean over the 8 long passages' tokens at that step (hash
-  `ba605f4e14b5`; GPU forward pass, so v1 is never ablated to its own mean; `lit-A2.md` §2).
-- **Null:** 20 random sets per arm, matched in count, component type (head / MLP / bias) and block
-  band (L1–8, L9–16, L17–24), seed fixed now (20261016).
-- **Readouts on v1:** (i) the last block's mean cosine (re-clustering), (ii) cumulative `T_proj`
-  over t* at the step's bracket (unit 2's βs), (iii) the share of block transitions where the
-  energy `E_β` rises (monotone if 1.0), (iv) next-token loss on v1.
-- **Supported** if ablating `S⁻_t` (or `S⁰_t`) raises (i) and (ii) above all 20 of its random sets
-  at ≥ 2 of the 3 steps; the loss change is quoted beside, never a condition. **Refused** if
-  neither arm does. Mixed (one readout only) is reported as such. A set that is not "few"
-  (unit 4) is still ablated; the claim then reads "a cooperating set of N".
-- The positive control: G1's planted head ablated on the synthetic stack must turn (i) up above
-  all 20 random sets, or the reading is not made.
+- **Rank on one text, test on another.** At steps 2000, 8000, 143000 (the three regimes 1e and A1
+  found: OV turn, sum-over-heads ascent, end), `S⁻`, `S⁺` and `S⁰` are re-ranked by unit 4's code on
+  the 8 long passages (hash `ba605f4e14b5`; GPU hooked pass at those 3 steps), and the ablation
+  constant is each component's mean output over the same passages' tokens. Readouts are on v1, so
+  v1 neither picks the set nor supplies the mean (`lit-A2.md` §2).
+- **Ablated:** the long-passage `S⁻` (the claim's arm), and `S⁺` as the opposite-sign control
+  (same count as `S⁻`, its top components), mean-ablated at positions 1…n−1, position 0 untouched.
+  `S⁰` is ablated beside only.
+- **Null:** 20 random sets per arm (seed 20261016), matched in count, component type
+  (head / MLP / bias), block band (L1–8, L9–16, L17–24) **and size**: each drawn component comes
+  from the same band, type and decile of mean `|v_c|` as the one it replaces, so "ablating big
+  things makes tokens alike" is in the null.
+- **Primary readouts on v1:** (i) the last block's mean cosine (re-clustering), (iii) the share of
+  block transitions where `E_β` rises (monotone if 1.0). **Manipulation check, not evidence:**
+  (ii) cumulative `T_proj` over t* (it rises by how `S⁻` is chosen). Beside: (iv) next-token loss
+  on v1, quoted, never a condition.
+- **Supported** if ablating `S⁻` raises both (i) and (iii) above all 20 of its size-matched random
+  sets and above the `S⁺` ablation, at ≥ 2 of the 3 steps. **Mixed** if only one of (i), (iii)
+  does (named). **Refused** otherwise. `S⁰` passing the same test is reported as "the off-field
+  motion carries it", beside the exit, never as the exit's "supported". A set that is not "few"
+  still runs; the claim then reads "a cooperating set of N".
+- **The rule's own calibration** (`CLAUDE.md` "Calibration gate"): before the 3 real steps, units
+  4–5 run end to end (rank on the long passages, ablate, readouts on v1) at **step 0** as the
+  planted null: the rule must not read "supported" there. And on the synthetic stack, G1's planted
+  head as `S⁻` must read "supported" against its own size-matched null. If either fails, the
+  reading is not made and the failure goes to the user.
 
 ## Fences
 
@@ -118,30 +146,27 @@ over prompts per (step, block, component).
   read (`core/holdout.py`).
 - **The skip is not a component.** Ablations remove updates, never the residual, whose own
   anti-collapse share (2103.03404) is outside A2.
-- **A1's closed number changes only by unit 2's rule**, recorded under `status-A.md`
-  "Corrections received".
+- **A1's closed number changes only through unit 2**, recorded under `status-A.md` "Corrections
+  received".
 - **LR warmup** overlaps 512 and 1000–2000; unit 4 reports breaks there with that confound.
 - `a1a.ln_from` (duplicating `u2_attn.ln_from`) is merged into one in unit 3, the next code to
   extend the pass (A1 Parked; changes no number).
 
 ## Worth challenging (for the freeze)
 
-1. **M1 as unit 2's primary.** It is the softmax's likelihood but has an offset profile `fe_full`
-   lacks in form; a β that drops because φ absorbs content is the alternative reading. The
-   `partial_r2` floor beside guards that. Rejected: re-deriving `fe_full` with mass weights (a
-   third estimator nobody has checked).
-2. **Unit 2's "moves" bar** (p50 outside A1's p10–p90 in 4 of 7 prompts) is coarse; a smaller
-   move that crosses one cell's t* verdict would not trigger. Alternative: re-run A1b's cell at
-   143000 whatever the refit says (it is free); taken as the recommended variant if the user
-   prefers it.
-3. **Linearised components** instead of A1's nonlinear step: exact sums, but a block whose
-   linearisation residual is large is read beside, and §3.8.2 found it large at most steps
-   outside 2000–4000. Rejected: Shapley over components through the frame (1e's method), which
-   is exact but 432! orderings, sampled.
+1. **M1 as unit 2's primary.** It has an offset profile `fe_full` lacks in form; a β that drops
+   because φ absorbs content is the alternative reading. The 2 × 2 separates estimator from floor.
+   Rejected: a mass-weighted `fe_full` (a third estimator nobody has checked).
+2. **Unit 2's "moves" bar** (4 of 7 prompts) is coarse; the free re-run of A1b's 143000 cell
+   covers what it misses.
+3. **The path integral at 16 nodes.** Exact to quadrature; it replaces a linearisation whose
+   residual `PROJECT.md` §3.8.2 found large outside 2000–4000 (`/challenge-pr` on #212, finding
+   4). Rejected: sampled Shapley through the frame (1e's method).
 4. **The `W_O^h` per-head split** (2604.23681's non-identifiability). Rejected: a learned
    re-basis, which would make "a head" not the model's head.
 5. **Mean ablation from the long passages**, not resample or optimal (2409.09951). Optimal
-   ablation is the better-founded choice but needs a fit per component; beside only if the budget
-   allows.
-6. **Three ablation steps, not 18**: the GPU cost is small either way; three keeps the null at
-   20 sets per arm in one unit. Alternative: all 18 at 10 sets.
+   ablation is better founded but needs a fit per component; beside only if the budget allows.
+6. **Three ablation steps, not 18**, and a step-0 null rather than 50 re-inits: the re-inits would
+   cost a hooked pass each; step 0 is the trained model's own init.
+7. **The 50 % mass cut and "few" ≤ 10 %** are placed; a different cut changes `|S|`, and the
+   size-matched null is what keeps that from deciding the reading.
