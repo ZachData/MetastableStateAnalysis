@@ -266,6 +266,10 @@ world moves, nobody updates the line, and the next session acts on it.
 - **2026-10-10, the start hook's `STATE.md` five merges old again** (F13): the main tree sat at
   #181 while `origin/main` had #182–#186; caught at Start step 1 as on 2026-10-07. Fourth
   instance; the hook fix is still the user's (`.claude/settings.json`).
+- **2026-10-16, the start hook's `STATE.md` 17 merges old** (A2's opening): the main tree sat at
+  #194 while `origin/main` had #195–#211; caught at Start step 1 and the main tree fast-forwarded
+  (`git pull --ff-only`, clean). Fifth instance; a closing session's last step could fast-forward
+  the main tree, but the hook fix is still the user's.
 - **2026-10-10, a frame named for what it is not** (F13): `handoff-10.md` Stage 3 and
   `docs/readings/2411.04990.md` §8 said `core/ln_frame.py`'s Gram *is* the paper's `⟨Qx, Ky⟩`
   geometry. It is `LN(x)·LN(y)`: no `W_Q`, `W_K`, and in Pythia rotary makes `⟨Qx_i, Kx_j⟩`
