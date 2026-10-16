@@ -252,3 +252,9 @@ def test_a_template_with_wrong_fields_is_refused(repo):
     t.write_text(t.read_text(encoding="utf-8").replace("- **Feeds:** none\n", ""),
                  encoding="utf-8")
     assert any("missing field(s) ['Feeds']" in m for m in _msgs(repo))
+
+
+def test_track_ids_are_phase_ids():
+    # Track cards (trackA_force/status-A.md) are named by one capital (#206)
+    assert rp._PHASE_ID.match("A") and rp._DEP.match("A@0123456789")
+    assert rp._PHASE_ID.match("1e") and not rp._PHASE_ID.match("AB")

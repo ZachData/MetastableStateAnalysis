@@ -243,7 +243,7 @@ against the causal t* from the measured cloud per (step, prompt).
 | 2 | A1a: β over 18 steps (CPU, `attentions.npz`), the hooked pass for `h_attn` (GPU), `h_proj` in `integration_time.py`, the gate | built 2026-10-14; **the gate fails (G3, G4)**, the batch not run; Blocked 46 |
 | 3 | A1a's re-gate (Blocked 46 (b), then 47 (d)) | re-gate ran 2026-10-14, fails on G4 at 3 frames (Blocked 47, #203); 47 (d)'s gate ran 2026-10-15, **G4c passes, G2s fails on `proj_c`** (Blocked 48, #204) |
 | 4 | the gate with G2s beside (Blocked 48 (a)) and A1a's batch | `status-A.md` "A1a's gate and batch, Blocked 48 (a)" |
-| 5 | A1b: the reading, H-WARP and 1e's question beside | after A1a's batch |
+| 5 | A1b: the reading, H-WARP and 1e's question beside | **done 2026-10-15**: below t* at all 18 steps, H-WARP refused; A1 closed (`status-A.md` "A1 on one page") |
 
 ## Fences
 

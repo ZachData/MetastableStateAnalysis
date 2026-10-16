@@ -157,6 +157,8 @@ world moves, nobody updates the line, and the next session acts on it.
   **Again 2026-10-15 (A1a's batch, after #204):** still `edc8e8c`, now 30+ commits behind; the hook
   printed 10-11's `STATE.md`. Caught by Start step 1 (`git show origin/main:STATE.md`). The
   cleanup command this time includes `git pull --ff-only` and goes to the user.
+  **Again 2026-10-15 (A1b, after #205):** still `edc8e8c`; the hook printed 10-11's `STATE.md`.
+  Caught by Start step 1 (`git show origin/main:STATE.md`); the pull is still the user's.
 - 2026-10-13 (B-pre): `claims/registry.json`'s `P-ST1` says twice that its activations and Phase 2's
   projectors "do not exist in this repository"; both have been on disk since 2026-08-31
   (`data/phase12/*/ov_projectors_*`, the v1 sweep). The registry is not edited outside a
@@ -1061,6 +1063,13 @@ needs the user to enable it on GitHub.
   labels unstable to the set's edges (`status-10.md` §1.32; `/challenge-pr` on #174). Rule:
   **before reading a reference, count what it holds fixed by construction (here: records where
   the matched count is all of them), and set the cells it forces apart.**
+- 2026-10-15, A1b (`/challenge-pr` on #206): the note written before the output said "a drift can only
+  add to `T_proj`", from the gate's one planted drift (sustained, toward a target). In the real
+  stream removing the shared part raised `T_proj` in 19 cells. The same unit read 1e's question
+  off (6.9), a model with one cluster by construction, while the design's own causal table
+  already put the doubling β inside the measured range. Rule: **a sign or bound shown on one
+  planted case is that case's; before it goes into a reading, check it on the data it will be
+  read beside (here one line: `T_proj_c > T_proj`).**
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
@@ -1194,6 +1203,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   landed unchanged by #162. Rule: **a stacked PR stays a draft until its base has merged and
   its base reads `main`**; after any merge, run `git merge-base --is-ancestor <tip> origin/main`
   (already the rule; not run here).
+- 2026-10-15 (A1b): an Edit to `status-A.md` and the `git commit` meant to carry it went out in
+  one parallel batch; the Edit failed (file not yet read), the commit landed without the
+  pre-output note. Caught from the commit's stat before push, amended, then pushed. Rule: **a
+  commit is never in the same batch as the edits it records**; check `git show --stat` first.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD

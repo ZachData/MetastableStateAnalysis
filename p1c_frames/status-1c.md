@@ -24,7 +24,7 @@
   - Finding 2's β 0.50 is `beta_raw` ÷ 8, a second division by the model's `1/√d_h`; `beta_raw` on unit LN1 rows (≈ 4 on 410m, R² ≈ 0.18) is already the β of `softmax(β⟨u_i,u_j⟩)`. The factor is computed; which number to adopt is still the user's — `p1d_cluster_ensemble/status-1d.md` "Attention communities against three nulls"
 - **Registry:** `P-gamma1`, `P-gamma2` needs-null, blocked (no `beta_eff` in any run dir); `P-H1` measurement, measured on one checkpoint, not adjudicated; `P-S1` e-value, active, dry run only, blocked on inputs (`claims/EXPERIMENTS.md`)
 - **Depends on:** 1@30c0d54cc5
-- **Feeds:** 2d, 9
+- **Feeds:** 2d, 9, A
 - **Open threads:**
   - β's scale convention, to decide before any producer freezes it in an artifact (recommendation: `beta_raw`, after a per-offset refit; STATE Blocked 9)
   - `P-S1`: re-cluster both arms offline at a matched k, or record the gate as unfeedable
