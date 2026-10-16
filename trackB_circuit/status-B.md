@@ -12,7 +12,7 @@
   - Loss gradients at layer 5 are aligned across prompts at every step, most at 64–512, so a structured direction ranked against random ones is biased upward by the model itself — `trackB_circuit/status-B.md` "Fences (from B0's gate)"
   - B1 passes by its revised pass rule (off at 0, on at 1000–8000): `L5H2`'s signature reads off at steps 0–256 and on at every step from 512; the onset falls in (256, 512], inside the range recorded before the run and before ROADMAP's first window (512, 4000]; read from block 5 alone, on one head's output — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
   - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
-  - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights the circle-type top pair is rare (3 of 252 cells) and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
+  - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights V's top pair is a D = 2 block (complex or degenerate) in 123 of 252 cells, near-repulsive in 10, and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -25,7 +25,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-15 · body `5787012730`
+- **Reviewed:** 2026-10-15 · body `907ec442c1`
 <!-- /phase-card -->
 
 ## Units
@@ -79,7 +79,7 @@ attention with a sink (synthetic prompts have no position 0).
 | row | reading |
 |---|---|
 | \|λ₁\| | 0.013–1.93; ≈ 0.014 for every head at steps 0–256, then growing to a peak at 16000–54000 and falling at 143000 |
-| U₂'s type | rotation 120, mixed 129, degenerate negative 2 (`L12H5` at 512, `L15H7` at 4000), degenerate positive 1 (`L10H14` at 16000). At 143000: rotation for `L5H2`, `L12H5`, `L9H8`, `L4H9`, `L13H8`, `L10H14`; mixed for the rest. **The circle type is rare on the weights** |
+| U₂'s type | a complex pair 120 (the paper's rotating circle `W = R_φ`, also a D = 2 case; 8 within 0.05 rad of π, 1 within 0.05 of 0), mixed 129, degenerate negative 2 (`L12H5` at 512, `L15H7` at 4000), degenerate positive 1 (`L10H14` at 16000). **Near-repulsive** (degenerate negative, or a pair within 0.05 rad of π): **10 of 252**; any D = 2 top pair (a complex pair or a degenerate real one): 123. At 143000: a pair for `L5H2`, `L12H5`, `L9H8`, `L4H9`, `L13H8`, `L10H14`; mixed for the rest. (Labelling: a real pair counts as degenerate within 5 %, a complex pair at any angle; `/challenge-pr` on #208, finding 4) |
 | kernel beaten | in 221 of 252 cells; the 31 where no block beats `1 − γ` are at 1000–32000 (10 at 1000, 8 at 2000, 7 at 4000), where the top block is a negative real: the OV repulsive phase on these heads (`PROJECT.md` §3.12 A) |
 | ρ_⊥ where beaten | 0.949–0.99999: at \|λ\| ≲ 2 and γ = 0.1, \|b\| ≈ 0.9 + 0.1 Re λ, so one application selects nothing; γ is read in unit 2 |
 | selection order | the paper's top block (by \|b\|) is V's top by \|λ\| in 64 of 252 cells (by Re λ, γ's small-γ limit: the same 64); V's ladder and the paper's selection order disagree in most cells, as the design expected for negative λ |
@@ -241,7 +241,7 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 
 ## Parked
 
-(none)
+- B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first.
 
 ## Corrections received
 

@@ -132,6 +132,13 @@ a D\* (including D\* = 0) at 143000; the reference heads always.
 | ρ_⊥ | `max \|b_a\| / \|b_top\|` | over every other block and the kernel's `1 − γ`; ρ_⊥ > 1 reads "the kernel beats every block" | the kernel is transverse to U too |
 | NUMERICS | gate float64 on CPU | gate float64 on the GPU; weights float64 on CPU, from float32 checkpoints cast exactly | the memory rule (heavy synthetic work on the GPU); float64 kept |
 
+**Fixed for unit 2 before any real token (`/challenge-pr` on #208, findings 2 and 3):** G0's
+tolerance is G5 (iii)'s, the attention difference over float32 eps × the head's largest |logit|,
+≤ 10, not `check_pass`'s 1e-4 (that bound is on hidden rows; G5 (iii) already measured 3.8e-4 on
+`L18H1`'s attention). Each null's median token occupancy `‖Uᵀu_i‖²` is recorded beside its TV,
+so a V rung that wins only by sitting where LN1's gain puts the tokens is visible; a
+token-matched comparator is not added (it would be a new null, the user's).
+
 NUMERICS: float64 on CPU for the gate (small); unit 2–3's hooked pass on the GPU float32, as A1a,
 with every comparison inside one process and device. The real attention's check against the stored
 `attentions.npz` (G0) uses A1a's tolerance at 143000 (`check_pass`, 1e-4).

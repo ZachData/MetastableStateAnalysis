@@ -113,3 +113,37 @@ def test_m2_on_the_qk_read_space_is_exact_and_u_zero_is_position_only():
     L0 = b2a.m2_logits(y, np.zeros((d, 0)), W)
     L0b = b2a.m2_logits(g.standard_normal((n, d)), np.zeros((d, 0)), W)
     assert np.allclose(L0[fin], L0b[fin])                                   # reads no token
+
+
+def test_the_rule_on_small_planted_heads(monkeypatch):
+    """`read_head` end to end on CPU (d = 16, 3 prompts, 8 nulls): a planted plane reads D* = 2,
+    an offset-only head D* = 0, strong random QK "outside" (/challenge-pr on #208, finding 5)."""
+    pytest.importorskip("torch")
+    monkeypatch.setattr(b2a, "K_NULL", 8)
+    monkeypatch.setattr(b2a, "NULL_CHUNK", 4)
+    g = np.random.default_rng(3)
+    d, n = 16, 60
+    S = np.diag(g.uniform(-0.3, 0.3, 6))
+    S[:2, :2] = -2.0 * np.eye(2)
+    left, right, P = _V(S, d=d, seed=4)
+    lad = b2a.ladder(left, right, rungs=(0, 1, 2, 4))
+
+    def unit(x):
+        return x / np.linalg.norm(x, axis=1, keepdims=True)
+
+    plane = [unit(unit(g.standard_normal((n, 2))) @ P[:, :2].T + 0.05 * g.standard_normal((n, d)))
+             for _ in range(3)]
+    r = b2a.read_head(plane, [b2a.paper_attention(u) for u in plane], lad, "t-plane", "cpu")
+    assert r["verdict"] == "D*" and r["D_star"] == 2 and r["nulls"]["2"]["beat"] == 0
+
+    iso = [unit(g.standard_normal((n, d))) for _ in range(3)]
+    phi = np.zeros(n)
+    phi[1] = 5.0
+    i = np.arange(n)
+    Apos = b2a._causal_softmax(phi[np.clip(i[:, None] - i[None, :], 0, n - 1)])
+    r = b2a.read_head(iso, [Apos] * 3, lad, "t-pos", "cpu")
+    assert r["verdict"] == "D*" and r["D_star"] == 0
+
+    G = g.standard_normal((d, d))
+    r = b2a.read_head(iso, [b2a._causal_softmax(8.0 * (u @ G @ u.T)) for u in iso], lad, "t-out", "cpu")
+    assert r["verdict"] == "outside"
