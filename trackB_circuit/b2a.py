@@ -97,7 +97,7 @@ G2_PEAK = 5.0                             # G2: φ*(1) = 5, every other offset 0
 G3_SEEDS, G3_SUB, G3_PASS = 20, 8, 19
 G4_SD = 3.0                               # G4: logit = 3 uᵢᵀ G uⱼ, G standard normal
 PLANE_TOL = 1e-3                          # rad
-G0_TOL = G5_HF_TOL                        # design "Fixed for unit 2": G5 (iii)'s bound, not check_pass's
+G0_TOL = G5_HF_TOL                        # placed (design "Fixed for unit 2"): G5 (iii)'s bound
 A1A_RECORDS = Path(os.environ.get("METS_DATA", str(REPO / "data"))) / "trackA/a1a_batch_2026-10-15/records"
 G4W_SD = (0.5, 1.0)                       # G4w (Blocked 51 (a)): weak random QK, must read outside
 ARMS = ("G1", "G1r", "G1d", "G2", "G3", "G4", "G4w", "G5")
