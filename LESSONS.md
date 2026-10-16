@@ -621,6 +621,12 @@ not fixed).
 ## 4. Tests that assert a property of the machine, not of the code
 
 **Instances.**
+- 2026-10-16, B2a unit 1 (#208, blocked a merge): `test_b2a` asserted a planted plane's angle
+  < 1e-10 through `plane_angle`, an arccos of the smallest singular value, which near 0 resolves
+  only to √(2 eps) ≈ 1.5e-8. The same commit passed on the PR run and failed on the push run at
+  1.49e-8 (BLAS rounding). Fixed by asserting sin of the angle, `‖U − PPᵀU‖₂`, exact to rounding
+  (`e947a04`). Rule: **a tolerance below an instrument's resolution tests the machine**; check the
+  resolution of the formula (arccos, sqrt near 0) before choosing the bound.
 - 2026-10-06, Phase 10 R7: check (d) compared a 2-token pass with the passage's 512-token pass
   at 1e-5, a tolerance borrowed from re-running the *same* input against Stage 0. At step 143000
   float32 sequence-length noise is 1.5e-5 even unbatched, so the gate refused `latex_monograph`

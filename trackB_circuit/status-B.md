@@ -13,6 +13,7 @@
   - B1 passes by its revised pass rule (off at 0, on at 1000–8000): `L5H2`'s signature reads off at steps 0–256 and on at every step from 512; the onset falls in (256, 512], inside the range recorded before the run and before ROADMAP's first window (512, 4000]; read from block 5 alone, on one head's output — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
   - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
   - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights V's top pair is a D = 2 block (complex or degenerate) in 123 of 252 cells, near-repulsive in 10, and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
+  - At step 143000 no head of 14 has a content subspace on V's ladder (no D\* ≥ 1, so no circle): 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class, 2 "none"; the isotropic cosine adds at most 0.08 of TV over position, and the content a head reads lies in its QK read space, not in V's invariant subspaces — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -25,7 +26,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-15 · body `907ec442c1`
+- **Reviewed:** 2026-10-16 · body `10a0e4648e`
 <!-- /phase-card -->
 
 ## Units
@@ -46,7 +47,67 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 |---|---|---|
 | 0. design, scan, `sympy` check | **done 2026-10-15**; frozen by the user 2026-10-15 (Blocked 50 (a): 4 units, M1 primary) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
 | 1. weights only, planted gate | **done 2026-10-15: every arm passes**; weights rows written | `trackB_circuit/b2a.py`; "B2a unit 1 (2026-10-15)" below |
-| 2. real tokens at 143000 | next | `design-B2a.md` "Units" |
+| 2. real tokens at 143000 | **done 2026-10-16: a verdict for all 14 heads; no head has D\* ≥ 1** | "B2a unit 2 (2026-10-16)" below |
+| 3. the 18 steps | next: `L5H2`, `L12H5` (the named heads with a D\*) and the 8 references | `design-B2a.md` "Units" |
+
+## B2a unit 2 (2026-10-16): real tokens at 143000
+
+**Input:** code `b2a.code_sha()` = `9fe738d5a008` (commit `2f8c092`), v1's 7 prompts
+(`prompts_hash` `976b62d677bc`), Stage 0's stored runs at 143000 (`trackA_force.a1a.run_dir`), HF's
+forward on the RTX 3080 float32 (TF32 off), rebuild and fits float64. Records
+`/run/media/system/WDS_500/Mets/data/b2a/2026-10-16/` (`gate.json`, `real.json`, `run.log`); 22 min,
+16 of them the gate. Rule: design "The rule", with Blocked 51 (a) and 52 (a′) (both the user's, taken
+before the batch; 52 after one head, `L5H2`, was read in a smoke test, so `L5H2`'s verdict is post hoc).
+Re-run: `python -m trackB_circuit.b2a gate --out <dir>`, then `... real --out <dir> --gate <dir>/gate.json`,
+`... report --out <dir>`.
+
+**Checks.** The gate reran on this code and passes all 9 arms: the 7 of unit 1 unchanged, **G4w**
+outside at both scales (TV(full) = TV(0) = 0.195, 0.378) and **G2n** D\* = 0 at both (TV(full) 0.163,
+0.324 against TV(uniform) 0.449, 0.529). **G0** passes on all 98 (head, prompt) cells: worst
+`L13H8`/`camus_letranger`, 2.8e-6 raw, 1.58 of the bound 10.
+
+**The rule's verdicts** (TV is the mean over prompts of the per-prompt mean over rows; "content adds" =
+TV(0) − TV(full), "position adds" = TV(uniform) − TV(0)):
+
+| head | set | verdict | TV(full) | content adds | position adds | best V rung's gain over D = 0 (D ≤ 64) | M2 on QK's top 64 | sink |
+|---|---|---|---|---|---|---|---|---|
+| `L5H2` | previous-token | **D\* = 0** (post hoc) | 0.125 | 0.000 | 0.820 | 0.000 | 0.063 | 0.00 |
+| `L7H8` | induction | none | 0.468 | 0.062 | 0.397 | 0.000 | 0.094 | 0.84 |
+| `L12H5` | induction | **D\* = 0** | 0.412 | 0.006 | 0.478 | 0.013 | 0.221 | 0.38 |
+| `L8H6` | induction | outside | 0.811 | 0.000 | 0.020 | 0.003 | 0.448 | 0.80 |
+| `L11H14` | induction | outside | 0.742 | 0.000 | 0.025 | 0.000 | 0.554 | 0.77 |
+| `L10H7` | negative interactor | none | 0.469 | 0.072 | 0.088 | 0.024 | 0.309 | 0.60 |
+| `L6H4` | reference | outside | 0.522 | −0.010 | 0.262 | 0.000 | 0.335 | 0.65 |
+| `L9H8` | reference | outside | 0.542 | 0.079 | 0.143 | 0.037 | 0.311 | 0.58 |
+| `L4H9` | reference | **D\* = 0** | 0.261 | 0.000 | 0.646 | 0.000 | 0.135 | 0.00 |
+| `L15H7` | reference | outside | 0.648 | −0.029 | 0.235 | 0.003 | 0.562 | 0.57 |
+| `L13H8` | reference | outside | 0.598 | −0.003 | 0.099 | 0.001 | 0.306 | 0.43 |
+| `L9H1` | reference | **D\* = 0** | 0.460 | 0.006 | 0.238 | 0.009 | 0.222 | 0.51 |
+| `L18H1` | reference | outside | 0.717 | −0.009 | 0.020 | 0.000 | 0.624 | 0.75 |
+| `L10H14` | reference | outside | 0.524 | −0.004 | 0.290 | 0.004 | 0.230 | 0.75 |
+
+| reading | what it rests on |
+|---|---|
+| **No head has a content subspace on V's ladder: D\* ≥ 1 nowhere, so no circle at 143000.** TV on V's ladder is flat in D for every head; the largest gain of any rung up to 64 over D = 0 is 0.037 (`L9H8`) | the table; `real.json` "rungs" |
+| M1's isotropic cosine adds at most 0.079 of TV over the offset profile in any head; in 11 of 14 it adds < 0.01 (negative values: leave-one-out costs the 1024-dim full model more than it gains) | "content adds" |
+| 4 heads are positional (D\* = 0): `L5H2`, `L4H9` fitted well (0.125, 0.261), `L12H5`, `L9H1` only as well as M1 fits at all (0.41, 0.46). 8 are outside, **all by TV(full) > 0.5; the clause Blocked 51 and 52 added decided no head**, and the frozen rule gives the same 14 verdicts. Under 51 (a) as first built, all 4 positional heads would have read outside | "position adds" ≥ 0.24 for the 4 |
+| `L7H8` and `L10H7` are "none": content helps (0.062, 0.072), but no V subspace carries it. `L10H7`'s D = 64 rung meets the TV clause (0.518 ≤ 0.519), and the first 32 Haar subspaces of dimension 64 all tie or beat it (min 0.499; occupancy V 0.07 against the nulls' median 0.06) | `real.json` "nulls" |
+| **The content a head reads is in its QK read space, not in V's invariant subspaces.** M2 (the head's own logit with y projected) on V's ladder stays at its bias-only value (0.63–0.94) at every rung; on QK's ladder it falls to 0.06–0.62 at D = 64 and is exact at the full rank 128 (G5 (ii)) | `real.json` "m2" |
+| The prior (design-A: 2D fails for previous-token and induction heads) is not contradicted: `L5H2` D\* = 0, the 4 induction members D\* = 0, none, outside, outside | the table |
+
+**Beside.** γ (the head's output over its LN1 row, as γ/(1 − γ)) 0.005–0.146, largest `L5H2`. The
+motion cosine at full D is 0.49–0.99 (median over tokens) but mostly V's own direction, since the reduced
+and real updates share V; at D = 2 it is −0.10 to 0.38. Occupancy of V's U₂ by the real tokens is ≤ 0.01
+except `L18H1` (0.09 at D = 3).
+
+**A1a's β against M1's at full D (the design's "must reproduce it in sign and order"): sign agrees in 8
+of 14.** The 6 that disagree (`L6H4`, `L4H9`, `L15H7`, `L13H8`, `L18H1`, `L10H14`) are the heads where
+content adds ≤ 0; where it adds ≥ 0.05 (`L7H8`, `L10H7`, `L9H8`) the signs agree and the order is
+the same (M1 7.9 > 6.6 > 5.6; A1a 15.5 > 10.3 > 9.8). The two are different estimators: A1a's
+`fe_full` is least squares on log A with per-offset effects, every pair weighted equally; M1 is
+cross-entropy, weighted by attention mass. When the cosine explains nothing, β is noise in both and
+their signs need not match. The check fails as written; nothing in the rule reads it (A1a's β is beside
+only, design "Fences"). Parked below for Track A, which uses the layer median of these βs.
 
 ## B2a unit 1 (2026-10-15): the gate and the weights rows
 
@@ -241,7 +302,8 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 
 ## Parked
 
-- B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first.
+- B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first. *(Unit 2, 2026-10-16: no V rung beat its nulls, so nothing for this null to demote at 143000; kept for unit 3.)*
+- A1a's per-head `fe_full` β against B2a's M1 β: opposite signs in 6 of 14 heads at 143000, all where the cosine explains nothing (B2a unit 2, "A1a's β against M1's"): why, A1's layer β is the median over the layer's 16 heads, and heads outside the class contribute a β that is noise in sign; cost, one pass over A1a's stored per-head βs, weighting or dropping heads by A1a's own `partial_r2`; could change A1's β bracket and so `P-gamma2`'s t*. Carried to Track A (A2).
 
 ## Corrections received
 
