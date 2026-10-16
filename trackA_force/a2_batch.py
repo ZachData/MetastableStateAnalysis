@@ -274,6 +274,12 @@ def step_summary(recs: Sequence[Dict], arm: str, band: Dict) -> Dict:
     b23 = np.median(proj.reshape(len(recs), N_BLOCKS, k)[:, 23], 0)
     out["block23"] = {"total": float(b23.sum()),
                       "top_minus": [(ac.COMPS[i], float(b23[i])) for i in np.argsort(b23)[:3]]}
+    # beside every |S-| (/challenge-pr on #215, findings 2 and 4): the signed masses, the 50 % set of
+    # |proj| (concentration of any sign; no band, real step 0 beside), each prompt's |S-| then the median
+    out["neg_mass"], out["pos_mass"] = float(-med[med < 0].sum()), float(med[med > 0].sum())
+    out["S_abs"] = int(ac.mass_set(np.abs(med), +1).size)
+    out["S_minus_per_prompt"] = float(np.median([ac.mass_set(x, -1).size for x in proj]))
+    out["beta_median"] = float(np.median([r[arm]["betas"] for r in recs]))
     out["g0_max"] = max(r[arm]["checks"]["g0_max"] for r in recs)
     out["recon_max"] = max(r[arm]["checks"]["recon"] for r in recs)
     out["match_max"] = max(r[arm]["checks"]["match_unit"] for r in recs)
@@ -319,6 +325,13 @@ def report(out: Path) -> int:
                  f"{x['block_proj']:+.3f} ({x['attn_proj']:+.3f} / {x['mlp_proj']:+.3f}) | {x['attn_proj_df']:+.3f} | "
                  f"{x['mlp_off']:.2f} / {x['attn_off']:.2f} | {x['sink_proj']:+.4f}, {x['sink_share_max']:.3f} | "
                  f"{x['g0_max']:.1e} | {'warmup' if s in WARMUP else ''}")
+    L += ["", "## Beside every |S-| (#215 findings 2, 4)", "",
+          "step | β median | neg / pos mass | |S_abs| (50 % of |proj|) | |S-| per prompt, then median | against-specific few",
+          "---|---|---|---|---|---"]
+    for s in steps:
+        x, st = summ[s], summ[s]["stats"]
+        L.append(f"{s} | {x['beta_median']:+.2f} | {x['neg_mass']:.3f} / {x['pos_mass']:.3f} | {x['S_abs']} | "
+                 f"{x['S_minus_per_prompt']:g} | {'yes' if st['S_minus_few'] and not st['S_plus_few'] else ''}")
     L += ["", "## Top of each set (median over prompts; proj per block step)", ""]
     for s in steps:
         x = summ[s]
