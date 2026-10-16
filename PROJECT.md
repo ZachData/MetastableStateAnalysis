@@ -2895,6 +2895,23 @@ cheap and would resolve it.**
 
 ---
 
+## 3.57 Track B's B2a closed: no head's attention lives in a small subspace of V (2026-10-16)
+
+**`trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+the 7 v1 prompts, 18 steps, 14 heads, nothing registered.
+
+- The paper's low-dimensional reduction (a head's dynamics on V's invariant subspaces, the circle
+  at D = 2) reproduces no head's attention at any step. The reason is upstream of the fit: the
+  real tokens hold about the random share of their norm² in V's subspaces, so the reduction's
+  premise fails on this model.
+- V's weights do have 2D blocks (about half of all head-step cells, a few near-repulsive), so
+  "the weights have the structure" and "the tokens use it" come apart. Any later claim from V's
+  spectrum alone (B2, Phase 2's atlas) needs a token-side check like this one.
+- What a head reads is on QK's side; that question goes to B2.
+
+---
+
 ## 3.56 Track A's A1 closed: the net moves far, but not along the collapse field (2026-10-15)
 
 **`trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"** holds the readings and what
