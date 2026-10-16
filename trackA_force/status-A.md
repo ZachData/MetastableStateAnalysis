@@ -22,11 +22,11 @@
   - Is 1e's one well the causal dynamics' answer at the measured β? The causal simulator's t* doubles inside the measured range, so a plateau there is not ruled out — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
   - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (Blocked 57 (a): card at `fe_full`, (i) beside) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
-  - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few" (STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
+  - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few", and 16 nodes fail G0 on real block 0 (`/challenge-pr` on #214; STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `5eca3114bf`
+- **Reviewed:** 2026-10-16 · body `cc7bc9cb19`
 <!-- /phase-card -->
 
 ## Units
@@ -74,7 +74,7 @@ identity-affine LN1 (G1 also on 143000's LN1). G2: Pythia's init redrawn at each
 |---|---|---|
 | G0 quadrature | ≤ 1e-6 rel., every block of every stack | **pass**, max 7.7e-11 (G2 seeds); synthetic ≤ 4.9e-14 |
 | G1 planted V = −I | < 0 and first in "against", every block | **pass**, 168 of 168 blocks; runner-up at most 0.12 of it; also on 143000's LN1 |
-| G2 null | 51st seed in the 50 seeds' 5–95 % | **pass**: `|S⁻|` 25 in [13.5, 29.7]; top-43 share 0.627 in [0.602, 0.719] |
+| G2 null | 51st seed in the 50 seeds' 5–95 % | **pass**: `|S⁻|` 25 in [13.5, 29.7]; top-43 share 0.627 in [0.602, 0.719]. A fresh draw against its own kind can fail only by chance, so this is the init band, measured, not a test of the instrument (`/challenge-pr` on #214, finding 3) |
 | G3 off-field head | off share first, `|proj|` ≤ 0.05 of its size | **pass**: off share ≥ 0.905, `|proj|/size` ≤ 0.018 |
 | G4 shared drift | MLP `|proj_df|` ≤ 0.1 of its size | **pass**: ≤ 0.033 (raw `proj` ≤ 0.057, beside) |
 
@@ -87,9 +87,19 @@ against set is already "few" by the design's cut (`|S⁻|` ≤ 43): 50 of 50 see
 So "few" cannot tell a trained step from init; read against the init band, it can.
 
 Not established: anything about a trained step (no real reading was made); G4 is weak in this
-frame (a constant drift barely projects on the field even before removal, raw ≤ 0.057); quadrature
-at real blocks where the update is large against the input (on a tiny model, block 0 at 25× needs
-32+ nodes; unit 4 records G0 per block).
+frame (a constant drift barely projects on the field even before removal, raw ≤ 0.057); G1 and G3
+are easy controls that catch sign and index errors, not subtle ones (finding 4).
+
+**After `/challenge-pr` on #214 (accept with changes):** finding 1 checked and **confirmed: 16
+nodes fail G0 on real block 0**, whose update is 15–48× its input (block-0 total on `homer_iliad`,
+stored activations: 2.8e-6 at 2000, 5.5e-4 at 8000, 1.4e-3 at 143000; 32 nodes 3.5e-12, 1.4e-7,
+9.5e-7; 64 nodes ≤ 1e-12; blocks 1 and 5 ≤ 1e-15 at 16). The gate's synthetic starts never reached
+that ratio, and `CompHooked._read` refuses on the head split but not on G0. The node count is
+placed and frozen, so the change is Blocked 58 (c); no code changed here. Finding 2 (the 43 cut
+against 206 negative components at step 0) is Blocked 58 (a4). Finding 5: the top key is chosen by
+attention received summed over all queries, which favours early keys when attention is near
+uniform, and only its position is recorded (the docstring says its token); fixed with unit 4.
+Finding 6: A1a's code hash changed with the `ln_from` re-export (Parked).
 
 Re-run: `METS_DATA=<data> python -m trackA_force.a2_gate --out <dir> [--quick]`.
 
@@ -477,6 +487,11 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 ## Parked
 
 At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)*.
+
+- *A1a's code hash* (A2 unit 3, 2026-10-16): `a1a.py` re-exports `u2_attn.ln_from`, so A1a's
+  `code_sha` is no longer `a08544e9b644`; re-running A1a's batch would be refused against its
+  old gate. No number changes. Why parked: only a re-run needs it; cost one re-gate; changes
+  no decision.
 
 - *The 2D spike* (the user's, 2026-10-14): **done**, its slot picked (Blocked 49 (a)): B2a
   after A1 (ROADMAP §7 B2a).
