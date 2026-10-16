@@ -1159,6 +1159,14 @@ of a design before running it, and print it on every record
   built"). The same instance as A1a's G2s. Rule: **each planted arm is run once on a scratch
   slice, and its configuration checked to be the one the arm names, before the gate's table
   freezes.**
+- 2026-10-16 (B2a unit 3, Blocked 53 (a)): Claude's recommendation placed a selection bar (a step
+  is read where any head's U₂ share is above twice random) on a statistic whose value at 143000
+  was already in hand: `L5H2` 5.3×, `L18H1` 29× (unit 2's own table). The bar was met there, where
+  the rule had read no circle, so it could not tell "the premise holds" from "noise in one of 14
+  heads"; it selected 7 of 18 steps, mostly at 2.0–3.5× in one head. Cost: about 35 GPU minutes
+  that a bar set from the known values would have spent the same way or not at all; no verdict is
+  wrong. Rule: **a bar placed on a statistic is checked against the values already recorded for it
+  (does it pass where the answer is known to be negative?) before it goes to the user.**
 
 ## 7. Literature found after the construction was built
 

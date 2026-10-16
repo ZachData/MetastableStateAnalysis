@@ -14,6 +14,7 @@
   - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
   - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights V's top pair is a D = 2 block (complex or degenerate) in 123 of 252 cells, near-repulsive in 10, and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
   - At step 143000 the reduction's premise fails: the real tokens hold about the random share of their norm² in V's invariant subspaces, so no head of 14 has D\* ≥ 1 (no circle); 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class (at the placed 0.5), 2 "none"; the isotropic cosine adds at most 0.08 of TV over position — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
+  - Over the 18 steps no head of 14 has D\* ≥ 1 at any step: U₂'s share is above twice random only at 7 steps, mostly barely, and the rule there reads D\* = 0 (the same 4 positional heads, in order from 512), outside, or none; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -26,7 +27,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `bcd9e23e7a`
+- **Reviewed:** 2026-10-16 · body `0e0da5e6cb`
 <!-- /phase-card -->
 
 ## Units
@@ -48,7 +49,48 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | 0. design, scan, `sympy` check | **done 2026-10-15**; frozen by the user 2026-10-15 (Blocked 50 (a): 4 units, M1 primary) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
 | 1. weights only, planted gate | **done 2026-10-15: every arm passes**; weights rows written | `trackB_circuit/b2a.py`; "B2a unit 1 (2026-10-15)" below |
 | 2. real tokens at 143000 | **done 2026-10-16: a verdict for all 14 heads; no head has D\* ≥ 1** | "B2a unit 2 (2026-10-16)" below |
-| 3. the 18 steps | **waits on Blocked 53** (as frozen: `L5H2`, `L12H5` and the 8 references; `L7H8` and `L10H7`, where content helps, are not in it) | `design-B2a.md` "Units" |
+| 3. the 18 steps | **done 2026-10-16 (Blocked 53 (a), occupancy first): no head has D\* ≥ 1 at any step read; B2a is at its exit, budget spent** | "B2a unit 3 (2026-10-16)" below |
+
+## B2a unit 3 (2026-10-16): occupancy over 18 steps, the rule where it is above twice random
+
+**Input:** code `37d4f2487738` (commit `c03076a`), v1's 7 prompts (`976b62d677bc`), Stage 0's runs
+at each step, the 14 heads; HF forward on the RTX 3080 float32 (TF32 off), rebuild and fits
+float64. Records `/run/media/system/WDS_500/Mets/data/b2a/2026-10-16-occ/` (`occupancy.json`,
+`gate.json`, `step<S>/real.json`, logs); 42 min, 12 of them the gate. Rule and choices:
+`design-B2a.md` "Unit 3 as built". Re-run: `python -m trackB_circuit.b2a occupancy --out <dir>
+--unit2 <unit 2's real.json>`, `... gate --out <dir>`, then `... real --out <dir>/step<S> --gate
+<dir>/gate.json --step <S>` for each step in `occupancy.json` "read", `... report --out <dir>`.
+
+**Checks.** The pass reproduces unit 2's rung occupancies at 143000 exactly (max |Δ| 0). Gate 9 of 9
+on this code. G0 passes at every step read (worst scaled 3.66, `L9H8`/`paper_excerpt` at 32; bound 10).
+
+**Occupancy** (U₂'s share over random 2/1024; U₃ where the ladder moves 2 up; `b2a report`):
+at steps 0–16 every head is 0.3–1.9×, and U₆₄ is 0.8–1.3× for all heads (chance). From 512, U₆₄
+rises to 1.2–2.2× in most heads (`L18H1` 5.3× at 143000). U₂ exceeds 2× in some head at 7 steps:
+32, 512, 1000, 2000, 32000, 54000, 143000, mostly by a small margin in one or two heads (2.0–3.5×).
+Only `L18H1` stands out: 5.7× at 1000, 29× at 143000.
+
+**The rule at the 6 new steps** (143000 is unit 2's):
+
+| step | D\* ≥ 1 | D\* = 0 | outside (by TV(full) > 0.5 / by the "nothing adds" clause) | none | largest V-rung gain over D = 0 |
+|---|---|---|---|---|---|
+| 32 | 0 | 0 | 14 (0 / 14) | 0 | 0.003 |
+| 512 | 0 | 2 (`L5H2`, `L4H9`) | 12 (1 / 11) | 0 | 0.017 (`L18H1`) |
+| 1000 | 0 | 2 (`L5H2`, `L4H9`) | 12 (3 / 9) | 0 | 0.047 (`L18H1`, U₂ 5.7×) |
+| 2000 | 0 | 3 (+ `L12H5`) | 11 (10 / 1) | 0 | 0.092 (`L18H1`, U₂ 0.8×) |
+| 32000 | 0 | 4 (+ `L9H1`) | 9 (9 / 0) | 1 (`L10H7`) | 0.038 (`L9H8`) |
+| 54000 | 0 | 4 (same) | 9 (9 / 0) | 1 (`L10H7`) | 0.038 (`L9H8`) |
+
+| reading | what it rests on |
+|---|---|
+| **No head has D\* ≥ 1 at any of the 7 steps read (no circle), and at the 11 others no head's U₂ share is above twice random, so B2a's reduction finds no 2D (or ≤ 64D) V-subspace mechanism in these 14 heads on v1 over training.** B2a is at its exit: a verdict per head per step read, and the reason (occupancy at chance) where none was read | `occupancy.json`, `step<S>/real.json` |
+| The occupancy bar was not selective: it was already met at 143000, where unit 2 read no circle, and at 32000–54000 the heads above it (`L5H2`, `L7H8`, `L9H1`, `L6H4`) read D\* = 0 or outside. `L18H1` at 1000 (U₂ 5.7×), the one large ratio at a new step, gains 0.047 of TV from V's ladder and reads outside (TV(full) 0.660) | the table |
+| At 32 attention is near uniform (TV(uniform) 0.075–0.132), and all 14 heads read "outside" by Blocked 51/52's clause (neither content nor position adds 0.05). The clause decided no head at 143000; at 32–1000 it decides most "outside" verdicts, so those are "M1 has nothing to fit", not "M1 fits badly" | `real.json` "outside_why", "tv_uniform" |
+| Positional heads appear in order: `L5H2` and `L4H9` by 512, `L12H5` by 2000, `L9H1` by 32000, the same 4 as at 143000. `L5H2`'s from 512 matches B1's onset in (256, 512] | the table; "B1 (2026-10-14)" |
+| `L7H8`, `L9H8`, `L10H7` and `L18H1` are where content adds most (up to 0.086 at 32000–54000), from 2000 on; no V subspace carries it at any step | "content adds" per step in `real.json` |
+
+**Not established:** anything about heads outside the 14 or prompts outside v1; whether a token-matched
+null would change a verdict (no V rung beat its Haar nulls at any step, so there is nothing for it to demote).
 
 ## B2a unit 2 (2026-10-16): real tokens at 143000
 
@@ -304,8 +346,8 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 
 ## Parked
 
-- B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first. *(Unit 2, 2026-10-16: no V rung beat its nulls, so nothing for this null to demote at 143000; kept for unit 3.)*
-- *(Moved to the user as STATE Blocked 54 after `/challenge-pr` on #209, finding 4.)* A1a's per-head `fe_full` β against B2a's M1 β, opposite signs in 6 of 14 heads at 143000, all M1 −, A1a +.
+- B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first. *(Unit 2, 2026-10-16: no V rung beat its nulls, so nothing for this null to demote at 143000; kept for unit 3.)* **Dropped (unit 3, 2026-10-16):** no V rung beat its nulls at any of the 7 steps read either, so it can change no B2a verdict.
+- A1a's per-head `fe_full` β against B2a's M1 β, opposite signs in 6 of 14 heads at 143000, all M1 −, A1a +. **Carried to A2 as its first item** (Blocked 54 (a), the user's, 2026-10-16; `trackA_force/status-A.md` Parked).
 
 ## Corrections received
 
