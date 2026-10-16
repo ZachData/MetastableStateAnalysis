@@ -21,11 +21,12 @@
   - t* assumes V = I, while from 1000 to 4000 most heads have no attractive part — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - Is 1e's one well the causal dynamics' answer at the measured β? The causal simulator's t* doubles inside the measured range, so a plateau there is not ruled out — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
-  - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (STATE Blocked 57) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
+  - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (Blocked 57 (a): card at `fe_full`, (i) beside) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
+  - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few" (STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `4d86995c30`
+- **Reviewed:** 2026-10-16 · body `5eca3114bf`
 <!-- /phase-card -->
 
 ## Units
@@ -38,10 +39,59 @@
 | 4. The gate with G2s beside (Blocked 48 (a)) and A1a's batch | **done 2026-10-15: the gate passes; the batch ran, 126 of 126 records** | "A1a's gate and batch, Blocked 48 (a)" below |
 | 5. A1b, the reading (H-WARP and 1e's question beside) | **done 2026-10-15: below t* at all 18 steps; A1 closed at its exit condition** | "A1b, the reading", "A1 on one page" below |
 | A2 1. design and scan | **frozen 2026-10-16 as revised** (Blocked 56 (a), the user's) | `design-A2.md`, `lit-A2.md` |
-| A2 2. the β refit at 143000 | **done 2026-10-16: A1's number does not move** (2 of 7 prompts outside, bar 4); A1b's 143000 cell re-run: still *below*, its one *straddles* reads *below* (Blocked 57) | "A2 unit 2, the β refit at 143000" below; `a2_beta.py` |
+| A2 2. the β refit at 143000 | **done 2026-10-16: A1's number does not move** (2 of 7 prompts outside, bar 4); A1b's 143000 cell re-run: still *below*, its one *straddles* reads *below* (Blocked 57 (a), the user's: card at `fe_full`, (i) beside) | "A2 unit 2, the β refit at 143000" below; `a2_beta.py` |
+| A2 3. the per-component instrument and its gate | **done 2026-10-16: the gate passes, G0–G4** (no real reading yet); every random init is already "few" (Blocked 58) | "A2 unit 3" below; `a2_comp.py`, `a2_gate.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
+
+## A2 unit 3, the per-component instrument and its gate (2026-10-16)
+
+Blocked 57 (a), the user's: A1's card stays at `fe_full` with unit 2's (i) beside; the β
+convention stays (Blocked 9) with M1's bands beside; unit 2's (iii) (M1 negative mid-depth on code
+and LaTeX) is parked for unit 4, which reads the field at A1a's βs (option (a)'s text; the
+design's "Unit 3" says unit 2's primary, see Blocked 58 (b)).
+
+**Built** (`design-A2.md` "Unit 3", as frozen): `trackA_force/a2_comp.py`. 18 components per
+block (`h0`…`h15` with their value bias, `b_O`, `mlp`); each head's sink part and its
+most-received-key part beside. `Δ_c` is the path integral of the LN1 frame's exact Jacobian
+(Gauss–Legendre, 16 nodes); per component the mean `proj`, `proj_df` (drift removed), the off share
+(pooled over tokens, sums to 1), `size` (mean raw `|v_c|`, unit 5's deciles) and `disp`. All are
+linear in `Δ_c`, so they add over components (tests: `tests/test_trackA_a2_comp.py`, and
+`_smoke.py` for the hooked split). The block totals carry the log and gnomonic lifted reads and
+their ratio to the unlifted mean beside. Two choices the design did not fix: the off share is
+pooled over tokens (a per-token mean is unstable where `|o_i|` is small); the per-component step
+is unlifted (the design's "A1's gnomonic lift" is A1's *log* lift; both are recorded on the total).
+`a1a.ln_from` now re-exports `u2_attn.ln_from` (fence; no number changes; A1a's code hash changes).
+
+**The gate** (`a2_gate.py`; code `d7c4fd8dcbf8`, gate file `0acd9ffa1078`, prompts `976b62d677bc`;
+output `data/trackA/a2_gate_2026-10-16/a2_gate.json`, 1,474 s on the RTX 3080). Synthetic stacks:
+24 blocks × 16 identity-QK heads at β 3.5, from step 143000's embedding spectrum per v1 prompt,
+identity-affine LN1 (G1 also on 143000's LN1). G2: Pythia's init redrawn at each matrix's step-0
+σ, 50 seeds + a 51st, v1's 7 prompts, β 3.5.
+
+| arm | bar | result |
+|---|---|---|
+| G0 quadrature | ≤ 1e-6 rel., every block of every stack | **pass**, max 7.7e-11 (G2 seeds); synthetic ≤ 4.9e-14 |
+| G1 planted V = −I | < 0 and first in "against", every block | **pass**, 168 of 168 blocks; runner-up at most 0.12 of it; also on 143000's LN1 |
+| G2 null | 51st seed in the 50 seeds' 5–95 % | **pass**: `|S⁻|` 25 in [13.5, 29.7]; top-43 share 0.627 in [0.602, 0.719] |
+| G3 off-field head | off share first, `|proj|` ≤ 0.05 of its size | **pass**: off share ≥ 0.905, `|proj|/size` ≤ 0.018 |
+| G4 shared drift | MLP `|proj_df|` ≤ 0.1 of its size | **pass**: ≤ 0.033 (raw `proj` ≤ 0.057, beside) |
+
+The pass's checks: heads + `b_O` against attention's output ≤ 8e-8, the counted parts against
+the hidden states ≤ 8.1e-8; step 0's pass against its stored rows 2.3e-7.
+
+**Beside, real step 0** (not gated): `|S⁻|` 25, top-43 share 0.640, `|S⁺|` 29, Gini 0.61, both
+inside the redraws' range. **For unit 4 (a confound, Blocked 58 (a)):** at a random init the
+against set is already "few" by the design's cut (`|S⁻|` ≤ 43): 50 of 50 seeds (8–33) and step 0.
+So "few" cannot tell a trained step from init; read against the init band, it can.
+
+Not established: anything about a trained step (no real reading was made); G4 is weak in this
+frame (a constant drift barely projects on the field even before removal, raw ≤ 0.057); quadrature
+at real blocks where the update is large against the input (on a tiny model, block 0 at 25× needs
+32+ nodes; unit 4 records G0 per block).
+
+Re-run: `METS_DATA=<data> python -m trackA_force.a2_gate --out <dir> [--quick]`.
 
 ## A2 unit 2, the β refit at 143000 (2026-10-16)
 

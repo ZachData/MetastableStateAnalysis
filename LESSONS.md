@@ -1303,6 +1303,10 @@ first output, waits on exit only, fixes at most 3 mechanical bugs and escalates 
 Second gap, found while building it: `session_cost.py` did not read subagent transcripts, so
 every `/challenge-pr` was uncounted (one in session `6f6e18c3`: 26 Opus calls, 1.9M context).
 It now follows `<session>/subagents/` and splits context by model.
+2026-10-16 (A2 unit 3): a gate run was handed to `runner` before a change the design's fences
+required (the `ln_from` merge) was made; the change edits a file the gate's code stamp hashes,
+so the run was killed a few minutes in and relaunched. Before a stamped run: make every change the
+unit owes to a hashed file first, then launch.
 
 ## 10. Tangents: interesting findings that hijack the plan
 
