@@ -24,7 +24,7 @@
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-15 · body `9b11e792bc`
+- **Reviewed:** 2026-10-15 · body `4dc7684d1a`
 <!-- /phase-card -->
 
 ## Units
@@ -390,4 +390,4 @@ At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)
 
 ## Corrections received
 
-(none)
+- 2026-10-15: `design-A.md` "Frozen 2026-10-14" cited 2604.01978 for the 2D spike's reduction; the section is 2609.28448 §6.1 (Gao–Yang–Chen). A citation only; no A1 number moves — `trackB_circuit/lit-B.md` "B2a" §1.

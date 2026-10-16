@@ -1142,6 +1142,12 @@ of a design before running it, and print it on every record
 causal-mask theory that existed since Nov 2024 (`2411.04990`), which Pythia
 should have been compared against all along. §3.52: reading that paper changed
 three constructions, and F0 had measured a proxy.
+2026-10-15: `design-A.md` froze B2a's question on "2604.01978 §General value maps and effective
+low-dimensional dynamics"; no such section exists there. It is 2609.28448 §6.1, whose LaTeX was
+already in `docs/readings/`, and it puts the reduction on V's invariant subspaces with Q = K = I,
+which changed B2a's primary object. Found at B2a's scan by fetching the cited paper before
+designing on it. Rule: a design that quotes a section by title names the file it was read from;
+a `grep` of `docs/readings/` for the title is the first step of the scan.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).

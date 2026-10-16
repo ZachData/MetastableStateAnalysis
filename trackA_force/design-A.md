@@ -271,8 +271,9 @@ against the causal t* from the measured cloud per (step, prompt).
 - **`P-gamma2`'s h0 is left as registered** until A5 registers; A1 reads the statement and the
   falsifier ("Fences").
 - **The 2D spike** (the user's question of 2026-10-14: can a head's dynamics be read in the
-  paper's d = 2 reduction, 2604.01978 §"General value maps and effective low-dimensional
-  dynamics"?) runs **after A1a**, which supplies its two inputs (β per head, the step γ): either
+  paper's d = 2 reduction, 2609.28448 §6.1 "General value maps and effective low-dimensional
+  dynamics"? *Corrected 2026-10-15: this line cited 2604.01978, which has no such section;
+  `trackB_circuit/lit-B.md` "B2a" §1*) runs **after A1a**, which supplies its two inputs (β per head, the step γ): either
   before A1b or as Track B's B2a after A1 closes, the slot picked at A1a's close. **Exit: a
   faithful D per named head against the null** (the smallest subspace whose reduced dynamics
   reproduce the head's real attention, for `L5H2`, the induction heads, `L10H7` and random
