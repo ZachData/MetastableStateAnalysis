@@ -11,6 +11,7 @@
   - B0's harness passes its calibration gate at every step and arm but one near-tied G4b arm at step 128, waived by the user as that arm only (Blocked 44 (a)) — `trackB_circuit/status-B.md` "B0 over 18 steps"
   - Loss gradients at layer 5 are aligned across prompts at every step, most at 64–512, so a structured direction ranked against random ones is biased upward by the model itself — `trackB_circuit/status-B.md` "Fences (from B0's gate)"
   - B1 passes by its revised pass rule (off at 0, on at 1000–8000): `L5H2`'s signature reads off at steps 0–256 and on at every step from 512; the onset falls in (256, 512], inside the range recorded before the run and before ROADMAP's first window (512, 4000]; read from block 5 alone, on one head's output — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
+  - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -22,7 +23,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-14 · body `3b8b763281`
+- **Reviewed:** 2026-10-15 · body `398dbbf278`
 <!-- /phase-card -->
 
 ## Units
@@ -36,6 +37,13 @@
 Budget: 3 units (`design-B.md` "Exit condition and budget"), all spent: Track B's opening is
 closed at its exit condition. What follows on these instruments (B2 onward) is `docs/ROADMAP.md`
 §7, after Track A (Blocked 40 (d)).
+
+**B2a** (its own budget, `design-B2a.md` "Exit condition and budget"; Blocked 50 sets it):
+
+| unit | state | where |
+|---|---|---|
+| 0. design, scan, `sympy` check | **done 2026-10-15**, not frozen (Blocked 50) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
+| 1. weights only, planted gate | not started | `design-B2a.md` "Unit 1's gate" |
 
 ## B1 (2026-10-14): `L5H2` as positive control
 

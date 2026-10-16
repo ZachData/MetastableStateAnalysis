@@ -68,3 +68,64 @@ the project's own Phase 7 / 7d scans (`p7_motifs/lit-7.md`, `p7d_redundancy/`) a
 
 Not read: the primary Heimersheim & Mendel post (only its two follow-ups' summaries); 2607.06621
 beyond its search summary. Both are cited at that level and flagged here.
+
+---
+
+# B2a, the 2D spike — scan at opening (2026-10-15)
+
+Trigger 1 (B2a opens; precedes `design-B2a.md`'s freeze). Sources: the user's untracked LaTeX of
+2609.28448 in `docs/readings/arXiv-2609.28448v1/` (§6.1 read in full, §2.1 read), 2512.01868
+(HTML, §3.3 and headings), 2305.05465 (HTML, §1–5 statements), 2604.01978 v1 (HTML, all
+headings and §2, §6–7 skimmed), and three web searches (2026-10-15).
+
+## 1. The section design-A cites is in 2609.28448, not 2604.01978
+
+`design-A.md` "Frozen 2026-10-14" cites 2604.01978 for "General value maps and effective
+low-dimensional dynamics". 2604.01978 (Koubbi, Geshkovski, Rigollet, *Homogenized Transformers*)
+has no such section: it is about random weights resampled per layer and head, with no value-map
+reduction and no circle case. The section is **2609.28448 §6.1** (Gao, Yang, Chen, *Nonequilibrium
+Phases of Repulsive Self-Attention*, `main.tex` l. 3622–3898). A correction line goes to
+`trackA_force/status-A.md`.
+
+## 2. What 2609.28448 §6.1 says (the B2a model)
+
+| item | the paper |
+|---|---|
+| model (§2.1) | `x_i ∈ R^d`, `‖x_i‖ = √d`; `z_ij = x_iᵀ Qᵀ K x_j / √d`; `A_ij ∝ exp(β z_ij)`, `j ≠ i`, non-causal; `x_i ← N[(1−γ) x_i + γ V Σ_j A_ij x_j]`, with `N` restoring the norm (LN's analogue) and `0 < γ < 1` |
+| scope of §6.1 | **`Q = K = I` throughout**; only V is general |
+| reduction | any real invariant subspace U of V (a real eigenline, a complex-pair plane, a degenerate eigenspace), `V U = U W`: tokens `x_i = √d U v_i` obey `v_i ← N[(1−γ) v_i + γ W Σ_j A_ij v_j]` **exactly**, with `β_eff = β √(d/D)` (its score normalisation; in a cosine convention β carries over unchanged) |
+| d = 2 | a degenerate negative pair (`W = −ν I₂`) gives the repulsive circle model at `γ_eff = γν / (1−γ+γν)`; a rotation pair gives `W = R_φ`; a general pair adds shear |
+| which subspace is selected | for an **aligned cluster attending within itself**, components grow as `b_a = 1 − γ + γ λ_a`; the largest `|b_a|` is selected at rate `ρ_⊥ = max |b_a| / |b_top|`. For tokens in different directions, selection depends on A as well as V and "cannot be inferred from the spectrum of V alone" |
+| trained models (§6.2) | V's analogue is "the complete linear path that sends a head's value vector back to the residual" (`W_O W_V`), "generally low rank and nonsymmetric"; negative eigenvalues of one head's map do not establish negative feedback |
+
+**Bearing.** The reduction lives on **V's invariant subspaces**, not on QK; attention enters only
+through `v_i · v_j` at `β`. That is why B2a waited for A1a (β per head; the block step that plays
+γ). A trained head has `Q ≠ K` and rotary, so "reproduces its real attention" is a test of two
+things at once: is the head in the paper's class at all (isotropic content plus position), and
+if so, does V's top invariant subspace carry the content.
+
+## 3. Bounds and neighbours
+
+| source | finding | bearing |
+|---|---|---|
+| `tools/math_checks/b2a_subspace_ceiling.py` | a head's logit reads the token only through `W_Q y`, `W_K y`: projecting onto the row span of `[W_Q; W_K]` is exact at every rotary offset, so **D ≤ 128** on the head's own QK; `U = 0` leaves `b_qᵀ R(Δ) b_k`, an offset-only (positional) pattern | the QK-side question has a hard ceiling far below 1024; a positional head can be D = 0 |
+| 2512.01868 §3.3 (Rigollet survey) | on the circle with `Q = K = V = I`, attention dynamics is a Kuramoto variant, `θ̇_i ∝ −Σ e^{β cos(θ_i−θ_j)} sin(θ_i−θ_j)` | the attractive d = 2 case, beside 2609.28448's repulsive one |
+| 2305.05465 Thms 4.2, 5.2 | with V's top eigenvalue real, positive, simple and `⟨Qφ₁, Kφ₁⟩ > 0`, tokens cluster on ≤ 3 hyperplanes ⟂ φ₁; paranormal V with a degenerate top gives a polytope in that eigenspace | the general-QK version: the selected subspace is still V's top one, with a sign condition on QK there |
+| 2607.06621 (preprint); 2410.06205 | previous-token heads concentrate on high rotary frequencies; one rotary plane suffices for an off-diagonal positional pattern | **against the user's prior's mechanism, not its verdict:** a previous-token head may need no content subspace (D = 0), which is "not the circle" |
+| 2408.09503 | induction-relevant heads share a low-rank latent subspace bridging OV and QK; removing it drops copying | a shared subspace across members is plausible; B2's principal angles, not B2a |
+| 2504.20938 | low-rank QK descriptions of induction heads lose fidelity; "multidimensional QK" needed | supports the prior for induction heads on the QK side |
+| search: trained-model circle / Kuramoto reductions | none found that projects a trained model's tokens onto a 2D invariant subspace and tests the reduced map | B2a is new as an empirical check; descriptive, tier 1 |
+
+## What changes in the design
+
+| from | change |
+|---|---|
+| §1 | the citation is corrected (`status-A.md` "Corrections received"); B2a cites 2609.28448 §6.1 |
+| §2 | the primary reduction is the paper's: U from **V's invariant subspaces** (`W_O W_V` in the LN1 frame), ordered by `|b_a|` at the block's γ; attention from `v_i·v_j` at A1a's β, Q = K = I |
+| §2 (Q = K = I) | the head's offset profile is added to the reduced logit (Pythia has rotary; the paper has no position). `D = 0` is that profile alone, the positional rung |
+| §2 (selection not spectral) | the share of each token's norm inside U is read beside the attention test (the paper's "attraction" question, which V alone cannot answer) |
+| §3 (ceiling) | the head's own QK restricted to U is read beside, with its exact ceiling at D ≤ 128 |
+| §3 (2607.06621) | `D* = 0` is a separate verdict, "positional, no content subspace"; it is not a pass of the circle case |
+
+Not read: 2609.28448 beyond §2.1 and §6; 2604.01978 v2 (if any); 2607.06621, 2408.09503,
+2504.20938 beyond search summaries. Cited at that level.
