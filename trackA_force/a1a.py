@@ -278,11 +278,8 @@ def _beta_job(args) -> List[List[float]]:
     return head_betas(z["activations"], z["norms"], A, ln).tolist()
 
 
-def ln_from(model) -> Dict:
-    lay = getattr(model, "gpt_neox", model).layers      # the LM or the bare model (`load_model`)
-    return {"w": np.stack([l.input_layernorm.weight.detach().double().cpu().numpy() for l in lay]),
-            "b": np.stack([l.input_layernorm.bias.detach().double().cpu().numpy() for l in lay]),
-            "eps": float(lay[0].input_layernorm.eps)}
+# one LN1 reader for the pass, merged into `u2_attn.ln_from` (A2 unit 3, `design-A2.md` "Fences")
+from p1e_energy_field.u2_attn import ln_from  # noqa: E402,F401
 
 
 def run(a) -> int:
