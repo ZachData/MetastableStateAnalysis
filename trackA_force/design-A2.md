@@ -1,4 +1,4 @@
-<!-- Proposed 2026-10-16, not frozen: STATE Blocked 56. Revised after /challenge-pr on #212 (findings 1–7 taken). -->
+<!-- Frozen 2026-10-16 as revised (STATE Blocked 56 (a), the user's), after /challenge-pr on #212 (findings 1–7 taken). -->
 # Track A — design: A2, which components push the tokens apart?
 
 **Question** (`docs/ROADMAP.md` §6 A2): which heads and MLPs move pythia-410m's tokens against

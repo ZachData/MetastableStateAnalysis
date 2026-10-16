@@ -21,12 +21,11 @@
   - t* assumes V = I, while from 1000 to 4000 most heads have no attractive part — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - Is 1e's one well the causal dynamics' answer at the measured β? The causal simulator's t* doubles inside the measured range, so a plateau there is not ruled out — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
-  - A2 opened 2026-10-16, design proposed, not frozen (STATE Blocked 56) — `trackA_force/design-A2.md`
+  - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (STATE Blocked 57) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
-  - A2's first item: A1a's per-head β refit by M1's cross-entropy at 143000, since its sign bias where the cosine explains nothing could move A1's bracket (Blocked 54 (a)) *(free: one CPU pass over stored attention)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `5a827760fd`
+- **Reviewed:** 2026-10-16 · body `fd3758b5c4`
 <!-- /phase-card -->
 
 ## Units
@@ -38,10 +37,60 @@
 | 3. A1a's re-gate (Blocked 46 (b)) and the chain re-gate (Blocked 47 (d)) | **done**: the re-gate failed G4 at 3 frames (#203); 47 (d)'s gate: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), its planted drift not a null (#204; Blocked 48) | "A1a's gate, Blocked 47 (d)", "A1a's re-gate" below |
 | 4. The gate with G2s beside (Blocked 48 (a)) and A1a's batch | **done 2026-10-15: the gate passes; the batch ran, 126 of 126 records** | "A1a's gate and batch, Blocked 48 (a)" below |
 | 5. A1b, the reading (H-WARP and 1e's question beside) | **done 2026-10-15: below t* at all 18 steps; A1 closed at its exit condition** | "A1b, the reading", "A1 on one page" below |
-| A2 1. design and scan | **proposed 2026-10-16, not frozen** (STATE Blocked 56) | `design-A2.md`, `lit-A2.md` |
+| A2 1. design and scan | **frozen 2026-10-16 as revised** (Blocked 56 (a), the user's) | `design-A2.md`, `lit-A2.md` |
+| A2 2. the β refit at 143000 | **done 2026-10-16: A1's number does not move** (2 of 7 prompts outside, bar 4); A1b's 143000 cell re-run: still *below*, its one *straddles* reads *below* (Blocked 57) | "A2 unit 2, the β refit at 143000" below; `a2_beta.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
+
+## A2 unit 2, the β refit at 143000 (2026-10-16)
+
+Design `design-A2.md` "Unit 2" (frozen 2026-10-16, Blocked 56 (a)); code `trackA_force/a2_beta.py`
+(`87358ccfe397`); inputs A1a's records at 143000 (`a08544e9b644`), v1 (`976b62d677bc`), the
+stored `attentions.npz`, A1a's unit LN1 rows (LN cache `ln1_18steps.npz`), position 0 out;
+output `data/trackA/a2_beta_2026-10-16/` (main tree; `a2_beta_report.txt`). 5 min (M1 fits
+float64 on the GPU, `fe_full` on 7 CPU workers, A1a's hooked pass float32 GPU, TF32 off).
+Re-run: `python -m trackA_force.a2_beta run --out <dir>` with the env of STATE "Machine".
+
+**Checks:** (a) B2a unit 2's `beta_full` (14 heads, its own pass, `b2a.loo`): |Δ| 0;
+(b) `fe_full` against A1a's 2,688 stored head βs: |Δ| 0. M1: 2,688 per-prompt fits, all
+converged (gradient ≤ 1e-6 per row; some ran to the 60-iteration cap). A1a's pass at its own
+βs reproduces A1a's `T_proj` and t* exactly (0) before the refit βs are read.
+
+**The rule (primary M1, all heads; p50 outside A1's [p10, p90] in ≥ 4 of 7): 2 of 7, does
+not move** (`hdbscan_code`, `latex_monograph`, both below). Layer-β bracket p10 / p50 / p90:
+
+| prompt | A1 (`fe_full`, all) | M1 all | M1 kept | `fe_full` kept | kept heads (0–22) |
+|---|---|---|---|---|---|
+| camus_letranger | 2.47 / 4.19 / 5.70 | 1.41 / 2.86 / 3.22 | 2.83 / 3.37 / 4.07 (13 layers) | 5.00 / 6.23 / 7.24 | 116 of 368 |
+| hdbscan_code | 1.06 / 3.00 / 5.89 | −10.42 / −4.31 / 2.27 | −4.07 / 1.16 / 3.31 (10) | 5.82 / 6.83 / 8.44 | 93 |
+| homer_iliad | 1.89 / 3.15 / 6.45 | 1.37 / 2.49 / 3.32 | 3.39 / 4.15 / 5.37 (9) | 6.16 / 7.49 / 9.13 | 91 |
+| latex_monograph | 0.45 / 2.36 / 3.66 | −16.67 / −6.01 / 0.69 | 1.21 / 1.97 / 2.30 (3) | 5.82 / 7.40 / 9.41 | 41 |
+| paper_excerpt | 1.04 / 4.09 / 6.10 | 0.55 / 2.70 / 3.64 | 3.55 / 4.33 / 6.27 (10) | 6.92 / 9.20 / 10.03 | 95 |
+| sullivan_ballou | 1.14 / 3.08 / 6.21 | 1.13 / 2.41 / 3.44 | 3.70 / 4.34 / 5.28 (8) | 6.70 / 7.61 / 9.33 | 77 |
+| wiki_paragraph | 2.17 / 4.54 / 7.14 | 1.29 / 3.11 / 3.52 | 3.31 / 3.94 / 5.57 (13) | 6.33 / 7.98 / 9.18 | 120 |
+
+"kept" = `fe_full` `partial_r2` ≥ 0.10, ≥ 4 heads per layer; the kept columns have no β at most
+layers (count in brackets), so they are beside only. What the 2 × 2 says: **the estimator lowers
+β and narrows the bracket from above** (M1's p90 3.2–3.6 against A1's 5.7–7.1 on 5 prose
+prompts); **the floor raises it** (`fe_full` kept 6–9, as 1d found at 0.10). On the code and
+LaTeX prompts M1 is negative at most mid layers (136 and 182 of 368 heads below −5, layers
+5–20; head-level correlation with `fe_full` 0.26 and 0.20, against 0.73–0.82 on the other
+five): a sign the two estimators disagree on, not a small shift.
+
+**A1b's cell at 143000, re-run at M1's layer βs** (design: whatever the bar says): step reading
+*below* → *below*, 6 of 7 → 7 of 7. `T_proj` falls 5–32 % (the field's direction changes with
+β); t\*(p10) barely moves (2.44–2.88), t\*(p90) falls from 3.3–23.9 to 2.5–3.5, so the bracket
+narrows; `paper_excerpt` *straddles* → *below*. Median `T_proj / t*(p10)` 0.82 → 0.72.
+
+**β per band (heads × prompts pooled, beside; convention 3.5 [1.6, 5.6], Blocked 9):** M1
+L1–8 2.71, L9–16 2.04, **L17–23 0.88 (outside)**, L1–23 1.97; `fe_full` 4.36, 3.65, 2.37, 3.46
+(1d's numbers, reproduced). Sent to the user as Blocked 57; nothing changed.
+
+Not done, by the rule: the refit at all 18 steps and a "Corrections received" line (only if
+it moves). Not established: which estimator is right on the code and LaTeX prompts (M1's φ may
+absorb content there, `design-A2.md` "Worth challenging" 1); whether M1's lower β holds at other
+steps.
 
 ## A1 on one page (closed 2026-10-15)
 
@@ -395,7 +444,8 @@ At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)
   and in the 6 where M1's cosine adds nothing M1's β is negative, A1a's positive. A1's layer β is
   the median over 16 heads, so the bias can move A1's bracket and `P-gamma2`'s t*. **Carried to
   A2 as its first item** (Blocked 54 (a), the user's, 2026-10-16): one CPU pass over stored
-  attention; could change A1's closed number.
+  attention; could change A1's closed number. **Done 2026-10-16** (A2 unit 2): by the bar it
+  does not; Blocked 57.
 
 ## Corrections received
 
