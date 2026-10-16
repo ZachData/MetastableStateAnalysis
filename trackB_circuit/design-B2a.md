@@ -6,8 +6,10 @@ of 2026-10-14, can a head's dynamics be read in the paper's d = 2 reduction (`tr
 "Frozen 2026-10-14"; `docs/ROADMAP.md` §7 B2a). Scan: `trackB_circuit/lit-B.md` "B2a". Tier 1
 throughout: exploratory, unregistered; 410m is an exploration rung.
 
-**Not frozen.** Blocked 50 (`STATE.md`) asks the user to freeze it and decide the two choices
-below marked *(50)*. **Revised after `/challenge-pr` on #207 (accept with changes), before any
+**Frozen 2026-10-15 by Blocked 50 (a)** (the user's): as written, **budget 4 units on the
+record** (this design as unit 0), **M1 primary**, M2 beside; the placed constants and the 8
+reference heads as below. Unit 1's gate as built differs from the table below where the
+construction could not test what the arm names: "Unit 1's gate, as built". **Revised after `/challenge-pr` on #207 (accept with changes), before any
 output:** V's ladder on its nonzero spectrum by `|λ|` (1); position 0 out and rows renormalised
 (2); β and the offset profile fitted per rung by cross-entropy, A1a's β beside (3); 320 nulls and
 G3 as a false-pass rate (4); the reference pool stated (5).
@@ -115,6 +117,27 @@ a D\* (including D\* = 0) at 143000; the reference heads always.
 | G3, null | tokens isotropic Gaussian on the sphere, V a random Gaussian rank-64 map unrelated to the attention, attention by the paper's model at full d; 20 seeds | D\* = none in ≥ 19 of 20 (V's ladder is no better than a random subspace, so a pass is a false pass; finding 4) |
 | G4, out of class | attention from a random full-rank `Qᵀ K` (not isotropic) | "outside the paper's class" |
 | G5, arithmetic | M1 at U = I equals the full model; M2 on the QK read-space at its full rank equals the real logit | max abs diff ≤ 1e-10 (float64) |
+
+### Unit 1's gate, as built (2026-10-15, before any real token was read)
+
+| item | the table above | as built | why |
+|---|---|---|---|
+| G1–G1d tokens | 20 steps of the paper's causal map at β = 4, γ = 0.3 from a Gaussian start | uniform on the planted block's unit sphere, 10 % of each token's norm² in a random direction off it (`G_OFF`); ν = 2 kept | the map cannot give spread tokens near the plane with this V: at ν = 2 the plane's `|b| = |1 − γ − γν| = 0.1` is below the kernel's `1 − γ = 0.7`, so tokens leave it (median occupancy 1e-6, scratch run); at ν = 8 they reach it but collapse to one cluster flipping sign each step (`γ_eff = 0.77 > ½` contracts deviations), whose attention is near uniform: the first G1 run read D\* = 0 (TV(0) = 0.04), the right reading for those tokens |
+| G3 tokens | isotropic Gaussian on the sphere | unit vectors in a random 8-dimensional subspace unrelated to V | isotropic tokens in d = 1024 have off-diagonal cosines ±1/32, so the paper's attention at β = 4 is near uniform plus self and D = 0 would pass on its TV clause; the arm could not return "none" |
+| G5 | (i) M1 at U = I; (ii) M2 at the QK space's full rank | (i), (ii) on the 14 heads' real weights at 143000 and random LN1 rows, and **(iii)** the head's attention rebuilt from the weights against HF's on a seeded random-token pass (the code G0 will use) | (iii) is new; HF's pass is float32 (its float64 causal mask overflows in transformers 4.57), so (iii) is read in units of float32 eps × the head's largest \|logit\| and passes at ≤ 10; two reference heads reach \|logit\| ≈ 3e3–8e3 on random tokens |
+| φ | "the head's offset profile" | piecewise constant on 23 offset bins: 0 … 15 one each, then [16, 32), [32, 64), …, [1024, 2048) | the design named no form; the logit is linear in (β, φ), so the fit is convex (Newton, ridge 1e-6) |
+| head statistic | mean over rows and the 7 prompts | mean over prompts of the per-prompt mean over rows | equal weight per prompt |
+| nulls | 320 per rung | run in chunks of 32 and stopped at the first null that ties or beats V's rung (the verdict needs no more); `--all-nulls` runs all | cost |
+| U₂'s type | degenerate negative, rotation, mixed | as named, "degenerate" = two real λ of one sign within 5 % (placed); "degenerate positive" added | — |
+| ρ_⊥ | `max \|b_a\| / \|b_top\|` | over every other block and the kernel's `1 − γ`; ρ_⊥ > 1 reads "the kernel beats every block" | the kernel is transverse to U too |
+| NUMERICS | gate float64 on CPU | gate float64 on the GPU; weights float64 on CPU, from float32 checkpoints cast exactly | the memory rule (heavy synthetic work on the GPU); float64 kept |
+
+**Fixed for unit 2 before any real token (`/challenge-pr` on #208, findings 2 and 3):** G0's
+tolerance is G5 (iii)'s, the attention difference over float32 eps × the head's largest |logit|,
+≤ 10, not `check_pass`'s 1e-4 (that bound is on hidden rows; G5 (iii) already measured 3.8e-4 on
+`L18H1`'s attention). Each null's median token occupancy `‖Uᵀu_i‖²` is recorded beside its TV,
+so a V rung that wins only by sitting where LN1's gain puts the tokens is visible; a
+token-matched comparator is not added (it would be a new null, the user's).
 
 NUMERICS: float64 on CPU for the gate (small); unit 2–3's hooked pass on the GPU float32, as A1a,
 with every comparison inside one process and device. The real attention's check against the stored
