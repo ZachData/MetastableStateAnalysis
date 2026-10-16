@@ -178,3 +178,11 @@ def test_m1_attention_matches_the_fitted_model():
     T = lambda x: torch.as_tensor(x, dtype=torch.float64)
     P = (b2a._logp(T(th)[None], s.off(b2a.cos_feat(T(u), T(U[None]))), s).exp() * s.valid)[0]
     assert float((P - s.A).abs().max()) < 1e-12
+
+
+def test_renorm_refuses_a_row_with_all_mass_on_the_sink():
+    """/challenge-pr on #209, finding 6: such a row would make TV NaN and the head read "none"."""
+    A = np.tril(np.ones((4, 4)))
+    A[2] = [1.0, 0.0, 0.0, 0.0]
+    with pytest.raises(b2a.B2aError):
+        b2a.renorm(A / A.sum(1, keepdims=True))

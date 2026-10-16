@@ -685,7 +685,10 @@ def ln1(X: np.ndarray, w: np.ndarray, b: np.ndarray, eps: float) -> Tuple[np.nda
 def renorm(A: np.ndarray) -> np.ndarray:
     """Position 0 out as key and query; the real rows renormalised over keys j ≥ 1."""
     R = A[1:, 1:]
-    return R / R.sum(1, keepdims=True)
+    m = R.sum(1, keepdims=True)
+    if not np.all(np.isfinite(m)) or m.min() <= 1e-300:
+        raise B2aError(f"a row puts no mass off position 0 (min {m.min():.1e}): its TV would be NaN")
+    return R / m
 
 
 def mean_tv(P: np.ndarray, A: np.ndarray) -> float:

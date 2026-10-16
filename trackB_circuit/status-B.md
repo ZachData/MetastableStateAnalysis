@@ -13,7 +13,7 @@
   - B1 passes by its revised pass rule (off at 0, on at 1000–8000): `L5H2`'s signature reads off at steps 0–256 and on at every step from 512; the onset falls in (256, 512], inside the range recorded before the run and before ROADMAP's first window (512, 4000]; read from block 5 alone, on one head's output — `trackB_circuit/status-B.md` "B1 (2026-10-14)"
   - B2a (the 2D spike) opened 2026-10-15 with a scan, a `sympy` check (a head's own QK is exact on a subspace of dimension ≤ 128) and a design not yet frozen; its reduction is 2609.28448's general-value-map section, on V's invariant subspaces — `trackB_circuit/design-B2a.md` "The paper, corrected"
   - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights V's top pair is a D = 2 block (complex or degenerate) in 123 of 252 cells, near-repulsive in 10, and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
-  - At step 143000 no head of 14 has a content subspace on V's ladder (no D\* ≥ 1, so no circle): 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class, 2 "none"; the isotropic cosine adds at most 0.08 of TV over position, and the content a head reads lies in its QK read space, not in V's invariant subspaces — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
+  - At step 143000 the reduction's premise fails: the real tokens hold about the random share of their norm² in V's invariant subspaces, so no head of 14 has D\* ≥ 1 (no circle); 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class (at the placed 0.5), 2 "none"; the isotropic cosine adds at most 0.08 of TV over position — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -26,7 +26,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `10a0e4648e`
+- **Reviewed:** 2026-10-16 · body `bcd9e23e7a`
 <!-- /phase-card -->
 
 ## Units
@@ -48,7 +48,7 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | 0. design, scan, `sympy` check | **done 2026-10-15**; frozen by the user 2026-10-15 (Blocked 50 (a): 4 units, M1 primary) | `design-B2a.md`, `lit-B.md` "B2a", `tools/math_checks/b2a_subspace_ceiling.py` |
 | 1. weights only, planted gate | **done 2026-10-15: every arm passes**; weights rows written | `trackB_circuit/b2a.py`; "B2a unit 1 (2026-10-15)" below |
 | 2. real tokens at 143000 | **done 2026-10-16: a verdict for all 14 heads; no head has D\* ≥ 1** | "B2a unit 2 (2026-10-16)" below |
-| 3. the 18 steps | next: `L5H2`, `L12H5` (the named heads with a D\*) and the 8 references | `design-B2a.md` "Units" |
+| 3. the 18 steps | **waits on Blocked 53** (as frozen: `L5H2`, `L12H5` and the 8 references; `L7H8` and `L10H7`, where content helps, are not in it) | `design-B2a.md` "Units" |
 
 ## B2a unit 2 (2026-10-16): real tokens at 143000
 
@@ -88,11 +88,11 @@ TV(0) − TV(full), "position adds" = TV(uniform) − TV(0)):
 
 | reading | what it rests on |
 |---|---|
-| **No head has a content subspace on V's ladder: D\* ≥ 1 nowhere, so no circle at 143000.** TV on V's ladder is flat in D for every head; the largest gain of any rung up to 64 over D = 0 is 0.037 (`L9H8`) | the table; `real.json` "rungs" |
-| M1's isotropic cosine adds at most 0.079 of TV over the offset profile in any head; in 11 of 14 it adds < 0.01 (negative values: leave-one-out costs the 1024-dim full model more than it gains) | "content adds" |
-| 4 heads are positional (D\* = 0): `L5H2`, `L4H9` fitted well (0.125, 0.261), `L12H5`, `L9H1` only as well as M1 fits at all (0.41, 0.46). 8 are outside, **all by TV(full) > 0.5; the clause Blocked 51 and 52 added decided no head**, and the frozen rule gives the same 14 verdicts. Under 51 (a) as first built, all 4 positional heads would have read outside | "position adds" ≥ 0.24 for the 4 |
+| **The reduction's premise fails at 143000: the real tokens do not lie in V's invariant subspaces.** Their share of norm² in U₂ is ≤ 0.01 (below the random 2/1024 in 11 of 12 heads with a D = 2 rung; `L5H2` 5×), and in U₆₄ 0.6–5.3× the random 64/1024, ≤ 0.13. So no head has D\* ≥ 1 (no circle), and TV on V's ladder is flat in D (largest gain of any rung over D = 0: 0.037, `L9H8`); given the occupancy this is close to expected, not a separate finding (`/challenge-pr` on #209, finding 1) | `real.json` "rungs" "occupancy" |
+| M1's isotropic cosine adds at most 0.079 of TV over the offset profile in any head; in 11 of 14 it adds < 0.01 (negative values, down to −0.029: the full model adds one parameter, β, and a β fitted on 6 prompts transfers worse to the 7th than none) | "content adds" |
+| 4 heads are positional (D\* = 0): `L5H2`, `L4H9` fitted well (0.125, 0.261), `L12H5`, `L9H1` only as well as M1 fits at all (0.41, 0.46). 8 are outside, **all by TV(full) > 0.5; the clause Blocked 51 and 52 added decided no head**, and the frozen rule gives the same 14 verdicts. Under 51 (a) as first built, all 4 positional heads would have read outside. **The 4 / 8 split rests on the placed 0.5:** `L6H4`, `L10H14`, `L9H8` are outside at 0.522–0.542; at 0.55 the first two would read D\* = 0 and `L9H8` would go to its nulls at D = 64. No D\* ≥ 1 either way | "position adds" ≥ 0.24 for the 4 |
 | `L7H8` and `L10H7` are "none": content helps (0.062, 0.072), but no V subspace carries it. `L10H7`'s D = 64 rung meets the TV clause (0.518 ≤ 0.519), and the first 32 Haar subspaces of dimension 64 all tie or beat it (min 0.499; occupancy V 0.07 against the nulls' median 0.06) | `real.json` "nulls" |
-| **The content a head reads is in its QK read space, not in V's invariant subspaces.** M2 (the head's own logit with y projected) on V's ladder stays at its bias-only value (0.63–0.94) at every rung; on QK's ladder it falls to 0.06–0.62 at D = 64 and is exact at the full rank 128 (G5 (ii)) | `real.json` "m2" |
+| **The content a head reads is in its QK read space, not in V's invariant subspaces** (a consequence of the occupancy row, not independent of it). M2 (the head's own logit with y projected) on V's ladder stays at its bias-only value (0.63–0.94) at every rung; on QK's ladder it falls to 0.06–0.62 at D = 64 and is exact at the full rank 128 (G5 (ii)) | `real.json` "m2" |
 | The prior (design-A: 2D fails for previous-token and induction heads) is not contradicted: `L5H2` D\* = 0, the 4 induction members D\* = 0, none, outside, outside | the table |
 
 **Beside.** γ (the head's output over its LN1 row, as γ/(1 − γ)) 0.005–0.146, largest `L5H2`. The
@@ -105,9 +105,11 @@ of 14.** The 6 that disagree (`L6H4`, `L4H9`, `L15H7`, `L13H8`, `L18H1`, `L10H14
 content adds ≤ 0; where it adds ≥ 0.05 (`L7H8`, `L10H7`, `L9H8`) the signs agree and the order is
 the same (M1 7.9 > 6.6 > 5.6; A1a 15.5 > 10.3 > 9.8). The two are different estimators: A1a's
 `fe_full` is least squares on log A with per-offset effects, every pair weighted equally; M1 is
-cross-entropy, weighted by attention mass. When the cosine explains nothing, β is noise in both and
-their signs need not match. The check fails as written; nothing in the rule reads it (A1a's β is beside
-only, design "Fences"). Parked below for Track A, which uses the layer median of these βs.
+cross-entropy, weighted by attention mass. **The disagreement has a direction** (`/challenge-pr` on #209,
+finding 4): A1a's β is positive in 13 of 14 heads, and all 6 disagreements are M1 negative, A1a
+positive, so one estimator is biased where the cosine explains nothing, not both noisy. The check
+fails as written; nothing in B2a's rule reads it (A1a's β is beside only, design "Fences"), but A1's
+layer β is the median of these per-head βs, so it goes to the user as Blocked 54.
 
 ## B2a unit 1 (2026-10-15): the gate and the weights rows
 
@@ -303,7 +305,7 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 ## Parked
 
 - B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first. *(Unit 2, 2026-10-16: no V rung beat its nulls, so nothing for this null to demote at 143000; kept for unit 3.)*
-- A1a's per-head `fe_full` β against B2a's M1 β: opposite signs in 6 of 14 heads at 143000, all where the cosine explains nothing (B2a unit 2, "A1a's β against M1's"): why, A1's layer β is the median over the layer's 16 heads, and heads outside the class contribute a β that is noise in sign; cost, one pass over A1a's stored per-head βs, weighting or dropping heads by A1a's own `partial_r2`; could change A1's β bracket and so `P-gamma2`'s t*. Carried to Track A (A2).
+- *(Moved to the user as STATE Blocked 54 after `/challenge-pr` on #209, finding 4.)* A1a's per-head `fe_full` β against B2a's M1 β, opposite signs in 6 of 14 heads at 143000, all M1 −, A1a +.
 
 ## Corrections received
 
