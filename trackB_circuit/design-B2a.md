@@ -70,7 +70,12 @@ For each named head at each step read:
 
 1. **In the class or not.** If M1 at full D has mean TV > 0.5 *(placed)*, the head is
    *outside the paper's class* (its attention is not isotropic content plus position) and has no
-   M1 verdict; M2 is reported for it.
+   M1 verdict; M2 is reported for it. **Also outside (Blocked 51 (a), the user's, 2026-10-16,
+   before any real token):** if M1's content term adds nothing and the head is not positional
+   outright, TV(0) − TV(full) < 0.05 and TV(full) > 0.05, the verdict is *outside (content M1
+   cannot express)*. Without it, weak attention M1 cannot express (random QK at logit scale
+   0.5–1.0: TV(full) = TV(0) = 0.19–0.38) read D\* = 0, "positional" (`/challenge-pr` on #208,
+   finding 1). Gate arm **G4w**: G4 at logit scale 0.5 and 1.0, must read outside.
 2. **D\*.** Otherwise D\* is the smallest D on V's ladder with mean TV(D) ≤ TV(full) + 0.05
    *(placed)* **and**, for D ≥ 1, below all 320 nulls at that D (rank 1 of 321, ties counted
    against; D = 0 has no subspace to randomise, so it passes on the TV clause alone).
@@ -139,9 +144,19 @@ tolerance is G5 (iii)'s, the attention difference over float32 eps × the head's
 so a V rung that wins only by sitting where LN1's gain puts the tokens is visible; a
 token-matched comparator is not added (it would be a new null, the user's).
 
+**Unit 2 as built (2026-10-16, before any real token; `b2a.py real`):** the pass is HF's forward
+(`output_hidden_states`) on the GPU, float32, TF32 off; LN1 and the head's attention rebuilt in
+float64 from those rows and the weights; G0 runs on every (head, prompt) and refuses the rule if
+any cell fails. The real attention M1 reads is the rebuilt one, rows 1 … n−1 renormalised over
+keys ≥ 1. γ uses the head's output with its real attention (sink kept), biases out, as V. The
+motion row (b) uses M1 fitted on all 7 prompts at that rung (not leave one out; beside only), and
+the head's real output on the renormalised rows, `V Σ_j A_ij y_j`, so the sink's near-constant
+term does not enter the cosine. M2 runs on both ladders from D = 0 (bias-only logits) and at the
+QK space's full rank. A1a's `fe_full` per prompt is read from its batch records.
+
 NUMERICS: float64 on CPU for the gate (small); unit 2–3's hooked pass on the GPU float32, as A1a,
 with every comparison inside one process and device. The real attention's check against the stored
-`attentions.npz` (G0) uses A1a's tolerance at 143000 (`check_pass`, 1e-4).
+`attentions.npz` (G0) uses G5 (iii)'s tolerance (above; it replaced `check_pass`'s 1e-4).
 
 ## Fences
 

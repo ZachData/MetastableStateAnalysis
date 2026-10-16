@@ -117,7 +117,8 @@ def test_m2_on_the_qk_read_space_is_exact_and_u_zero_is_position_only():
 
 def test_the_rule_on_small_planted_heads(monkeypatch):
     """`read_head` end to end on CPU (d = 16, 3 prompts, 8 nulls): a planted plane reads D* = 2,
-    an offset-only head D* = 0, strong random QK "outside" (/challenge-pr on #208, finding 5)."""
+    an offset-only head D* = 0, strong random QK "outside" (/challenge-pr on #208, finding 5), weak
+    random QK "outside" too (Blocked 51 (a))."""
     pytest.importorskip("torch")
     monkeypatch.setattr(b2a, "K_NULL", 8)
     monkeypatch.setattr(b2a, "NULL_CHUNK", 4)
@@ -147,3 +148,24 @@ def test_the_rule_on_small_planted_heads(monkeypatch):
     G = g.standard_normal((d, d))
     r = b2a.read_head(iso, [b2a._causal_softmax(8.0 * (u @ G @ u.T)) for u in iso], lad, "t-out", "cpu")
     assert r["verdict"] == "outside"
+
+    # Blocked 51 (a): weak random QK has TV(full) < 0.5 but M1's content term adds nothing
+    r = b2a.read_head(iso, [b2a._causal_softmax(1.0 * (u @ G @ u.T)) for u in iso], lad, "t-weak", "cpu")
+    assert r["tv_full"] < b2a.TV_OUT
+    assert r["verdict"] == "outside" and r["outside_why"] == "content M1 cannot express"
+
+
+def test_m1_attention_matches_the_fitted_model():
+    """Unit 2's numpy Â (the beside rows) equals the torch M1 the rule fits, at a random θ."""
+    torch = pytest.importorskip("torch")
+    g = np.random.default_rng(5)
+    n, d = 40, 12
+    u = g.standard_normal((n, d))
+    u /= np.linalg.norm(u, axis=1, keepdims=True)
+    U = np.linalg.qr(g.standard_normal((d, 3)))[0]
+    th = g.standard_normal(b2a.n_bins() + 1)
+    A = b2a.m1_attention(u, U, th)
+    s = b2a.Seq(A, "cpu")
+    T = lambda x: torch.as_tensor(x, dtype=torch.float64)
+    P = (b2a._logp(T(th)[None], s.off(b2a.cos_feat(T(u), T(U[None]))), s).exp() * s.valid)[0]
+    assert float((P - s.A).abs().max()) < 1e-12

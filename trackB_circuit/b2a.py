@@ -20,8 +20,10 @@ causal; φ piecewise constant on `n_bins` offset bins (0 … 15 one each, then [
 damped Newton, ridge `RIDGE`, fitted leave one prompt out. TV per row ``½ Σ_j |A_ij − Â_ij|``;
 the head's statistic is the mean over prompts of the per-prompt mean over rows.
 
-**The rule** (design "The rule", constants placed there): outside the class if TV(full) > 0.5;
-else D* = the smallest rung with TV(D) ≤ TV(full) + 0.05 and, for D ≥ 1, below all 320 Haar
+**The rule** (design "The rule", constants placed there): outside the class if TV(full) > 0.5,
+or if M1's content term adds nothing and the head is not positional outright, TV(0) − TV(full) <
+0.05 and TV(full) > 0.05 (Blocked 51 (a), taken before any real token: attention M1 cannot express
+otherwise reads D* = 0, "positional"; gate arm G4w); else D* = the smallest rung with TV(D) ≤ TV(full) + 0.05 and, for D ≥ 1, below all 320 Haar
 subspaces at that D (each fitted the same way; ties count against). Nulls run in chunks and stop
 at the first null that ties or beats V's rung (the verdict needs no more); ``--all-nulls`` runs
 every one.
@@ -48,6 +50,7 @@ random tokens, where one float32 ulp of the logit is ~5e-4 in attention), passin
 Tier 1: exploratory, unregistered.
     python -m trackB_circuit.b2a gate    --out <dir> [--device cuda] [--arms G1 ...] [--all-nulls]
     python -m trackB_circuit.b2a weights --out <dir> [--steps 143000 ...]
+    python -m trackB_circuit.b2a real    --out <dir> --gate <gate.json> [--g0-only] [--all-nulls]
     python -m trackB_circuit.b2a report  --out <dir>
 """
 
@@ -94,7 +97,10 @@ G2_PEAK = 5.0                             # G2: φ*(1) = 5, every other offset 0
 G3_SEEDS, G3_SUB, G3_PASS = 20, 8, 19
 G4_SD = 3.0                               # G4: logit = 3 uᵢᵀ G uⱼ, G standard normal
 PLANE_TOL = 1e-3                          # rad
-ARMS = ("G1", "G1r", "G1d", "G2", "G3", "G4", "G5")
+G0_TOL = G5_HF_TOL                        # design "Fixed for unit 2": G5 (iii)'s bound, not check_pass's
+A1A_RECORDS = Path(os.environ.get("METS_DATA", str(REPO / "data"))) / "trackA/a1a_batch_2026-10-15/records"
+G4W_SD = (0.5, 1.0)                       # G4w (Blocked 51 (a)): weak random QK, must read outside
+ARMS = ("G1", "G1r", "G1d", "G2", "G3", "G4", "G4w", "G5")
 
 
 class B2aError(RuntimeError):
@@ -359,6 +365,11 @@ def loo(us: Sequence, seqs: Sequence[Seq], Us) -> Dict:
     return {"tv": T.mean(0).cpu().numpy(), "beta": Bt.median(0).values.cpu().numpy(), "iters": its}
 
 
+def occupancy(us: Sequence[np.ndarray], U: np.ndarray) -> float:
+    """Median over prompts of the median token share ``‖Uᵀu_i‖²`` (random: D / d)."""
+    return float(np.median([np.median(np.sum((np.asarray(u) @ U) ** 2, 1)) for u in us]))
+
+
 def haar(d: int, D: int, k: int, seed: int) -> np.ndarray:
     g = np.random.default_rng(seed)
     out = np.empty((k, d, D))
@@ -380,11 +391,16 @@ def read_head(us: Sequence[np.ndarray], As: Sequence[np.ndarray], lad: List[Dict
     rungs = []
     for r in lad:
         o = loo(ut, seqs, T(r["U"][None]))
-        rungs.append({"D": r["D"], "tv": float(o["tv"][0]), "beta": float(o["beta"][0])})
+        rungs.append({"D": r["D"], "tv": float(o["tv"][0]), "beta": float(o["beta"][0]),
+                      "occupancy": occupancy(us, r["U"])})
     rec = {"tv_full": float(full["tv"][0]), "beta_full": float(full["beta"][0]),
            "rungs": rungs, "nulls": {}}
+    tv0 = next(r["tv"] for r in rungs if r["D"] == 0)
     if rec["tv_full"] > TV_OUT:
-        rec.update(verdict="outside", D_star=None)
+        rec.update(verdict="outside", outside_why="TV(full) > TV_OUT", D_star=None)
+        return rec
+    if tv0 - rec["tv_full"] < TV_TOL and rec["tv_full"] > TV_TOL:
+        rec.update(verdict="outside", outside_why="content M1 cannot express", D_star=None)
         return rec
     rec.update(verdict="none", D_star=None)
     for r in rungs:
@@ -397,14 +413,17 @@ def read_head(us: Sequence[np.ndarray], As: Sequence[np.ndarray], lad: List[Dict
                 break
             continue
         null_tv: List[float] = []
+        null_occ: List[float] = []
         for ch in range(K_NULL // NULL_CHUNK):
             Us = haar(d, r["D"], NULL_CHUNK, seed_for("b2a-null", tag, r["D"], ch))
             null_tv += loo(ut, seqs, T(Us))["tv"].tolist()
+            null_occ += [occupancy(us, U) for U in Us]
             if not all_nulls and min(null_tv) <= r["tv"]:
                 break
         beat = int(sum(x <= r["tv"] for x in null_tv))
         rec["nulls"][str(r["D"])] = {"n": len(null_tv), "beat": beat, "min": min(null_tv),
-                                     "median": float(np.median(null_tv))}
+                                     "median": float(np.median(null_tv)), "tv": null_tv,
+                                     "occupancy": null_occ}
         if beat == 0 and len(null_tv) == K_NULL and rec["D_star"] is None:
             rec.update(verdict="D*", D_star=r["D"])
             if not all_nulls:
@@ -471,7 +490,7 @@ def head_weights(model, name: str) -> Dict:
     d = g.shape[0]
     C = np.eye(d) - 1.0 / d
     return {"Wq": W[:HEAD_DIM], "Wk": W[HEAD_DIM:2 * HEAD_DIM], "Wv": W[2 * HEAD_DIM:],
-            "bq": b[:HEAD_DIM], "bk": b[HEAD_DIM:2 * HEAD_DIM],
+            "bq": b[:HEAD_DIM], "bk": b[HEAD_DIM:2 * HEAD_DIM], "Wo": Wo, "g": g,
             "left": g[:, None] * (C @ Wo), "right": W[2 * HEAD_DIM:]}
 
 
@@ -546,8 +565,9 @@ def random_V(g) -> Tuple[np.ndarray, np.ndarray]:
     return g.standard_normal((G_D, G_RANK)) / math.sqrt(G_D), g.standard_normal((G_RANK, G_D))
 
 
-def arm_data(arm: str, seed: int = 0) -> Dict:
-    g = np.random.default_rng(seed_for("b2a-gate", arm, seed))
+def arm_data(arm: str, seed: int = 0, scale: Optional[float] = None) -> Dict:
+    g = np.random.default_rng(seed_for("b2a-gate", arm, seed) if scale is None
+                              else seed_for("b2a-gate", arm, seed, scale))
     P = None
     if arm in ("G1", "G1r", "G1d"):
         left, right, P = planted_V(arm, g)
@@ -568,20 +588,23 @@ def arm_data(arm: str, seed: int = 0) -> Dict:
             As = [_causal_softmax(L) for _ in us]
         elif arm == "G3":
             As = [paper_attention(u) for u in us]
-        elif arm == "G4":
+        elif arm in ("G4", "G4w"):
             G = g.standard_normal((G_D, G_D))
-            As = [_causal_softmax(G4_SD * (u @ G @ u.T)) for u in us]
+            sd = G4_SD if arm == "G4" else scale
+            As = [_causal_softmax(sd * (u @ G @ u.T)) for u in us]
         else:
             raise ValueError(arm)
     return {"left": left, "right": right, "P": P, "us": us, "As": As}
 
 
-def run_arm(arm: str, device: str, all_nulls: bool, seed: int = 0) -> Dict:
+def run_arm(arm: str, device: str, all_nulls: bool, seed: int = 0,
+            scale: Optional[float] = None) -> Dict:
     t0 = time.monotonic()
-    z = arm_data(arm, seed)
+    z = arm_data(arm, seed, scale)
     bl = blocks(z["left"], z["right"])
     lad = ladder(z["left"], z["right"])
-    rec = read_head(z["us"], z["As"], lad, f"{arm}-{seed}", device, all_nulls)
+    tag = f"{arm}-{seed}" if scale is None else f"{arm}-{seed}-{scale}"
+    rec = read_head(z["us"], z["As"], lad, tag, device, all_nulls)
     rec["u2"] = u2_type(bl)["type"]
     if z["P"] is not None:
         k = z["P"].shape[1]
@@ -619,17 +642,232 @@ def arm_pass(arm: str, rec) -> Tuple[bool, str]:
         return none >= G3_PASS, f"none in {none} of {len(rec)}"
     if arm == "G4":
         return rec["verdict"] == "outside", f"{rec['verdict']}, TV(full) {rec['tv_full']:.3f}"
+    if arm == "G4w":
+        tv0 = [next(x["tv"] for x in r["rungs"] if x["D"] == 0) for r in rec]
+        return (all(r["verdict"] == "outside" for r in rec),
+                "; ".join(f"scale {s}: {r['verdict']} ({r.get('outside_why')}), TV(full) {r['tv_full']:.3f}, "
+                          f"TV(0) {t:.3f}" for s, r, t in zip(G4W_SD, rec, tv0)))
     if arm == "G5":
         return rec["i_m1_identity"] <= G5_TOL, f"(i) {rec['i_m1_identity']:.1e}"
     raise ValueError(arm)
+
+
+# ---------------------------------------------------------------- unit 2: real tokens
+
+def ln1(X: np.ndarray, w: np.ndarray, b: np.ndarray, eps: float) -> Tuple[np.ndarray, np.ndarray]:
+    """LN1 rows y (n, d) and the scale σ (n,), float64 from the pass's float32 rows."""
+    X = np.asarray(X, dtype=np.float64)
+    C = X - X.mean(1, keepdims=True)
+    sig = np.sqrt((C ** 2).mean(1) + eps)
+    return C / sig[:, None] * w + b, sig
+
+
+def renorm(A: np.ndarray) -> np.ndarray:
+    """Position 0 out as key and query; the real rows renormalised over keys j ≥ 1."""
+    R = A[1:, 1:]
+    return R / R.sum(1, keepdims=True)
+
+
+def mean_tv(P: np.ndarray, A: np.ndarray) -> float:
+    return float(0.5 * np.abs(P - A).sum(1).mean())
+
+
+def m1_attention(u: np.ndarray, U: Optional[np.ndarray], theta: np.ndarray) -> np.ndarray:
+    """M1's Â on unit tokens u (n, d) at fitted θ = (β, φ_bins); U None is the full frame."""
+    if U is None:
+        c = u @ u.T
+    elif U.shape[1] == 0:
+        c = np.zeros((u.shape[0],) * 2)
+    else:
+        p = u @ U
+        p = p / np.maximum(np.linalg.norm(p, axis=1, keepdims=True), 1e-300)
+        c = p @ p.T
+    n = u.shape[0]
+    i = np.arange(n)
+    bins = np.array([bin_of(k) for k in range(n)])
+    L = theta[0] * c + theta[1:][bins[np.clip(i[:, None] - i[None, :], 0, n - 1)]]
+    return _causal_softmax(L)
+
+
+def fit_all(us: Sequence[np.ndarray], As: Sequence[np.ndarray], U: Optional[np.ndarray],
+            device: str) -> np.ndarray:
+    """θ fitted on every prompt (for the beside rows; the rule uses `loo`)."""
+    import torch
+    T = lambda x: torch.as_tensor(np.asarray(x), dtype=torch.float64, device=device)
+    seqs = [Seq(A, device) for A in As]
+    Us = None if U is None else T(U[None])
+    th, _ = fit([s.off(cos_feat(T(u), Us)) for u, s in zip(us, seqs)], seqs)
+    return th[0].cpu().numpy()
+
+
+def motion(u: np.ndarray, y: np.ndarray, Ar: np.ndarray, Ah: np.ndarray, U: Optional[np.ndarray],
+           V: np.ndarray) -> np.ndarray:
+    """Per token, the cosine of the tangent parts (off u_i) of the reduced update
+    ``U W_D Σ_j Â_ij Uᵀu_j`` (W_D = Uᵀ V U; U None: V Σ_j Â_ij u_j) and the head's real output in
+    the frame, ``V Σ_j A_ij y_j`` on the renormalised rows (biases out, as V)."""
+    red = Ah @ u @ V.T if U is None else Ah @ u @ U @ (U.T @ V @ U).T @ U.T
+    real = Ar @ y @ V.T
+    tan = lambda m: m - np.sum(m * u, 1, keepdims=True) * u
+    a, b = tan(red), tan(real)
+    return np.sum(a * b, 1) / np.maximum(np.linalg.norm(a, axis=1) * np.linalg.norm(b, axis=1), 1e-300)
+
+
+def qk_ladder(W: Dict) -> List[Dict]:
+    """The QK read space's ladder: top-D right singular vectors of [W_Q; W_K], D on `LADDER`
+    capped at the rank, plus the full rank (M2 there is exact, G5 (ii))."""
+    M = np.concatenate([W["Wq"], W["Wk"]], 0)
+    _, s, Vt = np.linalg.svd(M, full_matrices=False)
+    r = int((s > s.max() * RANK_RTOL).sum())
+    return [{"D": D, "U": Vt[:D].T} for D in sorted({min(D, r) for D in LADDER} | {r})]
+
+
+def a1a_beta(step: int, prompt: str, name: str) -> float:
+    l, h = parse_head(name)
+    f = A1A_RECORDS / f"step{step}_{prompt}.json"
+    return float(json.loads(f.read_text())["beta"]["per_head"][l][h])
+
+
+def check_gate_file(path: Path) -> Dict:
+    g = json.loads(path.read_text())
+    if g.get("code") != code_sha():
+        raise SystemExit(f"refusing: gate {path} is from code {g.get('code')}, not {code_sha()}")
+    bad = [a for a in ARMS if not g["arms"].get(a, {}).get("pass")]
+    if bad:
+        raise SystemExit(f"refusing: gate arms not passed: {bad}")
+    return g
+
+
+def cmd_real(a) -> int:
+    import torch
+    from core.holdout import refuse_held_out
+    from p1e_energy_field.u2_attn import token_ids
+    from trackA_force.a1a import V1, prompts_hash, run_dir
+    from trackB_circuit.b0_gate import load
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    if not torch.cuda.is_available():
+        raise SystemExit("refusing: no CUDA device (unit 2's pass is the GPU's, as A1a)")
+    check_gate_file(Path(a.gate))
+    step = a.step
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    p = out / "real.json"
+    rec = json.loads(p.read_text()) if p.exists() else {}
+    if rec and rec.get("code") != code_sha():
+        raise SystemExit(f"refusing: {p} is from code {rec.get('code')}, not {code_sha()}")
+    rds = [run_dir(step, q) for q in V1]
+    refuse_held_out(rds, context="b2a")
+    rec.update(_env("cuda"), step=step, prompts=list(V1), prompts_hash=prompts_hash(),
+               runs=[str(r) for r in rds], gate=str(a.gate), pass_="cuda:float32")
+    rec.setdefault("heads", {})
+    t0 = time.monotonic()
+    model, tok = load(step, "cuda", torch.float32)
+    lay = model.gpt_neox.layers
+    eps = float(lay[0].input_layernorm.eps)
+    need = sorted({parse_head(h)[0] for h in heads()})
+    hs = {}
+    for q, rd in zip(V1, rds):
+        man = json.loads((rd / "manifest.json").read_text())
+        if man.get("hf_revision") != f"step{step}":
+            raise SystemExit(f"refusing: {rd} manifest revision {man.get('hf_revision')}")
+        ids = torch.tensor([token_ids(tok, rd)], device="cuda")
+        with torch.no_grad():
+            o = model(ids, output_hidden_states=True)
+        hs[q] = {l: o.hidden_states[l][0].float().cpu().numpy() for l in need}
+    model.cpu()
+    Ws = {h: head_weights(model, h) for h in heads()}
+    ln = {l: (lay[l].input_layernorm.weight.detach().double().numpy(),
+              lay[l].input_layernorm.bias.detach().double().numpy()) for l in need}
+    del model
+    torch.cuda.empty_cache()
+    print(f"pass: {time.monotonic() - t0:.0f}s", flush=True)
+
+    # G0 first, every head and prompt, before the rule reads anything
+    eps32 = float(np.finfo(np.float32).eps)
+    data: Dict[str, Dict] = {}
+    g0 = {}
+    for q, rd in zip(V1, rds):
+        A_st = np.load(rd / "attentions.npz")["attentions"]
+        for h in heads():
+            l, hh = parse_head(h)
+            y, sig = ln1(hs[q][l], *ln[l], eps)
+            L = head_logits(y, Ws[h])
+            A = softmax_rows(L)
+            fin = np.isfinite(L)
+            dA = float(np.abs(A - A_st[l, hh]).max())
+            g0[f"{h}/{q}"] = {"raw": dA, "scaled": dA / (eps32 * float(np.abs(L[fin]).max()))}
+            data.setdefault(h, {})[q] = {"y": y, "sig": sig, "A": A}
+        del A_st
+    worst = max(g0, key=lambda k: g0[k]["scaled"])
+    rec["g0"] = {"tol": G0_TOL, "worst": worst, **g0[worst],
+                 "pass": g0[worst]["scaled"] <= G0_TOL, "cells": g0}
+    p.write_text(json.dumps(rec, indent=1))
+    print(f"G0: worst {worst} raw {g0[worst]['raw']:.2e} scaled {g0[worst]['scaled']:.2f} "
+          f"(tol {G0_TOL})", flush=True)
+    if not rec["g0"]["pass"]:
+        raise SystemExit("refusing: G0 failed; the rule is not read")
+    if a.g0_only:
+        return 0
+
+    for h in heads():
+        if h in rec["heads"]:
+            print(f"have {h}", flush=True)
+            continue
+        t1 = time.monotonic()
+        W = Ws[h]
+        V = W["left"] @ W["right"]
+        bl = blocks(W["left"], W["right"])
+        lad = ladder(W["left"], W["right"])
+        D_ = data[h]
+        ys = [D_[q]["y"] for q in V1]
+        us = [_unit(y)[1:] for y in ys]
+        Ars = [renorm(D_[q]["A"]) for q in V1]
+        # γ: the head's own output (real attention, sink kept, biases out) mapped into the frame
+        ratio = np.concatenate([
+            np.linalg.norm((D_[q]["A"] @ D_[q]["y"] @ V.T) / D_[q]["sig"][:, None], axis=1)
+            / np.linalg.norm(D_[q]["y"], axis=1) for q in V1])
+        gr = float(np.median(ratio))
+        gamma = gr / (1 + gr)
+        r = read_head(us, Ars, lad, f"real-{step}-{h}", "cuda", a.all_nulls)
+        # beside: M1 fitted on all 7 prompts per rung, its motion row; M2 on both ladders
+        for rung in [{"D": None, "U": None}] + lad:
+            if rung["D"] == 0:
+                continue
+            th = fit_all(us, Ars, rung["U"], "cuda")
+            cs = np.concatenate([motion(u, y[1:], A, m1_attention(u, rung["U"], th), rung["U"], V)
+                                 for u, y, A in zip(us, ys, Ars)])
+            row = {"beta_all": float(th[0]), "motion": float(np.median(cs))}
+            if rung["D"] is None:
+                r["full_beside"] = row
+            else:
+                next(x for x in r["rungs"] if x["D"] == rung["D"]).update(row)
+        m2 = {}
+        for name, lad2 in (("v", lad), ("qk", qk_ladder(W))):
+            m2[name] = [{"D": x["D"], "tv": float(np.mean([
+                mean_tv(renorm(softmax_rows(m2_logits(y, x["U"], W))), A) for y, A in zip(ys, Ars)]))}
+                for x in lad2]
+        r.update({
+            "gamma": gamma, "selection": selection(bl, gamma, V.shape[0]),
+            "u2": u2_type(bl), "weights": weights_row(W["left"], W["right"], gamma),
+            "sink": float(np.mean([D_[q]["A"][1:, 0].mean() for q in V1])),
+            "sink_per_prompt": [float(D_[q]["A"][1:, 0].mean()) for q in V1],
+            "a1a_beta": [a1a_beta(step, q, h) for q in V1],
+            "m2": m2, "seconds": time.monotonic() - t1})
+        r["weights"].pop("eigs", None)
+        rec["heads"][h] = r
+        p.write_text(json.dumps(rec, indent=1))
+        print(f"{h}: {r['verdict']} D*={r['D_star']} TV(full) {r['tv_full']:.3f} "
+              f"TV(0) {r['rungs'][0]['tv']:.3f} {r['seconds']:.0f}s", flush=True)
+    return 0
+
 
 
 def constants() -> Dict:
     return {k: globals()[k] for k in (
         "LADDER", "TV_OUT", "TV_TOL", "K_NULL", "GAMMA_W", "DEGEN_TOL", "RANK_RTOL", "RIDGE",
         "G_D", "G_N", "G_PROMPTS", "G_BETA", "G_NU", "G_PHI", "G_REST", "G_OFF",
-        "G_RANK", "G2_PEAK", "G3_SEEDS", "G3_SUB", "G3_PASS", "G4_SD", "PLANE_TOL", "G5_TOL",
-        "G5_HF_TOL")}
+        "G_RANK", "G2_PEAK", "G3_SEEDS", "G3_SUB", "G3_PASS", "G4_SD", "G4W_SD", "PLANE_TOL", "G5_TOL",
+        "G5_HF_TOL", "G0_TOL")}
 
 
 def _env(device: str) -> Dict:
@@ -654,6 +892,8 @@ def cmd_gate(a) -> int:
         t0 = time.monotonic()
         if arm == "G3":
             r = [run_arm("G3", a.device, a.all_nulls, s) for s in range(G3_SEEDS)]
+        elif arm == "G4w":
+            r = [run_arm("G4w", a.device, a.all_nulls, 0, s) for s in G4W_SD]
         elif arm == "G5":
             r = {"i_m1_identity": g5_planted(a.device)}
         else:
@@ -693,8 +933,32 @@ def cmd_weights(a) -> int:
     return 0
 
 
+def report_real(out: Path) -> None:
+    x = json.loads((out / "real.json").read_text())
+    g0 = x["g0"]
+    print(f"real (code {x['code']}, step {x['step']}, prompts {x['prompts_hash']}): "
+          f"G0 {'PASS' if g0['pass'] else 'FAIL'} worst {g0['worst']} scaled {g0['scaled']:.2f}")
+    print("head     verdict  D*   TVfull TV(0)  TV(D*) occ(D*) nullmin  beta_f a1a_b  gamma sink  "
+          "mot_full mot2  M2qk(full) u2")
+    for h, r in x["heads"].items():
+        rg = {q["D"]: q for q in r["rungs"]}
+        ds = r["D_star"]
+        rs = rg.get(ds, {}) if ds is not None else {}
+        nl = r["nulls"].get(str(ds), {}) if ds else {}
+        print(f"{h:8s} {r['verdict']:8s} {str(ds):4s} {r['tv_full']:.3f}  {rg[0]['tv']:.3f}  "
+              f"{rs.get('tv', float('nan')):.3f}  {rs.get('occupancy', float('nan')):.3f}   "
+              f"{nl.get('min', float('nan')):.3f}   {r['beta_full']:6.2f} {np.median(r['a1a_beta']):6.2f} "
+              f"{r['gamma']:.3f} {r['sink']:.2f}  {r['full_beside']['motion']:+.2f}   "
+              f"{rg.get(2, {}).get('motion', float('nan')):+.2f}  {r['m2']['qk'][-1]['tv']:.3f}     "
+              f"{r['u2']['type']}")
+
+
 def cmd_report(a) -> int:
     out = Path(a.out)
+    if (out / "real.json").exists():
+        report_real(out)
+        if not (out / "gate.json").exists():
+            return 0
     g = json.loads((out / "gate.json").read_text())
     print(f"gate (code {g['code']}, {g['device']}):")
     for arm in ARMS:
@@ -725,10 +989,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     w = sub.add_parser("weights")
     w.add_argument("--out", required=True)
     w.add_argument("--steps", nargs="+", type=int, default=list(STEPS))
+    x = sub.add_parser("real")
+    x.add_argument("--out", required=True)
+    x.add_argument("--gate", required=True, help="gate.json from this code, every arm passed")
+    x.add_argument("--step", type=int, default=143000)
+    x.add_argument("--all-nulls", action="store_true")
+    x.add_argument("--g0-only", action="store_true")
     r = sub.add_parser("report")
     r.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    return {"gate": cmd_gate, "weights": cmd_weights, "report": cmd_report}[a.cmd](a)
+    return {"gate": cmd_gate, "weights": cmd_weights, "real": cmd_real, "report": cmd_report}[a.cmd](a)
 
 
 if __name__ == "__main__":
