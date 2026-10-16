@@ -21,11 +21,12 @@
   - t* assumes V = I, while from 1000 to 4000 most heads have no attractive part — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - Is 1e's one well the causal dynamics' answer at the measured β? The causal simulator's t* doubles inside the measured range, so a plateau there is not ruled out — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
+  - A2 opened 2026-10-16, design proposed, not frozen (STATE Blocked 56) — `trackA_force/design-A2.md`
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's first item: A1a's per-head β refit by M1's cross-entropy at 143000, since its sign bias where the cosine explains nothing could move A1's bracket (Blocked 54 (a)) *(free: one CPU pass over stored attention)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `515f6d6eb3`
+- **Reviewed:** 2026-10-16 · body `5a827760fd`
 <!-- /phase-card -->
 
 ## Units
@@ -37,6 +38,7 @@
 | 3. A1a's re-gate (Blocked 46 (b)) and the chain re-gate (Blocked 47 (d)) | **done**: the re-gate failed G4 at 3 frames (#203); 47 (d)'s gate: G0–G4c pass, G2s fails on the drift-removed read (38 of 42), its planted drift not a null (#204; Blocked 48) | "A1a's gate, Blocked 47 (d)", "A1a's re-gate" below |
 | 4. The gate with G2s beside (Blocked 48 (a)) and A1a's batch | **done 2026-10-15: the gate passes; the batch ran, 126 of 126 records** | "A1a's gate and batch, Blocked 48 (a)" below |
 | 5. A1b, the reading (H-WARP and 1e's question beside) | **done 2026-10-15: below t* at all 18 steps; A1 closed at its exit condition** | "A1b, the reading", "A1 on one page" below |
+| A2 1. design and scan | **proposed 2026-10-16, not frozen** (STATE Blocked 56) | `design-A2.md`, `lit-A2.md` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
