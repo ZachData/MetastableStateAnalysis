@@ -2895,20 +2895,23 @@ cheap and would resolve it.**
 
 ---
 
-## 3.57 Track B's B2a closed: no head's attention lives in a small subspace of V (2026-10-16)
+## 3.57 Track B's B2a closed: most trained heads on 410m are not isotropic content plus position (2026-10-16)
 
 **`trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"** holds the readings and what
 they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
 the 7 v1 prompts, 18 steps, 14 heads, nothing registered.
 
 - The paper's low-dimensional reduction (a head's dynamics on V's invariant subspaces, the circle
-  at D = 2) reproduces no head's attention at any step. The reason is upstream of the fit: the
-  real tokens hold about the random share of their norm² in V's subspaces, so the reduction's
-  premise fails on this model.
-- V's weights do have 2D blocks (about half of all head-step cells, a few near-repulsive), so
-  "the weights have the structure" and "the tokens use it" come apart. Any later claim from V's
-  spectrum alone (B2, Phase 2's atlas) needs a token-side check like this one.
-- What a head reads is on QK's side; that question goes to B2.
+  at D = 2) reproduces no head's attention at any step. Mostly the subspace question never arose:
+  after step 256 most heads are outside even the full isotropic cosine plus a position profile
+  (214 of 252 head-step cells outside, 32 positional), so the paper's attention class does not
+  describe them. Where V's ladder was reached (6 cells) the tokens hold about chance in V's
+  subspaces.
+- V's 2D blocks occur at the random-weight rate (7 of 14 heads at step 0, about half the cells
+  throughout); what training adds is their sign (near-repulsive pairs, the OV repulsive phase at
+  1000–32000). So a count from V's spectrum means little without step 0 beside it, which B2 and
+  Phase 2's atlas should carry.
+- QK read rank, the question B2a read only beside, goes to B2.
 
 ---
 

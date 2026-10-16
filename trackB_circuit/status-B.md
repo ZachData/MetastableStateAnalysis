@@ -15,7 +15,7 @@
   - B2a's instrument passes its planted gate (circle, rotation, D = 4, positional, null 20 of 20, out of class, arithmetic) at the design's constants; on the weights V's top pair is a D = 2 block (complex or degenerate) in 123 of 252 cells, near-repulsive in 10, and no V block beats the kernel in 31 cells at 1000–32000 — `trackB_circuit/status-B.md` "B2a unit 1 (2026-10-15)"
   - At step 143000 the reduction's premise fails: the real tokens hold about the random share of their norm² in V's invariant subspaces, so no head of 14 has D\* ≥ 1 (no circle); 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class (at the placed 0.5), 2 "none"; the isotropic cosine adds at most 0.08 of TV over position — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
   - The rule at all 18 steps finds no head of 14 with D\* ≥ 1 at any step: to 256 attention is near uniform and every head reads outside (nothing to fit); positional heads appear from 512 (`L5H2`, `L4H9`), and V's subspaces never carry the content a head reads; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
-  - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, because the tokens do not sit in V's invariant subspaces; the content a head reads is on QK's side, carried to B2 — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
+  - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, mostly because trained heads are not isotropic content plus position (214 of 252 cells outside); where V's ladder was reached the tokens hold about chance in V's subspaces; V's 2D blocks are at the random-weight rate, training shows in their sign — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `bb4dda7504`
+- **Reviewed:** 2026-10-16 · body `60e612323b`
 <!-- /phase-card -->
 
 ## Units
@@ -62,28 +62,39 @@ a verdict per head at 143000 (unit 2) and at all 18 steps (unit 3), in the 4 uni
 
 **Established (tier 1, 410m, v1's 7 prompts `976b62d677bc`, 18 steps, 14 heads):**
 
-1. **No head has D\* ≥ 1 at any step: no circle, and no V subspace up to D = 64 below its Haar
-   nulls.** The largest gain any V rung gives over position alone is 0.092 (`L18H1`, 2000). "B2a unit 3".
-2. **Why: the reduction's premise fails.** The real tokens hold about the random share of their
-   norm² in V's invariant subspaces (U₂ ≤ 0.01 at 143000; over 18 steps only `L5H2` late and
-   `L18H1` stand outside step 0's spread). The content a head reads is in its QK read space (M2 on
-   QK's ladder falls to 0.06–0.62 at D = 64; on V's it stays at its bias-only 0.63–0.94). "B2a unit 2".
-3. **What the heads are instead.** To 256 attention is near uniform and every head reads outside
-   (nothing to fit). From 512 positional heads (D\* = 0) appear: `L5H2`, `L4H9` at 512 (B1's onset
-   for `L5H2` is (256, 512]), `L12H5` from 2000; 143000's 4 hold from 16000. The rest read outside
-   (TV(full) > 0.5) or "none" (content helps, no V subspace carries it: `L7H8`, `L10H7` at 143000).
-4. **The weights have 2D structure the tokens do not occupy.** V's top pair is a D = 2 block in
-   123 of 252 (head, step) cells, near-repulsive in 10; no V block beats the kernel in 31 cells at
-   1000–32000 (the OV repulsive phase, `PROJECT.md` §3.12 A). "B2a unit 1".
-5. **The instrument sees what it should.** The planted gate passes every arm at the design's
+1. **No head has D\* ≥ 1 at any step (no circle).** Of the 252 (head, step) cells, 214 read
+   outside, 32 positional (D\* = 0), 6 "none"; a cell reaches V's ladder only when M1's full fit is
+   inside and content adds, so the Haar nulls ran in 5 (`L9H8` at 8000, `L10H7` at 16000–143000),
+   all "none". The largest gain any V rung gives over position alone is 0.092 (`L18H1`, 2000).
+   (`/challenge-pr` on #211, findings 1–2: first read "no V subspace below its Haar nulls" and
+   "because the tokens do not sit in V's subspaces".) "B2a unit 3".
+2. **Why, mostly: the heads are not in M1's class.** To 256 attention is near uniform and nothing
+   adds (nothing to fit); after it most heads read outside because even M1's full isotropic cosine
+   plus position misses (TV(full) > 0.5). Where M1 fits, it fits by position. So "most trained
+   heads on 410m are not isotropic content plus position" is the main reading, and the ladder was
+   seldom reached.
+3. **Where the ladder was reached, the tokens do not occupy V's subspaces.** Their share of norm²
+   there is about chance (U₂ ≤ 0.01 at 143000; over 18 steps only `L5H2` late and `L18H1` stand
+   outside step 0's spread), so content that helps (`L7H8`, `L10H7`) is carried by no V subspace.
+   Occupancy alone does not decide a head: `L18H1` holds 37× chance in U₂ at 143000 and still
+   reads outside (TV(full) 0.717). "B2a unit 2", "unit 3".
+4. **Positional heads.** From 512: `L5H2`, `L4H9` (B1's onset for `L5H2` is (256, 512]), `L12H5`
+   from 2000; 143000's 4 hold from 16000.
+5. **V's 2D blocks are at the random-weight rate; training shows in their sign.** V's top pair is
+   a D = 2 block in 123 of 252 cells, but in 7 of 14 heads at step 0 and 68 of 126 cells at
+   0–256 against 55 of 126 from 512 (`/challenge-pr` on #211, finding 3). What training adds:
+   near-repulsive top pairs in 10 cells, all at 256–32000, none at init; no V block beats the
+   kernel in 31 cells, all at 1000–32000 (the OV repulsive phase, `PROJECT.md` §3.12 A). "B2a unit 1".
+6. **The instrument sees what it should.** The planted gate passes every arm at the design's
    constants (a faithful rung at TV 0.005, the nearest random subspace ≥ 0.1); G0 at every step.
-6. design-A's prior (2D fails for previous-token and induction heads) is not contradicted.
+7. design-A's prior (2D fails for previous-token and induction heads) is not contradicted.
 
 **Not established:**
 
 - Anything off V's ladder: D\* is the smallest *on the ladder*, an upper bound (design "Worth
-  challenging"). Given reading 2, a small subspace, if one exists, would be on QK's side, which
-  B2a read only beside (M2).
+  challenging"). Whether a head's QK read space is low-rank (M2's ladder, read only beside) is a
+  question about QK rank, not the paper's reduction (design "Worth challenging"); that a head reads
+  a token only through `W_Q y`, `W_K y` is true by construction (`/challenge-pr` on #211, finding 4).
 - Dynamics: each head acts once; whether depth iterates the map, and whether the dynamics
   *selects* where tokens sit, are untested (design "Fences").
 - The 4 positional / 8 outside split at 143000 rests on the placed 0.5 (at 0.55 `L6H4`, `L10H14`
@@ -95,11 +106,11 @@ a verdict per head at 143000 (unit 2) and at all 18 steps (unit 3), in the 4 uni
 
 | thread | at close |
 |---|---|
-| The gate has no position-0 sink arm | **dropped**: the rule excludes position 0 (design "Fences"), so the arm would test a case the reading does not make |
-| The gate has no arm with content only partly V's | **dropped**: it could only show the rule missing partly-V content, and reading 2 (occupancy and M2, independent of the gate) says the content is not in V's subspaces |
+| The gate has no position-0 sink arm | **dropped**: the rule excludes position 0 and renormalises, and a softmax row with one key removed and renormalised is exactly the softmax over the rest, so a planted sink changes nothing the rule reads (`/challenge-pr` on #211) |
+| The gate has no arm with content only partly V's | **dropped**: it bears only on the 6 cells that reached V's ladder, and there reading 3 (occupancy and M2, independent of the gate) says the content is not in V's subspaces |
 | Token-matched null | dropped at unit 3 ("Parked" below) |
 | A1a's β against M1's | **carried** to A2 as its first item (Blocked 54 (a)) |
-| A small subspace on QK's side (M2's ladder: how much of the token a head reads) | **carried** to B2 (`docs/ROADMAP.md` §7), beside its QK spectra |
+| QK read rank (M2's ladder: how much of the token a head reads; a QK-rank question, not the paper's reduction) | **carried** to B2 (`docs/ROADMAP.md` §7), beside its QK spectra |
 | `L10H7` "none" (content helps, V carries none of it), while its V's top pair is near-repulsive at 2000 and 32000 and no V block beats the kernel at 1000–8000 (unit 1's `weights.json`, read at close) | **carried** to B6 (`docs/ROADMAP.md` §7), beside its 410m `L10H7` line |
 
 ## B2a unit 3 (2026-10-16): the 18 steps
@@ -143,7 +154,7 @@ stand well outside step 0's spread. The screen (Blocked 53 (a)'s bar, set agains
 
 | reading | what it rests on |
 |---|---|
-| **No head of the 14 has D\* ≥ 1 at any of the 18 steps (no circle, and no V subspace up to D = 64 below its nulls), on v1.** This is the rule's verdict at every step, not the occupancy screen's. B2a is at its exit with its 4 units spent | `step<S>/real.json` in both record dirs |
+| **No head of the 14 has D\* ≥ 1 at any of the 18 steps (no circle), on v1; the Haar nulls ran in 5 of 252 cells, the rest decided before the ladder** (corrected 2026-10-16, `/challenge-pr` on #211, finding 2: it first read "no V subspace up to D = 64 below its nulls"). This is the rule's verdict at every step, not the occupancy screen's. B2a is at its exit with its 4 units spent | `step<S>/real.json` in both record dirs |
 | To 256, attention is near uniform (TV(uniform) 0.06–0.32) and every head reads outside by Blocked 51/52's clause (neither content nor position adds 0.05): "M1 has nothing to fit", not "M1 fits badly". The clause decided no head at 143000 | `real.json` "outside_why", "tv_uniform" |
 | Positional heads appear from 512 (`L5H2`, `L4H9`; B1's onset for `L5H2` is (256, 512]), `L12H5` from 2000; `L10H7` (8000), `L6H4` (8000–16000) and `L9H1` (16000 on) come and go; 143000's 4 hold from 16000 | the table; "B1 (2026-10-14)" |
 | The largest gain any V rung gives over position alone is 0.092 (`L18H1` at 2000, where its U₂ share is 1.2× chance, inside step 0's spread); where content helps (`L7H8`, `L9H8`, `L10H7`, `L18H1`, up to 0.086 from 2000), no V subspace carries it at any step | "content adds", "rungs" per step |
