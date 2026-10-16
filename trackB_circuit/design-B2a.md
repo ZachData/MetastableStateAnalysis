@@ -160,6 +160,18 @@ the head's real output on the renormalised rows, `V Σ_j A_ij y_j`, so the sink'
 term does not enter the cosine. M2 runs on both ladders from D = 0 (bias-only logits) and at the
 QK space's full rank. A1a's `fe_full` per prompt is read from its batch records.
 
+**Unit 3 as built (2026-10-16, Blocked 53 (a), the user's; `b2a.py occupancy`):** one HF pass per
+step on v1's 7 prompts (GPU float32, TF32 off, as unit 2), LN1 rebuilt in float64; per head, the
+occupancy (`occupancy()`: median over prompts of the median token share `‖Uᵀu_i‖²`, position 0
+out) at V's U₂ and U₆₄, over random D/1024. Where V's top block is a line and the next a pair, U₂
+moves up to U₃ (the ladder's rule) and the bar is on the ratio, so "above 4/1024" reads "above
+twice random" at that D (`OCC_RATIO`). At 143000 the pass reproduces unit 2's rung occupancies
+exactly (`--unit2`). **Fixed after the occupancy rows and before any rule output:** the bar is
+already met at 143000 (`L18H1` U₃ 29×, `L5H2` 5.3×), where unit 2 read no D\* ≥ 1, so the bar is
+necessary, not sufficient; it is applied as decided. The rule runs on **all 14 heads** at each
+selected step other than 143000 (not only the heads above the bar: the family is fixed, and a
+head's verdict at a step is cheap), with `real --step`, on a gate rerun at this code.
+
 NUMERICS: float64 on CPU for the gate (small); unit 2–3's hooked pass on the GPU float32, as A1a,
 with every comparison inside one process and device. The real attention's check against the stored
 `attentions.npz` (G0) uses G5 (iii)'s tolerance (above; it replaced `check_pass`'s 1e-4).
