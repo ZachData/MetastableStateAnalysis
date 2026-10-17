@@ -12,6 +12,8 @@
   - The instrument passes its calibration gate (planted effect, null, mixed, LN1 chain) after two failed gates; a sustained shared drift is not a null — `trackA_force/status-A.md` "A1a's gate and batch, Blocked 48 (a)"
   - `P-gamma2` has a number on 410m: the projected integration time rises over training from about 0 (negative in 29 cells: moving against the field) to 0.82 of t* at 143000, and is *below* t* at all 18 steps (125 of 126 cells, one *straddles*), also with the shared drift removed; a random init (step 0) reads *below* too; the net moves several times t* in total, but over 90 % of that motion is off the field — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
   - H-WARP does not collapse the curves (2 of 18 steps; its planted check passes); 1e's one-well question is not answered — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
+  - A2 opened 2026-10-16 with a scan and a frozen design (5 units); the β refit leaves A1's number in place (2 of 7 prompts outside, bar 4; at M1's β 143000 reads *below* in 7 of 7) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
+  - A2 closed 2026-10-17 at "a recorded reason it cannot be read": against the field is a few components, mostly early MLPs (the last block's at 143000), against-specific at 8 of 18 steps; the MLP cancels attention at 1000–4000 and carries the off-field motion; a fixed key appears from 1000 (a period, then a newline from 8000); the ablation's calibration fails on its planted control, so nothing causal is read — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication — `trackA_force/design-A.md` "Fences"
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -20,15 +22,11 @@
   - The verdict rests on the projected step: on the calibrated step every cell is above t*, so "too shallow" and "resists" are told apart only by the field's direction — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - t* assumes V = I, while from 1000 to 4000 most heads have no attractive part — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - Is 1e's one well the causal dynamics' answer at the measured β? The causal simulator's t* doubles inside the measured range, so a plateau there is not ruled out — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
-  - At 1000–4000 attention's own projected step is positive while the block's is near 0 (the MLP cancels it) — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
-  - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (Blocked 57 (a): card at `fe_full`, (i) beside) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
-  - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few", and 16 nodes fail G0 on real block 0 (`/challenge-pr` on #214; STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
-  - A2 unit 4 (descriptive): against the field is a few MLPs at 11–13 of 18 steps (below the init band), against-specifically at 6 (training concentrates both signs); the MLP cancels attention at 1000–4000, block 23's step against is its MLP, the off motion is the MLP's; unit 5's size-matched null is near degenerate (STATE Blocked 59) — `trackA_force/status-A.md` "A2 unit 4, the batch and the ranking (2026-10-16)"
-  - A2 unit 5: the ablation rule's calibration fails (the planted control reads "not supported": its readout stacks are other models than its ranking stack, (iii) at its ceiling; and the MLP null does not control depth, `/challenge-pr` on #216), so "these N components carry the anti-collapse force" is not read; step 0 passes as the null. Against-specific at 8 of 18 on the β-matched band; the sink's exact share exceeds 0.05 from 2000; a fixed newline key from 8000 (STATE Blocked 60) — `trackA_force/status-A.md` "A2 unit 5, the ablation's calibration (2026-10-17)"
+  - Nothing causal is known about which components push apart: A2's ablation reading was not made, and a size-matched null cannot control depth for MLPs at the real set sizes (carried to C2) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
+  - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
-  - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
-  - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-17 · body `8de8ce2e17`
+  - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
+- **Reviewed:** 2026-10-17 · body `24d888b13b`
 <!-- /phase-card -->
 
 ## Units
@@ -45,9 +43,85 @@
 | A2 3. the per-component instrument and its gate | **done 2026-10-16: the gate passes, G0–G4** (no real reading yet); every random init is already "few" (Blocked 58) | "A2 unit 3" below; `a2_comp.py`, `a2_gate.py` |
 | A2 4. the batch and the ranking (18 steps) | **done 2026-10-16** (Blocked 58 (a1), (b1), (c1)): against is few and MLP at 11–13 of 18 steps (against-specific at 6); the MLP cancels attention at 1000–4000; the top-key selector is biased (unread); block 23's step against is its MLP; the null for unit 5 is near degenerate (Blocked 59) | "A2 unit 4" below; `a2_batch.py` |
 | A2 5. the ablation, its nulls and the reading | **done 2026-10-17 (Blocked 59 (b), (ii)): the rule's calibration fails on the planted control, so the reading is not made** (step 0 passes as the null); against-specific at 8 of 18 on the matched band; the sink's exact share > 0.05 from 2000; a newline key from 8000 (Blocked 60) | "A2 unit 5" below; `a2_ablate.py` |
+| A2 close-out | **done 2026-10-17** (Blocked 60 (a), the user's; writing only): A2 closed at "a recorded reason it cannot be read" | "A2 on one page" below |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
+A2: 5 units plus a close-out (`design-A2.md` "Exit condition and budget"); all 5 spent; A2 closed
+2026-10-17 at its exit's "a recorded reason it cannot be read" (Blocked 60 (a)).
+
+## A2 on one page (closed 2026-10-17)
+
+**Asked** (`design-A2.md`): which heads and MLPs move 410m's tokens against the self-attention
+field, or off it, from which step; and does ablating the top ones re-cluster the tokens and make
+the energy over depth monotone? **Exit met on its second branch**, "a recorded reason it cannot
+be read" (Blocked 60 (a), the user's), with the 5 units spent (#212–#216). Writing only; no run.
+
+**Established (tier 1, 410m, v1's 7 prompts, 18 steps; descriptive except where it says so):**
+
+1. **A1's closed number stands under the β refit** (unit 2). M1's refit p50 is outside A1's
+   bracket in 2 of 7 prompts (bar 4); A1b's 143000 cell at M1's βs reads *below* in 7 of 7 (was
+   6 and one *straddles*), and every change strengthens *below*. The two estimators disagree in
+   sign on the code and LaTeX prompts (M1 negative mid-depth), which is where B2a's "sign bias"
+   came from (`trackB_circuit/status-B.md` "Corrections received"). M1's L17–23 band reads 0.88
+   pooled, 1.66 on the five prose prompts; the convention is kept (Blocked 57 (a)).
+2. **An additive per-component instrument passes its gate** (unit 3, re-gated in unit 5): 18
+   components per block, each update path-integrated through the LN1 frame (64 nodes; G0 ≤ 4.9e-14
+   on the synthetic stacks, ≤ 4.7e-11 on real blocks), G1–G4 pass.
+3. **Against the field is a few components, mostly MLPs, and training concentrates both signs**
+   (units 4, 5). `|S⁻|` is below the init band's 5 % at 11–13 of 18 steps (step 0's band) or 11
+   (each step against the band whose β matches it); against-specific (`S⁻` few, `S⁺` not) at 6
+   steps on step 0's band, **8 on the matched band** (16, 32, 1000–8000, 16000, 143000). The
+   most-against component is an MLP at 17 of 18 steps: early MLPs (L0–L7) from 16 to 32000, the
+   last block's MLP at 143000 (−0.49 of block 23's −0.56; the same at M1's βs).
+4. **The MLP cancels attention at 1000–4000** (attention's summed step +0.19 to +1.05, the MLP's
+   −0.23 to −1.07, the blocks −0.06 to +0.03); in part at 8000; both along from 16000.
+   Attention's along step is drift-robust from 2000.
+5. **The off-field motion is the MLP's**: 0.68–0.92 of the pooled off motion, block 0's MLP first
+   at every step. At init five early MLPs already carry half of it (a band with no width), so
+   "few" is not read for `S⁰`.
+6. **The sink and fixed keys** (unit 5, beside). The sink's part along the field is small (summed
+   step ≤ 0.14 in size). Its per-token share of the update, `mean_i |Σ_h sink_h,i| / mean_i |v_i|`,
+   is ≤ 0.01 to 512, about 0.05 at 2000–4000 and 0.08–0.11 from 8000 (over 0.05 in 17 of 24
+   blocks). **That is not 1e's quantity** (the sink's share of the block's *shared* update, the
+   mean over tokens, `p1e_energy_field/u2_attn.shares`), which A2 did not re-measure: 1e's ≤ 0.05
+   stands, and unit 5's "1e's ≤ 0.05 … fails" overstated it (`LESSONS.md` 11). A fixed key
+   (top key ≥ 0.05·n over uniform) appears at 1000 (0.25 of head × block): a period at 2000–4000
+   (0.57–0.58), a newline from 8000 (0.25–0.32), so 1e's second sink is one case of a fixed key.
+7. **The ablation reading is not made: the rule's calibration fails on its planted control**
+   (unit 5). The planted heads read "not supported" because (after `/challenge-pr` on #216) the
+   synthetic ranks on one stack and reads on 7 other models, (iii) sits at its ceiling in the G1
+   stack, and the size-matched MLP null does not control depth (step 0's L0–L4 MLPs read 0.964
+   against nulls of 0.61–0.67; depth correlates −0.91 with (i)), while `S⁻` at 2000 and 8000 is
+   early MLPs. Step 0 passes as the null on (i) (16 of 20 nulls ≥ `S⁻`) and reads "mixed" on (iii)
+   by one cell of 168.
+
+**Not established:**
+
+- **Anything causal about `S⁻`, `S⁺` or `S⁰`.** "These N components carry the anti-collapse
+  force" is neither supported nor refused; readings 3–5 are rankings of a linear split.
+- Whether a repaired control would pass, and **a depth control for MLPs** at the real set sizes,
+  for which there is no good answer (band matching is the degenerate null of Blocked 59).
+- The real steps' sets on the long passages (only step 0 was ranked there); "few" for `S⁰`;
+  whether 8, 1000 and 32000 are few on step 0's band (on the cut).
+- Which β estimator is right on the code and LaTeX prompts.
+- 1e's ≤ 0.05 at A2's instrument (a different quantity, reading 6), and why heads that give the
+  sink up to 0.6 of their attention pass it little value.
+- An energy split per component (`PROJECT.md` §3.8.3's exact dissipation): A2 reads each
+  component's projected step and off share, not its share of `dE_β`.
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 1. design and scan | #212 | frozen as revised (Blocked 56 (a)) |
+| 2. the β refit at 143000 | #213 | A1's number does not move; the estimators split on code and LaTeX |
+| 3. the per-component instrument | #214 | gate passes (G0–G4); 16 nodes fail G0 on real block 0 (→ 64) |
+| 4. the batch and the ranking | #215 | readings 3–5; the top-key selector biased late (fixed in 5) |
+| 5. the ablation and its calibration | #216 | the calibration fails; reading 6; reading not made |
+| close-out | this | writing only (Blocked 60 (a)) |
+
+**Parked at close:** every item is carried or dropped ("Parked", "At A2's close").
 
 ## A2 unit 5, the ablation's calibration (2026-10-17): it fails, the reading is not made
 
@@ -702,12 +776,35 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 
 ## Parked
 
-At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)*.
+**At A2's close (2026-10-17)** each item opened during A2 is *done*, *carried to X* or *dropped
+(why)*; the items carried into A2 at A1's close are settled below, under their own entries.
 
 - *A1a's code hash* (A2 unit 3, 2026-10-16): `a1a.py` re-exports `u2_attn.ln_from`, so A1a's
   `code_sha` is no longer `a08544e9b644`; re-running A1a's batch would be refused against its
-  old gate. No number changes. Why parked: only a re-run needs it; cost one re-gate; changes
-  no decision.
+  old gate. No number changes. **Dropped**: A1 is closed and no re-run is planned; a re-run
+  would re-gate anyway (one gate, wall time only).
+- *The ablation's repair* (Blocked 60 (b), not taken): one synthetic model read on 7 starts, a
+  planted stack with headroom on (iii), step 0 required to read "refused", and a depth control
+  for MLPs. **Carried to C2**, as the precondition of any causal claim about which components
+  push apart; the depth control is the open part and has no design yet.
+- *The real ablations uncalibrated* (Blocked 60 (c)): **dropped**: nothing calibrates them.
+- *M1 against `fe_full` on code and LaTeX* (unit 2): opposite signs mid-depth. **Carried to B3**,
+  which reads per-head β against condensation thresholds and has to pick an estimator first.
+- *The timeline rows* (units 4, 5): the against-specific steps (16, 32, 1000–16000, 143000); the
+  MLP cancelling attention at 1000–4000; the fixed key moving from a period (2000–4000) to a
+  newline (from 8000); the sink's per-token share rising from 1000. **Carried to A3**.
+- *The sink's value against its attention* (1e's item, carried into A2 with `attention-10.md`'s
+  A5): the sink's part along the field is small (reading 6, done); its share was measured on
+  another quantity. **Dropped** for the rest: 1e's ≤ 0.05 of the shared update stands
+  unchallenged and the per-token rise is an A3 row; reopen only if a unit needs the sink as a
+  separate source.
+- *A second sink on a newline* (1e's item): **done**: one case of a fixed key (reading 6).
+
+At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)*. Items carried
+to A2 are settled at A2's close: the drift question, `ln_from`, the off-field share, attention
+against the MLP and block 23 are **done** (A2 readings 2–5); the long passages were used at step
+0 only (unit 5's ranking and means), and A1's continuity check on them is **dropped** (GPU hours
+for a closed number that unit 2 already re-read; reopen if A5 registers on length).
 
 - *The 2D spike* (the user's, 2026-10-14): **done**, its slot picked (Blocked 49 (a)): B2a
   after A1 (ROADMAP §7 B2a).

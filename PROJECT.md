@@ -2895,6 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
+## 3.58 Track A's A2 closed: the push against the field is a few early MLPs, and nothing causal is read (2026-10-17)
+
+**`trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+the 7 v1 prompts, 18 steps, nothing registered.
+
+- Against the self-attention field is a few components, mostly MLPs, not cooperating heads:
+  early MLPs (L0–L7) from 16 to 32000, the last block's MLP at 143000; against-specific at 8 of
+  18 steps. The MLP also cancels attention's along-field step at 1000–4000 and carries most of
+  the off-field motion. So the anti-collapse story the project tells (C2) is an MLP story
+  before it is an attention one, at least as a linear split.
+- No causal claim: the ablation's calibration failed on its planted control, and a size-matched
+  null cannot control depth for MLPs at the real set sizes. Any paper sentence of the form
+  "these components carry the force" waits for that control (carried to C2).
+- The β estimator question is not settled: on code and LaTeX, M1 and `fe_full` disagree in sign
+  mid-depth (carried to B3); A1's number does not move by its bar (2 of 7 prompts, the code and
+  LaTeX ones), and at M1's β 143000 reads *below* in 7 of 7.
+
+---
+
 ## 3.57 Track B's B2a closed: most trained heads on 410m are not isotropic content plus position (2026-10-16)
 
 **`trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"** holds the readings and what

@@ -1609,6 +1609,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   code, was wrong, and was replaced by one that changes the invisible rows. And one tracked doc
   (`status-10.md`, number fixes) was rewritten through a `python` heredoc against `CLAUDE.md`
   "While working" (use Edit); the rule exists for the re-inject cost.
+- 2026-10-17, A2's close-out (#216's text, found while writing the one page): unit 5 wrote "1e's
+  ≤ 0.05 holds to 1000 and fails in 17 of 24 blocks from 8000" and STATE carried it. A2's share
+  is the sink's per-token norm over the update's per-token norm; 1e's is the sink's projection on
+  the block's *shared* (mean) update (`u2_attn.shares`). Same name, different quantity; neither
+  the author nor `/challenge-pr` on #216 opened 1e's code. Rule: a sentence that says an earlier
+  phase's number "holds" or "fails" names both definitions, or it is not a correction.
 
 ## 12. Deleted, then needed
 
