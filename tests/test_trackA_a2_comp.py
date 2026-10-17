@@ -98,3 +98,26 @@ def test_off_global_and_set_stats():
     assert np.all(proj[sm] < 0) and proj[sm].sum() <= 0.5 * proj[proj < 0].sum() + 1e-12
     assert st["S_minus"] == ac.mass_set(proj, -1).size and st["S_zero"] == ac.mass_set(g, +1).size
     assert ac.comp_name(0) == "L0.h0" and ac.comp_name(k * 23 + k - 1) == "L23.mlp"
+
+
+def test_top_key_finds_a_fixed_key_not_the_last_ones():
+    """#215 finding 1: the ratio picked the last keys; mass minus uniform's share picks a planted
+    fixed key, and a local (previous-token) head's excess stays ≈ 1."""
+    torch = _torch()
+    n, j0 = 200, 37
+    i = torch.arange(n)
+    causal = (i[None, :] <= i[:, None]).double()
+    unif = causal / causal.sum(1, keepdim=True)
+    sink = 0.7 * unif.clone()
+    sink[j0:, j0] += 0.3                                   # queries after j0 put 0.3 on key j0
+    local = torch.zeros(n, n, dtype=torch.float64)
+    local[0, 0] = 1.0
+    local[i[1:], i[1:] - 1] = 1.0                          # each query on the previous token
+    W = torch.stack([sink, local, unif])
+    j, recv, u = ac.top_key(W)
+    assert int(j[0]) == j0
+    exc = recv[torch.arange(3), j - 1] - u[j]
+    assert float(exc[0]) > 0.25 * (n - j0)
+    assert float(exc[1]) < 1.0
+    ratio = (recv / u[1:]).argmax(1) + 1                   # the old selector, for the record
+    assert int(ratio[1]) > n - 10

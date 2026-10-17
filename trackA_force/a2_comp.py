@@ -6,10 +6,12 @@ Per block l (Pythia's parallel residual) the update ``v = Σ_c v_c`` over 18 com
 head's own ``W_O^h`` slice of attention's output (value bias included, ``h0``…``h15``), the
 attention output bias ``b_O``, the MLP with its bias ``mlp``. Beside, never counted: each head's
 sink part ``A_i0 · v_0 W_O^h`` (``h*_sink0``) and the part through its most-received non-zero key
-``A_ij* · v_j* W_O^h`` (``h*_topkey``; j* by mass received over its expectation under uniform causal
-attention, ``Σ_{i≥j} 1/(i+1)``, so early keys are not favoured where attention is near uniform
-(`/challenge-pr` on #214, finding 5); its position and token id are recorded so a fixed key such as
-1e's newline can be read).
+``A_ij* · v_j* W_O^h`` (``h*_topkey``; j* by mass received *minus* its expectation under uniform causal
+attention, ``Σ_{i≥j} 1/(i+1)``: the ratio of #214 finding 5 picked the last keys, whose expectation is
+~1/n (`/challenge-pr` on #215, finding 1); the excess is recorded, so a local head (excess ≈ 1) is told
+from a fixed key (excess ≫ 1), and the key's position and token id, so a fixed key such as 1e's
+newline can be read). The sink's exact share of the update (#215 finding 3): ``mean_i |Σ_h sink_h,i|
+/ mean_i |v_i|`` over positions 1…n−1 (``sink_share``).
 
 **The path integral (Aumann–Shapley).** In the block's frame ``f_l(x) = unit(LN1_l(x))``,
 ``Δ_c = ∫₀¹ J_l(x + s v) ds · v_c`` by Gauss–Legendre on ``NODES`` nodes, so ``Σ_c Δ_c`` is the frame
@@ -25,7 +27,9 @@ F the causal self-attention field on ``U = f_l(x)[1:]`` at the layer's β. Per c
 - ``off``: ``Σ_i ⟨o_ci, o_i⟩ / Σ_i |o_i|²`` with ``o_c = Δ_c^tan − proj_c F`` and ``o = Σ_c o_c``
   over the 18 counted components (pooled over tokens; sums to 1);
 - ``size``: the mean ``|v_c|`` over positions 1…n−1 (raw), unit 5's size deciles; ``disp`` the mean
-  ``|Δ_c^tan|``.
+  ``|Δ_c^tan|``;
+- ``part_sum`` (on request, unit 5): each counted part's sum over positions 1…n−1, so its mean over
+  a text's tokens is the ablation constant.
 
 The block's totals carry the lifted reads A1 used (log, its verdict; gnomonic, the design's text)
 and their ratio to the unlifted mean, beside; ``off_sq`` (the mean ``|o_i|²``, which weights a block's
@@ -53,6 +57,7 @@ G0_TOL = 1e-6                       # placed: Σ_c Δ_c against the chord, relat
 SPLIT_TOL = 1e-4                    # the pass: heads + b_O against attention's output (u2_attn's)
 MASS = 0.5                          # placed: the 50 % mass cut (design "Unit 4")
 FEW = 43                            # placed: 10 % of 432 (design "Unit 4")
+CHUNK = 10                          # parts per Jacobian product (memory only; 2,041-token passages)
 
 
 def code_sha() -> str:
@@ -117,25 +122,34 @@ def read_block(x, parts, n_counted: int, w, b, eps: float, beta: float, nodes: i
     s, ws = gl_nodes(nodes)
     D = torch.zeros_like(parts)
     for sk, wk in zip(s, ws):
-        D += float(wk) * jvp_frame(x + float(sk) * v, parts, w, b, eps)
+        for a in range(0, parts.shape[0], CHUNK):       # per part, so chunking changes no number
+            D[a:a + CHUNK] += float(wk) * jvp_frame(x + float(sk) * v, parts[a:a + CHUNK], w, b, eps)
     f0, f1 = frame_t(x, w, b, eps), frame_t(x + v, w, b, eps)
     chord = (f1 - f0)[1:]
     D = D[:, 1:]
     g0 = float((D[:n_counted].sum(0) - chord).norm() / chord.norm().clamp_min(1e-300))
     U = f0[1:]
     F = field_t(U, beta)
-    Dt = D - (D * U).sum(-1, keepdim=True) * U
     xx = (F * F).sum(-1)
     ok = xx >= 1e-18
     Fo = F[ok]
-    proj_tok = (Dt[:, ok] * Fo).sum(-1) / xx[ok]                       # (P, m)
-    proj = proj_tok.mean(1)
-    O = Dt[:, ok] - proj_tok[..., None] * Fo
-    o = O[:n_counted].sum(0)
-    off = (O * o).sum((1, 2)) / (o * o).sum().clamp_min(1e-300)
     Fc = Fo - Fo.mean(0)
-    Dc = Dt[:, ok] - Dt[:, ok].mean(1, keepdim=True)
-    proj_df = (Dc * Fc).sum((1, 2)) / (Fc * Fc).sum().clamp_min(1e-300)
+    tan = lambda Z: (Z - (Z * U).sum(-1, keepdim=True) * U)[:, ok]       # noqa: E731
+    # per part, in chunks (memory only; each part's numbers are its own): proj, proj_df, disp
+    proj_tok, proj_df, disp = [], [], []
+    for a in range(0, D.shape[0], CHUNK):
+        Dk = tan(D[a:a + CHUNK])
+        proj_tok.append((Dk * Fo).sum(-1) / xx[ok])
+        proj_df.append(((Dk - Dk.mean(1, keepdim=True)) * Fc).sum((1, 2)) / (Fc * Fc).sum().clamp_min(1e-300))
+        disp.append(Dk.norm(dim=-1).mean(1))
+        del Dk
+    proj_tok, proj_df, disp = torch.cat(proj_tok), torch.cat(proj_df), torch.cat(disp)   # (P, m), (P,), (P,)
+    proj = proj_tok.mean(1)
+    # the block's off-field move o = Σ_counted (Δ_c^tan − proj_c F), by linearity
+    o = tan(D[:n_counted].sum(0, keepdim=True))[0] - proj_tok[:n_counted].sum(0)[:, None] * Fo
+    oo = (o * o).sum().clamp_min(1e-300)
+    off = torch.cat([((tan(D[a:a + CHUNK]) - proj_tok[a:a + CHUNK, :, None] * Fo) * o).sum((1, 2)) / oo
+                     for a in range(0, D.shape[0], CHUNK)])
     tot = {"proj": float(((chord - (chord * U).sum(-1, keepdim=True) * U)[ok] * Fo).sum(-1).div(xx[ok]).mean())}
     for lift in ("log", "gnomonic"):
         L = _t_lifted(U, f1[1:], lift)[ok]
@@ -148,7 +162,17 @@ def read_block(x, parts, n_counted: int, w, b, eps: float, beta: float, nodes: i
     tot["n_field"] = int(ok.sum())
     return {"proj": proj.cpu().numpy(), "proj_df": proj_df.cpu().numpy(), "off": off.cpu().numpy(),
             "size": parts[:, 1:].norm(dim=-1).mean(1).cpu().numpy(),
-            "disp": Dt[:, ok].norm(dim=-1).mean(1).cpu().numpy(), "g0": g0, "total": tot}
+            "disp": disp.cpu().numpy(), "g0": g0, "total": tot}
+
+
+def top_key(W):
+    """Per head the non-zero key whose received mass most exceeds uniform causal attention's,
+    ``Σ_{i≥j} 1/(i+1)``; ``W`` (H, n, n) rows the queries. ``(j* (H,), received (H, n−1), uniform (n,))``."""
+    import torch
+    n = W.shape[1]
+    recv = W[:, :, 1:].sum(1)                                              # mass received, keys 1…
+    unif = torch.flip(torch.cumsum(torch.flip(1.0 / torch.arange(1, n + 1, dtype=W.dtype, device=W.device), [0]), 0), [0])
+    return (recv - unif[1:]).argmax(1) + 1, recv, unif
 
 
 # ---------------------------------------------------------------- the sets unit 4 reads
@@ -239,9 +263,7 @@ def _make_hooked():
             bO = att.dense.bias.to(dt)[None, :].expand(x.shape[0], -1)
             sink = torch.einsum("hi,hk,dhk->hid", W[:, :, 0], V[:, 0], Wo)
             n = W.shape[1]
-            recv = W[:, :, 1:].sum(1)                                          # mass received, keys 1…
-            unif = torch.flip(torch.cumsum(torch.flip(1.0 / torch.arange(1, n + 1, dtype=dt, device=W.device), [0]), 0), [0])
-            jstar = (recv / unif[1:]).argmax(1) + 1                            # (H,): over uniform's share
+            jstar, recv, unif = top_key(W)
             hh = torch.arange(H, device=W.device)
             top = torch.einsum("hi,hk,dhk->hid", W[hh, :, jstar], V[hh, jstar], Wo)
             P = torch.cat([heads, bO[None], mlp_out.to(dt)[None], sink, top], 0)
@@ -250,7 +272,11 @@ def _make_hooked():
                    "jstar": jstar.tolist(),
                    "jstar_tok": [int(self.ctx["ids"][j]) for j in jstar.tolist()],
                    "jstar_mass": (recv[hh, jstar - 1] / n).tolist(),
-                   "jstar_over_unif": (recv[hh, jstar - 1] / unif[jstar]).tolist()}
+                   "jstar_over_unif": (recv[hh, jstar - 1] / unif[jstar]).tolist(),
+                   "jstar_excess": (recv[hh, jstar - 1] - unif[jstar]).tolist()}
+            nc, H2 = len(COMPS), self.n_heads
+            v_sz = P[:nc, 1:].sum(0).norm(dim=-1).mean()
+            chk["sink_share"] = float(P[nc:nc + H2, 1:].sum(0).norm(dim=-1).mean() / v_sz.clamp_min(1e-300))
             return x.to(dt), P, chk
 
         def _read(self, l: int, mlp_out) -> None:
@@ -264,16 +290,20 @@ def _make_hooked():
             if r["g0"] > G0_TOL:
                 raise SystemExit(f"refusing: block {l}: the path integral off the chord by {r['g0']:.1e} > {G0_TOL}")
             self.rows[l] = {**r, **chk, "sum_counted": P[:len(COMPS)].sum(0).float().cpu().numpy()}
+            if c.get("part_sum"):
+                self.rows[l]["part_sum"] = P[:len(COMPS), 1:].sum(1).cpu().numpy()      # (18, d) float64
 
-        def run_read(self, ids, ln: Dict, beta: Sequence[float], nodes: int = NODES) -> tuple:
+        def run_read(self, ids, ln: Dict, beta: Sequence[float], nodes: int = NODES,
+                     part_sum: bool = False) -> tuple:
             """One pass; ``(hidden states (25, n, d) float32 CPU, {block: read})``."""
             import torch
             self.rows, self.cap = {}, {}
             self.ctx = {"w": ln["w"], "b": ln["b"], "eps": ln["eps"], "beta": list(beta), "nodes": nodes,
-                        "ids": ids[0].tolist()}
+                        "ids": ids[0].tolist(), "part_sum": part_sum}
             try:
                 with torch.no_grad():
-                    out = self.model(input_ids=ids, output_hidden_states=True, use_cache=False)
+                    out = self.model(input_ids=ids, output_hidden_states=True, output_attentions=False,
+                                     use_cache=False)   # the loader turns attentions on: 24 maps alive
                 hs = torch.stack([h[0] for h in out.hidden_states]).float().cpu().numpy()
             finally:
                 self.ctx = None
