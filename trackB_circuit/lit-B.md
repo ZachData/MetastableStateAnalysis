@@ -129,3 +129,33 @@ if so, does V's top invariant subspace carry the content.
 
 Not read: 2609.28448 beyond §2.1 and §6; 2604.01978 v2 (if any); 2607.06621, 2408.09503,
 2504.20938 beyond search summaries. Cited at that level.
+
+---
+
+# B2, spectra from the weights — scan at opening (2026-10-17)
+
+Trigger 1 (B2 opens; precedes `design-B2.md`'s freeze). Four web searches (2026-10-17), all read
+at search-summary level only; nothing below was read as primary text. The B2a scan above (2609.28448
+§6.1, 2305.05465, 2408.09503, 2504.20938) is not repeated.
+
+| source | finding (summary level) | bearing on B2 |
+|---|---|---|
+| 2609.22990 (*On attention heads and bilinear forms*, 2026, preprint) | equal counts of positive and negative eigenvalues of a head's symmetric QK part are a consequence of the low-rank construction, not learned; training moves their *distribution*, and the symmetric part is stronger than a random baseline | **the main one.** Made exact in `tools/math_checks/b2_symmetric_inertia.py`: `sym(A Bᵀ)` has inertia (r, r) whenever `[A B]` has full column rank, for OV as for QK. ROADMAP's "dominant negative eigenpairs" cannot be a count; B2 reads \|λ\| weights and the top pair, against step 0 |
+| 2607.06621 (cited above for B1) | over Pythia's public checkpoints every head's QK spectrum starts at the random-matrix (Ginibre) null; spectral "fingerprints" consolidate only after the function arrives | the step-0 band is the right null for every column, and a member's QK column should leave it at or after its function's onset (B1: (256, 512] for `L5H2`) |
+| Saponati et al. (2502.10927, summary via alphaxiv) | bidirectional objectives drive `W_Qᵀ W_K` toward symmetric, autoregressive ones toward directional (asymmetric) | 2d's gradient-flow condition (QK symmetric) is expected to fail broadly on a decoder; the reading is a member against the population, not against 0 |
+| 2511.01033 (2025) | in a toy model, training stays in a 19-dimensional parameter subspace and 3 directions drive the induction head's emergence | a shared low-dimensional subspace across members is plausible; B2's principal-angle column tests it on weights |
+| 2601.10266 (2026, preprint) | a principal-angle "projection kernel" between head weight subspaces reads IOI head interactions better than the composition score | principal angles between head subspaces have precedent as a head-relation measure; B2 uses the plain overlap `tr(P_U P_W)`, chance r²/d |
+| Products of Gaussian matrices (Burda et al.; rectangular case, search summary) | eigenvalue densities of products of square or rectangular Gaussian matrices are rotationally symmetric disks | `W_O W_V` at init has no preferred sign: the attractive share's null is ½ (fact 3 of the check); the rank-64 case's density is not tabulated, so the step-0 population is used, not a formula |
+| 2503.01329 (Neural ODE transformers) | tracks OV eigenvalue signs and magnitudes over training, QK as matching and OV as copying | precedent for spectra over training; not on Pythia's public checkpoints |
+| search: per-head OV spectra over Pythia checkpoints | none found | B2's OV columns over the 18 steps are new as measured; descriptive, tier 1 |
+
+## What changes in the design
+
+| from | change |
+|---|---|
+| 2609.22990 + the check | no column counts eigenvalue signs; "dominant negative pair" is a weights condition (the top two by \|λ\| negative and near-degenerate), read as a rate against step 0; an inertia other than (64, 64) is reported as read/write overlap, not attraction |
+| 2607.06621 | every cell is marked against step 0's 384 heads ("moved by training"; descriptive, since step 0's band turned out narrow enough that nearly every trained head leaves it, `/challenge-pr` on #218); the member statistic compares with the same step and is read from step 512 |
+| Saponati et al. | 2d's regime is read as members against the same-step population, not against the paper's symmetric ideal |
+| products of Gaussians | the share's null ½ is checked on step 0 in the gate, not assumed |
+
+Not read: all eight beyond search summaries. Cited at that level.

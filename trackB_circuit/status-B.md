@@ -16,6 +16,7 @@
   - At step 143000 the reduction's premise fails: the real tokens hold about the random share of their norm² in V's invariant subspaces, so no head of 14 has D\* ≥ 1 (no circle); 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class (at the placed 0.5), 2 "none"; the isotropic cosine adds at most 0.08 of TV over position — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
   - The rule at all 18 steps finds no head of 14 with D\* ≥ 1 at any step: to 256 attention is near uniform and every head reads outside (nothing to fit); positional heads appear from 512 (`L5H2`, `L4H9`), and V's subspaces never carry the content a head reads; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
   - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, mostly because trained heads are not isotropic content plus position (214 of 252 cells outside); where V's ladder was reached the tokens hold about chance in V's subspaces; V's 2D blocks are at the random-weight rate, training shows in their sign — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
+  - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design not yet frozen — `trackB_circuit/design-B2.md` "The math"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -27,7 +28,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `b67bdcedcb`
+- **Reviewed:** 2026-10-17 · body `b5618dc484`
 <!-- /phase-card -->
 
 ## Units
@@ -52,6 +53,12 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | 3. the 18 steps | **done 2026-10-16 (Blocked 53 (a), occupancy first; then the rule at all 18 steps after `/challenge-pr` on #210): no head has D\* ≥ 1 at any step; B2a is at its exit, budget spent** | "B2a unit 3 (2026-10-16)" below |
 
 **B2a closed 2026-10-16** at its exit condition (Blocked 55 (a), the user's): "B2a on one page" below.
+
+**B2** (its own budget, `design-B2.md` "Exit condition and budget"; Blocked 61 sets it):
+
+| unit | state | where |
+|---|---|---|
+| 0. design, scan, `sympy` check | **done 2026-10-17**; proposed, not frozen (Blocked 61) | `design-B2.md`, `lit-B.md` "B2", `tools/math_checks/b2_symmetric_inertia.py` |
 
 ## B2a on one page (closed 2026-10-16)
 

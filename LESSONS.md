@@ -737,6 +737,16 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-17, B2 design (a null band that every trained value leaves): the proposed member
+  statistic ranked "share of member cells outside step 0's 2.5–97.5 % band" against random head
+  sets, and every gate arm ran at step 0. At d = 1024 a random head's attractive share
+  concentrates: the band is 0.4963–0.5037, and 99.7 % of all heads at step 512 sit outside it, so
+  members and random sets both score ≈ 1 and tie; the statistic could not have read "members
+  differ" for any column (`/challenge-pr` on #218, finding 1; confirmed on the stored OVs). One
+  read of the population at one trained step, before writing the rule, would have shown it.
+  Rule: **before a null band is frozen, read where the population at a trained design point
+  falls in it; a band that nearly everything leaves is a "moved" mark, not a null, and at least
+  one gate arm runs at a trained step.**
 - 2026-10-17, A2 unit 5 (a positive control that could not pass): the ablation rule needs the
   planted arm to *raise* the share of blocks where energy rises, but in the planted G1 stack that
   share is already 1.000 unablated, so (iii) fails by construction and the calibration fails
