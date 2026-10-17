@@ -23,7 +23,7 @@ def test_hooked_split_on_a_tiny_model():
         hk = ac.comp_hooked(m)
         ids = torch.randint(0, 97, (1, 24))
         ln = ln_from(m)
-        hs, rows = hk.run_read(ids, ln, [3.5] * 3, nodes=64)   # block 0's update is 25× its input here
+        hs, rows = hk.run_read(ids, ln, [3.5] * 3, nodes=64, part_sum=True)   # block 0's update is 25× its input here
         hk.close()
     finally:
         ac.COMPS = old
@@ -32,3 +32,7 @@ def test_hooked_split_on_a_tiny_model():
     for L in rows:
         assert rows[L]["split_rel"] < 1e-5 and rows[L]["g0"] < 1e-6
         assert len(rows[L]["proj"]) == 6 + 8
+        assert 0.0 <= rows[L]["sink_share"] < 10.0 and len(rows[L]["jstar_excess"]) == 4
+        ps = rows[L]["part_sum"]
+        assert ps.shape == (6, rows[L]["sum_counted"].shape[1])
+        assert abs(ps.sum(0) - rows[L]["sum_counted"][1:].sum(0)).max() < 1e-3

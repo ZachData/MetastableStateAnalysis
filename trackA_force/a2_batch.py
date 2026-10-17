@@ -7,6 +7,9 @@ and a refusal on G0.
 - ``band``: G2's redraws of Pythia's init (50 seeds + a 51st, `a2_gate.g2`) read at **step 0's own
   layer βs** per prompt (A1a's records), every set statistic's 5–95 % range. A step's set is
   **few** if its size is below the band's 5 % (*placed* by 58 (a1)); ``|S| ≤ 43`` beside.
+  ``--beta-step 143000`` reads the same redraws at 143000's layer βs (STATE Blocked 59 (ii), the
+  trained regime's band; ``a2_band_143000.json``), so a step is read against the band whose β is
+  nearer its own (step 0's to 4000, 143000's from 16000, both at 8000).
 - ``run``: per step (143000 first) and v1 prompt, one hooked pass (`a2_comp`), the field at A1a's
   layer βs for that (step, prompt); at 143000 a second read at unit 2's M1 layer βs (beside).
   Refuses unless the 64-node gate passed on this code and the band was made by it; refuses a pass
@@ -41,6 +44,8 @@ A1A_DIR = DATA / "trackA/a1a_batch_2026-10-15/records"
 M1_FILE = DATA / "trackA/a2_beta_2026-10-16/refit_step143000.json"
 FIRST = 143000
 M1_STEP = 143000
+SINK_SHARE = 0.05                   # 1e's "the sink's value ≤ 0.05 of the shared update" (read per block)
+FIXED_KEY = 0.05                    # placed: a head's top key is "fixed" if its excess mass ≥ 5 % of n
 RECON_TOL = 1e-4                    # the counted parts against the hidden states (the gate read ≤ 8.1e-8)
 WARMUP = (512, 1000, 2000)          # LR warmup overlaps these (design "Fences")
 ATTN = tuple(range(ac.N_HEADS)) + (ac.N_HEADS,)       # heads + b_O within a block's 18
@@ -106,14 +111,18 @@ def band(a) -> int:
     out.mkdir(parents=True, exist_ok=True)
     t0 = time.monotonic()
     prompts = V1[:1] if a.quick else V1
-    betas = a1a_betas(0)
+    betas = a1a_betas(a.beta_step)
     g = a2_gate.g2(a.device, prompts, 3 if a.quick else a2_gate.N_SEEDS, {p: betas[p] for p in prompts})
     rec = {"code": code, "gate_code": a2_gate.gate_sha(), "prompts_hash": prompts_hash(), "quick": a.quick,
-           "beta": "A1a fe_full layer βs at step 0, per prompt", "betas": betas, "nodes": ac.NODES,
-           "seed": a2_gate.SEED, **g, "seconds": time.monotonic() - t0}
-    (out / "a2_band.json").write_text(json.dumps(rec) + "\n")
+           "beta": f"A1a fe_full layer βs at step {a.beta_step}, per prompt", "beta_step": a.beta_step,
+           "betas": betas, "nodes": ac.NODES, "seed": a2_gate.SEED, **g, "seconds": time.monotonic() - t0}
+    (out / band_name(a.beta_step)).write_text(json.dumps(rec) + "\n")
     print({k: (v["lo"], v["hi"], v["step0"]) for k, v in g["range"].items()}, flush=True)
     return 0
+
+
+def band_name(beta_step: int) -> str:
+    return "a2_band.json" if beta_step == 0 else f"a2_band_{beta_step}.json"
 
 
 def check_band(path: Path, code: str) -> Dict:
@@ -142,7 +151,7 @@ def _read(hk, ids, ln, betas, rd: Path) -> Dict:
         r = rows[L]
         blocks[str(L)] = {k: np.asarray(r[k]).tolist() for k in ("proj", "proj_df", "off", "size", "disp")}
         blocks[str(L)].update({k: r[k] for k in ("g0", "total", "split_rel", "jstar", "jstar_tok",
-                                                  "jstar_mass", "jstar_over_unif")})
+                                                  "jstar_mass", "jstar_over_unif", "jstar_excess", "sink_share")})
     chk = {"match_unit": match, "recon": recon, "g0_max": max(r["g0"] for r in rows.values()),
            "split_max": max(r["split_rel"] for r in rows.values())}
     return {"betas": list(betas), "checks": chk, "blocks": blocks}
@@ -201,7 +210,7 @@ def run(a) -> int:
             if man.get("hf_revision") != f"step{step}":
                 raise SystemExit(f"refusing: {rd} manifest revision {man.get('hf_revision')}")
             ids = torch.tensor([token_ids(tok, rd)], device=dev)
-            rec = {"step": step, "prompt": p, "run": str(rd), "code": code, "prompts_hash": ph,
+            rec = {"step": step, "prompt": p, "run": str(rd), "code": code, "prompts_hash": ph, "n": int(ids.shape[1]),
                    "nodes": ac.NODES, "pass": "cuda:float32", "fe": _read(hk, ids, ln, betas[p], rd)}
             if step == M1_STEP:
                 rec["m1"] = _read(hk, ids, ln, m1[p], rd)
@@ -271,6 +280,21 @@ def step_summary(recs: Sequence[Dict], arm: str, band: Dict) -> Dict:
     toks = [t for r in recs for L in range(N_BLOCKS) for t in r[arm]["blocks"][str(L)]["jstar_tok"]]
     vals, cnt = np.unique(toks, return_counts=True)
     out["topkey_mode"] = (int(vals[cnt.argmax()]), float(cnt.max() / len(toks)))
+    # the exact sink share (#215 finding 3) and the fixed keys (#215 finding 1: excess ≥ FIXED_KEY · n)
+    ex = np.array([[r[arm]["blocks"][str(L)]["sink_share"] for L in range(N_BLOCKS)] for r in recs])
+    out["sink_share_exact_med"] = float(np.median(np.median(ex, 1)))
+    out["sink_share_exact_max"] = float(np.median(ex.max(1)))
+    out["sink_share_exact_le05"] = int((np.median(ex, 0) <= SINK_SHARE).sum())
+    fixed = [(t, j, r["n"]) for r in recs for L in range(N_BLOCKS)
+             for t, e, j in zip(r[arm]["blocks"][str(L)]["jstar_tok"], r[arm]["blocks"][str(L)]["jstar_excess"],
+                                r[arm]["blocks"][str(L)]["jstar"]) if e >= FIXED_KEY * r["n"]]
+    out["fixed_share"] = len(fixed) / len(toks)
+    if fixed:
+        fv, fc = np.unique([t for t, _, _ in fixed], return_counts=True)
+        out["fixed_mode"] = (int(fv[fc.argmax()]), float(fc.max() / len(fixed)))
+        out["fixed_late"] = float(np.mean([j >= n - 10 for _, j, n in fixed]))
+    else:
+        out["fixed_mode"], out["fixed_late"] = None, None
     b23 = np.median(proj.reshape(len(recs), N_BLOCKS, k)[:, 23], 0)
     out["block23"] = {"total": float(b23.sum()),
                       "top_minus": [(ac.COMPS[i], float(b23[i])) for i in np.argsort(b23)[:3]]}
@@ -308,6 +332,13 @@ def report(out: Path) -> int:
         if sorted(r["prompt"] for r in by[s]) != sorted(V1):
             raise SystemExit(f"refusing: step {s} has {len(by[s])} prompts")
     summ = {s: step_summary(by[s], "fe", band) for s in steps}
+    bt = None
+    if (out / band_name(M1_STEP)).exists():
+        bt = check_band(out / band_name(M1_STEP), code)["range"]
+        for s in steps:
+            st = summ[s]["stats"]
+            for k in ("S_minus", "S_plus"):
+                st[f"{k}_few_t"] = bool(st[k] < bt[k]["lo"])
     if M1_STEP in by:
         summ_m1 = step_summary(by[M1_STEP], "m1", band)
     rng = band["range"]
@@ -332,6 +363,28 @@ def report(out: Path) -> int:
         x, st = summ[s], summ[s]["stats"]
         L.append(f"{s} | {x['beta_median']:+.2f} | {x['neg_mass']:.3f} / {x['pos_mass']:.3f} | {x['S_abs']} | "
                  f"{x['S_minus_per_prompt']:g} | {'yes' if st['S_minus_few'] and not st['S_plus_few'] else ''}")
+    if bt is not None:
+        L += ["", f"## Against the band at 143000's βs (5–95 %: |S-| [{bt['S_minus']['lo']:.3g}, {bt['S_minus']['hi']:.3g}], "
+              f"|S+| [{bt['S_plus']['lo']:.3g}, {bt['S_plus']['hi']:.3g}])", "",
+              "step | β median | |S-| few at step 0's band / at 143000's | |S+| few at step 0's / 143000's | against-specific (matched band)",
+              "---|---|---|---|---"]
+        for s in steps:
+            x, st = summ[s], summ[s]["stats"]
+            m = "t" if x["beta_median"] >= 2.0 else ("0" if x["beta_median"] < 1.0 else "both")
+            spec0 = st["S_minus_few"] and not st["S_plus_few"]
+            spect = st["S_minus_few_t"] and not st["S_plus_few_t"]
+            sp = {"0": spec0, "t": spect, "both": f"{spec0} / {spect}"}[m]
+            L.append(f"{s} | {x['beta_median']:+.2f} | {st['S_minus_few']} / {st['S_minus_few_t']} | "
+                     f"{st['S_plus_few']} / {st['S_plus_few_t']} | {sp} (band {m})")
+    L += ["", "## The sink's exact share and the fixed keys (#215 findings 1, 3)", "",
+          f"step | sink share, median over blocks / max | blocks ≤ {SINK_SHARE} | fixed-key heads (excess ≥ {FIXED_KEY}·n) | their token mode | share in the last 10",
+          "---|---|---|---|---|---"]
+    for s in steps:
+        x = summ[s]
+        fm = f"{_tokstr(x['fixed_mode'][0])} ({x['fixed_mode'][1]:.2f})" if x["fixed_mode"] else "–"
+        fl = f"{x['fixed_late']:.2f}" if x["fixed_late"] is not None else "–"
+        L.append(f"{s} | {x['sink_share_exact_med']:.3f} / {x['sink_share_exact_max']:.3f} | "
+                 f"{x['sink_share_exact_le05']} of 24 | {x['fixed_share']:.2f} | {fm} | {fl}")
     L += ["", "## Top of each set (median over prompts; proj per block step)", ""]
     for s in steps:
         x = summ[s]
@@ -366,6 +419,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--steps", nargs="*")
     ap.add_argument("--quick", action="store_true", help="band only: one prompt, 3 seeds (a check)")
+    ap.add_argument("--beta-step", type=int, default=0, help="band only: whose A1a layer βs (0 or 143000)")
     a = ap.parse_args(argv)
     if a.cmd == "band":
         return band(a)
