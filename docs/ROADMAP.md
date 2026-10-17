@@ -175,7 +175,7 @@ triage M3), own small models (triage M1).
 | # | paper | inputs | when |
 |---|---|---|---|
 | C1 | "What counts as a token cluster?", a null-model audit | 1d, Phase 10 §1, F13 (10.2); the 8 items carried to C1 at Phase 10's close, and 1e's (c3x purity in the centred frame against any proximity partition), each needed only if C1 quotes the reading it refines (`p10_cluster_function/handoff-10.md` "At close (10.5)") | after Phase 10 closes |
-| C2 | the anti-collapse force along Pythia's training axis (from A2 at close: no causal claim about which components push apart until the ablation is re-calibrated: one synthetic model on 7 starts, headroom on (iii), step 0 reading "refused", and a depth control for MLPs, which has no design yet; `trackA_force/status-A.md` "A2 on one page") | Track A | after A2 and A5 |
+| C2 | the anti-collapse force along Pythia's training axis (from A2 at close: no causal claim about which components push apart until the ablation is re-calibrated: one synthetic model on 7 starts, headroom on (iii), step 0 reading "refused", and a depth control for MLPs, which has no design yet; and an energy split per component (`PROJECT.md` §3.8.3) before any energy sentence about components; `trackA_force/status-A.md` "A2 on one page") | Track A | after A2 and A5 |
 | C3 | particles in a known circuit | Track B | after B4 |
 
 ## 9. Order and budget
@@ -185,7 +185,7 @@ triage M3), own small models (triage M1).
 | 1 | Step 1, finish Phase 10 (**done 2026-10-11**, 7 units: 10.1 one, 10.2 three, 10.4 two, 10.5 one; 10.3 dropped) | ≤ 5 | §4's exit condition |
 | 1′ | Step 2's free items, beside it | 1–2 | — |
 | 2 | B0 + B1 (the harness and the positive control) (**done 2026-10-14**, 3 units with the design: B1 passes, B continues on these instruments; `trackB_circuit/status-B.md` "B1 (2026-10-14)") | 2–3 | B1's verdict decides whether B continues on these instruments |
-| 3 | A1, A2 and B2, B3 interleaved | 4–6 | each unit's own "done when" |
+| 3 | A1, A2 and B2, B3 interleaved (**A1 done 2026-10-15, 5 units; B2a added and done 2026-10-16, 4 units + close-out; A2 done 2026-10-17, 5 units + close-out**: 14 units against the 4–6 estimated, before B2 and B3) | 4–6 | each unit's own "done when" |
 | 4 | A3 (the joint timeline), B4, B5 | 3–4 | — |
 | 5 | A5 (registration, generality), C1 / C2 | — | §10.7 |
 

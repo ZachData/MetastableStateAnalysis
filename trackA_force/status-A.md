@@ -26,7 +26,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-17 · body `24d888b13b`
+- **Reviewed:** 2026-10-17 · body `9213b6c159`
 <!-- /phase-card -->
 
 ## Units
@@ -72,8 +72,11 @@ be read" (Blocked 60 (a), the user's), with the 5 units spent (#212–#216). Wri
    (units 4, 5). `|S⁻|` is below the init band's 5 % at 11–13 of 18 steps (step 0's band) or 11
    (each step against the band whose β matches it); against-specific (`S⁻` few, `S⁺` not) at 6
    steps on step 0's band, **8 on the matched band** (16, 32, 1000–8000, 16000, 143000). The
-   most-against component is an MLP at 17 of 18 steps: early MLPs (L0–L7) from 16 to 32000, the
-   last block's MLP at 143000 (−0.49 of block 23's −0.56; the same at M1's βs).
+   most-against component is an MLP at 14 of the 15 trained steps (8 on; 54000 is a block-0
+   head), and also at the untrained 0–4, where the top MLPs sit at about −0.01 each: early MLPs
+   (L0–L7) from 16 to 32000, the last block's MLP at 143000 (−0.49 of block 23's −0.56; the same
+   at M1's βs). So "an MLP tops the list" alone does not tell training from init; the init band
+   on `|S⁻|` does (`/challenge-pr` on #217, finding 3).
 4. **The MLP cancels attention at 1000–4000** (attention's summed step +0.19 to +1.05, the MLP's
    −0.23 to −1.07, the blocks −0.06 to +0.03); in part at 8000; both along from 16000.
    Attention's along step is drift-robust from 2000.
@@ -84,8 +87,10 @@ be read" (Blocked 60 (a), the user's), with the 5 units spent (#212–#216). Wri
    step ≤ 0.14 in size). Its per-token share of the update, `mean_i |Σ_h sink_h,i| / mean_i |v_i|`,
    is ≤ 0.01 to 512, about 0.05 at 2000–4000 and 0.08–0.11 from 8000 (over 0.05 in 17 of 24
    blocks). **That is not 1e's quantity** (the sink's share of the block's *shared* update, the
-   mean over tokens, `p1e_energy_field/u2_attn.shares`), which A2 did not re-measure: 1e's ≤ 0.05
-   stands, and unit 5's "1e's ≤ 0.05 … fails" overstated it (`LESSONS.md` 11). A fixed key
+   mean over tokens, `p1e_energy_field/u2_attn.shares`), so **A2 did not test 1e's number**, and
+   unit 5's "1e's ≤ 0.05 … fails" overstated it (`LESSONS.md` 11). 1e's own arms differ at their
+   edges: ≤ 0.05 in the attention arm, −0.13 to +0.07 (−0.19 on v1) in the per-head arm
+   (`p1e_energy_field/status-1e.md` "U2's per-head arm"; `/challenge-pr` on #217, finding 4). A fixed key
    (top key ≥ 0.05·n over uniform) appears at 1000 (0.25 of head × block): a period at 2000–4000
    (0.57–0.58), a newline from 8000 (0.25–0.32), so 1e's second sink is one case of a fixed key.
 7. **The ablation reading is not made: the rule's calibration fails on its planted control**
@@ -208,8 +213,10 @@ lines differ only in the code hash); only the top-key lines change.
 
 **The sink's exact share** (median over blocks / max; blocks ≤ 0.05 of 24): ≤ 0.009 / 0.013 and
 24 of 24 to 512; 0.021 / 0.088, 22 at 1000; 0.052–0.056, 9–11 at 2000–4000; 0.076–0.105 /
-0.20–0.24, 7 from 8000. **1e's ≤ 0.05 holds to 1000 and fails in 17 of 24 blocks from 8000**;
-the exact share is about 2.5× under unit 4's bound, and still over 0.05.
+0.20–0.24, 7 from 8000. ~~1e's ≤ 0.05 holds to 1000 and fails in 17 of 24 blocks from 8000~~
+*(corrected at A2's close: 1e's ≤ 0.05 is the sink's share of the block's shared update, another
+quantity, so this does not test it; "A2 on one page" reading 6, `LESSONS.md` 11)*. The per-token
+share exceeds 0.05 in 17 of 24 blocks from 8000; it is about 2.5× under unit 4's bound.
 
 **Fixed keys** (share of head × block whose top key gets ≥ 0.05·n mass over uniform): 0 to 128;
 0.01–0.10 at 256–512; 0.25 at 1000; 0.57–0.58 at 2000–4000 (the token most often `.`, 0.52–0.57);
@@ -311,7 +318,9 @@ attention / MLP columns summed over blocks 0–22; **bold** = below the band's 5
 6. **The sink's part is small in the field; ≤ 0.05 of the update is not shown after 1000:** its
    summed proj is at most 0.14 in size (143000), but the bound Σ_h mean|sink_h| / mean|v| has a
    median over blocks of 0.02–0.04 up to 512 and 0.06–0.28 from 1000. The bound cannot confirm 1e's
-   ≤ 0.05 there; the exact share was not measured. **The top-key part is not read:** the
+   ≤ 0.05 there; the exact share was not measured. *(At A2's close: neither the bound nor unit 5's
+   exact share is 1e's quantity, the share of the shared update, so neither tests it; "A2 on one
+   page" reading 6.)* **The top-key part is not read:** the
    selector (mass over its uniform expectation) favours late keys, whose expectation is ~1/n; at
    143000 57 % of head × block pick a key in the last 10 positions (`/challenge-pr` on #215,
    finding 1, checked). 1e's newline-sink item stays open.
@@ -795,9 +804,13 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
   newline (from 8000); the sink's per-token share rising from 1000. **Carried to A3**.
 - *The sink's value against its attention* (1e's item, carried into A2 with `attention-10.md`'s
   A5): the sink's part along the field is small (reading 6, done); its share was measured on
-  another quantity. **Dropped** for the rest: 1e's ≤ 0.05 of the shared update stands
-  unchallenged and the per-token rise is an A3 row; reopen only if a unit needs the sink as a
-  separate source.
+  another quantity, so 1e's ≤ 0.05 was not tested (and 1e's per-head arm reaches −0.19).
+  **Dropped** for the rest: no planned unit reads the sink as a separate source, and the
+  per-token rise is an A3 row; reopen if one does.
+- *An energy split per component* (ROADMAP's A2 row: `PROJECT.md` §3.8.3's exact dissipation;
+  the card's "A2's dissipation per component"): A2 read projected steps and off shares instead.
+  **Carried to C2**, beside the repair: any energy sentence about components needs it (a new
+  instrument, `dE_β` per component through the same path integral).
 - *A second sink on a newline* (1e's item): **done**: one case of a fixed key (reading 6).
 
 At A1's close (2026-10-15) each item is *done*, *carried to X* or *dropped (why)*. Items carried
