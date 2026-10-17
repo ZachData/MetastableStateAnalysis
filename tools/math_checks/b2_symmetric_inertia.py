@@ -25,7 +25,8 @@ WHAT IT SHOWS
    and write spaces coincide, not attraction.
 3. **The share's null is ½.** If the law of (A, B) is invariant under A → −A (Gaussian init),
    S and −S have the same law, so the attractive share a = Σλ₊ / Σ|λ| and 1 − a are equal in
-   law: E[a] = ½. Pythia's step 0 is one such draw per head.
+   law: E[a] = ½. Pythia's step 0 is one such draw per head. Since Σλ₊ − Σ|λ₋| = tr V and
+   Σλ₊ + Σ|λ₋| = ‖S‖_*, the share is a normalised trace: a = ½(1 + tr V / ‖S‖_*).
 4. **Principal-angle chance.** For U, W orthonormal d × r, Σ_k cos² θ_k = tr(P_U P_W). With U
    Haar and independent of W, E[P_U] = (r/d) I, so E[Σ cos² θ_k] = r²/d (the overlap per
    direction, Σ cos² / r, has mean r/d: 1/64 at r = 16, d = 1024).
@@ -85,6 +86,13 @@ for _ in range(200):
     e = np.linalg.eigvalsh((a_ @ b_.T + b_ @ a_.T) / 2)
     shares.append(e[e > 0].sum() / np.abs(e).sum())
 assert abs(np.mean(shares) - 0.5) < 0.01
+# ... and the share is a normalised trace: Σλ₊ − Σλ₋ = ‖S‖_*, Σλ₊ + Σλ₋ = tr S = tr V, so
+# a = ½(1 + tr V / ‖S‖_*) (`/challenge-pr` on #218)
+lp, lm = sp.symbols("Lp Lm", nonnegative=True)        # Σλ₊ and Σ|λ₋|
+assert sp.simplify(lp / (lp + lm) - sp.Rational(1, 2) * (1 + (lp - lm) / (lp + lm))) == 0
+V_ = Ab @ Bn.T
+e = np.linalg.eigvalsh((V_ + V_.T) / 2)
+assert abs(e[e > 0].sum() / np.abs(e).sum() - 0.5 * (1 + np.trace(V_) / np.abs(e).sum())) < 1e-9
 
 # --- 4. principal angles: E[tr(P_U P_W)] = tr((r/d) I · P_W) = r²/d -----------------------------
 ds, rs = sp.symbols("d r", positive=True)

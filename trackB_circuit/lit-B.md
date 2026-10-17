@@ -154,7 +154,7 @@ at search-summary level only; nothing below was read as primary text. The B2a sc
 | from | change |
 |---|---|
 | 2609.22990 + the check | no column counts eigenvalue signs; "dominant negative pair" is a weights condition (the top two by \|λ\| negative and near-degenerate), read as a rate against step 0; an inertia other than (64, 64) is reported as read/write overlap, not attraction |
-| 2607.06621 | every column is placed against step 0's 384 heads; the member statistic is read from step 512 |
+| 2607.06621 | every cell is marked against step 0's 384 heads ("moved by training"; descriptive, since step 0's band turned out narrow enough that nearly every trained head leaves it, `/challenge-pr` on #218); the member statistic compares with the same step and is read from step 512 |
 | Saponati et al. | 2d's regime is read as members against the same-step population, not against the paper's symmetric ideal |
 | products of Gaussians | the share's null ½ is checked on step 0 in the gate, not assumed |
 
