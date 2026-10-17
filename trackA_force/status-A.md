@@ -24,11 +24,11 @@
   - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (Blocked 57 (a): card at `fe_full`, (i) beside) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few", and 16 nodes fail G0 on real block 0 (`/challenge-pr` on #214; STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
   - A2 unit 4 (descriptive): against the field is a few MLPs at 11–13 of 18 steps (below the init band), against-specifically at 6 (training concentrates both signs); the MLP cancels attention at 1000–4000, block 23's step against is its MLP, the off motion is the MLP's; unit 5's size-matched null is near degenerate (STATE Blocked 59) — `trackA_force/status-A.md` "A2 unit 4, the batch and the ranking (2026-10-16)"
-  - A2 unit 5: the ablation rule's calibration fails (the planted control reads "not supported": (iii) at its ceiling, `S⁺` above on (i)), so "these N components carry the anti-collapse force" is not read; step 0 passes as the null. Against-specific at 8 of 18 on the β-matched band; the sink's exact share exceeds 0.05 from 2000; a fixed newline key from 8000 (STATE Blocked 60) — `trackA_force/status-A.md` "A2 unit 5, the ablation's calibration (2026-10-17)"
+  - A2 unit 5: the ablation rule's calibration fails (the planted control reads "not supported": its readout stacks are other models than its ranking stack, (iii) at its ceiling; and the MLP null does not control depth, `/challenge-pr` on #216), so "these N components carry the anti-collapse force" is not read; step 0 passes as the null. Against-specific at 8 of 18 on the β-matched band; the sink's exact share exceeds 0.05 from 2000; a fixed newline key from 8000 (STATE Blocked 60) — `trackA_force/status-A.md` "A2 unit 5, the ablation's calibration (2026-10-17)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-17 · body `db58204bec`
+- **Reviewed:** 2026-10-17 · body `8de8ce2e17`
 <!-- /phase-card -->
 
 ## Units
@@ -99,6 +99,21 @@ Why the planted control fails (my reading of the records, not tested):
    choice, so the arm is not ablated by its own mean), in a random basis: replacing a part by
    another cloud's mean adds a shared vector, which raises the cosine roughly with the part's
    size. The same size effect shows at step 0, where the null absorbs it.
+
+**After `/challenge-pr` on #216 (accept with changes; all four taken, 1 checked in the code):**
+1. **The synthetic swaps the model, not only the text** (the larger cause): `synthetic()` ranks
+   and takes means on one stack, then reads on 7 stacks, each with its own `planted_h(seed)` and
+   its own generator for the parts. The real model keeps its weights and changes only the text.
+   The reviewer: L13's step is 0.491 in the ranking stack and 0.032–0.272 in the readout stacks, so
+   the mean swapped in can be up to ≈ 15× the part it replaces. Reason 2 above is a part of this.
+2. **The MLP null does not control depth:** at step 0 `S⁰` (L0–L4 MLPs) reads 0.964 against
+   nulls of 0.61–0.67, and over the null sets mean depth correlates −0.91 with (i). At 2000 and
+   8000 `S⁻` is early MLPs, so depth alone could read "supported" at 2 of 3 steps. Matching MLPs on
+   band (Blocked 59 (a)) is the degenerate null unit 4 found.
+3. **Step 0 passes (iii) by one cell of 168** (0.994 → 1.000; all 20 nulls tie below), so it
+   reads "mixed", which the calibration (only "not supported" required) lets through.
+4. **Repair the stack, not (iii):** the ceiling is the G1 stack's (1e found real energy
+   non-monotone from 256); changing the readout after calibration output is a rule change.
 
 **Step 0** (the null; S⁻ is 15 MLPs and 14 heads, none widened, `heads_any_band` false):
 mean-ablating `S⁻` lifts the last block's cosine 0.56 → 0.83, but 16 of 20 size-matched random
