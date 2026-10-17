@@ -8,6 +8,7 @@ import pytest
 
 from trackA_force import a2_ablate as ab
 
+pytestmark = pytest.mark.deps  # torch
 K = ab.K
 
 

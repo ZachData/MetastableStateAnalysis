@@ -522,6 +522,11 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-17, A2 unit 5: the per-component pass ran out of GPU memory on the 2,041-token
+  passages twice; the second time because the shared loader sets `output_attentions=True`, so
+  all 24 layers' (16, n, n) maps stayed alive through a pass that never read them (v1's n ≈ 511
+  hid it). Rule: **a reader that moves to longer inputs passes the loader's memory-heavy flags
+  explicitly** (here `output_attentions=False`) instead of inheriting them.
 - 2026-10-09, Phase 10 E1: the rule borrowed 1e's `u2_attn.check_pass` for a pass read at
   blocks 0–23, but that check was written for 1e's blocks 0–22: it compares `x + attn + mlp`
   with the next stored hidden state, and `hs[24]` is after `final_layer_norm` (1e had refused
@@ -732,6 +737,12 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-17, A2 unit 5 (a positive control that could not pass): the ablation rule needs the
+  planted arm to *raise* the share of blocks where energy rises, but in the planted G1 stack that
+  share is already 1.000 unablated, so (iii) fails by construction and the calibration fails
+  with it (`trackA_force/status-A.md` "A2 unit 5"). One unablated pass, before the freeze, would
+  have shown it. Rule: **before a rule with "raises X" freezes, read X on the planted control
+  unablated and state its headroom**; a readout at its ceiling (or floor) is not a readout.
 - 2026-10-16, B2a unit 2 (a rule fix gated on planted arms only, and a smoke test on real data):
   Blocked 51 (a) closed the reviewer's band with "positional only if TV(full) ≤ 0.05", checked
   against G2, whose planted profile M1 fits exactly. A real positional head is not fitted exactly:
@@ -1463,6 +1474,9 @@ a wrong premise, the check inherits it.
   expected to outlive the user's attention runs under
   `systemd-inhibit --what=sleep:idle` (here attached afterwards to the
   chain's PID with `tail --pid=<pid> -f /dev/null`, so it ends with the chain).
+- 2026-10-17, A2 unit 5: a "quick" synthetic dry check run on the GPU without the inhibit
+  reported 40,283 s; the box had suspended mid-check. The rule above was read as "batches";
+  it applies to **every** GPU call that can outlive a glance, dry runs included.
 - 2026-09-30, #118: the author read "long − v1" as the length effect and
   quoted "L17–23 falls ~40 % in every prompt" for Blocked 9. `/challenge-pr`
   saw that the long fit adds pairs at offsets v1 never had (28–78 %). On v1's

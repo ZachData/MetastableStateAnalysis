@@ -24,10 +24,11 @@
   - A2 opened 2026-10-16, design frozen (Blocked 56 (a)); unit 2: the β refit leaves A1's number in place by its bar, but at M1's β 143000's one *straddles* reads *below* and M1's L17–23 β is 0.88, under the convention (Blocked 57 (a): card at `fe_full`, (i) beside) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 unit 3: the per-component instrument passes its gate (G0–G4); at a random init the against set is already "few", and 16 nodes fail G0 on real block 0 (`/challenge-pr` on #214; STATE Blocked 58) — `trackA_force/status-A.md` "A2 unit 3, the per-component instrument and its gate (2026-10-16)"
   - A2 unit 4 (descriptive): against the field is a few MLPs at 11–13 of 18 steps (below the init band), against-specifically at 6 (training concentrates both signs); the MLP cancels attention at 1000–4000, block 23's step against is its MLP, the off motion is the MLP's; unit 5's size-matched null is near degenerate (STATE Blocked 59) — `trackA_force/status-A.md` "A2 unit 4, the batch and the ranking (2026-10-16)"
+  - A2 unit 5: the ablation rule's calibration fails (the planted control reads "not supported": (iii) at its ceiling, `S⁺` above on (i)), so "these N components carry the anti-collapse force" is not read; step 0 passes as the null. Against-specific at 8 of 18 on the β-matched band; the sink's exact share exceeds 0.05 from 2000; a fixed newline key from 8000 (STATE Blocked 60) — `trackA_force/status-A.md` "A2 unit 5, the ablation's calibration (2026-10-17)"
 - **After Phase 10:**
   - The long passages beside, as the design's continuity check (n > d) *(forward pass, GPU hours: attentions not stored)*
   - A2's dissipation per component, which reads the off-field share A1 found *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-16 · body `e22143c5fe`
+- **Reviewed:** 2026-10-17 · body `db58204bec`
 <!-- /phase-card -->
 
 ## Units
@@ -43,9 +44,99 @@
 | A2 2. the β refit at 143000 | **done 2026-10-16: A1's number does not move** (2 of 7 prompts outside, bar 4); A1b's 143000 cell re-run: still *below*, its one *straddles* reads *below* (Blocked 57 (a), the user's: card at `fe_full`, (i) beside) | "A2 unit 2, the β refit at 143000" below; `a2_beta.py` |
 | A2 3. the per-component instrument and its gate | **done 2026-10-16: the gate passes, G0–G4** (no real reading yet); every random init is already "few" (Blocked 58) | "A2 unit 3" below; `a2_comp.py`, `a2_gate.py` |
 | A2 4. the batch and the ranking (18 steps) | **done 2026-10-16** (Blocked 58 (a1), (b1), (c1)): against is few and MLP at 11–13 of 18 steps (against-specific at 6); the MLP cancels attention at 1000–4000; the top-key selector is biased (unread); block 23's step against is its MLP; the null for unit 5 is near degenerate (Blocked 59) | "A2 unit 4" below; `a2_batch.py` |
+| A2 5. the ablation, its nulls and the reading | **done 2026-10-17 (Blocked 59 (b), (ii)): the rule's calibration fails on the planted control, so the reading is not made** (step 0 passes as the null); against-specific at 8 of 18 on the matched band; the sink's exact share > 0.05 from 2000; a newline key from 8000 (Blocked 60) | "A2 unit 5" below; `a2_ablate.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
+
+## A2 unit 5, the ablation's calibration (2026-10-17): it fails, the reading is not made
+
+Blocked 59, the user's: (b) the null matches MLPs on type and size decile only (any band; heads
+and `b_O` keep the band), each set's bands reported; (ii) both instrument fixes (#215 findings 1, 3)
+and the init band at 143000's βs; 58 (a1) answered as both bands, each step read against the one
+whose β matches it (step 0's to 4000, β ≈ 0; 143000's from 16000, β 2.5–3.7; both at 8000, β 1.3).
+
+**Built:** `a2_comp.py`: `top_key` (the key with the most mass *minus* its uniform expectation;
+a planted fixed sink at j = 37 and a local head in the tests, where the old ratio picks the last
+10), the sink's exact share `mean_i |Σ_h sink_h,i| / mean_i |v_i|`, the top key's excess, the jvp
+and projections chunked (2,041-token passages), `output_attentions=False`. `a2_batch.py`: `band
+--beta-step`, the 143000-band and sink/fixed-key report sections. `trackA_force/a2_ablate.py`
+(new): the long-passage re-rank, the sets, the null (Blocked 59 (b)), mean-ablation hooks on the
+attention dense and MLP outputs at positions 1…n−1, the readouts, the rule, `calib` / `real` /
+`report`; `scripts/a2_unit5.sh`.
+
+**Inputs:** instrument code `df0a15c12751`, `a2_ablate` `6ca248cb2965`; the 8 long passages
+`ba605f4e14b5` (ranking and means), v1's 7 prompts `976b62d677bc` (readouts), A1a's layer βs.
+Re-gate `data/trackA/a2_gate5_2026-10-17/a2_gate.json`: **passes** G0–G4 (G0 max 4.9e-14;
+5,885 s). Calibration `data/trackA/a2_unit5_2026-10-17/` (`calib.json`, `ablate_step0.json`,
+`sets_step0.json`, `a2_unit5_report.txt`). Bands and the batch re-run at the fixed instrument
+`data/trackA/a2_batch5_2026-10-17/` (126 of 126 records, `a2_batch_report.txt`).
+
+**Placed in this unit, before any output** (`a2_ablate.py` docstring): the long-passage β is the
+median over v1's prompts of A1a's layer βs; (i) is the mean over prompts of the last block's
+mean cosine; (iii) is pooled over 7 × 24 blocks; the arm must beat the unablated model, the `S⁺`
+ablation and all 20 nulls; null draws exclude the arm's own members; a member with an empty pool
+widens to any band (counted); if 20 distinct sets cannot be drawn, heads drop the band too
+(`heads_any_band`); mean-ablating `b_O` is the identity; a fixed key is an excess ≥ 0.05·n.
+
+**The rule's calibration** (design "The rule's own calibration"; both must hold):
+
+| run | (i) unablated | `S⁻` | `S⁺` | null max | nulls ≥ `S⁻` on (i), (iii) | (iii) unablated / `S⁻` | (i) | (iii) | result |
+|---|---|---|---|---|---|---|---|---|---|
+| synthetic G1 stack, 7 planted heads as `S⁻` (7 of 7 found) | 0.155 | 0.160 | **0.168** | 0.157 | 0, 20 | 1.000 / 1.000 | fail | fail | not supported: **fails** (must read supported) |
+| step 0, the planted null (`\|S⁻\|` 29) | 0.557 | 0.827 | 0.680 | 0.921 | 16, 0 | 0.994 / 1.000 | fail | pass | not supported: passes |
+
+**The calibration fails, so the reading at 2000, 8000 and 143000 is not made** (the design: "If
+either fails, the reading is not made and the failure goes to the user"; `real` refused, as
+written). STATE Blocked 60.
+
+Why the planted control fails (my reading of the records, not tested):
+1. **(iii) sits at its ceiling.** In the G1 stack the energy already rises in every block
+   unablated (1.000), so no ablation can raise the share; (iii) could not pass by construction.
+   The headroom was checkable before the freeze and was not checked (`LESSONS.md` 6).
+2. **On (i) the planted heads beat all 20 of their nulls, but not `S⁺`.** `S⁺` is 7 heads of
+   block 13, larger than the planted ones. The synthetic means come from a separate start (my
+   choice, so the arm is not ablated by its own mean), in a random basis: replacing a part by
+   another cloud's mean adds a shared vector, which raises the cosine roughly with the part's
+   size. The same size effect shows at step 0, where the null absorbs it.
+
+**Step 0** (the null; S⁻ is 15 MLPs and 14 heads, none widened, `heads_any_band` false):
+mean-ablating `S⁻` lifts the last block's cosine 0.56 → 0.83, but 16 of 20 size-matched random
+sets match or beat that (max 0.92), so the lift is size. `S⁺` gives 0.68. `S⁰` (L0–L4 MLPs)
+gives 0.96, above all 20 of its nulls on (i), not on (iii) (0.77: energy falls in a quarter of
+the blocks). Loss 11.0 in every arm (an untrained model); T/t* ≈ 0.
+
+**The batch at the fixed instrument** reproduces unit 4's tables exactly (the report's first 25
+lines differ only in the code hash); only the top-key lines change.
+
+**The band at 143000's βs** (5–95 %): `|S⁻|` 10–25.5, `|S⁺|` 11–25.1 (step 0's: 19.5–33.6,
+17.8–35.0). Against the matched band (58 (a1)):
+
+| | step 0's band (unit 4) | the matched band |
+|---|---|---|
+| `\|S⁻\|` few | 11–13 of 18 | 11 (16–128, 512–16000, 143000; 32000 is not few at 143000's) |
+| against-specific (`S⁻` few, `S⁺` not) | 6 (16, 32, 1000–8000) | **8** (16, 32, 1000–8000, 16000, 143000; 8000 at both bands) |
+
+**The sink's exact share** (median over blocks / max; blocks ≤ 0.05 of 24): ≤ 0.009 / 0.013 and
+24 of 24 to 512; 0.021 / 0.088, 22 at 1000; 0.052–0.056, 9–11 at 2000–4000; 0.076–0.105 /
+0.20–0.24, 7 from 8000. **1e's ≤ 0.05 holds to 1000 and fails in 17 of 24 blocks from 8000**;
+the exact share is about 2.5× under unit 4's bound, and still over 0.05.
+
+**Fixed keys** (share of head × block whose top key gets ≥ 0.05·n mass over uniform): 0 to 128;
+0.01–0.10 at 256–512; 0.25 at 1000; 0.57–0.58 at 2000–4000 (the token most often `.`, 0.52–0.57);
+0.25–0.32 from 8000 (most often `\n`, 0.72–0.83). None in the last 10 positions at any step, so
+the selector bias is gone. **1e's second sink on a newline holds from 8000** (descriptive);
+at 2000–4000 the fixed key is a period. The top key's part in the field is small (≤ 0.06 per
+block step, −0.02 at 143000).
+
+**Not established:** anything causal about `S⁻` (the reading is not made); whether a repaired
+planted control would pass; whether the rule could pass at all with (iii) as frozen; the real
+steps' sets on the long passages (only step 0 was ranked).
+
+Re-run: `METS_DATA=<data> systemd-inhibit --what=sleep:idle ./scripts/a2_unit5.sh` (≈ 5.3 h:
+re-gate 98 min, calibration 13 min, two bands about 90 min each, the batch, the report). A dry run
+of the synthetic check before it was hit by a suspend (40,283 s reported); every GPU call now
+runs inhibited.
 
 ## A2 unit 4, the batch and the ranking (2026-10-16)
 
