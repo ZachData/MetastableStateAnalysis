@@ -21,7 +21,8 @@
   - On the rule's own 9-step statistic the gate still passes (100 % at the 90th), so the constants stand. The reach is 42 % at the 80th. Sets held between the 25th and 75th cannot be seen at all, because the null's mean |p − ½| is exactly ¼; sets beyond, high or low, are seen alike. Sets planted only from 8000 are seen in 67 % of draws at the 90th. A single copied direction per pair is seen in C6 in 55 % of draws — `trackB_circuit/status-B.md` "B2 unit 1b (2026-10-18)"
   - B2's table over the 18 steps: the members differ from their layers' heads in QK symmetry (C3, rank 0.9996; `L7H8` the most symmetric head from 2000, three others near the 95th, two near the 15th) and in K-composition (C6, rank 1.0, carried by `L5H2` writing into three induction heads' keys at 21–32× chance, from 512–1000, with non-member heads reading it about as much), but show no difference in the OV attractive share, its top weight or the OV–QK cosine (C1, C2, C4), within the gated reach; B2 is at its exit — `trackB_circuit/status-B.md` "B2 unit 2 (2026-10-18)"
   - B2 closed 2026-10-18 at its exit: in the weights the circuit is `L5H2` writing into three induction heads' keys (with non-member readers beside), and a QK-symmetry split (circuit or head type open); C1, C2, C4 show no difference within the gated reach — `trackB_circuit/status-B.md` "B2 on one page (closed 2026-10-18)"
-  - B3 (routing) opened 2026-10-18 with a scan, a `sympy` check and a design not yet frozen. The check shows that condensation in 2609.28448 is a large-N limit with no finite-N threshold, and that a sharp head with no growing logit gap still gives a partner-growth slope well below 1 at these context lengths. So B3 reads routing from the attention itself, with β beside, and no head is placed against a threshold — `trackB_circuit/design-B3.md` "The math"
+  - B3 (routing) opened 2026-10-18 with a scan, a `sympy` check and a design, frozen the same day (Blocked 65 (a)). The check shows that condensation in 2609.28448 is a large-N limit with no finite-N threshold, and that a sharp head with no growing logit gap still gives a partner-growth slope well below 1 at these context lengths. So B3 reads routing from the attention itself, with β beside, and no head is placed against a threshold — `trackB_circuit/design-B3.md` "The math"
+  - B3 unit 1's gate fails before any member α is read: the stored attention and head types reproduce, and planted α reads right, but the type-matched null for C3′ false-passes 6 % and R2's onset rule misses planted onsets (init structure in the early bottom decile). The induction members do not share an offset, and `L12H5` is not an induction head on 7d's probe. Revisions are tested on the gate and put to the user — `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -33,7 +34,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `5237a0654e`
+- **Reviewed:** 2026-10-18 · body `eafba2e7c1`
 <!-- /phase-card -->
 
 ## Units
@@ -74,12 +75,76 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 
 | unit | state | where |
 |---|---|---|
-| 0. design, scan, `sympy` check | **done 2026-10-18; proposed, not frozen** (Blocked 65: 3 units proposed, 4 the alternative) | `design-B3.md`, `lit-B.md` "B3", `tools/math_checks/b3_condensation_exponent.py` (3 checks pass) |
-| 1. routing (R1, R2, C3′, A3's row, β beside) | not started | `trackB_circuit/b3_route.py` (to build) |
+| 0. design, scan, `sympy` check | **done 2026-10-18**; frozen by the user 2026-10-18 (Blocked 65 (a): 3 units, the placed constants as written) | `design-B3.md`, `lit-B.md` "B3", `tools/math_checks/b3_condensation_exponent.py` (3 checks pass) |
+| 1. routing (R1, R2, C3′, A3's row, β beside) | **gate run 2026-10-18: G0, G1 pass; G2 (C3′) and G3 fail, so no member α was read.** Revisions tested on the gate and put to the user (Blocked 66) | `trackB_circuit/b3_route.py`, `b3_gate_variants.py`, `tests/test_b3_route.py`; "B3 unit 1 (2026-10-18)" below |
 | 2. the light cone (L1) | not started | `trackB_circuit/b3_cone.py` (to build) |
 
-What was seen before the readings were fixed: `design-B3.md` "Seen before the readings were fixed".
-Revised after `/challenge-pr` on #223 (accept with changes, all six findings taken), still proposed.
+What was seen before the readings were fixed: `design-B3.md` "Seen before the readings were fixed",
+and unit 1's gate record (below), which includes the members' type scores and formation steps but
+no member α.
+
+## B3 unit 1 (2026-10-18): the gate fails (Blocked 66)
+
+**Input:** `pythia-410m`, A1a's 18 run dirs (`trackA_force/a1a.py` `RUNS`), the 7 scored v1
+prompts (`prompts_hash` `976b62d677bc`), 7d's probe (16 sequences, `wide`, `EVAL_SEED`),
+B2's table (code `038b04f5c7cd`), Phase 10's c3x label source `data/p10/reread_r9_2026-10-08/labels`
+(its own Stage 0 runs, below). Code `b3_route.py` `b7f5307150cf`, `b3_gate_variants.py` `79bc6cab77f4`
+(types, gate and variants re-run after `/challenge-pr` on #224; the gate's numbers unchanged). Records
+`data/b3/2026-10-18-unit1/` (main tree): `rows/`, `types/`, `gate.json`, `gate_variants.json`.
+GPU: stored attention cast to float64; forwards float32. Wall: rows about 16 s a step, types 3 s.
+Re-run: `python -m trackB_circuit.b3_route rows|types --out <dir>`, then `read --out <dir> --gate-only`,
+then `python -m trackB_circuit.b3_gate_variants <dir>`.
+
+| arm | result | pass |
+|---|---|---|
+| G0 | 126 attention files, shapes right, rows sum to 1 within 1.3e-6; head types reproduce `prev_token_profile.json` (all 384, at 4000 / 16000 / 143000) within 5.8e-6 and `fv_score.json`'s members within 3.9e-8 | yes |
+| G1 | on `L13H5`'s real rows at 512 and 143000: uniform α = 1.000, two partners −1.6e-15, Gaussian logits s = 1 0.931 and 0.940 | yes |
+| G2 | false pass (200 fake sets): R1 0.5 %, R2 0 %, **C3′ 6 %** (cap 2 %) | **no** |
+| G3 | planted onset, primary set: **3 of 5 caught** (needs 5); all 5 in 44 % of 50 sets beside | **no** |
+
+Every step has an α for every head (no head fell below 10 in-rows).
+
+**Three defects, each found before any member α was read:**
+
+1. **The members do not share one induction offset.** At 143000, `L7H8` puts 0.945 at offset 0
+   (query `N_REP + j` → key j); `L8H6` (0.969) and `L11H14` (0.953) peak at +1 (→ key j + 1);
+   `L12H5` scores 0.009 and 0.002, so it is **not an induction head on this probe at either offset**
+   (peak over 18 steps 0.011; its sink share on the probe is 0.49, so renormalised it is still
+   about 0.02; the four's sink shares are 0.42–0.49). The repo's offset 0 is the same-token key
+   (`PROJECT.md` §3.18's Q1); +1, the successor, is the standard induction pattern. So `L8H6` and
+   `L11H14` are ordinary induction heads, and 7d's "function-vector only" for them was read at the
+   other offset: a correction to 7d (`p7d_redundancy/status-7d.md` "Corrections received"). The design took one offset for the four (the majority, here a 2–2
+   tie, broken to 0), so the type score at offset 0 gives formation step 0 for `L8H6` and `L12H5`,
+   which is meaningless. It also bears on unit 2: L's partner (j + 64 or j + 63) and L1's "four
+   induction members".
+2. **G3: early steps' bottom decile is init structure.** R2's onset ("at or below the step's 10th
+   percentile, held at the next step") is met at step 2 by any head in the bottom decile at
+   initialisation, since attention barely changes to 256. Planting step 0's α before the formation
+   step therefore gives onset at step 2 for 2 of 5 planted heads.
+3. **G2: C3′'s null was not exchangeable with its fakes.** C3′ drew a pool head per (member, step)
+   independently. That breaks the across-step correlation a fixed head carries, and each fake's
+   pool was re-centred on the fake. Re-centred pools with one fixed head per member still
+   false-pass at K = 5, 10, 20 (4.5 %, 8.3 %, 3.3 %, 400 fakes each).
+
+**The revisions, each run on the gate's inputs with no member α read** (`b3_gate_variants.py`, `gate_variants.json`):
+
+| revision | what it gives |
+|---|---|
+| type score at each member's own offset (143000's peak) | formation steps `L5H2` 1000, `L7H8` 4000, `L8H6` 1000, `L11H14` 1000; `L12H5` untyped (as `L10H7`), so R2 counts 4 |
+| R2's onset also requires α below step 0's 2.5th percentile (0.991) | null hit rates (others in the layer) 0.73 (layer 5), 0.07 (7), 0 (8), 0 (11); G3 catches all 4 in the primary set and in 78 % of 50 sets beside. **With the frozen exclusive pools its G2 false-passes 5.5 %** (200 fakes) |
+| … and **each tested head counts in its own pool** (inclusive; `/challenge-pr` on #224, finding 2) | G2 false pass 0 %; if each member hits, the rates are 0.75, 0.125, 0.0625, 0.0625, and rank is 0.9996 at 4 of 4, **0.986 at 3 of 4 (does not read)**: only 4 of 4 reads "members differ" |
+| C3′: one fixed head per member from a fixed pool of the K non-members nearest in mean type score over steps ≥ 512, fakes drawn from that pool | false pass with the fake left out of its pool: 3.0 % (K = 5), 0.75 % (K = 10). **With the fake kept in (inclusive): 0.0 % (K = 5), 1.0 % (K = 10)** (400 fakes); `L12H5` and `L10H7` layer-matched |
+
+The cause common to C3′'s and R2's failures is the same: a null pool that leaves out the head being
+tested is not exchangeable with it (`/challenge-pr` on #224 reproduced 3.1 % against 0.8 % on
+idealised heads). Not yet checked: the revised arms inside `b3_route.py` itself rather than the
+variants script (the re-gate does that).
+
+**A3's input:** Phase 10's label source names its own Stage 0 runs (re-runs of 2026-09-22 to 09-24),
+not A1a's, at every step ≥ 512 (63 of 63 directories differ). A3 reads the label source's runs, as
+Phase 10 fixed them; α reads A1a's. About two-thirds of the (layer, prompt) cells at 512 are
+readable in Phase 10's own sense. **M1's β is stored per layer only** (`a2_beta_2026-10-16`), so β
+beside is `fe_full` per head with M1 per layer.
 
 ## B2 on one page (closed 2026-10-18)
 

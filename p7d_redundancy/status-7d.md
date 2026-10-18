@@ -11,12 +11,13 @@
   - The members did not form together; the window is (512, 4000] — `p7d_redundancy/status-7d.md` "Q2 — **no, they did not form together.**"
   - One redundant set, not several; most of the pairwise interaction is the product of the two solo effects — `p7d_redundancy/status-7d.md` "Pass 2"
   - Born aligned, then one head (`L11H14`) leaves a locked core; redundancy survives the separation — `p7d_redundancy/status-7d.md` "The geometry"
-  - Division of labour: one member does induction, four carry function vectors, none does both — `p7d_redundancy/status-7d.md` "The FV-head experiment"
+  - Division of labour, as read at the same-token offset: one member does induction, four carry function vectors. At the successor offset `L8H6` and `L11H14` are induction heads too, so "none does both" does not hold (Superseded, below) — `p7d_redundancy/status-7d.md` "The FV-head experiment"
   - `L5H2` is a previous-token relay feeding `L7H8`'s matching attention — `p7d_redundancy/status-7d.md` "The upstream-relay check"
   - The exhaustive self-repair sweep: MLP 6 is the largest stand-in, and the attention search had missed the four largest — `p7d_redundancy/status-7d.md` "Tying up the self-repair"
   - `L5H2` and MLP 6 are an OR-gate; MLP 6's repair is an active rotation aimed at the set's key read-space, and it moves the heads it points at — `p7d_redundancy/status-7d.md` "Opening MLP 6", "Geometry predicts function"
   - The catalogue, `r*`, ambient energy, pairwise matrix, formation curves and geometry are mode-invariant at 410m: `mean` reproduces the `ov` numbers. The FV experiment, the self-repair sweep and the MLP 6 work were not rerun, and `mean` cannot see MLP 6's mechanism (§3.26) — §3.15
 - **Superseded / wrong:**
+  - "`L8H6`, `L12H5`, `L11H14`: function-vector only" read the induction score at the same-token key; at the successor (+1) `L8H6` and `L11H14` score 0.969 and 0.953 at 143000; `L12H5` is neither — `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
   - "The stand-ins are those three members" was superseded by the exhaustive sweep — `p7d_redundancy/status-7d.md` "Tying up the self-repair"
   - `ov` "zero-ablation" leaves the value bias, so it is a bias-ablation; immaterial, a hook zero reproduces it bitwise — §3.15
   - `mean` is not the conservative control when the mechanism is itself the mean (MLP 6); found at 70m — §3.26
@@ -34,7 +35,7 @@
   - `L11H14`'s step-1000 copying score (free: weights only)
   - The step-1000 pair on the graded readout, KL or λ, instead of raw dNLL (forward pass: one checkpoint)
   - Per-member attribution of MLP 6's rotation to `L7H1` / `L8H6` / `L8H9` (forward pass: two checkpoints)
-- **Reviewed:** 2026-09-24 · body `751b162e22`
+- **Reviewed:** 2026-10-18 · body `84dac22d03`
 <!-- /phase-card -->
 
 **Registered predictions:** none. Every number in this phase is a measurement
@@ -69,6 +70,7 @@ step 2; `docs/phase_card.md`). Backfilled 2026-09-24.
 - 2026-09-11 · 410m is mode-invariant: `mean` reruns reproduce the `ov` catalogue, `r*` and interaction ratio · `p8_scale_ladder/status-8.md` "The matched cross-rung read"
 - 2026-09-12 · a ceiling-contaminated cell should be retried on `freq` before it is called unmeasurable · §3.17
 - 2026-09-13 · `mean` is blind to a mechanism carried by its own mean (MLP 6), so it is not always the conservative control · §3.26
+- 2026-10-18 · the induction score here is read at the same-token key (offset 0); at the successor (+1, the standard pattern) `L8H6` scores 0.969 and `L11H14` 0.953 at 143000, so they are induction heads, not "function-vector only" (`PROJECT.md` §3.18's table); `L12H5` is neither (≤ 0.011 at both) · `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
 
 ## What is answered
 

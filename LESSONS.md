@@ -1212,6 +1212,17 @@ of a design before running it, and print it on every record
   for it (does it pass where the answer is known to be negative?), and its chance level is the
   statistic's own under the null (simulated or read off step 0), not a formula for a different
   summary, before it goes to the user.**
+- 2026-10-18 (B3 unit 1, Blocked 66): a design frozen after one `/challenge-pr` round failed its
+  own gate on three things a type-score table would have shown before the freeze: the four
+  "induction members" do not share an offset (two at 0, two at +1) and `L12H5` is not an induction
+  head on 7d's probe at all (peak 0.011); R2's "bottom decile of its step" is met at step 2 by
+  init structure; and C3′'s null (Claude's choice, a pool head per step, re-centred on each fake)
+  was not exchangeable with the fakes (6 % false pass). Cost: one unit's gate run (about 6 min)
+  and a decision round; no member α read. Rule: **before a design that names a head type freezes,
+  tabulate each member's type score at every candidate offset; and a null built from "nearest"
+  pools is gated with fakes drawn from the same fixed pool as the null, with the tested head kept
+  in that pool, so the fake is exchangeable with it** (`/challenge-pr` on #224: leaving it out
+  gave 3.0 % and 5.5 % false passes).
 
 ## 7. Literature found after the construction was built
 

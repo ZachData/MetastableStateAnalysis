@@ -5,7 +5,10 @@ Opened 2026-10-18 by `docs/ROADMAP.md` §9 order 3 (B3 next after B2's close, Bl
 `docs/ROADMAP.md` §7 B3. Scan: `trackB_circuit/lit-B.md` "B3". Math:
 `tools/math_checks/b3_condensation_exponent.py`. Tier 1 throughout: exploratory, unregistered;
 410m is an exploration rung (`p8_scale_ladder/design-8.md`), so nothing here can score a registered
-row, and B3 reads no other rung. **Proposed, not frozen** (Blocked 65).
+row, and B3 reads no other rung. **Frozen 2026-10-18 as proposed (Blocked 65 (a), the user's):
+3 units, the placed constants as written; unit 1's record is `status-B.md` "B3 unit 1".**
+**Unit 1's gate failed (G2's C3′, G3) before any member α was read; the revisions it needs are
+Blocked 66, not yet applied here.**
 **Revised after `/challenge-pr` on #223 (accept with changes, all six findings taken) before the
 freeze:** R2's onset is read against the same step's population, since step 0's band sits at α ≈ 1
 and its edge marks only leaving uniform (1); α weights each row by its non-sink mass (2); type is
@@ -36,7 +39,7 @@ Carried into B3 (each must be done or dropped at close):
   ratio at 143000 (L0) with its steps and the members' ablation rank (L1), each with its sign and
   the input named. "Members do not differ"
   and "no cone along partners" are verdicts, not failures. A3's row and β's columns are present.
-- **Budget (proposed): 3 units on the record**, this design as unit 0, then a close-out page
+- **Budget: 3 units on the record** (Blocked 65 (a)), this design as unit 0, then a close-out page
   (writing only, as B2a, A2 and B2 closed). Unit 1 reads stored attention and runs one short
   forward pass per step for head types; unit 2 is B0's harness, the one new GPU batch.
   Alternative: 4 units, splitting L's gate from L's read (B2a and A2 overran when a gate failed,
@@ -178,7 +181,7 @@ steps has been computed.
 
 | unit | what | done when |
 |---|---|---|
-| 0 | this design, the scan, the `sympy` check | frozen by the user (Blocked 65) |
+| 0 | this design, the scan, the `sympy` check | **done**: frozen 2026-10-18 (Blocked 65 (a)) |
 | 1 | `trackB_circuit/b3_route.py`: α and the beside columns over 18 steps × 384 heads from stored attention; head types per step (one forward per step); G0–G3; R1, R2, C3′; A3's row; β beside | every arm passes (or a recorded change), and R1, R2, C3′ ranked with the input named |
 | 2 | `trackB_circuit/b3_cone.py` on B0's harness: G4–G6; L0 and L1 at 143000, ℓ over the 18 steps, the beside rows | the gate and L0 pass and L1 reads, with the input named |
 

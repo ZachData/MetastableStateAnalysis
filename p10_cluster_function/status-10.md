@@ -66,7 +66,7 @@
   - §5's order: replaced by §5.1 after the papers were read (F13 first) — `p10_cluster_function/status-10.md` §5.1
   - `handoff-10.md` §1.1's reading that neighbourhoods go "lexical → contextual": on Stage 0's v1 runs they go from repeats to repeats plus embedding-similar tokens — `p10_cluster_function/status-10.md` §1.6
 - **Registry:** none, because the phase is pre-design and deliberately unregistered (`claims/EXPERIMENTS.md`). F14 is named as the one to register (`handoff-10.md` "Standing constraints"). The 12 new v2 prompts are held out on 410m as a confirmation set, only partly blind (`CLAIM-C` ran them on 1.4b and gpt2-large); whether F14 is scored on them, on all 20, and in what order is undecided and the user's (`docs/PHASE_REVIEW.md` "Open" 1–4). At close F14 goes to the first-registration decision, with A5 and `P-I7` (`docs/ROADMAP.md` §10, item 7)
-- **Depends on:** 1@30c0d54cc5, 1e@02fc532205, 5c@574eba0e4a, 7d@19b7d835b7, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
+- **Depends on:** 1@30c0d54cc5, 1e@02fc532205, 5c@574eba0e4a, 7d@14927fe3d6, 7e@0c1071db50, 8@8cc3fb223c, 9@e70efd632b
 - **Feeds:** 9, 1e
 - **Open threads:** at close each names its home; the full list, Parked items included, is `p10_cluster_function/handoff-10.md` "At close (10.5)"
   - F5, the four-signature concordance (H-PARK against H-CAT), never ran; dropped at close with the J-lens rows F2–F10 (`docs/ROADMAP.md` §4) — `p10_cluster_function/status-10.md` §4
@@ -84,7 +84,7 @@
   - Rebuild a cluster ensemble (1d's intent), carried to C1 with 1d's write-up: drift measured 2026-09-25. Tuning HDBSCAN makes it move less often, not less far. The consensus is stable, but its stable families pick coarse k or group identical strings, so the ensemble waits on 1d's scale design (free: stored activations). Matched k done: the drift is float32 distances, upstream of every method, and k-means at fine k is seed-dependent — `p1d_cluster_ensemble/status-1d.md` "Float-noise drift", "Matched k on `repeated_tokens`, and the float32 defect"
   - F14, the strong-centre count against Lemma C.1, if it registers on a reserved rung (free: stored activations)
   - Everything in Stages 1–5 again on all 20 prompts once registrations are frozen (free: Stage 0's dirs)
-- **Reviewed:** 2026-10-11 · body `a23b465289`
+- **Reviewed:** 2026-10-18 · body `a23b465289`
 <!-- /phase-card -->
 
 ## The phase on one page (10.5, closed 2026-10-11)
