@@ -1639,6 +1639,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   applied the gain twice and set V and M_0 in different frames. Neither review opened
   `b2a.head_logits`. Rule: a design that reuses another unit's frame writes each matrix by
   reading that unit's code, not its prose.
+- 2026-10-18, B2 unit 2 (found by `/challenge-pr` on #221, finding 4): the PR called the low-rank
+  `c5_row` "exact up to eigenvector phase" against the dense `classify_ov_row`, from a check on 14
+  heads and planted rows. The two differ whenever V has no eigenvalue with positive real part
+  (the top is then one of the d − 64 zeros): 237 of 384 heads at 1000, so most of C5's
+  "unclassified" rise. The 14 checked heads never met the case. Rule: before calling a rewrite
+  equal to the original, list the branches where the original's answer is set by a degenerate
+  value (ties, zeros, noise) and count how many inputs reach them.
 
 ## 12. Deleted, then needed
 
