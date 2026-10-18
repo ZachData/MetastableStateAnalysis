@@ -36,13 +36,18 @@ before any member value was read.** (1) Each induction member is typed at its ow
 of offset 0 and +1 at 143000 (`L7H8` 0; `L8H6`, `L11H14` +1); `L12H5` is untyped (peak 0.011, as
 `L10H7`), so R2 counts the 4 typed members. (2) R2's onset also needs α below step 0's 2.5th
 percentile. (3) Every null pool keeps the tested head (inclusive): R1's and R2's are the tested
-head's whole layer (16), and R2's rank is exact from the per-layer hit rates (P(null count < c))
+head's layer without the members not under test (for a member its whole layer; for a fake its
+layer less the member), and R2's rank is exact from the per-layer hit rates (P(null count < c))
 rather than drawn; R2's attainable rank takes each member as hitting, so no member value enters the
 gate. **R2 reads "members differ" only at 4 of 4** (rank ≥ 0.99 as well), fixed before any member
 value. (4) C3′ draws one head per member, fixed over the 9 steps, from a fixed pool: the member and
 the 5 non-members nearest it in mean type score (its own key) over steps ≥ 512; `L12H5` and
 `L10H7` from their layer's non-members and themselves. G2's C3′ fakes are drawn from each member's
-5, and their null is that 5 (the fake kept in). The superseded choices above: "C3′'s null draws one
+5, and each fake's pool is built as the member's (the fake and the 5 non-members nearest it; for
+the untyped two, its layer's non-members), so G2 tests the construction the read uses
+(`/challenge-pr` on #225, finding 1; before it, each fake's null was the member's 5). No member's
+own value enters a fake's pool; the population quantiles R1 and R2 rank against hold all 384 heads,
+the members among them, as the design fixed. The superseded choices above: "C3′'s null draws one
 pool head per (member, step)", G2's re-centred C3′ fakes, G3's "count must be 5" (now 4).
 
 NUMERICS: stored attention (float32) is cast to float64 on the GPU; head-type forwards float32 on
@@ -103,6 +108,7 @@ G0_TYPE_STEPS = (4000, 16000, 143000)
 G1_BANDS = {"uniform": (0.97, 1.0), "two": (-0.02, 0.02), "gauss1": (0.85, None)}   # placed (design G1)
 G2_MAX = 0.02                              # placed (design G2)
 G3_BESIDE = 50                             # placed (module docstring): sets beside G3's primary
+G2_C3_BESIDE = 2000                        # placed (`/challenge-pr` on #225): C3′'s false pass beside G2's 200
 ARMS = ("G0", "G1", "G2", "G3")
 
 
@@ -209,9 +215,15 @@ def r2_hits(A: np.ndarray, heads: Sequence[int], forms: Sequence[int], q: np.nda
 
 
 def whole_layer(h: int) -> np.ndarray:
-    """The inclusive pool (Blocked 66 (a)): every head of h's layer, h among them."""
     l = h // N_HEADS
     return np.arange(l * N_HEADS, (l + 1) * N_HEADS)
+
+
+def inclusive_pool(h: int, tested: Sequence[int]) -> np.ndarray:
+    """The inclusive pool (Blocked 66 (a)): h's layer without the members not under test, so a
+    fake's pool holds the fake and never a real member (`/challenge-pr` on #225, finding 4)."""
+    mem = {head_index(m) for m in MEMBERS} - set(int(t) for t in tested)
+    return np.array([i for i in whole_layer(h) if i not in mem])
 
 
 def count_dist(rates: Sequence[float]) -> np.ndarray:
@@ -228,7 +240,7 @@ def r2_null(A: np.ndarray, heads: Sequence[int], forms: Sequence[int], q: np.nda
     reads no tested head's value)."""
     rates, if_hit = [], []
     for h, f in zip(heads, forms):
-        others = [o for o in whole_layer(h) if o != h]
+        others = [o for o in inclusive_pool(h, heads) if o != h]
         n_o = int(r2_hits(A, others, [f] * len(others), q, floor).sum())
         own = int(r2_hits(A, [h], [f], q, floor)[0])
         rates.append((n_o + own) / (len(others) + 1))
@@ -485,7 +497,7 @@ def r1_stat(A: np.ndarray, heads: Sequence[int]) -> Tuple[float, np.ndarray]:
 
 def r1_rank(A: np.ndarray, heads: Sequence[int], seed: int, n: int = N_NULL) -> Dict:
     T, Dv = r1_stat(A, heads)
-    null = Dv[draw_sets([whole_layer(h) for h in heads], n, seed)].mean(1)
+    null = Dv[draw_sets([inclusive_pool(h, heads) for h in heads], n, seed)].mean(1)
     return {"T": T, "rank": rank_of(T, null), "null_q": np.quantile(null, [0.05, 0.5, 0.95, 0.99]).tolist()}
 
 
@@ -517,20 +529,20 @@ def r2_reads(r: Dict, n: int) -> str:
     return "members differ" if r["count"] == n and r["rank"] >= RANK_PASS else "no difference shown"
 
 
+def c3_pool_of(ts: Dict[str, np.ndarray], keys: Dict[str, str], m: str, h: int) -> np.ndarray:
+    """C3′'s fixed pool for head h standing in for member m: h and the NEAR_K non-members
+    nearest it in mean type score (m's key) over the steps ≥ 512; for `L12H5`, `L10H7`
+    (untyped) h's layer without the other members. The read passes the member, G2 a fake."""
+    mem = [head_index(x) for x in MEMBERS]
+    if m in keys:
+        sc = ts[keys[m]][[STEPS.index(s) for s in STAT_STEPS]].mean(0)
+        return np.append(nearest_pool(sc, sc[h], mem + [h]), h)
+    return inclusive_pool(h, [h])
+
+
 def c3_pools(ts: Dict[str, np.ndarray], keys: Dict[str, str]) -> Dict[str, np.ndarray]:
-    """Each member's fixed pool of non-members: the NEAR_K nearest in mean type score (its own
-    key) over the steps ≥ 512; `L12H5`, `L10H7` (untyped) their layer's non-members."""
-    mem = [head_index(m) for m in MEMBERS]
-    idx = [STEPS.index(s) for s in STAT_STEPS]
-    out = {}
-    for m in MEMBERS:
-        h = head_index(m)
-        if m in keys:
-            sc = ts[keys[m]][idx].mean(0)
-            out[m] = nearest_pool(sc, sc[h], mem)
-        else:
-            out[m] = np.array([i for i in whole_layer(h) if i not in mem])
-    return out
+    """Each member's own pool (`c3_pool_of`), the member last."""
+    return {m: c3_pool_of(ts, keys, m, head_index(m)) for m in MEMBERS}
 
 
 def c3_values() -> Tuple[np.ndarray, str]:
@@ -554,8 +566,11 @@ def fake_sets(layers: Sequence[int], n: int, seed: int) -> np.ndarray:
     return draw_sets(pools, n, seed)
 
 
-def g2(A: np.ndarray, forms: Dict[str, int], P3: np.ndarray, pools: Dict[str, np.ndarray]) -> Dict:
-    """False pass over N_DRAW fake member sets, each read exactly as the members are (inclusive)."""
+def g2(A: np.ndarray, forms: Dict[str, int], P3: np.ndarray, ts: Dict[str, np.ndarray],
+       keys: Dict[str, str]) -> Dict:
+    """False pass over N_DRAW fake member sets, each read exactly as the members are (inclusive).
+    C3′'s fakes are drawn from each member's pool without the member, and each fake's own pool
+    is built as the member's is (`c3_pool_of`; `/challenge-pr` on #225, finding 1)."""
     lay = [parse_head(m)[0] for m in MEMBERS]
     F = fake_sets(lay, N_DRAW, seed_for("b3-g2-r1"))
     r1 = [r1_rank(A, f, seed_for("b3-g2-r1", k), 2000)["rank"] for k, f in enumerate(F)]
@@ -564,14 +579,23 @@ def g2(A: np.ndarray, forms: Dict[str, int], P3: np.ndarray, pools: Dict[str, np
     fs = [forms[m] for m in typed]
     r2 = [r2_read(A, f, fs) for f in F2]
     r2_pass = [r2_reads(r, len(typed)) == "members differ" for r in r2]
-    F3 = draw_sets([pools[m] for m in MEMBERS], N_DRAW, seed_for("b3-g2-c3"))
-    c3 = [c3_rank(P3, list(f), [pools[m] for m in MEMBERS], seed_for("b3-g2-c3", k), 2000)["rank"]
-          for k, f in enumerate(F3)]
+    c3 = g2_c3(P3, ts, keys, N_DRAW, "b3-g2-c3")
+    wide = g2_c3(P3, ts, keys, G2_C3_BESIDE, "b3-g2-c3-n")
     rate = {"R1": float(np.mean(np.array(r1) >= RANK_PASS)), "R2": float(np.mean(r2_pass)),
-            "C3p": float(np.mean(np.array(c3) >= RANK_PASS))}
+            "C3p": float(np.mean(c3 >= RANK_PASS))}
     return {"rates": rate, "n_draws": N_DRAW, "null_per_draw": 2000, "R2_rank_pass_any_count":
             float(np.mean([r["rank"] >= RANK_PASS for r in r2])),
+            "C3p_beside": {"n_draws": G2_C3_BESIDE, "rate_0.99": float(np.mean(wide >= RANK_PASS)),
+                           "rate_0.95": float(np.mean(wide >= 0.95)), "rate_0.95_gate": float(np.mean(c3 >= 0.95))},
             "pass": all(v <= G2_MAX for v in rate.values())}
+
+
+def g2_c3(P3: np.ndarray, ts: Dict[str, np.ndarray], keys: Dict[str, str], n: int, tag: str) -> np.ndarray:
+    """C3′'s ranks for n fake sets, each fake's pool built as its member's."""
+    real = c3_pools(ts, keys)
+    F = draw_sets([real[m][real[m] != head_index(m)] for m in MEMBERS], n, seed_for(tag))
+    return np.array([c3_rank(P3, list(f), [c3_pool_of(ts, keys, m, int(x)) for m, x in zip(MEMBERS, f)],
+                             seed_for(tag, k), 2000)["rank"] for k, f in enumerate(F)])
 
 
 def g3(D: Dict, A: np.ndarray, forms: Dict[str, int], attain: float) -> Dict:
@@ -664,7 +688,7 @@ def cmd_read(a) -> int:
     gate = {"meta": meta, "member_keys": mk, "formation_steps": {m: STEPS[k] for m, k in forms.items()},
             "c3p_pools": {m: [head_name(int(h)) for h in p] for m, p in pools.items()},
             "no_alpha": {str(s): int(np.isnan(A[k]).sum()) for k, s in enumerate(STEPS)},
-            "G0": g0(D), "G1": g1(D), "G2": g2(A, forms, P3, pools)}
+            "G0": g0(D), "G1": g1(D), "G2": g2(A, forms, P3, ts, mk["keys"])}
     typed = list(TYPED)
     pre = r2_read(A, [head_index(m) for m in typed], [forms[m] for m in typed])
     gate["R2_attainable"] = {"attainable": pre["attainable"], "floor": pre["floor"],
@@ -690,9 +714,8 @@ def cmd_read(a) -> int:
                  "onset_steps": [None if k is None else STEPS[k] for k in pre["onsets"]],
                  "reads": r2_reads(pre, len(typed))}
     res["R1"]["reads"] = "members differ" if res["R1"]["rank"] >= RANK_PASS else "no difference shown"
-    inc = [np.append(pools[m], head_index(m)) for m in MEMBERS]          # the member kept in its pool
-    res["C3p"] = c3_rank(P3, mem, inc, seed_for("b3-c3p"))
-    res["C3p"]["pools"] = {m: [head_name(int(h)) for h in p] for m, p in zip(MEMBERS, inc)}
+    res["C3p"] = c3_rank(P3, mem, [pools[m] for m in MEMBERS], seed_for("b3-c3p"))
+    res["C3p"]["pools"] = {m: [head_name(int(h)) for h in p] for m, p in pools.items()}
     res["C3p"]["reads"] = ("C3 sets the members apart beyond head type" if res["C3p"]["rank"] >= RANK_PASS
                            else "C3 marks head type, not shown to mark the circuit")
     res["C3p"]["b2_C3"] = json.loads((B2_TABLE / "table.json").read_text())["ranks"]["C3"]

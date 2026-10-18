@@ -85,6 +85,14 @@ def test_r2_hits_and_inclusive_rates():
     assert b3.whole_layer(17).tolist() == list(range(16, 32))
 
 
+def test_inclusive_pool_keeps_the_tested_head_and_drops_untested_members():
+    m = b3.head_index("L5H2")
+    assert m in b3.inclusive_pool(m, [m]) and len(b3.inclusive_pool(m, [m])) == 16
+    fake = m + 1
+    p = b3.inclusive_pool(fake, [fake])
+    assert fake in p and m not in p and len(p) == 15
+
+
 def test_count_dist_and_the_four_of_four_line():
     d = b3.count_dist([0.75, 0.125, 0.0625, 0.0625])
     assert abs(d.sum() - 1) < 1e-15

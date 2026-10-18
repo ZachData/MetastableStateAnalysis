@@ -7,8 +7,15 @@ Opened 2026-10-18 by `docs/ROADMAP.md` §9 order 3 (B3 next after B2's close, Bl
 410m is an exploration rung (`p8_scale_ladder/design-8.md`), so nothing here can score a registered
 row, and B3 reads no other rung. **Frozen 2026-10-18 as proposed (Blocked 65 (a), the user's):
 3 units, the placed constants as written; unit 1's record is `status-B.md` "B3 unit 1".**
-**Unit 1's gate failed (G2's C3′, G3) before any member α was read; the revisions it needs are
-Blocked 66, not yet applied here.**
+**Unit 1's gate failed (G2's C3′, G3) before any member α was read. Revised 2026-10-18 by Blocked 66
+(a), the user's, and re-gated (passes; `status-B.md` "B3 unit 1b").** The revision supersedes these
+lines below. In R2, the 4 typed members are counted (`L12H5` untyped, like `L10H7`), each typed at
+its own offset (`L7H8` 0, `L8H6` and `L11H14` +1). An onset must also fall below step 0's 2.5th
+percentile of α, and R2 reads "members differ" only at 4 of 4. Every null pool keeps the tested head:
+R1's and R2's pool is the tested head's layer, and R2's rank is exact. In C3′, one head per member
+is held fixed over the 9 steps, drawn from the member and the 5 non-members nearest it in mean type
+score over steps ≥ 512. In G3, the count is 4. Code: `b3_route.py`'s docstring, "Revised after the
+gate failed". L (unit 2) still assumes one offset and four induction members (Blocked 67).
 **Revised after `/challenge-pr` on #223 (accept with changes, all six findings taken) before the
 freeze:** R2's onset is read against the same step's population, since step 0's band sits at α ≈ 1
 and its edge marks only leaving uniform (1); α weights each row by its non-sink mass (2); type is
