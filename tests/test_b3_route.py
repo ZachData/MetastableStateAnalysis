@@ -64,15 +64,43 @@ def test_onset_needs_two_consecutive_hits_from_step_two():
     assert b3.onset_index(np.array([1, 1, 1, 1, 1, -1.0]), q) is None   # the last cannot hold
 
 
-def test_r2_hits_and_attainable_rank():
-    A = np.ones((5, 4))
+def test_onset_floor_excludes_heads_above_it():
+    q = np.zeros(5)
+    a = np.array([1, -1, -1, 1, 1.0])
+    assert b3.onset_index(a, q) == 1
+    assert b3.onset_index(a, q, floor=-2.0) is None
+    assert b3.onset_index(np.array([1, -3, -3, 1, 1.0]), q, floor=-2.0) == 1
+
+
+def test_r2_hits_and_inclusive_rates():
+    A = np.ones((5, 2 * b3.N_HEADS))
     A[2:, 0] = -1                              # onset 2
     A[4:, 1] = -1                              # no onset (last step)
+    A[2:, 3] = -1                              # a second hit in layer 0
     q = np.zeros(5)
     assert b3.r2_hits(A, [0, 1], [3, 3], q).tolist() == [True, False]
-    counts, rates = b3.r2_null(A, [np.array([0, 2]), np.array([1, 3])], [2, 2], q, 1000, 0)
-    assert np.allclose(rates, [0.5, 0.0])
-    assert counts.max() <= 1
+    rates, if_hit = b3.r2_null(A, [0, 1], [2, 2], q)
+    assert np.allclose(rates, [2 / 16, 2 / 16])          # the tested head counts in its own pool
+    assert np.allclose(if_hit, [2 / 16, 3 / 16])         # …and as if it hit, whatever it did
+    assert b3.whole_layer(17).tolist() == list(range(16, 32))
+
+
+def test_count_dist_and_the_four_of_four_line():
+    d = b3.count_dist([0.75, 0.125, 0.0625, 0.0625])
+    assert abs(d.sum() - 1) < 1e-15
+    assert abs(d[:4].sum() - 0.9996337890625) < 1e-15   # rank at 4 of 4 (`gate_variants.json`)
+    assert abs(d[:3].sum() - 0.9859619140625) < 1e-15   # 3 of 4 does not read
+    r = {"attainable": 0.9996, "count": 3, "rank": 0.995}
+    assert b3.r2_reads(r, 4) == "no difference shown"   # rank alone does not read below 4 of 4
+    assert b3.r2_reads({**r, "count": 4}, 4) == "members differ"
+    assert b3.r2_reads({**r, "attainable": 0.9}, 4).startswith("descriptive")
+
+
+def test_c3_null_holds_one_head_per_pool_over_steps():
+    P = np.full((3, 6), 0.5)
+    P[:, 2] = 1.0                              # |p − ½| = ½ at every step for head 2 only
+    null = b3.c3_null(P, [np.array([2]), np.array([4, 5])], 50, 0)
+    assert np.allclose(null, 0.25)
 
 
 def test_formation_is_first_half_maximum():
