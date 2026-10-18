@@ -134,3 +134,19 @@ def test_dose_reaches_the_target():
 def test_r90():
     c = [{"D": 0, "tv": 0.9}, {"D": 1, "tv": 0.5}, {"D": 4, "tv": 0.08}, {"D": 8, "tv": 0.01}]
     assert b2.r90(c) == 4 and b2.r90(c, 0.001) is None
+
+
+def test_g3m_sees_a_consistent_set_and_dilutes_a_late_one():
+    g = np.random.default_rng(0)
+    F = b2.fake_sets([5, 7, 12, 8, 11, 10], 20, 1)
+    heads = np.array(sorted(set(F.ravel().tolist())))
+    parts = {}
+    for st in b2.STAT_STEPS:
+        c1 = g.random(b2.N_POP)
+        hi = np.full(len(heads), 0.80)                       # every planted head at the 80th, every step
+        parts[st] = {"C1": c1, "heads": heads, "planted": {0.5: c1[heads], 0.8: hi, 0.9: hi}}
+    r = b2.g3m(parts, F, doses=(0.5, 0.8, 0.9))
+    assert r["all_q0.80"]["pass_rate"] == 1.0                # 9 steps at the 80th: seen
+    assert r["one143000_q0.80"]["pass_rate"] < 0.5           # one step at the 80th: mostly not
+    assert r["late_q0.80"]["pass_rate"] < 0.5                # 5 of 9 steps: diluted
+    assert r["all_q0.50"]["pass_rate"] <= 0.1                # unplanted values: the null's rate

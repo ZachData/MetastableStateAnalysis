@@ -108,7 +108,9 @@ order, dimension-normalised (`p6_subspace/math-6.md` §7.2).
    pairs and steps. Per-step values are descriptive.
 4. **Reading.** Five ranked statistics (C1–C4, C6); a column reads "members differ" at rank ≥ 0.99
    (0.05 / 5, one family), and below it the column reads "no difference shown". Leans are not
-   readings.
+   readings. *(Reach, as gated in unit 1b, `status-B.md` "B2 unit 1b"; not a change to the rule:
+   "no difference shown" cannot exclude members held between their step's 25th and 75th, nor a
+   late onset (from 8000) below about the 90th. Unit 2 states both beside each such verdict.)*
 5. **C7 and the negative-pair rate** are descriptive, with step 0 beside (no rank).
 6. Any gate arm that fails changes the constants, with the reason recorded, before unit 2 reads any
    member value.

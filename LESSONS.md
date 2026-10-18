@@ -737,6 +737,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-18, B2's re-gate (a dose below the statistic's floor): `/challenge-pr` on #219 asked
+  for G3's 9-step dose curve to start at the 70th percentile. With the two-sided |p − ½|, the
+  null's mean is exactly ¼, so a set held at the 70th scores 0.20 and ranks below a typical
+  random set. No number of steps could have seen it. A synthetic run before the batch showed this.
+  The dose stayed in the run, labelled as below the floor (`tools/math_checks/b2_two_sided_floor.py`;
+  `trackB_circuit/status-B.md` "B2 unit 1b"). Check a planted dose against the statistic's null
+  mean before reading its 0 % as low power.
 - 2026-10-17, B2 design (a null band that every trained value leaves): the proposed member
   statistic ranked "share of member cells outside step 0's 2.5–97.5 % band" against random head
   sets, and every gate arm ran at step 0. At d = 1024 a random head's attractive share
