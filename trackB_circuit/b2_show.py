@@ -110,6 +110,16 @@ def pairs(path: str) -> None:
         place = int(np.where(o == b2.head_index(m) % 16)[0][0]) + 1
         rec["l5h2_readers"][m] = {"top": [[f"L{lb}H{h}", float(col[h])] for h in o[:4]], "member_place": place}
         print(f"| {lb} | " + ", ".join(f"L{lb}H{h} ({col[h]:.3f})" for h in o[:4]) + f" | {m} {place} |")
+    # every head after layer 5, not only the members' layers (/challenge-pr on #222, finding 1)
+    col = O[a, (a // 16 + 1) * 16:]
+    o = np.argsort(-col)
+    chance = 1 / 64
+    rec["l5h2_readers_all"] = [[b2.head_name(int(i) + (a // 16 + 1) * 16), float(col[i])]
+                               for i in o if col[i] >= 4 * chance]
+    print("\n**Every head after layer 5 whose keys read `L5H2`'s write space at ≥ 4× chance**\n\n"
+          "| head | overlap | × chance |\n|---|---|---|")
+    for h, v in rec["l5h2_readers_all"]:
+        print(f"| {h} | {v:.3f} | {v / chance:.1f} |")
     (d / "c6_pairs.json").write_text(json.dumps(rec, indent=1))
 
 
