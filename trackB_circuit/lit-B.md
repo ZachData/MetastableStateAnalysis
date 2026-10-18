@@ -159,3 +159,39 @@ at search-summary level only; nothing below was read as primary text. The B2a sc
 | products of Gaussians | the share's null ½ is checked on step 0 in the gate, not assumed |
 
 Not read: all eight beyond search summaries. Cited at that level.
+
+---
+
+# B3, routing — scan at opening (2026-10-18)
+
+Trigger 1 (B3 opens; precedes `design-B3.md`'s freeze). Primary text: 2609.28448 §2 (the IPR
+`Y_A`, its eq. 72–96), §4.2 (the β ∼ N² window, l. 2296–2420), §4.3 (hard routing and the butterfly
+cone, l. 2931–3095), §5 (d = N, l. 3400–3500) and §7 (its suggested test on trained networks,
+l. 3947–3960), from `docs/readings/arXiv-2609.28448v1/main.tex`. Five web searches (2026-10-18),
+read at search-summary level only.
+
+| source | finding | bearing on B3 |
+|---|---|---|
+| 2609.28448 §2, §4.2 (primary) | condensation is **a limit**, lim_{N→∞} Y_A > 0 with Y_A = mean_i Σ_j A_ij²; "at finite N, increasing β produces only a smooth crossover". Bounded logits give Y_A = O(1/N) at fixed β; on the circle the window holds N (√2β)^{−1/2} tokens, so condensation needs √2β = χN² | "β against the paper's thresholds" has no finite-N threshold to read against; the measurable object is how N_eff = 1/Y_i grows with the keys a row sees. Made exact in `tools/math_checks/b3_condensation_exponent.py` |
+| 2609.28448 §5 (primary) | at d = N, from Gaussian starts, a condensation line β_G(γ) = O(1) is found **numerically**; attention condenses without geometric clustering | the d = N number is a finite-size scan of one model (Q = K = I, V = −I, recurrent); it is not a number a trained head can be placed against |
+| 2609.28448 §4.3, §7 (primary) | in the hard-routing limit a one-token perturbation spreads through the nearest-neighbour routing graph (a ballistic butterfly cone). §7: "perturb the residual representation of a single token and propagate the perturbation through the full model … comparing … with the evolving attention maps can identify possible transmission pathways, although it does not provide a unique causal decomposition"; the cone is "in representation space and does not imply a corresponding cone in input-sequence distance"; an untied network needs "finite-depth perturbation amplification", not Lyapunov exponents | the light-cone test is the paper's own suggestion. B3 reads it at finite depth (one forward pass), with partners from the induction pattern (a sequence-space graph that is known), and matched non-partners at the same sequence distance |
+| 2605.08505 (Bruno, Chen, Lin, Polyanskiy, Rigollet, 2026; abstract) | fixed query, n random keys on S^{d−1}: the critical inverse temperature is β_c ≍ n^{2/(d−1)}, set by the local law of the distance to the query near 0, not the global context | the general threshold. At d = 2 it is the paper's N² (check 3); it needs a head's **local key dimension**, which B3 does not estimate, so no per-head threshold is read (design "Worth challenging") |
+| 2510.05554 (Chen, Lin, Polyanskiy, Rigollet, ICLR 2026; summary) | β_n ≍ log n is the critical scaling for long-context attention (the YaRN / Qwen log-n rule) | another critical scale under another key law: the threshold depends on the model of keys, which is why none transfers |
+| 2502 Scalable-Softmax (Nakanishi, 2025; review summary) | "attention fading": the max weight shrinks as n grows at fixed temperature; s·log n logits fix it | trained heads without log-n scaling (Pythia) are expected to fade unless their logit gaps grow with n; B3's α and the logit spread beside read exactly this |
+| 2605.12697 (summary) | per-head inverse temperature; "gap counting": below the critical scale the top competitors stay unseparated, above it entropy collapses | supports reading the gap (logit spread) beside α |
+| 2606.29139 (summary; identifier to verify) | Jacobian sensitivity of next-token predictions to earlier tokens decays as a power law with distance in trained Pythia, not in random inits | the light-cone readout needs a distance-matched control: partners and non-partners at the same i − j |
+| 2511.17194, 2601.16407 (summary) | prefix Jacobians ∂h_i^{(ℓ)}/∂h_j^{(ℓ−1)}; vector-Jacobian token influence | precedent for token-to-token response; B0's ±ε nudge already measures it, with the second-order term cancelled |
+| search: per-head attention entropy across Pythia checkpoints during induction formation | none found; 2607.06621 tracks a spectral head metric that drops below its null only after formation | B3's α over the 18 steps is new as measured; descriptive, tier 1 |
+
+## What changes in the design
+
+| from | change |
+|---|---|
+| §2, §4.2 + check 1–2 | the routing reading is β-free: **α, the slope of log N_eff on log n over each row's visible keys**, from the stored attention. Condensed partners give 0, uniform gives 1; read against the same step's heads and step 0, not as a phase |
+| check 2 | fixed-spread logits at s = 2 still give α ≈ 0.6 over n = 16–256: a low α can be a sharp head with no growing gap. The row logit spread (std of log A, which is the logits' up to a row constant) and its slope on log n are beside every α |
+| 2605.08505, 2510.05554 | no per-head threshold is read: each critical scale belongs to a key law; β (A2's two estimators) is beside, with the estimator named |
+| §4.3, §7 | the light-cone test nudges one token's residual through the full model (B0's harness) and reads the response at its induction partners against non-partners at the same distance; one pass (finite depth), not a Lyapunov exponent |
+| 2606.29139 | non-partners are matched on i − j (and on position), because influence decays with distance anyway |
+
+Not read: 2605.08505, 2510.05554, Scalable-Softmax, 2605.12697, 2606.29139, 2511.17194,
+2601.16407 beyond search summaries; cited at that level.

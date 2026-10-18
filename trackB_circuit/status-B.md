@@ -21,6 +21,7 @@
   - On the rule's own 9-step statistic the gate still passes (100 % at the 90th), so the constants stand. The reach is 42 % at the 80th. Sets held between the 25th and 75th cannot be seen at all, because the null's mean |p − ½| is exactly ¼; sets beyond, high or low, are seen alike. Sets planted only from 8000 are seen in 67 % of draws at the 90th. A single copied direction per pair is seen in C6 in 55 % of draws — `trackB_circuit/status-B.md` "B2 unit 1b (2026-10-18)"
   - B2's table over the 18 steps: the members differ from their layers' heads in QK symmetry (C3, rank 0.9996; `L7H8` the most symmetric head from 2000, three others near the 95th, two near the 15th) and in K-composition (C6, rank 1.0, carried by `L5H2` writing into three induction heads' keys at 21–32× chance, from 512–1000, with non-member heads reading it about as much), but show no difference in the OV attractive share, its top weight or the OV–QK cosine (C1, C2, C4), within the gated reach; B2 is at its exit — `trackB_circuit/status-B.md` "B2 unit 2 (2026-10-18)"
   - B2 closed 2026-10-18 at its exit: in the weights the circuit is `L5H2` writing into three induction heads' keys (with non-member readers beside), and a QK-symmetry split (circuit or head type open); C1, C2, C4 show no difference within the gated reach — `trackB_circuit/status-B.md` "B2 on one page (closed 2026-10-18)"
+  - B3 (routing) opened 2026-10-18 with a scan, a `sympy` check and a design not yet frozen. The check shows that condensation in 2609.28448 is a large-N limit with no finite-N threshold, and that a sharp head with no growing logit gap still gives a partner-growth slope near 0.6 at these context lengths. So B3 reads routing from the attention itself, with β beside, and no head is placed against a threshold — `trackB_circuit/design-B3.md` "The math"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -32,7 +33,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `e919e9ef90`
+- **Reviewed:** 2026-10-18 · body `d29da2942a`
 <!-- /phase-card -->
 
 ## Units
@@ -68,6 +69,18 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | 2. the table over the 18 steps (Blocked 63 (a): the frozen T ranked) | **done 2026-10-18: C3 and C6 read "members differ", C1, C2, C4 "no difference shown"; B2 is at its exit, budget spent** | `b2.py table`, `b2_show.py`; "B2 unit 2 (2026-10-18)" below |
 
 **B2 closed 2026-10-18** at its exit condition (Blocked 64 (a), the user's): "B2 on one page" below.
+
+**B3** (its own budget, `design-B3.md` "Exit condition and budget"; Blocked 65 sets it):
+
+| unit | state | where |
+|---|---|---|
+| 0. design, scan, `sympy` check | **done 2026-10-18; proposed, not frozen** (Blocked 65: 3 units proposed, 4 the alternative) | `design-B3.md`, `lit-B.md` "B3", `tools/math_checks/b3_condensation_exponent.py` (3 checks pass) |
+| 1. routing (R1, R2, C3′, A3's row, β beside) | not started | `trackB_circuit/b3_route.py` (to build) |
+| 2. the light cone (L1) | not started | `trackB_circuit/b3_cone.py` (to build) |
+
+Seen before the readings were fixed (disclosed in the design): B2a's 18-step table (attention near
+uniform to 256, positional heads from 512), B1's onset, B2's C3 ranks and the type-score values
+for `L5H9` and `L4H9`. No α, partner ratio or type score was computed for B3.
 
 ## B2 on one page (closed 2026-10-18)
 
