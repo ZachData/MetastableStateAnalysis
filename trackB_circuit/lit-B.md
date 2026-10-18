@@ -188,7 +188,7 @@ read at search-summary level only.
 | from | change |
 |---|---|
 | §2, §4.2 + check 1–2 | the routing reading is β-free: **α, the slope of log N_eff on log n over each row's visible keys**, from the stored attention. Condensed partners give 0, uniform gives 1; read against the same step's heads and step 0, not as a phase |
-| check 2 | fixed-spread logits at s = 2 still give α ≈ 0.6 over n = 16–256: a low α can be a sharp head with no growing gap. The row logit spread (std of log A, which is the logits' up to a row constant) and its slope on log n are beside every α |
+| check 2 | fixed-spread logits at s = 2 still give a slope well below 1 over n = 16–256 (`design-B3.md` "The math"): a low α can be a sharp head with no growing gap. The row logit spread (std of log A, which is the logits' up to a row constant) and its slope on log n are beside every α |
 | 2605.08505, 2510.05554 | no per-head threshold is read: each critical scale belongs to a key law; β (A2's two estimators) is beside, with the estimator named |
 | §4.3, §7 | the light-cone test nudges one token's residual through the full model (B0's harness) and reads the response at its induction partners against non-partners at the same distance; one pass (finite depth), not a Lyapunov exponent |
 | 2606.29139 | non-partners are matched on i − j (and on position), because influence decays with distance anyway |

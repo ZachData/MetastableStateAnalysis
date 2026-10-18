@@ -31,7 +31,7 @@ WHAT IT SHOWS
 
 WHAT IT DOES NOT PROVE
 ----------------------
-- That a slope over n ∈ [16, ~465] measures the limit: a finite-n α is the crossover the paper
+- That a slope over n ∈ [16, 512] (v1's rows) measures the limit: a finite-n α is the crossover the paper
   says finite N gives. Check 2 measures it: i.i.d. Gaussian logits at a fixed s = 2 give a slope
   well below 1 over n = 16–256, rising only past n ≈ 4000. So α is read against the same step's
   heads and step 0, with the row logit spread beside, not as "condensed" or "diffuse".
@@ -76,7 +76,7 @@ small = np.array([16, 64, 256])                          # B3's range of n (rows
 for sn in (0.5, 1.0):
     assert fit_slope(sn, small) > 0.85                   # diffuse at a modest fixed logit scale
 # ... but a large fixed scale is still in the crossover at these n: the slope is well below 1
-# and rises with n (the lognormal's e^{s²} sets the n where it settles). So a low α at n ≤ 465
+# and rises with n (the lognormal's e^{s²} sets the n where it settles). So a low α at n ≤ 512
 # can be a sharp head with no growing gap: the design reads α beside the row logit spread.
 s2_small, s2_large = fit_slope(2.0, small), fit_slope(2.0, np.array([4096, 16384, 65536]), 50)
 assert s2_small < 0.8 and s2_large > s2_small + 0.1, (s2_small, s2_large)
