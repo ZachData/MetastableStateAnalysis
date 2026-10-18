@@ -17,7 +17,8 @@
   - The rule at all 18 steps finds no head of 14 with D\* ≥ 1 at any step: to 256 attention is near uniform and every head reads outside (nothing to fit); positional heads appear from 512 (`L5H2`, `L4H9`), and V's subspaces never carry the content a head reads; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
   - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, mostly because trained heads are not isotropic content plus position (214 of 252 cells outside); where V's ladder was reached the tokens hold about chance in V's subspaces; V's 2D blocks are at the random-weight rate, training shows in their sign — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
   - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design frozen with its LN1 frame's QK form corrected to B2a's — `trackB_circuit/design-B2.md` "The math"
-  - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; read at one step, the statistic sees a set of members only when all sit near their step's 90th percentile (8 % of planted sets at the 80th); the rule's 9-step reach is not gated — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
+  - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; read at one step, the statistic sees a set of members only when all sit near their step's 90th percentile (8 % of planted sets at the 80th) — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
+  - On the rule's own 9-step statistic the gate still passes (100 % at the 90th), so the constants stand. The reach is 42 % at the 80th. Sets at or below the 75th cannot be seen at all, because the null's mean |p − ½| is exactly ¼. Sets planted only from 8000 are seen in 67 % of draws at the 90th. A single copied direction per pair is seen in C6 in 55 % of draws — `trackB_circuit/status-B.md` "B2 unit 1b (2026-10-18)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -29,7 +30,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-17 · body `456cced8a0`
+- **Reviewed:** 2026-10-18 · body `9c66b85875`
 <!-- /phase-card -->
 
 ## Units
@@ -61,6 +62,47 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 |---|---|---|
 | 0. design, scan, `sympy` check | **done 2026-10-17**; frozen by the user 2026-10-17 (Blocked 61 (a): 3 units; LN1 frame's `M_0` corrected at the freeze) | `design-B2.md`, `lit-B.md` "B2", `tools/math_checks/b2_symmetric_inertia.py` |
 | 1. columns, the rule, the gate | **done 2026-10-17: every arm passes**, constants unchanged | `trackB_circuit/b2.py`, `tests/test_b2.py`; "B2 unit 1 (2026-10-17)" below |
+| 1b. the 9-step re-gate (rule 6's gate, Blocked 62 (a)) | **done 2026-10-18: passes**, constants unchanged; reach at 9 steps and G5's dose curve recorded | `b2.py regate`; "B2 unit 1b (2026-10-18)" below |
+
+## B2 unit 1b (2026-10-18): the 9-step re-gate (Blocked 62 (a), (c))
+
+**Input:** code `b2.code_sha()` = `da75a1f92328` (`b2.py regate`: `g3m_step`, `g3m`, `g5`'s `copy`),
+records `/run/media/system/WDS_500/Mets/data/b2/2026-10-18-regate/` (`regate.json`,
+`g3m_step{512,…,143000}.npz`: every head's C1 and the planted heads' dosed C1 per dose; log
+`../2026-10-18-regate.log`). Weights of the 9 steps ≥ 512 from the HF cache, float64 CPU, 24 min.
+G3's 200 fake sets (seed `b2-g3`, 90 heads), each head dosed as G3 doses, to its own step's
+quantile. No member value was read. Re-run: `METS_DATA=<data> python -m trackB_circuit.b2 regate
+--out <dir>`. 62 (c), the user's: "two-sided" stays as frozen (p in the step's 384 heads, the null
+layer-matched); no code change.
+
+| G3m: C1's T over the 9 steps ≥ 512, share of 200 draws at rank ≥ 0.99 (median rank) | 70th | 75th | 80th | 90th |
+|---|---|---|---|---|
+| planted at all 9 steps (**gated: ≥ 80 % at the 90th**) | 0 % (0.56) | 3 % (0.87) | 42 % (0.987) | **100 %** (1.0) |
+| late onset, planted at 8000–143000 only (5 of 9), beside | 0 % (0.53) | 0.5 % (0.72) | 4.5 % (0.89) | 67 % (0.996) |
+| one step, 143000, G3's own seeds (wiring check) | 0 % | 0 % | 8 % | 100 % |
+
+| G5's dose curve at 143000 (copies of A's write directions into B's keys) | planted C6 (primary) | primary rank | 200 draws at ≥ 0.99 | unplanted in central 90 % |
+|---|---|---|---|---|
+| 1 | 0.084 | 0.992 | 55.5 % | 95.5 % |
+| 2 | 0.147 | 0.9997 | 100 % | 95.5 % |
+| 4 (unit 1's G5) | 0.274 | 1.0 | 100 % | 95.5 % |
+
+Chance C6 is 1/64 = 0.0156; the unplanted primary is 0.0169.
+
+**What it says.**
+- **The gated arm passes, so the constants stand** (rule 6). The one-step slice returns unit 1's G3
+  exactly, so the 9-step run is wired the same way.
+- **Averaging over steps helps for members that are extreme at every step.** At the 80th the
+  9-step T sees 42 % of planted sets; one step sees 8 %.
+- **A set at or below the 75th cannot be seen by construction.** Under the null E|p − ½| = ¼
+  exactly (`tools/math_checks/b2_two_sided_floor.py`), so a set held at the 75th scores the null's
+  mean and a set at the 70th scores below it. The 70th dose that `/challenge-pr` on #219 suggested
+  sits under the floor: 0 % is the arithmetic, not a power shortfall.
+- **Members that turn extreme only late are diluted.** Planted at 8000 onward, a set at the 90th
+  is seen in 2 of 3 draws, and at the 80th almost never. A "no difference shown" in unit 2 does not
+  rule out a late onset below about the 90th.
+- **G5's reach.** One copied direction per pair (C6 ≈ 5× chance) is seen in about half the draws.
+  Two copies (≈ 9×) are seen in all of them.
 
 ## B2 unit 1 (2026-10-17): the columns and the gate
 

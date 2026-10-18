@@ -40,6 +40,15 @@ B's top-k right singular vectors of ``W_K`` to the orthonormalised planted direc
 write directions for every A below B), keeping W_K's singular values; its primary is one seeded
 set, as the design reads, with 200 draws beside.
 
+**The re-gate (Blocked 62 (a), the user's, 2026-10-18; `regate`):** G3m is G3 on the rule's own
+statistic, T over the 9 steps ≥ 512. The same 200 fake sets as G3 (seed ``b2-g3``); at every step
+each planted head is dosed, as G3 doses, to that step's own quantile of its unplanted C1, and each
+step's percentiles are taken with the set's planted values in. Doses 70th–90th; the pass is G3's
+(the 90th, ≥ 80 % of draws), the rest beside. A late-onset variant plants only at steps ≥ 8000 (5
+of the 9), the unplanted values at 512–4000, beside. A one-step slice at 143000 with G3's own seeds
+must return unit 1's G3 rates (the wiring check). G5's dose curve copies 1 and 2 of A's write
+directions beside G5's 4, at 143000 as G5 reads. 62 (c) is frozen as written: p in the step's 384.
+
 NUMERICS: float64 on the CPU. Checkpoints load in float32 (`b0_gate.load`) and their weights are
 cast to float64, exactly; the stored OVs were extracted in float32, so G0 (i)'s tolerance 1e-5 is
 float32's eps with room. CPU, not the GPU, because every operation is a QR or SVD of at most
@@ -47,6 +56,7 @@ float32's eps with room. CPU, not the GPU, because every operation is a QR or SV
 
 Tier 1: exploratory, unregistered.
     python -m trackB_circuit.b2 gate --out <dir> [--arms G0 G1 ...]
+    python -m trackB_circuit.b2 regate --out <dir>
 """
 
 from __future__ import annotations
@@ -75,6 +85,7 @@ N_POP = N_LAYERS * N_HEADS                # 384
 R_SUB, R_BESIDE = 16, (8, 32)             # placed (design): C6's r
 PAIR_RATIO = 0.8                          # placed (design): negative-pair flag |λ₂|/|λ₁|
 STAT_FROM = 512                           # the statistic's steps (design rule 2)
+STAT_STEPS = tuple(x for x in STEPS if x >= STAT_FROM)   # 9 steps
 N_NULL, N_DRAW = 10_000, 200
 RANK_PASS = 0.99                          # 0.05 / 5, one family
 C7_FRAC = 0.1                             # placed (design, after 143000's M2 was seen)
@@ -84,6 +95,8 @@ G2_MAX = 0.02
 G3_DOSE, G3_DOSES, G3_PASS = 0.90, (0.75, 0.80, 0.90, 0.95, 0.99), 0.80
 G4_NU = 2.0
 G5_COPY = 4
+G3M_DOSES, G3M_LATE = (0.70, 0.75, 0.80, 0.90), 8000   # Blocked 62 (a): 0.90 gated, the rest beside
+G5_COPIES = (1, 2)                                      # G5's dose curve, beside
 G6_ASYM, G6_ALIGN = 1e-6, 0.999
 G7_TV = 1e-6
 G7_CODES = {"2026-10-16": "9fe738d5a008", "2026-10-16-occ": "37d4f2487738",
@@ -462,6 +475,43 @@ def g3(W143: List[Dict], pop: Dict) -> Dict:
     return out
 
 
+def g3m_step(Ws: Sequence[Dict], F: np.ndarray, doses: Sequence[float] = G3M_DOSES) -> Dict:
+    """One step's part of G3m: every head's unplanted C1 and, per dose, each fake-set head's C1
+    dosed to this step's own quantile."""
+    heads = sorted(set(F.ravel().tolist()))
+    c1 = np.array([head_row(W)["C1"] for W in Ws])
+    ms = {i: m_row(Ws[i]) for i in heads}
+    planted = {q: np.array([dose_to(Ws[i], float(np.quantile(c1, q)), ms[i])[1] for i in heads])
+               for q in doses}
+    return {"C1": c1, "heads": np.array(heads), "planted": planted}
+
+
+def g3m(parts: Dict[int, Dict], F: np.ndarray, doses: Sequence[float] = G3M_DOSES,
+        late: int = G3M_LATE) -> Dict:
+    """G3 on the rule's T (mean over `parts`' steps); the late-onset variant and the one-step
+    slice at the last step (G3's seeds, so it must return unit 1's G3) beside."""
+    steps = sorted(parts)
+    pos = {int(h): k for k, h in enumerate(parts[steps[0]]["heads"])}
+    variants = {"all": (steps, steps, "b2-g3m"), "late": (steps, [x for x in steps if x >= late], "b2-g3m-late"),
+                f"one{steps[-1]}": ([steps[-1]], [steps[-1]], "b2-g3")}
+    out = {"steps": steps, "late_from": late}
+    for name, (read, on, tag) in variants.items():
+        for q in doses:
+            ranks = []
+            for k, f in enumerate(F):
+                P = []
+                for st in read:
+                    x = parts[st]["C1"].copy()
+                    if st in on:
+                        x[f] = parts[st]["planted"][q][[pos[int(i)] for i in f]]
+                    P.append(percentiles(x))
+                ranks.append(member_rank(dev(np.array(P)), f, seed_for(tag, q, k))["rank"])
+            out[f"{name}_q{q:.2f}"] = {"pass_rate": float(np.mean(np.array(ranks) >= RANK_PASS)),
+                                      "rank_median": float(np.median(ranks))}
+    out["pass"] = out[f"all_q{G3_DOSE:.2f}"]["pass_rate"] >= G3_PASS
+    return out
+
+
 def g4(W143: List[Dict]) -> Dict:
     """A planted repulsive pair in one 143000 head's V: C2 < 0 and the flag set; ν = 0 returns
     the head's own values."""
@@ -496,7 +546,7 @@ def plant_keys(W: Dict, dirs: np.ndarray) -> Dict:
     return {**W, "Wk": U @ np.diag(s) @ basis.T}
 
 
-def g5_one(W143: List[Dict], pop: Dict, O: np.ndarray, f: Sequence[int], seed) -> Dict:
+def g5_one(W143: List[Dict], pop: Dict, O: np.ndarray, f: Sequence[int], seed, copy: int = G5_COPY) -> Dict:
     f = sorted(f, key=lambda i: i // N_HEADS)
     un = comp_rank(O, f, seed)
     O2 = O.copy()
@@ -504,7 +554,7 @@ def g5_one(W143: List[Dict], pop: Dict, O: np.ndarray, f: Sequence[int], seed) -
         below = [a for a in range(len(f)) if f[a] // N_HEADS < f[b] // N_HEADS]
         if not below:
             continue
-        dirs = np.concatenate([pop["W"][f[a]][:, :G5_COPY] for a in below], 1)
+        dirs = np.concatenate([pop["W"][f[a]][:, :copy] for a in below], 1)
         Kb = bases(plant_keys(W143[f[b]], dirs))[1][:, :R_SUB]
         O2[:, f[b]] = ((np.einsum("ndi,dj->nij", pop["W"][:, :, :R_SUB], Kb)) ** 2).sum((1, 2)) / R_SUB
     pl = comp_rank(O2, f, seed)
@@ -512,12 +562,12 @@ def g5_one(W143: List[Dict], pop: Dict, O: np.ndarray, f: Sequence[int], seed) -
             "unplanted_rank": un["rank"], "unplanted_C6": un["C6"]}
 
 
-def g5(W143: List[Dict], pop: Dict) -> Dict:
+def g5(W143: List[Dict], pop: Dict, copy: int = G5_COPY) -> Dict:
     lay_c = [parse_head(m)[0] for m in CIRCUIT]
     F = fake_sets(lay_c, N_DRAW + 1, seed_for("b2-g5"))
     O = comp_table(pop["W"], pop["K"])
-    prim = g5_one(W143, pop, O, list(F[0]), seed_for("b2-g5", 0))
-    besides = [g5_one(W143, pop, O, list(f), seed_for("b2-g5", k + 1)) for k, f in enumerate(F[1:])]
+    prim = g5_one(W143, pop, O, list(F[0]), seed_for("b2-g5", 0), copy)
+    besides = [g5_one(W143, pop, O, list(f), seed_for("b2-g5", k + 1), copy) for k, f in enumerate(F[1:])]
     return {"primary": prim,
             "draws_planted_pass": float(np.mean([b["planted_rank"] >= RANK_PASS for b in besides])),
             "draws_unplanted_central90": float(np.mean([0.05 <= b["unplanted_rank"] <= 0.95 for b in besides])),
@@ -641,14 +691,54 @@ def cmd_gate(a) -> int:
     return 0 if rec["pass"] else 1
 
 
+def cmd_regate(a) -> int:
+    """Blocked 62 (a): G3m over the 9 steps ≥ 512, G5's dose curve at 143000."""
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    p = out / "regate.json"
+    if p.exists():
+        raise SystemExit(f"refusing: {p} exists")
+    import torch
+    rec = {"code": code_sha(), "torch": torch.__version__, "numpy": np.__version__, "device": "cpu",
+           "dtype": "float64", "constants": {**constants(), "G3M_DOSES": G3M_DOSES, "G3M_LATE": G3M_LATE,
+                                              "G5_COPIES": G5_COPIES, "STAT_STEPS": STAT_STEPS}, "arms": {}}
+    F = fake_sets([parse_head(m)[0] for m in MEMBERS], N_DRAW, seed_for("b2-g3"))
+    parts = {}
+    for st in STAT_STEPS:
+        t0 = time.monotonic()
+        Ws, _ = load_weights(st)
+        parts[st] = g3m_step(Ws, F)
+        np.savez(out / f"g3m_step{st}.npz", C1=parts[st]["C1"], heads=parts[st]["heads"],
+                 **{f"planted_q{q:.2f}": v for q, v in parts[st]["planted"].items()})
+        print(f"step {st}: {time.monotonic() - t0:.0f}s", flush=True)
+        if st == 143000:
+            t1 = time.monotonic()
+            pop = population(Ws)
+            rec["arms"]["G5c"] = {f"copy{c}": g5(Ws, pop, c) for c in G5_COPIES}
+            rec["arms"]["G5c"]["seconds"] = time.monotonic() - t1
+            p.write_text(json.dumps(rec, indent=1, default=float))
+            print(f"G5c ({rec['arms']['G5c']['seconds']:.0f}s)", flush=True)
+        del Ws
+    t1 = time.monotonic()
+    r = g3m(parts, F)
+    r["seconds"] = time.monotonic() - t1
+    rec["arms"]["G3m"] = r
+    rec["pass"] = r["pass"]
+    p.write_text(json.dumps(rec, indent=1, default=float))
+    print(f"G3m: {'pass' if r['pass'] else 'FAIL'}", flush=True)
+    return 0 if r["pass"] else 1
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="python -m trackB_circuit.b2")
     sub = ap.add_subparsers(dest="cmd", required=True)
     g = sub.add_parser("gate")
     g.add_argument("--out", required=True)
     g.add_argument("--arms", nargs="+", choices=ARMS)
+    r = sub.add_parser("regate")
+    r.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    return cmd_gate(a)
+    return cmd_gate(a) if a.cmd == "gate" else cmd_regate(a)
 
 
 if __name__ == "__main__":
