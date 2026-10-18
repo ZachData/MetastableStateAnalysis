@@ -2895,6 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
+## 3.59 Track B's B2 closed: in the weights the circuit is composition, not an OV sign (2026-10-18)
+
+**`trackB_circuit/status-B.md` "B2 on one page (closed 2026-10-18)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+weights only, 18 steps, 6 members against their layers' 384 heads, nothing registered.
+
+- The particle picture's weight-level quantities (OV attractive share, its top signed pair, the
+  OV–QK alignment) do not set the circuit's heads apart from their layers within the gated reach.
+  What does is composition: `L5H2` writes into three induction heads' keys at 21–32× chance from
+  512–1000, and non-member heads read that space about as much. So for Track B the circuit is
+  where heads read each other, not which sign their V has; B4 nudges that space and all its readers.
+- QK symmetry splits the members both ways (induction heads high, the previous-token head low), but
+  non-members of the same kinds sit alike, so it may describe head types, not this circuit (B3
+  re-ranks it). No head of 410m is in 2d's gradient-flow regime at any step.
+- Spectrum counts again mean little alone: every symmetrised map has inertia (64, 64) by
+  construction, and Table 1's "unclassified" rise at 1000 is heads whose V has no positive-real
+  eigenvalue.
+
+---
+
 ## 3.58 Track A's A2 closed: the push against the field is a few early MLPs, and nothing causal is read (2026-10-17)
 
 **`trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"** holds the readings and what
