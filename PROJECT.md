@@ -2895,6 +2895,27 @@ cheap and would resolve it.**
 
 ---
 
+## 3.59 Track B's B2 closed: in the weights `L5H2` writes into three induction heads' keys; no OV column was shown to differ (2026-10-18)
+
+**`trackB_circuit/status-B.md` "B2 on one page (closed 2026-10-18)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+weights only, 18 steps, 6 members against their layers' 384 heads, nothing registered.
+
+- The particle picture's weight-level quantities (OV attractive share, its top signed pair, the
+  OV–QK alignment) show no difference between the circuit's heads and their layers, a verdict
+  blind to members held mid-population (the gate sees 42 % of sets at the 80th). What does differ
+  is composition, for 3 of the 6 members: `L5H2` writes into three induction heads' keys at
+  21–32× chance from 512–1000, as expected from how the members were found on activations, and 8
+  non-member heads read that space at ≥ 10× chance. B4 nudges that space and all its readers.
+- QK symmetry splits the members both ways (`L7H8`, `L8H6`, `L11H14`, `L10H7` high; `L5H2` and the
+  induction member `L12H5` low). Some same-kind non-members sit alike, so whether it marks this
+  circuit or head kinds is open (B3 re-ranks it). No head of 410m is in 2d's gradient-flow regime at any step.
+- Spectrum counts again mean little alone: every symmetrised map has inertia (64, 64) by
+  construction, and Table 1's "unclassified" rise at 1000 is heads whose V has no positive-real
+  eigenvalue.
+
+---
+
 ## 3.58 Track A's A2 closed: the push against the field is a few early MLPs, and nothing causal is read (2026-10-17)
 
 **`trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"** holds the readings and what

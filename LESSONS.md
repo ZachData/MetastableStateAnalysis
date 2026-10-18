@@ -1646,6 +1646,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   "unclassified" rise. The 14 checked heads never met the case. Rule: before calling a rewrite
   equal to the original, list the branches where the original's answer is set by a degenerate
   value (ties, zeros, noise) and count how many inputs reach them.
+- 2026-10-18, B2 close-out (found by `/challenge-pr` on #222, finding 1): the list carried to B4 as
+  "every head that reads `L5H2`'s write space" came from `b2_show`'s table, which ranks only the
+  members' layers. Over all 18 layers after 5, `L9H0` is 5th (27× chance) and `L6H3` 9×. Neither
+  was listed; `L9H0` is also outside 7d's causal top 10, so it is the contrast B4 needs. Rule: a
+  list labelled "every" or "all" is produced over the whole population, never copied from a view
+  scoped to the members.
 
 ## 12. Deleted, then needed
 
