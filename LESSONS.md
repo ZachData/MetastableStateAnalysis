@@ -1625,6 +1625,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   the block's *shared* (mean) update (`u2_attn.shares`). Same name, different quantity; neither
   the author nor `/challenge-pr` on #216 opened 1e's code. Rule: a sentence that says an earlier
   phase's number "holds" or "fails" names both definitions, or it is not a correction.
+- 2026-10-17, B2's freeze (found writing unit 1's code, before any output): `design-B2.md` put
+  C1–C4 in "B2a's LN1 frame" with `M_0 = diag(g) C W_Qᵀ W_K C diag(g) / √64`, after the author
+  and `/challenge-pr` on #218 (whose finding 4 made that frame primary) had both read it. B2a's
+  tokens are LN1's rows with the gain in, and its logit is `yᵀ W_Qᵀ W_K y′ / √64`, so the formula
+  applied the gain twice and set V and M_0 in different frames. Neither review opened
+  `b2a.head_logits`. Rule: a design that reuses another unit's frame writes each matrix by
+  reading that unit's code, not its prose.
 
 ## 12. Deleted, then needed
 
