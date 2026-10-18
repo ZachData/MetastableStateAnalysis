@@ -54,9 +54,17 @@ cast to float64, exactly; the stored OVs were extracted in float32, so G0 (i)'s 
 float32's eps with room. CPU, not the GPU, because every operation is a QR or SVD of at most
 1024 × 132 per head (seconds per step), and the population is never on a GPU-sized batch.
 
+**Unit 2, the table (Blocked 63 (a), the user's, 2026-10-18: the frozen T is ranked; `table`):**
+every head's columns at the 18 steps, both frames, then the rule. C5 is `classify_ov_row` made
+exact in low rank (`c5_row`); C6's mean over steps is ``comp_mean`` of the steps' mean overlap
+table, since it is linear. Before any rule is read the run refuses unless (i) C1–C4 equal unit 1's
+saved populations at 0, 512, 143000 and (ii) the low-rank C5 equals the dense function on B2a's 14
+heads. Seeds ``b2-table``. Not built, beside: Phase 6's ``U_pos`` / ``U_neg`` / ``U_A`` dimensions.
+
 Tier 1: exploratory, unregistered.
     python -m trackB_circuit.b2 gate --out <dir> [--arms G0 G1 ...]
     python -m trackB_circuit.b2 regate --out <dir>
+    python -m trackB_circuit.b2 table --out <dir> --gate <unit 1's gate dir>
 """
 
 from __future__ import annotations
@@ -632,6 +640,215 @@ def g7() -> Dict:
             "pass": not bad and worst <= G7_TV}
 
 
+# ---------------------------------------------------------------- unit 2: the table
+
+def c5_row(A: np.ndarray, B: np.ndarray, Aq: np.ndarray, Bk: np.ndarray,
+           simple_tol: float = 0.05, real_tol: float = 1e-6) -> Dict:
+    """`table1_predictions.classify_ov_row(A Bᵀ, Aq Bkᵀ)` made exact in low rank: V's nonzero
+    eigenvalues are Bᵀ A's, with eigenvectors A w, and the other d − k are zeros (checked against
+    the dense function in `cmd_table`)."""
+    d, k = A.shape
+    lam, w = np.linalg.eig(B.T @ A)
+    ev = np.concatenate([lam, np.zeros(d - k)])
+    o = np.argsort(-ev.real, kind="stable")
+    lam1, mag1 = ev[o[0]], abs(ev[o[0]])
+    is_real = bool(abs(lam1.imag) / mag1 < real_tol) if mag1 > 1e-15 else False
+    gap = abs(lam1 - ev[o[1]]) / mag1 if mag1 > 1e-15 else np.inf
+    is_simple, is_pos = bool(gap > simple_tol), bool(lam1.real > 0)
+    qk = 0.0
+    if o[0] < k:
+        phi = (A @ w[:, o[0]]).real
+        phi = phi / np.linalg.norm(phi)
+        qk = float((phi @ Aq) @ (Bk.T @ phi))
+    tr, v2 = float(np.trace(B.T @ A)), frob_dot(A, B, A, B)
+    s = tr / d
+    iso = float(np.sqrt(max(v2 - 2 * s * tr + s * s * d, 0.0)) / max(np.sqrt(v2), 1e-15))
+    if iso < 0.10 and s > 0:
+        row = "row1_V_identity"
+    elif iso < 0.10 and s < 0:
+        row = "row4_V_negative_identity"
+    elif is_real and is_simple and is_pos and qk > 0:
+        row = "row2_three_hyperplanes"
+    elif is_real and is_simple and is_pos:
+        row = "row2_eigen_only_qk_fails"
+    else:
+        row = "unclassified"
+    return {"row": row, "lam1_real": float(lam1.real), "lam1_imag": float(lam1.imag), "qk_form": qk}
+
+
+def inertia(ev: np.ndarray, rtol: float = 1e-10) -> Tuple[int, int]:
+    t = rtol * np.abs(ev).max()
+    return int((ev > t).sum()), int((ev < -t).sum())
+
+
+def head_extra(W: Dict) -> Dict:
+    """Beside values: C5 in both frames, the inertia of sym V (LN1) and sym M_0."""
+    Aq, Bk = m_factors(W)
+    out = {"inert_M": inertia(sym_eigs(Aq, Bk))}
+    for frame in ("ln", "raw"):
+        A, B = v_factors(W, frame)
+        sfx = "" if frame == "ln" else "_raw"
+        out[f"C5{sfx}"] = c5_row(A, B, Aq, Bk)["row"]
+        if frame == "ln":
+            out["inert_V"] = inertia(sym_eigs(A, B))
+    return out
+
+
+def ww_table(Wb: np.ndarray, r: int = R_SUB) -> np.ndarray:
+    """O[i, j] = ‖W_iᵀ W_j‖²_F / r, write–write overlap (7e's item)."""
+    return comp_table(Wb, Wb, r)
+
+
+def table_step(step: int, out: Path) -> Dict:
+    """One step's population (every column, both frames, C5, inertia) and composition tables,
+    saved as `step<S>.npz`; reloaded if the file is from this code."""
+    p = out / f"step{step}.npz"
+    if p.exists():
+        z = np.load(p, allow_pickle=False)
+        if str(z["code"]) == code_sha():
+            return {k: z[k] for k in z.files if k != "code"}
+        raise SystemExit(f"refusing: {p} is from code {z['code']}, not {code_sha()}")
+    Ws, _ = load_weights(step)
+    pop = population(Ws)
+    ex = [head_extra(W) for W in Ws]
+    rec = {k: v for k, v in pop.items() if k not in ("W", "K")}
+    rec["regime"], rec["regime_raw"] = rec["regime"].astype(str), rec["regime_raw"].astype(str)
+    for k in ("C5", "C5_raw"):
+        rec[k] = np.array([e[k] for e in ex])
+    rec["inert_V"] = np.array([e["inert_V"] for e in ex])
+    rec["inert_M"] = np.array([e["inert_M"] for e in ex])
+    for r in (R_SUB,) + R_BESIDE:
+        rec[f"O{r}"] = comp_table(pop["W"], pop["K"], r)
+    rec["WW16"] = ww_table(pop["W"])
+    np.savez(p, code=code_sha(), **rec)
+    return rec
+
+
+def table_checks(parts: Dict[int, Dict], gate_dir: Path) -> Dict:
+    """Refusals before any rule is read: (i) C1–C4 and the raw beside equal unit 1's saved
+    populations at 0, 512, 143000; (ii) the low-rank C5 equals the dense `classify_ov_row` on
+    B2a's 14 heads at 0 and 143000."""
+    from p2d_operator_activation.table1_predictions import classify_ov_row
+    from trackB_circuit import b2a
+    worst = 0.0
+    for s in (0, 512, 143000):
+        z = np.load(gate_dir / f"population_step{s}.npz")
+        for k in COLS + ("C1_raw", "C2_raw", "C4_raw", "asym", "C3_unrot"):
+            worst = max(worst, float(np.abs(z[k] - parts[s][k]).max()))
+    rows_bad, lam = [], 0.0
+    for s in (0, 143000):
+        Ws, _ = load_weights(s)
+        for name in b2a.heads():
+            W = Ws[head_index(name)]
+            Aq, Bk = m_factors(W)
+            A, B = v_factors(W, "ln")
+            lo = c5_row(A, B, Aq, Bk)
+            de = classify_ov_row(A @ B.T, Aq @ Bk.T)
+            lam = max(lam, abs(lo["lam1_real"] - de["lam1_real"]) / max(abs(de["lam1_real"]), 1e-12))
+            if lo["row"] != de["row"]:
+                rows_bad.append(f"{s}/{name}: {lo['row']} vs {de['row']}")
+    ok = worst <= 1e-12 and not rows_bad and lam <= 1e-8
+    return {"gate_pop_max_abs": worst, "c5_rows_differ": rows_bad, "c5_lam1_rel": lam, "pass": ok}
+
+
+def band(x: np.ndarray) -> Tuple[float, float]:
+    lo, hi = np.quantile(x, [0.025, 0.975])
+    return float(lo), float(hi)
+
+
+def assemble(parts: Dict[int, Dict]) -> Dict:
+    """The rule on the table: cells, the five ranks, and the descriptive and beside rows."""
+    mem = [head_index(m) for m in MEMBERS]
+    circ = [head_index(m) for m in CIRCUIT]
+    six = sorted(circ + [head_index("L10H7")], key=lambda i: i // N_HEADS)
+    P = {c: {s: percentiles(parts[s][c]) for s in STEPS}
+         for c in COLS + ("C1_raw", "C2_raw", "C4_raw", "C3_unrot", "asym")}
+    out = {"cells": {}, "ranks": {}, "beside_ranks": {}, "bands_step0": {}}
+    for c in P:
+        lo, hi = band(parts[0][c])
+        out["bands_step0"][c] = [lo, hi]
+        out["cells"][c] = {m: [{"step": s, "value": float(parts[s][c][i]), "p": float(P[c][s][i]),
+                                "moved": bool(not lo <= parts[s][c][i] <= hi)} for s in STEPS]
+                           for m, i in zip(MEMBERS, mem)}
+        D = dev(np.array([P[c][s] for s in STAT_STEPS]))
+        r = member_rank(D, mem, seed_for("b2-table", c))
+        (out["ranks"] if c in COLS else out["beside_ranks"])[c] = r
+    for c in COLS:
+        out["ranks"][c]["reads"] = "members differ" if out["ranks"][c]["rank"] >= RANK_PASS else "no difference shown"
+    # C6: linear in O, so the mean over steps of comp_mean is comp_mean of the mean O
+    for r in (R_SUB,) + R_BESIDE:
+        Ob = np.mean([parts[s][f"O{r}"] for s in STAT_STEPS], 0)
+        res = comp_rank(Ob, circ, seed_for("b2-table", "C6", r))
+        res["per_step"] = {s: float(comp_mean(parts[s][f"O{r}"], np.array([circ]))[0]) for s in STEPS}
+        res["with_L10H7"] = float(comp_mean(Ob, np.array([six]))[0])
+        res["with_L10H7_rank"] = comp_rank(Ob, six, seed_for("b2-table", "C6+", r))["rank"]
+        if r == R_SUB:
+            res["reads"] = "members differ" if res["rank"] >= RANK_PASS else "no difference shown"
+            out["ranks"]["C6"] = res
+        else:
+            out["beside_ranks"][f"C6_r{r}"] = res
+    Wb = np.mean([parts[s]["WW16"] for s in STAT_STEPS], 0)
+    ww = comp_rank(Wb, circ, seed_for("b2-table", "WW"))
+    ww["per_step"] = {s: float(comp_mean(parts[s]["WW16"], np.array([circ]))[0]) for s in STEPS}
+    out["beside_ranks"]["WW16"] = ww
+    # C5 and the negative-pair flag, descriptive
+    out["C5"] = {s: {"members": {m: str(parts[s]["C5"][i]) for m, i in zip(MEMBERS, mem)},
+                     "members_raw": {m: str(parts[s]["C5_raw"][i]) for m, i in zip(MEMBERS, mem)},
+                     "pop_shares": {k: float(v) for k, v in zip(*np.unique(parts[s]["C5"], return_counts=True))},
+                     "pop_shares_raw": {k: float(v) for k, v in zip(*np.unique(parts[s]["C5_raw"], return_counts=True))}}
+                 for s in STEPS}
+    for s in STEPS:
+        for k in ("pop_shares", "pop_shares_raw"):
+            out["C5"][s][k] = {a: b / N_POP for a, b in out["C5"][s][k].items()}
+    out["pair"] = {s: {"pop_rate": float(parts[s]["pair"].mean()), "pop_rate_raw": float(parts[s]["pair_raw"].mean()),
+                       "members": {m: bool(parts[s]["pair"][i]) for m, i in zip(MEMBERS, mem)}} for s in STEPS}
+    out["regime"] = {s: {"members": {m: str(parts[s]["regime"][i]) for m, i in zip(MEMBERS, mem)},
+                         "pop": {k: int(v) for k, v in zip(*np.unique(parts[s]["regime"], return_counts=True))}}
+                     for s in STEPS}
+    out["inertia"] = {s: {"V": sorted({tuple(x) for x in parts[s]["inert_V"].tolist()}),
+                          "M": sorted({tuple(x) for x in parts[s]["inert_M"].tolist()})} for s in STEPS}
+    out["moved_share_pop"] = {c: {s: float(((parts[s][c] < out["bands_step0"][c][0])
+                                            | (parts[s][c] > out["bands_step0"][c][1])).mean()) for s in STEPS}
+                              for c in COLS}
+    return out
+
+
+def c7_table() -> Dict:
+    """C7: r90 per head per step from B2a's records (14 heads; no population)."""
+    from trackB_circuit import b2a
+    recs = c7_records()
+    return {h: {s: r90(json.loads(recs[s].read_text())["heads"][h]["m2"]["qk"]) for s in STEPS}
+            for h in b2a.heads()}
+
+
+def cmd_table(a) -> int:
+    """Unit 2 (Blocked 63 (a), the user's: the frozen T ranked): the table over the 18 steps."""
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    p = out / "table.json"
+    if p.exists():
+        raise SystemExit(f"refusing: {p} exists")
+    import torch
+    rec = {"code": code_sha(), "torch": torch.__version__, "numpy": np.__version__, "device": "cpu",
+           "dtype": "float64", "constants": {**constants(), "STAT_STEPS": STAT_STEPS},
+           "steps": STEPS, "members": MEMBERS, "circuit": CIRCUIT, "gate_dir": str(Path(a.gate))}
+    parts = {}
+    for st in STEPS:
+        t0 = time.monotonic()
+        parts[st] = table_step(st, out)
+        print(f"step {st}: {time.monotonic() - t0:.0f}s", flush=True)
+    rec["checks"] = table_checks(parts, Path(a.gate))
+    print(f"checks: {'pass' if rec['checks']['pass'] else 'FAIL'}", flush=True)
+    if not rec["checks"]["pass"]:
+        (out / "checks_failed.json").write_text(json.dumps(rec, indent=1, default=float))
+        return 1
+    rec.update(assemble(parts))
+    rec["C7"] = c7_table()
+    p.write_text(json.dumps(rec, indent=1, default=float))
+    print("table written", flush=True)
+    return 0
+
+
 def constants() -> Dict:
     return {k: globals()[k] for k in ("R_SUB", "R_BESIDE", "PAIR_RATIO", "STAT_FROM", "N_NULL", "N_DRAW",
                                       "RANK_PASS", "C7_FRAC", "G0_TOL", "G1_BAND", "G2_MAX", "G3_DOSE",
@@ -737,8 +954,11 @@ def main(argv=None) -> int:
     g.add_argument("--arms", nargs="+", choices=ARMS)
     r = sub.add_parser("regate")
     r.add_argument("--out", required=True)
+    t = sub.add_parser("table")
+    t.add_argument("--out", required=True)
+    t.add_argument("--gate", required=True, help="unit 1's gate records (population_step*.npz)")
     a = ap.parse_args(argv)
-    return cmd_gate(a) if a.cmd == "gate" else cmd_regate(a)
+    return {"gate": cmd_gate, "regate": cmd_regate, "table": cmd_table}[a.cmd](a)
 
 
 if __name__ == "__main__":

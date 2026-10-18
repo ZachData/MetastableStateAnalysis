@@ -150,3 +150,32 @@ def test_g3m_sees_a_consistent_set_and_dilutes_a_late_one():
     assert r["one143000_q0.80"]["pass_rate"] < 0.5           # one step at the 80th: mostly not
     assert r["late_q0.80"]["pass_rate"] < 0.5                # 5 of 9 steps: diluted
     assert r["all_q0.50"]["pass_rate"] <= 0.1                # unplanted values: the null's rate
+
+
+def test_c5_row_is_classify_ov_row_in_low_rank():
+    """Unit 2's C5: the low-rank Table 1 row equals the dense function, including planted rows."""
+    from p2d_operator_activation.table1_predictions import classify_ov_row
+    for s in range(8):
+        W = _head(s)
+        Aq, Bk = b2.m_factors(W)
+        A, B = b2.v_factors(W, "ln")
+        lo, de = b2.c5_row(A, B, Aq, Bk), classify_ov_row(A @ B.T, Aq @ Bk.T)
+        assert lo["row"] == de["row"] and np.isclose(lo["lam1_real"], de["lam1_real"])
+    g = np.random.default_rng(9)
+    U = np.linalg.qr(g.standard_normal((D, K)))[0]
+    lam = np.r_[3.0, np.linspace(1, 0.5, K - 1)]
+    A, B = U * lam, U                                 # V symmetric PSD, simple top
+    for Aq, Bk, want in ((U, U, "row2_three_hyperplanes"), (U, -U, "row2_eigen_only_qk_fails")):
+        assert b2.c5_row(A, B, Aq, Bk)["row"] == classify_ov_row(A @ B.T, Aq @ Bk.T)["row"] == want
+    I = np.eye(D)
+    assert b2.c5_row(I, I, U, U)["row"] == "row1_V_identity"
+
+
+def test_c5_row_with_no_positive_eigenvalue_is_unclassified():
+    """`/challenge-pr` on #221, finding 4: every nonzero eigenvalue with Re < 0 puts a zero on top;
+    the low-rank row is "unclassified" (the dense one decides on rounding noise there)."""
+    g = np.random.default_rng(11)
+    U = np.linalg.qr(g.standard_normal((D, K)))[0]
+    A, B = -U * np.linspace(2, 1, K), U                 # V = −U diag Uᵀ, negative definite on U
+    r = b2.c5_row(A, B, U, U)
+    assert r["row"] == "unclassified" and r["lam1_real"] == 0.0
