@@ -1223,6 +1223,14 @@ of a design before running it, and print it on every record
   pools is gated with fakes drawn from the same fixed pool as the null, with the tested head kept
   in that pool, so the fake is exchangeable with it** (`/challenge-pr` on #224: leaving it out
   gave 3.0 % and 5.5 % false passes).
+- 2026-10-18 (B3 unit 1b, #225): following that rule literally, G2 gave each C3′ fake the *member's*
+  pool. The read gives the member a pool built around the member, so the gate tested a different
+  construction from the one it gates. G2 recorded 0.5 % on 200 fakes. With each fake's pool built
+  as the member's, 2,000 fakes give 1.5 %, still under the 2 % cap (`/challenge-pr` on #225, finding
+  1). Also, a fake's R1 and R2 pool (its whole layer) held the real member. Cost: one fix round; no
+  reading changed. Rule: **G2 calls the read's own pool builder on each fake (one function for
+  both), and a false-pass rate near its cap is quoted from enough fakes to separate the two (200
+  cannot tell 0.5 % from 1.5 %).**
 
 ## 7. Literature found after the construction was built
 

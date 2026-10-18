@@ -31,6 +31,25 @@ log(member mean / rest mean) on the column's domain without position 0. M1's β 
 layer only (`a2_beta_2026-10-16/refit_step143000.json`), so β beside is `fe_full` per head and
 M1 per layer.
 
+**Revised after the gate failed (Blocked 66 (a), the user's, 2026-10-18; `status-B.md` "B3 unit 1"),
+before any member value was read.** (1) Each induction member is typed at its own offset, the larger
+of offset 0 and +1 at 143000 (`L7H8` 0; `L8H6`, `L11H14` +1); `L12H5` is untyped (peak 0.011, as
+`L10H7`), so R2 counts the 4 typed members. (2) R2's onset also needs α below step 0's 2.5th
+percentile. (3) Every null pool keeps the tested head (inclusive): R1's and R2's are the tested
+head's layer without the members not under test (for a member its whole layer; for a fake its
+layer less the member), and R2's rank is exact from the per-layer hit rates (P(null count < c))
+rather than drawn; R2's attainable rank takes each member as hitting, so no member value enters the
+gate. **R2 reads "members differ" only at 4 of 4** (rank ≥ 0.99 as well), fixed before any member
+value. (4) C3′ draws one head per member, fixed over the 9 steps, from a fixed pool: the member and
+the 5 non-members nearest it in mean type score (its own key) over steps ≥ 512; `L12H5` and
+`L10H7` from their layer's non-members and themselves. G2's C3′ fakes are drawn from each member's
+5, and each fake's pool is built as the member's (the fake and the 5 non-members nearest it; for
+the untyped two, its layer's non-members), so G2 tests the construction the read uses
+(`/challenge-pr` on #225, finding 1; before it, each fake's null was the member's 5). No member's
+own value enters a fake's pool; the population quantiles R1 and R2 rank against hold all 384 heads,
+the members among them, as the design fixed. The superseded choices above: "C3′'s null draws one
+pool head per (member, step)", G2's re-centred C3′ fakes, G3's "count must be 5" (now 4).
+
 NUMERICS: stored attention (float32) is cast to float64 on the GPU; head-type forwards float32 on
 the GPU (as B0), scores accumulated in float64. Statistics on the CPU in float64.
 
@@ -53,7 +72,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 import numpy as np
 
 from trackA_force.a1a import RUNS, V1, prompts_hash, run_dir
-from trackB_circuit.b2 import draw_sets, head_index, head_name, layer_pools, percentiles, rank_of
+from trackB_circuit.b2 import draw_sets, head_index, head_name, percentiles, rank_of
 from trackB_circuit.b2a import N_HEADS, N_LAYERS, NAMED, REPO, STEPS, parse_head, seed_for
 
 DATA = Path(os.environ.get("METS_DATA", str(REPO / "data")))
@@ -67,8 +86,9 @@ FV_FILE = DATA / "analysis/fv_score.json"
 CATALOG = DATA / "analysis/redundancy_catalog.json"
 
 MEMBERS = NAMED                            # L5H2, L7H8, L12H5, L8H6, L11H14, L10H7
-TYPED = {"L5H2": "prev", "L7H8": "ind", "L12H5": "ind", "L8H6": "ind", "L11H14": "ind"}
+TYPED = ("L5H2", "L7H8", "L8H6", "L11H14")    # R2's members (Blocked 66 (a): `L12H5` untyped)
 INDUCTION = ("L7H8", "L8H6", "L11H14", "L12H5")
+FLOOR_Q = 0.025                            # Blocked 66 (a): R2's onset also below step 0's 2.5th pct
 N_POP = N_LAYERS * N_HEADS
 ROW_FROM = 16
 W_MIN = 0.05                               # placed (design)
@@ -88,6 +108,7 @@ G0_TYPE_STEPS = (4000, 16000, 143000)
 G1_BANDS = {"uniform": (0.97, 1.0), "two": (-0.02, 0.02), "gauss1": (0.85, None)}   # placed (design G1)
 G2_MAX = 0.02                              # placed (design G2)
 G3_BESIDE = 50                             # placed (module docstring): sets beside G3's primary
+G2_C3_BESIDE = 2000                        # placed (`/challenge-pr` on #225): C3′'s false pass beside G2's 200
 ARMS = ("G0", "G1", "G2", "G3")
 
 
@@ -170,9 +191,9 @@ def pctl_nan(x: np.ndarray) -> np.ndarray:
     return p
 
 
-def onset_index(alpha: np.ndarray, q: np.ndarray) -> Optional[int]:
-    """First grid index k ≥ 1 with α_k ≤ q_k and α_{k+1} ≤ q_{k+1} (R2's onset), else None."""
-    hit = np.isfinite(alpha) & (alpha <= q)
+def onset_index(alpha: np.ndarray, q: np.ndarray, floor: float = np.inf) -> Optional[int]:
+    """First grid index k ≥ 1 with α ≤ q and α < `floor` at k and k + 1 (R2's onset), else None."""
+    hit = np.isfinite(alpha) & (alpha <= q) & (alpha < floor)
     for k in range(1, len(alpha) - 1):
         if hit[k] and hit[k + 1]:
             return k
@@ -183,23 +204,48 @@ def formation_index(score: np.ndarray, frac: float = FORM_FRAC) -> int:
     return int(np.flatnonzero(score >= frac * score.max())[0])
 
 
-def r2_hits(A: np.ndarray, heads: Sequence[int], forms: Sequence[int], q: np.ndarray) -> np.ndarray:
+def r2_hits(A: np.ndarray, heads: Sequence[int], forms: Sequence[int], q: np.ndarray,
+            floor: float = np.inf) -> np.ndarray:
     """A (18, 384) α grid; whether each head's onset is within one grid step of its formation."""
     out = []
     for h, f in zip(heads, forms):
-        k = onset_index(A[:, h], q)
+        k = onset_index(A[:, h], q, floor)
         out.append(k is not None and abs(k - f) <= 1)
     return np.array(out, bool)
 
 
-def r2_null(A: np.ndarray, pools: Sequence[np.ndarray], forms: Sequence[int], q: np.ndarray,
-            n: int, seed: int) -> Tuple[np.ndarray, np.ndarray]:
-    """(null counts over n layer-matched sets, each pool's exact hit rate)."""
-    hit = [r2_hits(A, p, [f] * len(p), q) for p, f in zip(pools, forms)]
-    rates = np.array([h.mean() for h in hit])
-    g = np.random.default_rng(seed)
-    counts = sum(h[g.integers(0, len(h), n)].astype(int) for h in hit)
-    return counts, rates
+def whole_layer(h: int) -> np.ndarray:
+    l = h // N_HEADS
+    return np.arange(l * N_HEADS, (l + 1) * N_HEADS)
+
+
+def inclusive_pool(h: int, tested: Sequence[int]) -> np.ndarray:
+    """The inclusive pool (Blocked 66 (a)): h's layer without the members not under test, so a
+    fake's pool holds the fake and never a real member (`/challenge-pr` on #225, finding 4)."""
+    mem = {head_index(m) for m in MEMBERS} - set(int(t) for t in tested)
+    return np.array([i for i in whole_layer(h) if i not in mem])
+
+
+def count_dist(rates: Sequence[float]) -> np.ndarray:
+    """P(null count = c), c = 0..len(rates), for independent per-pool hit rates."""
+    dist = np.array([1.0])
+    for r in rates:
+        dist = np.convolve(dist, [1 - r, r])
+    return dist
+
+
+def r2_null(A: np.ndarray, heads: Sequence[int], forms: Sequence[int], q: np.ndarray,
+            floor: float = np.inf) -> Tuple[np.ndarray, np.ndarray]:
+    """Each tested head's inclusive-pool hit rate, as read and as if the head hit (the second
+    reads no tested head's value)."""
+    rates, if_hit = [], []
+    for h, f in zip(heads, forms):
+        others = [o for o in inclusive_pool(h, heads) if o != h]
+        n_o = int(r2_hits(A, others, [f] * len(others), q, floor).sum())
+        own = int(r2_hits(A, [h], [f], q, floor)[0])
+        rates.append((n_o + own) / (len(others) + 1))
+        if_hit.append((n_o + 1) / (len(others) + 1))
+    return np.array(rates), np.array(if_hit)
 
 
 def nearest_pool(score: np.ndarray, target: float, exclude: Sequence[int], k: int = NEAR_K) -> np.ndarray:
@@ -208,16 +254,10 @@ def nearest_pool(score: np.ndarray, target: float, exclude: Sequence[int], k: in
     return np.argsort(d, kind="stable")[:k]
 
 
-def c3_null(P: np.ndarray, pools: Sequence[Sequence[np.ndarray]], n: int, seed: int) -> np.ndarray:
-    """P (steps, 384) percentiles; pools[m][s] the pool of member m at step s. Null T's."""
-    g = np.random.default_rng(seed)
-    tot = np.zeros(n)
-    cells = 0
-    for pm in pools:
-        for s, pool in enumerate(pm):
-            tot += np.abs(P[s, pool[g.integers(0, len(pool), n)]] - 0.5)
-            cells += 1
-    return tot / cells
+def c3_null(P: np.ndarray, pools: Sequence[np.ndarray], n: int, seed: int) -> np.ndarray:
+    """P (steps, 384) percentiles; one head per pool, fixed over the steps. Null T's."""
+    Dv = np.abs(P - 0.5).mean(0)
+    return Dv[draw_sets(pools, n, seed)].mean(1)
 
 
 def received_ratio(A, lab: np.ndarray) -> np.ndarray:
@@ -428,21 +468,23 @@ def type_series(D: Dict, key: str) -> np.ndarray:
     return np.stack([np.asarray(D["types"][s][key]) for s in STEPS])             # (18, 384)
 
 
-def member_offset(D: Dict) -> Dict:
+def member_keys(D: Dict) -> Dict:
+    """Each typed member's type-score key (Blocked 66 (a)): `L5H2` previous-token; an induction
+    member its larger offset at 143000. `L12H5` is recorded, not typed."""
     t = D["types"][143000]
-    votes = {m: ("0" if t["ind0"][head_index(m)] >= t["ind1"][head_index(m)] else "+1") for m in INDUCTION}
-    zero = sum(v == "0" for v in votes.values())
-    return {"votes": votes, "offset": "0" if zero >= 2 else "+1",
+    off = {m: ("ind0" if t["ind0"][head_index(m)] >= t["ind1"][head_index(m)] else "ind1") for m in INDUCTION}
+    keys = {"L5H2": "prev", **{m: off[m] for m in TYPED if m in off}}
+    return {"keys": keys, "offsets": off,
             "ind0": {m: t["ind0"][head_index(m)] for m in INDUCTION},
             "ind1": {m: t["ind1"][head_index(m)] for m in INDUCTION}}
 
 
-def type_scores(D: Dict, offset: str) -> Dict[str, np.ndarray]:
-    return {"prev": type_series(D, "prev"), "ind": type_series(D, "ind0" if offset == "0" else "ind1")}
+def type_scores(D: Dict) -> Dict[str, np.ndarray]:
+    return {k: type_series(D, k) for k in ("prev", "ind0", "ind1")}
 
 
-def formations(ts: Dict[str, np.ndarray]) -> Dict[str, int]:
-    return {m: formation_index(ts[TYPED[m]][:, head_index(m)]) for m in TYPED}
+def formations(ts: Dict[str, np.ndarray], keys: Dict[str, str]) -> Dict[str, int]:
+    return {m: formation_index(ts[keys[m]][:, head_index(m)]) for m in TYPED}
 
 
 def r1_stat(A: np.ndarray, heads: Sequence[int]) -> Tuple[float, np.ndarray]:
@@ -455,7 +497,7 @@ def r1_stat(A: np.ndarray, heads: Sequence[int]) -> Tuple[float, np.ndarray]:
 
 def r1_rank(A: np.ndarray, heads: Sequence[int], seed: int, n: int = N_NULL) -> Dict:
     T, Dv = r1_stat(A, heads)
-    null = Dv[draw_sets(layer_pools(heads), n, seed)].mean(1)
+    null = Dv[draw_sets([inclusive_pool(h, heads) for h in heads], n, seed)].mean(1)
     return {"T": T, "rank": rank_of(T, null), "null_q": np.quantile(null, [0.05, 0.5, 0.95, 0.99]).tolist()}
 
 
@@ -463,32 +505,44 @@ def q10(A: np.ndarray) -> np.ndarray:
     return np.array([np.nanquantile(A[k], ONSET_Q) for k in range(A.shape[0])])
 
 
-def r2_read(A: np.ndarray, heads: Sequence[int], forms: Sequence[int], seed: int, n: int = N_NULL) -> Dict:
-    q = q10(A)
-    pools = layer_pools(heads)
-    counts, rates = r2_null(A, pools, forms, q, n, seed)
-    attain = float(1 - np.prod(rates))
-    hits = r2_hits(A, heads, forms, q)
+def step0_floor(A: np.ndarray) -> float:
+    return float(np.nanquantile(A[0], FLOOR_Q))
+
+
+def r2_read(A: np.ndarray, heads: Sequence[int], forms: Sequence[int]) -> Dict:
+    """R2 on `heads`: count of onsets within one grid step of formation; rank P(null count < c),
+    exact over the inclusive layer pools; the attainable rank with every tested head hitting."""
+    q, floor = q10(A), step0_floor(A)
+    rates, if_hit = r2_null(A, heads, forms, q, floor)
+    hits = r2_hits(A, heads, forms, q, floor)
     c = int(hits.sum())
-    return {"count": c, "rank": rank_of(c, counts), "attainable": attain, "rates": rates.tolist(),
-            "hits": hits.tolist(), "onsets": [onset_index(A[:, h], q) for h in heads]}
+    return {"count": c, "rank": float(count_dist(rates)[:c].sum()),
+            "attainable": float(count_dist(if_hit)[:len(heads)].sum()), "rates": rates.tolist(),
+            "rates_if_hit": if_hit.tolist(), "hits": hits.tolist(), "floor": floor,
+            "onsets": [onset_index(A[:, h], q, floor) for h in heads]}
 
 
-def type_pools(ts: Dict[str, np.ndarray], refs: Dict[str, int], exclude: Sequence[int]) -> List[List[np.ndarray]]:
-    """Per member name (in `refs`, name → the head whose score centres the pool), per stat step."""
-    out = []
-    for m, h in refs.items():
-        per = []
-        for s in STAT_STEPS:
-            k = STEPS.index(s)
-            if m == "L10H7":
-                per.append(np.array([10 * N_HEADS + j for j in range(N_HEADS)
-                                     if 10 * N_HEADS + j not in exclude]))
-            else:
-                sc = ts[TYPED[m]][k]
-                per.append(nearest_pool(sc, sc[h], exclude))
-        out.append(per)
-    return out
+def r2_reads(r: Dict, n: int) -> str:
+    """The fixed line (Blocked 66 (a)): "members differ" only at n of n with rank ≥ 0.99."""
+    if r["attainable"] < RANK_PASS:
+        return "descriptive (attainable < 0.99)"
+    return "members differ" if r["count"] == n and r["rank"] >= RANK_PASS else "no difference shown"
+
+
+def c3_pool_of(ts: Dict[str, np.ndarray], keys: Dict[str, str], m: str, h: int) -> np.ndarray:
+    """C3′'s fixed pool for head h standing in for member m: h and the NEAR_K non-members
+    nearest it in mean type score (m's key) over the steps ≥ 512; for `L12H5`, `L10H7`
+    (untyped) h's layer without the other members. The read passes the member, G2 a fake."""
+    mem = [head_index(x) for x in MEMBERS]
+    if m in keys:
+        sc = ts[keys[m]][[STEPS.index(s) for s in STAT_STEPS]].mean(0)
+        return np.append(nearest_pool(sc, sc[h], mem + [h]), h)
+    return inclusive_pool(h, [h])
+
+
+def c3_pools(ts: Dict[str, np.ndarray], keys: Dict[str, str]) -> Dict[str, np.ndarray]:
+    """Each member's own pool (`c3_pool_of`), the member last."""
+    return {m: c3_pool_of(ts, keys, m, head_index(m)) for m in MEMBERS}
 
 
 def c3_values() -> Tuple[np.ndarray, str]:
@@ -512,30 +566,40 @@ def fake_sets(layers: Sequence[int], n: int, seed: int) -> np.ndarray:
     return draw_sets(pools, n, seed)
 
 
-def g2(A: np.ndarray, ts: Dict[str, np.ndarray], forms: Dict[str, int], P3: np.ndarray) -> Dict:
-    mem = [head_index(m) for m in MEMBERS]
+def g2(A: np.ndarray, forms: Dict[str, int], P3: np.ndarray, ts: Dict[str, np.ndarray],
+       keys: Dict[str, str]) -> Dict:
+    """False pass over N_DRAW fake member sets, each read exactly as the members are (inclusive).
+    C3′'s fakes are drawn from each member's pool without the member, and each fake's own pool
+    is built as the member's is (`c3_pool_of`; `/challenge-pr` on #225, finding 1)."""
     lay = [parse_head(m)[0] for m in MEMBERS]
     F = fake_sets(lay, N_DRAW, seed_for("b3-g2-r1"))
     r1 = [r1_rank(A, f, seed_for("b3-g2-r1", k), 2000)["rank"] for k, f in enumerate(F)]
     typed = list(TYPED)
     F2 = fake_sets([parse_head(m)[0] for m in typed], N_DRAW, seed_for("b3-g2-r2"))
     fs = [forms[m] for m in typed]
-    r2 = [r2_read(A, f, fs, seed_for("b3-g2-r2", k), 2000)["rank"] for k, f in enumerate(F2)]
-    g = np.random.default_rng(seed_for("b3-g2-c3"))
-    real_pools = type_pools(ts, {m: head_index(m) for m in MEMBERS}, mem)
-    k143 = STAT_STEPS.index(143000)
-    c3 = []
-    for k in range(N_DRAW):
-        fake = {m: int(real_pools[i][k143][g.integers(0, len(real_pools[i][k143]))]) for i, m in enumerate(MEMBERS)}
-        pools = type_pools(ts, fake, mem + list(fake.values()))
-        c3.append(c3_rank(P3, list(fake.values()), pools, seed_for("b3-g2-c3", k), 2000)["rank"])
-    rate = {k: float(np.mean(np.array(v) >= RANK_PASS)) for k, v in (("R1", r1), ("R2", r2), ("C3p", c3))}
-    return {"rates": rate, "n_draws": N_DRAW, "null_per_draw": 2000,
+    r2 = [r2_read(A, f, fs) for f in F2]
+    r2_pass = [r2_reads(r, len(typed)) == "members differ" for r in r2]
+    c3 = g2_c3(P3, ts, keys, N_DRAW, "b3-g2-c3")
+    wide = g2_c3(P3, ts, keys, G2_C3_BESIDE, "b3-g2-c3-n")
+    rate = {"R1": float(np.mean(np.array(r1) >= RANK_PASS)), "R2": float(np.mean(r2_pass)),
+            "C3p": float(np.mean(c3 >= RANK_PASS))}
+    return {"rates": rate, "n_draws": N_DRAW, "null_per_draw": 2000, "R2_rank_pass_any_count":
+            float(np.mean([r["rank"] >= RANK_PASS for r in r2])),
+            "C3p_beside": {"n_draws": G2_C3_BESIDE, "rate_0.99": float(np.mean(wide >= RANK_PASS)),
+                           "rate_0.95": float(np.mean(wide >= 0.95)), "rate_0.95_gate": float(np.mean(c3 >= 0.95))},
             "pass": all(v <= G2_MAX for v in rate.values())}
 
 
+def g2_c3(P3: np.ndarray, ts: Dict[str, np.ndarray], keys: Dict[str, str], n: int, tag: str) -> np.ndarray:
+    """C3′'s ranks for n fake sets, each fake's pool built as its member's."""
+    real = c3_pools(ts, keys)
+    F = draw_sets([real[m][real[m] != head_index(m)] for m in MEMBERS], n, seed_for(tag))
+    return np.array([c3_rank(P3, list(f), [c3_pool_of(ts, keys, m, int(x)) for m, x in zip(MEMBERS, f)],
+                             seed_for(tag, k), 2000)["rank"] for k, f in enumerate(F)])
+
+
 def g3(D: Dict, A: np.ndarray, forms: Dict[str, int], attain: float) -> Dict:
-    """Planted onset: 5 layer-matched non-members, step 0's α before the formation step, the
+    """Planted onset: 4 layer-matched non-members, step 0's α before the formation step, the
     two-partner rows' α (0, computed) from it on."""
     typed = list(TYPED)
     fs = [forms[m] for m in typed]
@@ -549,22 +613,22 @@ def g3(D: Dict, A: np.ndarray, forms: Dict[str, int], attain: float) -> Dict:
             cnt = cnt + (w > 0).sum(-1)
         two[s] = slope_of(tot, cnt).reshape(-1)
 
-    def one(f: np.ndarray, seed: int) -> Dict:
+    def one(f: np.ndarray) -> Dict:
         Ap = A.copy()
         for h, fk in zip(f, fs):
             Ap[:fk, h] = A[0, h]
             for k in range(fk, len(STEPS)):
                 Ap[k, h] = two[STEPS[k]][h]
-        return r2_read(Ap, list(f), fs, seed, 2000)
+        return r2_read(Ap, list(f), fs)
 
     F = fake_sets(lay, 1 + G3_BESIDE, seed_for("b3-g3"))
-    prim = one(F[0], seed_for("b3-g3", 0))
-    bes = [one(f, seed_for("b3-g3", k + 1)) for k, f in enumerate(F[1:])]
+    prim = one(F[0])
+    bes = [one(f) for f in F[1:]]
     rank_read = attain >= RANK_PASS
     ok = prim["count"] == len(typed) and (prim["rank"] >= RANK_PASS or not rank_read)
     return {"primary": {k: prim[k] for k in ("count", "rank", "attainable", "onsets")},
             "heads": [head_name(int(h)) for h in F[0]],
-            "beside_count5_rate": float(np.mean([b["count"] == len(typed) for b in bes])),
+            "beside_all_rate": float(np.mean([b["count"] == len(typed) for b in bes])),
             "rank_read": rank_read, "pass": bool(ok)}
 
 
@@ -602,25 +666,35 @@ def _write(path: Path, rec: Dict) -> None:
 
 def cmd_read(a) -> int:
     out = Path(a.out)
-    D = load_all(out)
+    src = Path(a.src) if a.src else out
+    out.mkdir(parents=True, exist_ok=True)
+    D = load_all(src)
+    produced = {json.loads((src / d / "step0.json").read_text())["code"] for d in ("rows", "types")}
     meta = {"code": code_sha(), "prompts_hash": prompts_hash(), "runs": RUNS, "labels": str(LABELS),
+            "rows_types": str(src), "rows_types_code": sorted(produced),
             "b2_table": str(B2_TABLE), "constants": {"W_MIN": W_MIN, "MIN_ROWS": MIN_ROWS, "ROW_FROM": ROW_FROM,
-                                                    "ONSET_Q": ONSET_Q, "FORM_FRAC": FORM_FRAC, "NEAR_K": NEAR_K,
-                                                    "N_NULL": N_NULL, "N_DRAW": N_DRAW, "RANK_PASS": RANK_PASS}}
+                                                    "ONSET_Q": ONSET_Q, "FLOOR_Q": FLOOR_Q, "FORM_FRAC": FORM_FRAC,
+                                                    "NEAR_K": NEAR_K, "N_NULL": N_NULL, "N_DRAW": N_DRAW,
+                                                    "RANK_PASS": RANK_PASS}}
     A = alpha_grid(D)
-    off = member_offset(D)
-    ts = type_scores(D, off["offset"])
-    forms = formations(ts)
+    mk = member_keys(D)
+    ts = type_scores(D)
+    forms = formations(ts, mk["keys"])
+    pools = c3_pools(ts, mk["keys"])
     P3, codes = c3_values()
     if codes != B2_CODE:
         raise B3Error(f"B2 table code {codes}, want {B2_CODE}")
     # ---- the gate, before any member value
-    gate = {"meta": meta, "offset": off, "formation_steps": {m: STEPS[k] for m, k in forms.items()},
+    gate = {"meta": meta, "member_keys": mk, "formation_steps": {m: STEPS[k] for m, k in forms.items()},
+            "c3p_pools": {m: [head_name(int(h)) for h in p] for m, p in pools.items()},
             "no_alpha": {str(s): int(np.isnan(A[k]).sum()) for k, s in enumerate(STEPS)},
-            "G0": g0(D), "G1": g1(D), "G2": g2(A, ts, forms, P3)}
+            "G0": g0(D), "G1": g1(D), "G2": g2(A, forms, P3, ts, mk["keys"])}
     typed = list(TYPED)
-    pre = r2_read(A, [head_index(m) for m in typed], [forms[m] for m in typed], seed_for("b3-r2"))
-    gate["R2_attainable"] = {"attainable": pre["attainable"], "rates": dict(zip(typed, pre["rates"])),
+    pre = r2_read(A, [head_index(m) for m in typed], [forms[m] for m in typed])
+    gate["R2_attainable"] = {"attainable": pre["attainable"], "floor": pre["floor"],
+                             "rates_if_hit": dict(zip(typed, pre["rates_if_hit"])),
+                             "rank_at": {str(c): float(count_dist(pre["rates_if_hit"])[:c].sum())
+                                         for c in range(1, len(typed) + 1)},
                              "descriptive": pre["attainable"] < RANK_PASS}
     gate["G3"] = g3(D, A, forms, pre["attainable"])
     gate["pass"] = all(gate[k]["pass"] for k in ARMS)
@@ -635,15 +709,13 @@ def cmd_read(a) -> int:
     mem = [head_index(m) for m in MEMBERS]
     res = {"meta": meta, "gate": str(out / "gate.json")}
     res["R1"] = r1_rank(A, mem, seed_for("b3-r1"))
-    res["R2"] = {**{k: pre[k] for k in ("count", "rank", "attainable", "hits", "onsets")},
+    res["R2"] = {**{k: pre[k] for k in ("count", "rank", "attainable", "hits", "onsets", "rates")},
                  "members": typed, "formation_steps": [STEPS[forms[m]] for m in typed],
                  "onset_steps": [None if k is None else STEPS[k] for k in pre["onsets"]],
-                 "reads": "descriptive (attainable < 0.99)" if pre["attainable"] < RANK_PASS else
-                 ("members differ" if pre["rank"] >= RANK_PASS else "no difference shown")}
+                 "reads": r2_reads(pre, len(typed))}
     res["R1"]["reads"] = "members differ" if res["R1"]["rank"] >= RANK_PASS else "no difference shown"
-    pools = type_pools(ts, {m: head_index(m) for m in MEMBERS}, mem)
-    res["C3p"] = c3_rank(P3, mem, pools, seed_for("b3-c3p"))
-    res["C3p"]["pools_143000"] = {m: [head_name(int(h)) for h in pools[i][-1]] for i, m in enumerate(MEMBERS)}
+    res["C3p"] = c3_rank(P3, mem, [pools[m] for m in MEMBERS], seed_for("b3-c3p"))
+    res["C3p"]["pools"] = {m: [head_name(int(h)) for h in p] for m, p in pools.items()}
     res["C3p"]["reads"] = ("C3 sets the members apart beyond head type" if res["C3p"]["rank"] >= RANK_PASS
                            else "C3 marks head type, not shown to mark the circuit")
     res["C3p"]["b2_C3"] = json.loads((B2_TABLE / "table.json").read_text())["ranks"]["C3"]
@@ -681,7 +753,8 @@ def beside(D: Dict, A: np.ndarray, ts: Dict[str, np.ndarray], mem: Sequence[int]
             rows.append({"step": s, "alpha": A[k, h], "p": float(pctl_nan(A[k])[h]), "alpha_unweighted": Au[k, h],
                          "spread_slope": Sp[k, h], "neff_256": float(np.median(ne)) if ne else None,
                          "sink": float(np.mean(sink)), "rows_out": out_n, "alpha_probe": Ap[k, h],
-                         "prev": ts["prev"][k, h], "ind": ts["ind"][k, h], "alpha_per_prompt": per_p})
+                         "prev": ts["prev"][k, h], "ind0": ts["ind0"][k, h], "ind1": ts["ind1"][k, h],
+                         "alpha_per_prompt": per_p})
         out["members"][m] = rows
     out["beta"] = beta_beside(A, mem)
     out["a3"] = a3_beside(D, A, mem)
@@ -735,12 +808,12 @@ def report(out: Path, gate: Dict, res: Dict) -> None:
          "## Gate", ""]
     for k in ARMS:
         L.append(f"- {k}: {'pass' if gate[k]['pass'] else 'FAIL'}")
-    L += [f"- members' offset: {gate['offset']['offset']} ({gate['offset']['votes']})",
+    L += [f"- members' keys: {gate['member_keys']['keys']}",
           f"- formation steps: {gate['formation_steps']}",
           f"- R2 attainable rank: {gate['R2_attainable']['attainable']:.4f}", "", "## Family", "",
           "| row | T / count | rank | reads |", "|---|---|---|---|",
           f"| R1 | {res['R1']['T']:.4f} | {res['R1']['rank']:.4f} | {res['R1']['reads']} |",
-          f"| R2 | {res['R2']['count']} of 5 | {res['R2']['rank']:.4f} | {res['R2']['reads']} |",
+          f"| R2 | {res['R2']['count']} of {len(TYPED)} | {res['R2']['rank']:.4f} | {res['R2']['reads']} |",
           f"| C3′ | {res['C3p']['T']:.4f} | {res['C3p']['rank']:.4f} | {res['C3p']['reads']} |", "",
           f"B2's C3 (layer-matched) beside: T {res['C3p']['b2_C3']['T']:.4f}, rank {res['C3p']['b2_C3']['rank']}",
           "", "## Members, α per step (p in the 384)", "",
@@ -762,6 +835,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p = sub.add_parser("read")
     p.add_argument("--out", required=True)
     p.add_argument("--gate-only", action="store_true")
+    p.add_argument("--src", default="", help="dir holding rows/ and types/ (default --out)")
     a = ap.parse_args(argv)
     return {"rows": cmd_rows, "types": cmd_types, "read": cmd_read}[a.cmd](a)
 

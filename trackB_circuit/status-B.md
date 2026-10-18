@@ -23,6 +23,7 @@
   - B2 closed 2026-10-18 at its exit: in the weights the circuit is `L5H2` writing into three induction heads' keys (with non-member readers beside), and a QK-symmetry split (circuit or head type open); C1, C2, C4 show no difference within the gated reach — `trackB_circuit/status-B.md` "B2 on one page (closed 2026-10-18)"
   - B3 (routing) opened 2026-10-18 with a scan, a `sympy` check and a design, frozen the same day (Blocked 65 (a)). The check shows that condensation in 2609.28448 is a large-N limit with no finite-N threshold, and that a sharp head with no growing logit gap still gives a partner-growth slope well below 1 at these context lengths. So B3 reads routing from the attention itself, with β beside, and no head is placed against a threshold — `trackB_circuit/design-B3.md` "The math"
   - B3 unit 1's gate fails before any member α is read: the stored attention and head types reproduce, and planted α reads right, but the type-matched null for C3′ false-passes 6 % and R2's onset rule misses planted onsets (init structure in the early bottom decile). The induction members do not share an offset, and `L12H5` is not an induction head on 7d's probe. Revisions are tested on the gate and put to the user — `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
+  - Revised by the user's choice (Blocked 66 (a): each member typed at its own offset, `L12H5` untyped, a step-0 floor on R2's onset, inclusive null pools), the gate passes. The members' routing exponent α shows no difference from their layers' heads (R1, rank 0.80). Only `L5H2` of 4 condenses at its formation step (R2). Against the heads nearest in type, B2's QK symmetry does not set the members apart (C3′, 0.945): C3 is not shown to go beyond head type, though only two of the six pools are close in type — `trackB_circuit/status-B.md` "B3 unit 1b (2026-10-18)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -34,7 +35,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `eafba2e7c1`
+- **Reviewed:** 2026-10-18 · body `51fa08e44a`
 <!-- /phase-card -->
 
 ## Units
@@ -76,12 +77,78 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | unit | state | where |
 |---|---|---|
 | 0. design, scan, `sympy` check | **done 2026-10-18**; frozen by the user 2026-10-18 (Blocked 65 (a): 3 units, the placed constants as written) | `design-B3.md`, `lit-B.md` "B3", `tools/math_checks/b3_condensation_exponent.py` (3 checks pass) |
-| 1. routing (R1, R2, C3′, A3's row, β beside) | **gate run 2026-10-18: G0, G1 pass; G2 (C3′) and G3 fail, so no member α was read.** Revisions tested on the gate and put to the user (Blocked 66) | `trackB_circuit/b3_route.py`, `b3_gate_variants.py`, `tests/test_b3_route.py`; "B3 unit 1 (2026-10-18)" below |
+| 1. routing (R1, R2, C3′, A3's row, β beside) | **gate run 2026-10-18: G0, G1 pass; G2 (C3′) and G3 fail, so no member α was read.** Revised (Blocked 66 (a), the user's) and **re-gated 2026-10-18: G0–G3 pass; R1, R2, C3′ read "no difference shown"** | `trackB_circuit/b3_route.py`, `b3_gate_variants.py`, `tests/test_b3_route.py`; "B3 unit 1b (2026-10-18)" and "B3 unit 1 (2026-10-18)" below |
 | 2. the light cone (L1) | not started | `trackB_circuit/b3_cone.py` (to build) |
 
 What was seen before the readings were fixed: `design-B3.md` "Seen before the readings were fixed",
 and unit 1's gate record (below), which includes the members' type scores and formation steps but
 no member α.
+
+## B3 unit 1b (2026-10-18): the re-gate passes; R1, R2, C3′ read (Blocked 66 (a))
+
+**Input:** as unit 1 (below): the same `rows/` and `types/` (`data/b3/2026-10-18-unit1/`, produced by
+`b3_route.py` `2c13479d759c` (rows) and `b7f5307150cf` (types); the row and type code is unchanged
+since), `prompts_hash` `976b62d677bc`, B2's table `038b04f5c7cd`. Reading code `b3_route.py`
+`921be18a1272` with Blocked 66 (a)'s four revisions (its docstring "Revised after the gate failed"),
+and after `/challenge-pr` on #225: each G2 fake's C3′ pool is built as its member's, no real member
+sits in a fake's pool, and C3′'s false pass is also measured on 2,000 fakes.
+Records `data/b3/2026-10-18-unit1b/` (main tree): `gate.json`, `result.json`, `report.txt`. CPU, 6 s.
+Re-run: `METS_DATA=<main tree>/data python -m trackB_circuit.b3_route read --src <unit1 dir> --out <dir>`.
+
+**The gate** (before any member value; R2's attainable rank takes each member as hitting):
+
+| arm | result | pass |
+|---|---|---|
+| G0, G1 | as unit 1 (rows sum to 1 within 1.3e-6; types within 5.8e-6; uniform α 1.000, two partners 0, Gaussian 0.931 / 0.940) | yes |
+| G2 | false pass (200 fakes, the arm): R1 0.5 %, R2 0 %, C3′ 0.5 % (cap 2 %). C3′ on 2,000 fakes beside: **1.5 %** at 0.99, 8.2 % at 0.95 | yes |
+| G3 | planted onset, primary set (`L5H7`, `L7H4`, `L8H7`, `L11H5`): 4 of 4, rank 0.9996; all 4 in 78 % of 50 sets beside | yes |
+
+Formation steps (each member at its own key): `L5H2` 1000 (previous-token), `L7H8` 4000 (offset 0),
+`L8H6` 1000 and `L11H14` 1000 (+1). R2's floor (step 0's 2.5th percentile) α = 0.9908. Attainable
+rank 0.9996 at 4 of 4; 0.986 at 3 of 4, so only 4 of 4 can read. C3′'s pools (5 non-members
+nearest in mean type score over steps ≥ 512, plus the member): `L5H2` ← `L4H9 L3H1 L5H9 L9H5 L7H2`;
+`L7H8` ← `L9H9 L1H15 L6H0 L2H10 L7H0`; `L8H6` and `L11H14` ← the same five, `L10H9 L8H9 L7H1 L10H0 L10H3`;
+`L12H5`, `L10H7` ← their layers. How near in type the pools are (mean score over steps ≥ 512; each
+typed member is first or second of the 384 by its own score): `L8H6` / `L11H14` 0.83 against
+0.66–0.82, close; `L5H2` 0.89 against 0.37–0.70; `L7H8` 0.67 against 0.14–0.61; the untyped two
+are layer-matched, as B2's C3.
+
+**The family** (one family of four with L1, each at 0.99):
+
+| row | statistic | rank | reads |
+|---|---|---|---|
+| R1 | T_α 0.314 (null median 0.281, 99th 0.366) | 0.802 | no difference shown |
+| R2 | 1 of 4: `L5H2` (onset 512, formation 1000); `L7H8`'s onset is step 16 (α 0.990, just under the floor), far from 4000; `L8H6`, `L11H14` none | 0.234 | no difference shown |
+| C3′ | T 0.394 (null median 0.345, 99th 0.412) | 0.945 | C3 marks head type, not shown to mark the circuit (the line fixed in the design) |
+
+B2's layer-matched C3 beside: the same T, rank 0.9996. Against these type-nearest pools, C3 does
+not set the members apart at 0.99, though it does against their layers. The fixed line's first half
+says more than the rank shows. The rank shows only that C3 was **not shown to go beyond type**, and
+only two of the six pools are close in type (above). The lean (0.945) is not a reading: 8.2 % of
+fakes reach 0.95.
+
+**Reach** (`/challenge-pr` on #225, finding 5): R2 can read only at 4 of 4. Planted onsets are all
+caught in 78 % of sets beside G3. `L5H2`'s hit carries almost no evidence, because 11 of layer 5's other
+15 heads also hit at its formation step. So R2's "no difference shown" is weak evidence.
+
+**Beside (descriptive):**
+
+- Population α: median 0.95 at 512, 0.84 at 1000, 0.35 at 143000; 98.7 % of heads below step 0's band at 143000.
+- `L5H2` condenses at 512 (α 0.98 → 0.13; p 0.01) and stays near 0. `L12H5`, which is not an
+  induction head on the probe, condenses later (0.73 at 1000, 0.08 at 4000, about 0 from 16000; p ≤ 0.09
+  from 2000). `L8H6` and `L11H14` drop to about 0.4 at 1000 (p 0.13) and stay mid-population.
+  `L7H8` falls gradually (0.92 at 512 to 0.15 at 143000). `L10H7` stays diffuse, α about 1.0 and p ≥ 0.97 from 2000 on.
+- β (`fe_full`, prose median, 143000): `L5H2` −0.15, `L7H8` 15.6, `L8H6` 6.2, `L11H14` 5.4,
+  `L12H5` 2.4, `L10H7` 9.8 (population 10th to 90th: 0.45 to 8.3). Spearman ρ(α, β) over the 384 heads at
+  143000 is 0.18. A sharp head (low α) does not have a high β: `L5H2` is the clearest case.
+- A3 (received attention on c3x members against the rest, log ratio, median over steps ≥ 512):
+  members −0.42 (`L12H5`) to 0.05 (`L11H14`); rest 10th to 90th −0.39 to 0.07; Spearman with 7d's solo effect 0.08.
+
+**Not checked:** C3′'s `L8H6` and `L11H14` share one pool, so a null draw can count one non-member
+twice. G2's fakes are built the same way, and G2 passes, but the effect of the shared pool alone
+was not measured. The R2 onset rule takes the *first* qualifying step, so for `L7H8` an early onset
+at 16 passes the floor by 0.0008. It changes nothing here, because `L7H8` never enters its step's
+bottom decile near 4000 (p ≥ 0.17 after 32).
 
 ## B3 unit 1 (2026-10-18): the gate fails (Blocked 66)
 
