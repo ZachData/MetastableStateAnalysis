@@ -18,7 +18,7 @@
   - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, mostly because trained heads are not isotropic content plus position (214 of 252 cells outside); where V's ladder was reached the tokens hold about chance in V's subspaces; V's 2D blocks are at the random-weight rate, training shows in their sign — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
   - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design frozen with its LN1 frame's QK form corrected to B2a's — `trackB_circuit/design-B2.md` "The math"
   - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; read at one step, the statistic sees a set of members only when all sit near their step's 90th percentile (8 % of planted sets at the 80th) — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
-  - On the rule's own 9-step statistic the gate still passes (100 % at the 90th), so the constants stand. The reach is 42 % at the 80th. Sets at or below the 75th cannot be seen at all, because the null's mean |p − ½| is exactly ¼. Sets planted only from 8000 are seen in 67 % of draws at the 90th. A single copied direction per pair is seen in C6 in 55 % of draws — `trackB_circuit/status-B.md` "B2 unit 1b (2026-10-18)"
+  - On the rule's own 9-step statistic the gate still passes (100 % at the 90th), so the constants stand. The reach is 42 % at the 80th. Sets held between the 25th and 75th cannot be seen at all, because the null's mean |p − ½| is exactly ¼; sets beyond, high or low, are seen alike. Sets planted only from 8000 are seen in 67 % of draws at the 90th. A single copied direction per pair is seen in C6 in 55 % of draws — `trackB_circuit/status-B.md` "B2 unit 1b (2026-10-18)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -30,7 +30,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `9c66b85875`
+- **Reviewed:** 2026-10-18 · body `32d2267a05`
 <!-- /phase-card -->
 
 ## Units
@@ -94,13 +94,24 @@ Chance C6 is 1/64 = 0.0156; the unplanted primary is 0.0169.
   exactly, so the 9-step run is wired the same way.
 - **Averaging over steps helps for members that are extreme at every step.** At the 80th the
   9-step T sees 42 % of planted sets; one step sees 8 %.
-- **A set at or below the 75th cannot be seen by construction.** Under the null E|p − ½| = ¼
-  exactly (`tools/math_checks/b2_two_sided_floor.py`), so a set held at the 75th scores the null's
-  mean and a set at the 70th scores below it. The 70th dose that `/challenge-pr` on #219 suggested
-  sits under the floor: 0 % is the arithmetic, not a power shortfall.
+- **The frozen T cannot see a set held between the 25th and 75th.** Under the null E|p − ½| = ¼
+  exactly (`tools/math_checks/b2_two_sided_floor.py`). A set held at the 75th (or the 25th)
+  scores the null's mean, and a set at the 70th scores below it. Sets beyond, high or low, are
+  seen alike. The 0 % at the 70th is a property of the frozen statistic, not low power. A
+  statistic that averages each member over steps before taking |·| has no such floor (below), so
+  the band follows from the choice of T.
 - **Members that turn extreme only late are diluted.** Planted at 8000 onward, a set at the 90th
   is seen in 2 of 3 draws, and at the 80th almost never. A "no difference shown" in unit 2 does not
   rule out a late onset below about the 90th.
+- **Beside, after `/challenge-pr` on #220 (C1 only, from the saved records, not gated):**
+  - G2's false pass on the 9-step T is 2.0 % (at G2_MAX).
+  - The alternative S = mean over members of |mean over steps of (p − ½)| has a false pass of
+    1.5 %, and sees 2 % / 13.5 % / 88 % / 100 % of consistent sets at the 70th / 75th / 80th / 90th
+    (T: 0 / 3 / 41.5 / 100).
+  - Planted only from 8000, S sees 0 % at the 80th and 1.5 % at the 90th (T: 4.5 %, 67 %), because
+    a head's own early percentiles stay in its step mean.
+  - So S trades late reach for consistent reach. Which statistic unit 2 ranks is Blocked 63.
+  - Producer: `METS_DATA=<data> python -m trackB_circuit.b2_regate_alt`, from `g3m_step*.npz`.
 - **G5's reach.** One copied direction per pair (C6 ≈ 5× chance) is seen in about half the draws.
   Two copies (≈ 9×) are seen in all of them.
 
