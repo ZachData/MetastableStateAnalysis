@@ -17,7 +17,7 @@
   - The rule at all 18 steps finds no head of 14 with D\* ≥ 1 at any step: to 256 attention is near uniform and every head reads outside (nothing to fit); positional heads appear from 512 (`L5H2`, `L4H9`), and V's subspaces never carry the content a head reads; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
   - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, mostly because trained heads are not isotropic content plus position (214 of 252 cells outside); where V's ladder was reached the tokens hold about chance in V's subspaces; V's 2D blocks are at the random-weight rate, training shows in their sign — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
   - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design frozen with its LN1 frame's QK form corrected to B2a's — `trackB_circuit/design-B2.md` "The math"
-  - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; the statistic sees a set of members only when all sit near their step's 90th (or 10th) percentile (8 % of planted sets at the 80th) — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
+  - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; read at one step, the statistic sees a set of members only when all sit near their step's 90th percentile (8 % of planted sets at the 80th); the rule's 9-step reach is not gated — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -29,7 +29,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-17 · body `83e6adf962`
+- **Reviewed:** 2026-10-17 · body `456cced8a0`
 <!-- /phase-card -->
 
 ## Units
@@ -82,12 +82,14 @@ or printed. Re-run: `METS_DATA=<data> python -m trackB_circuit.b2 gate --out <di
 | G6 | asym ≤ 1e-6, C4 ≥ 0.999, gradient-flow, Table 1 row as defined | `L17H13`: asym 0, C4 1.0, `gradient_flow`, `row2_three_hyperplanes` as expected |
 | G7 | C7's inputs present and exact | 18 records, the 14 heads' `m2.qk` at each, codes and prompts hash as named, TV at D = 128 ≤ 4.5e-13 |
 
-**What the gate says about the rule's reach:** the member statistic sees a set only when its
-members sit together near the 90th percentile of their step: at the 80th it passes 1 draw in 12
-(planted upward only; |p − ½| makes the 10th the same by symmetry, untested). Members that differ
-from their layers by less, or only some of them, read "no difference shown". G3 read one step; the
-rule averages the 10 steps ≥ 512, which makes the null tighter when members are consistent across
-steps, so this reach is for one step.
+**What the gate says about reach, at one step only:** read at one step (143000), the member
+statistic sees a set only when all its members sit near their step's 90th percentile: at the 80th
+it passes 1 draw in 12 (planted upward only; by the symmetry of |p − ½| the 10th should behave the
+same, untested). The rule averages the **9** steps ≥ 512, and non-members' |p − ½| barely
+correlates between steps (512 against 143000: −0.04, 0.18, 0.03, −0.11 for C1–C4, `/challenge-pr`
+on #219, finding 1), so the averaged null is tighter by up to about 3×. Members consistent across
+steps would then be easier to see than this, and members extreme only late would be harder. The
+9-step reach is not gated (Blocked 62).
 
 ## B2a on one page (closed 2026-10-16)
 
