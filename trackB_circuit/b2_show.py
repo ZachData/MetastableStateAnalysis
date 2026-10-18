@@ -1,5 +1,6 @@
-"""B2 unit 2's tables as markdown, from `table.json` (`b2.py table`). Prints only; computes nothing
-beyond formatting. Tier 1: exploratory, unregistered.
+"""B2 unit 2's tables as markdown, from `table.json` (`b2.py table`). `main` only formats; `pairs`
+computes C6 by pair from the saved `step<S>.npz` and records it in `c6_pairs.json`.
+Tier 1: exploratory, unregistered.
     python -m trackB_circuit.b2_show <dir>/table.json
 """
 
@@ -75,14 +76,21 @@ def main(path: str) -> None:
 
 
 def pairs(path: str) -> None:
-    """C6 by ordered pair (descriptive, beside): each pair's overlap at r = 16, mean over steps
-    ≥ 512, and its percentile among the 16 × 16 head pairs between the same two layers."""
+    """C6 by ordered pair (descriptive, beside; read after the rank, `/challenge-pr` on #221): each
+    pair's overlap at r = 16, mean over steps ≥ 512, its percentile among the 16 × 16 head pairs
+    between the same two layers, and, per member layer, the heads whose keys read `L5H2`'s write
+    space most. Computed here, not in `b2.py`, so it writes `c6_pairs.json` beside `table.json`
+    with this file's hash."""
+    import hashlib
     import numpy as np
     from pathlib import Path
     from trackB_circuit import b2
     d = Path(path).parent
     O = np.mean([np.load(d / f"step{s}.npz")["O16"] for s in b2.STAT_STEPS], 0)
     circ = sorted((b2.head_index(m) for m in b2.CIRCUIT + ("L10H7",)), key=lambda i: i // 16)
+    rec = {"code": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12],
+           "table_code": json.load(open(path))["code"], "r": b2.R_SUB, "steps": b2.STAT_STEPS,
+           "pairs": [], "l5h2_readers": {}}
     print("\n**C6 by pair** (A writes, B's keys read; r = 16, mean over steps ≥ 512; percentile among "
           "the 256 pairs between A's and B's layers)\n\n| A → B | overlap | × chance | percentile |\n|---|---|---|---|")
     for a in circ:
@@ -90,8 +98,19 @@ def pairs(path: str) -> None:
             if a // 16 < b // 16:
                 la, lb = a // 16, b // 16
                 blk = O[la * 16:(la + 1) * 16, lb * 16:(lb + 1) * 16].ravel()
-                p = ((blk < O[a, b]).sum() + 0.5 * (blk == O[a, b]).sum()) / blk.size
+                p = float(((blk < O[a, b]).sum() + 0.5 * (blk == O[a, b]).sum()) / blk.size)
+                rec["pairs"].append({"A": b2.head_name(a), "B": b2.head_name(b), "overlap": float(O[a, b]), "pct": p})
                 print(f"| {b2.head_name(a)} → {b2.head_name(b)} | {O[a, b]:.4f} | {O[a, b] * 64:.1f} | {p:.2f} |")
+    a = b2.head_index("L5H2")
+    print("\n**Who reads `L5H2`'s write space** (top 4 key spaces per member layer)\n\n| layer | heads (overlap) | member's place of 16 |\n|---|---|---|")
+    for m in b2.MEMBERS[1:]:
+        lb = b2.head_index(m) // 16
+        col = O[a, lb * 16:(lb + 1) * 16]
+        o = np.argsort(-col)
+        place = int(np.where(o == b2.head_index(m) % 16)[0][0]) + 1
+        rec["l5h2_readers"][m] = {"top": [[f"L{lb}H{h}", float(col[h])] for h in o[:4]], "member_place": place}
+        print(f"| {lb} | " + ", ".join(f"L{lb}H{h} ({col[h]:.3f})" for h in o[:4]) + f" | {m} {place} |")
+    (d / "c6_pairs.json").write_text(json.dumps(rec, indent=1))
 
 
 if __name__ == "__main__":

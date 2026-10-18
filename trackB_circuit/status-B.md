@@ -19,7 +19,7 @@
   - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design frozen with its LN1 frame's QK form corrected to B2a's — `trackB_circuit/design-B2.md` "The math"
   - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; read at one step, the statistic sees a set of members only when all sit near their step's 90th percentile (8 % of planted sets at the 80th) — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
   - On the rule's own 9-step statistic the gate still passes (100 % at the 90th), so the constants stand. The reach is 42 % at the 80th. Sets held between the 25th and 75th cannot be seen at all, because the null's mean |p − ½| is exactly ¼; sets beyond, high or low, are seen alike. Sets planted only from 8000 are seen in 67 % of draws at the 90th. A single copied direction per pair is seen in C6 in 55 % of draws — `trackB_circuit/status-B.md` "B2 unit 1b (2026-10-18)"
-  - B2's table over the 18 steps: the members differ from their layers' heads in QK symmetry (C3, rank 0.9996; `L7H8` the most symmetric head from 2000, three others near the 95th, two near the 15th) and in K-composition (C6, rank 1.0, carried by `L5H2` writing into three induction heads' keys at 21–32× chance, from 512–1000), but show no difference in the OV attractive share, its top weight or the OV–QK cosine (C1, C2, C4), within the gated reach; B2 is at its exit — `trackB_circuit/status-B.md` "B2 unit 2 (2026-10-18)"
+  - B2's table over the 18 steps: the members differ from their layers' heads in QK symmetry (C3, rank 0.9996; `L7H8` the most symmetric head from 2000, three others near the 95th, two near the 15th) and in K-composition (C6, rank 1.0, carried by `L5H2` writing into three induction heads' keys at 21–32× chance, from 512–1000, with non-member heads reading it about as much), but show no difference in the OV attractive share, its top weight or the OV–QK cosine (C1, C2, C4), within the gated reach; B2 is at its exit — `trackB_circuit/status-B.md` "B2 unit 2 (2026-10-18)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -31,7 +31,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `e4f12dda2d`
+- **Reviewed:** 2026-10-18 · body `ca6af782ec`
 <!-- /phase-card -->
 
 ## Units
@@ -109,8 +109,9 @@ both 1.0; C6 with `L10H7` added (6 heads) 1.0; write–write overlap 0.913.
 | `L11H14` | 0.55 (0.49–0.84) | 0.56 (0.02–0.85) | 0.94 (0.77–0.98) | 0.52 (0.08–0.83) |
 | `L10H7` | 0.33 (0.07–0.42) | 0.34 (0.15–0.63) | **0.95** (0.73–0.96) | 0.49 (0.18–0.59) |
 
-**C6 by pair** (`b2_show`'s `pairs`, descriptive; mean over steps ≥ 512, r = 16; percentile among
-the 256 head pairs between the same two layers):
+**C6 by pair** (descriptive, read after the rank; `b2_show`'s `pairs`, record `c6_pairs.json`,
+code `f4c0d72e689e`; mean over steps ≥ 512, r = 16; percentile among the 256 head pairs between
+the same two layers). The three `L5H2` rows carry 91 % of the circuit's mean.
 
 | A writes → B's keys read | overlap | × chance | percentile |
 |---|---|---|---|
@@ -119,6 +120,12 @@ the 256 head pairs between the same two layers):
 | `L5H2` → `L11H14` | 0.333 | 21 | 1.00 |
 | `L5H2` → `L12H5` | 0.018 | 1.2 | 0.36 |
 | the other 6 circuit pairs | 0.007–0.029 | 0.4–1.8 | 0.01–0.84 |
+
+**Who else reads `L5H2`'s write space** (same record; `/challenge-pr` on #221, finding 1): it is
+not only the members. In layer 7, `L7H1` (0.501) and `L7H7` (0.475) read it more than `L7H8` (0.404,
+3rd of 16). In layer 8, `L8H6` is 1st (0.502), then `L8H9` (0.433, 7d's other induction head) and
+`L8H7` (0.340). In layer 11, `L11H14` is 1st (0.333), then `L11H2` (0.221). In layer 10, `L10H9`
+(0.318) and `L10H0` (0.295) read it, and `L10H7` is 10th. In layer 12 no head does (≤ 0.044).
 
 Per step, the circuit's C6 is at chance to 256 (0.0154–0.0156), 0.017 at 512, 0.074 at 1000,
 0.127 at 2000, and 0.16–0.18 from 4000.
@@ -136,6 +143,13 @@ Per step, the circuit's C6 is at chance to 256 (0.0154–0.0156), 0.017 at 512, 
   condition, and ½ unclassified. Unclassified rises to 0.81 at 1000 and falls to 0.47 at 143000,
   when row 2 is 0.34. Members move between row 2 and unclassified with no steady pattern. No head
   is row 1 or row 4.
+- **Most of that rise is heads with no eigenvalue of V with positive real part** (`/challenge-pr`
+  on #221, finding 4; `trackB_circuit/b2_c5_negative.py`, record `c5_negative.json`, code
+  `8638f7224bc5`). No head at 0–512, then 237 of 384 at 1000, 251 at 2000, 167 at 4000, and down to
+  43 at 143000 (the raw frame within 1). Members among them: `L7H8`, `L12H5`, `L8H6`, `L10H7` at
+  1000; `L10H7` until 8000. There `c5_row` reads "unclassified" (no positive top eigenvalue). The
+  dense `classify_ov_row` would decide on rounding noise among the 960 zeros, so the two can differ
+  only where the dense answer is undefined. Unit 2's dense check covered B2a's 14 heads only.
 - **C7, the QK read rank.** `L5H2` needs D = 1–4 from 1000 to 54000 and 16 at 143000. Every other
   head of the 14 needs the full 128 at every step, except `L7H8` at 64 at 8000–16000. Only the
   positional head reaches 0.1 · TV(0) on a small subspace (B2a unit 3's reading, from the QK side).
@@ -148,6 +162,10 @@ Per step, the circuit's C6 is at chance to 256 (0.0154–0.0156), 0.017 at 512, 
   B1's onset in (256, 512] and with 7d's members by 1000. `L12H5`'s keys do not read it. The members
   were picked from activations (7d, B1), so this agrees with how they were found; it is not an
   independent discovery.
+- **`L5H2`'s write space has more readers than the members.** In layers 7, 8, 10 and 11, other
+  heads read it about as much (`L7H1`, `L7H7`, `L8H9`, `L8H7`, `L11H2`, `L10H9`, `L10H0`). The rank
+  says members' keys sit above a random same-layer head. It does not say they are the only, or the
+  strongest, readers.
 - **QK symmetry sets the members apart, in both directions.** `L7H8` is the most symmetric head at
   its step from 2000 on (C3 0.94 at 143000). `L8H6`, `L11H14` and `L10H7` sit near the 95th.
   `L5H2` and `L12H5` sit near the 15th. The rank uses |p − ½|, so the two groups add.
@@ -159,6 +177,13 @@ Per step, the circuit's C6 is at chance to 256 (0.0154–0.0156), 0.017 at 512, 
   written or attended (B4's nudges test that). A symmetric QK form is not a gradient-flow head: 2d's
   regime needs V aligned too, and no head is. The members come from one rung (410m) and were found
   on activations, so nothing here is a held-out reading.
+- **Not established: that C3 marks the circuit rather than a kind of head** (`/challenge-pr` on
+  #221, finding 2). Non-member heads of the same kinds sit where the members do on C3 at 143000:
+  `L5H9` (layer 5's second previous-token head, `design-B.md`) 0.10 and `L4H9` (positional in
+  B2a) 0.18 sit low with `L5H2`; `L8H9` (7d's other
+  induction head) 0.93 sits high with the induction members. The layer-matched null cannot tell
+  "in this circuit" from "a previous-token or induction head". `L7H1` and `L7H7`, strong readers of
+  `L5H2`, sit at 0.34 and 0.31, so the split does not follow composition either.
 
 Not built: Phase 6's `U_pos` / `U_neg` / `U_A` dimensions of the members' union (design "Beside, not
 in the family"); parked below.
@@ -609,7 +634,8 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 - B2a, a token-matched null (random subspaces drawn to match the real tokens' occupancy): why, V's subspaces share LN1's gain pattern with the tokens and may beat Haar nulls by overlap alone (`/challenge-pr` on #208, finding 2); cost, one more null family per rung; could change a unit 2 D\* from "below the nulls" to "no better than where the tokens are". Unit 2 records each null's occupancy beside its TV first. *(Unit 2, 2026-10-16: no V rung beat its nulls, so nothing for this null to demote at 143000; kept for unit 3.)* **Dropped (unit 3, 2026-10-16):** no V rung beat its nulls at any of the 7 steps read either, so it can change no B2a verdict.
 - A1a's per-head `fe_full` β against B2a's M1 β, opposite signs in 6 of 14 heads at 143000, all M1 −, A1a +. **Carried to A2 as its first item** (Blocked 54 (a), the user's, 2026-10-16; `trackA_force/status-A.md` Parked).
 - B2, Phase 6's `U_pos` / `U_neg` / `U_A` dimensions of the members' union (design-B2 "Beside, not in the family"), not built in unit 2: why, a subspace view of the members beside the per-head columns; cost, about one session (`p6_subspace/math-6.md` §7.2 on the stored OVs); could change nothing in the family (beside only). For B2's close-out to carry or drop.
-- B2, which pairs carry C6 was read after the rank (descriptive, `b2_show`'s `pairs`): why, the rank is the circuit's mean; cost, none (done); could change B4's choice of which composition to nudge first (`L5H2` → `L8H6`, `L7H8`, `L11H14`, not `L12H5`).
+- B2, which pairs carry C6 was read after the rank (descriptive, `c6_pairs.json`): why, the rank is the circuit's mean; cost, none (done); could change B4's choice of what to nudge: `L5H2`'s write space and every head that reads it (members `L8H6`, `L7H8`, `L11H14`; non-members `L7H1`, `L7H7`, `L8H9`, `L8H7`, `L11H2`, `L10H9`, `L10H0`), not the members' keys alone.
+- B2, a head-type control for C3 (`/challenge-pr` on #221, finding 2): why, non-member previous-token and induction heads sit with the members; cost, a list of head types from 7d's sweep and one re-rank; could change C3 from "members differ" to "these head types differ". For B2's close-out to carry or drop.
 
 ## Corrections received
 

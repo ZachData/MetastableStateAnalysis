@@ -169,3 +169,13 @@ def test_c5_row_is_classify_ov_row_in_low_rank():
         assert b2.c5_row(A, B, Aq, Bk)["row"] == classify_ov_row(A @ B.T, Aq @ Bk.T)["row"] == want
     I = np.eye(D)
     assert b2.c5_row(I, I, U, U)["row"] == "row1_V_identity"
+
+
+def test_c5_row_with_no_positive_eigenvalue_is_unclassified():
+    """`/challenge-pr` on #221, finding 4: every nonzero eigenvalue with Re < 0 puts a zero on top;
+    the low-rank row is "unclassified" (the dense one decides on rounding noise there)."""
+    g = np.random.default_rng(11)
+    U = np.linalg.qr(g.standard_normal((D, K)))[0]
+    A, B = -U * np.linspace(2, 1, K), U                 # V = −U diag Uᵀ, negative definite on U
+    r = b2.c5_row(A, B, U, U)
+    assert r["row"] == "unclassified" and r["lam1_real"] == 0.0
