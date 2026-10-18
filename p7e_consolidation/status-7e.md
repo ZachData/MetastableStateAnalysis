@@ -15,7 +15,7 @@
   - The five low-rank members sum to 48 under `mean`, not 40 (`L8H6` 24 → 32); the conclusion stands — `p8_scale_ladder/status-8.md` "The matched cross-rung read"
   - The gain-ordered / anti-ordered dichotomy has a third, unordered class (70m `L3H1`) — §3.17
 - **Registry:** none, because `pythia-410m` is exploration-only under the rung policy (`p8_scale_ladder/design-8.md`) and every measurement after surgery would be on a modified model — `p7e_consolidation/status-7e.md`
-- **Depends on:** 7d@19b7d835b7
+- **Depends on:** 7d@14927fe3d6
 - **Feeds:** 8, 9, 10
 - **Open threads:**
   - `schur` vs `svd` on `L11H14`: decides whether `induction_rank_sweep`'s `svd` basis is compromised — `p7e_consolidation/status-7e.md` "What is open"
@@ -28,7 +28,7 @@
   - OV-core principal angles between members (free: weights only)
   - `r*` across checkpoints (forward pass: about 35 min per checkpoint)
   - The core consolidation with probe NLL, natural-text loss, a flattened interaction matrix and restore-exactness (forward pass plus weight surgery)
-- **Reviewed:** 2026-09-24 · body `c2a68fb3db`
+- **Reviewed:** 2026-10-18 · body `c2a68fb3db`
 <!-- /phase-card -->
 
 **Registered predictions:** none, and none can be — see "Overall" below.

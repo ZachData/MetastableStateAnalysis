@@ -34,7 +34,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `1e026e420a`
+- **Reviewed:** 2026-10-18 · body `eafba2e7c1`
 <!-- /phase-card -->
 
 ## Units
@@ -88,7 +88,8 @@ no member α.
 **Input:** `pythia-410m`, A1a's 18 run dirs (`trackA_force/a1a.py` `RUNS`), the 7 scored v1
 prompts (`prompts_hash` `976b62d677bc`), 7d's probe (16 sequences, `wide`, `EVAL_SEED`),
 B2's table (code `038b04f5c7cd`), Phase 10's c3x label source `data/p10/reread_r9_2026-10-08/labels`
-(its own Stage 0 runs, below). Code `b3_route.py` `738957aea04a` (gate and variants re-run at it, same numbers). Records
+(its own Stage 0 runs, below). Code `b3_route.py` `b7f5307150cf`, `b3_gate_variants.py` `79bc6cab77f4`
+(types, gate and variants re-run after `/challenge-pr` on #224; the gate's numbers unchanged). Records
 `data/b3/2026-10-18-unit1/` (main tree): `rows/`, `types/`, `gate.json`, `gate_variants.json`.
 GPU: stored attention cast to float64; forwards float32. Wall: rows about 16 s a step, types 3 s.
 Re-run: `python -m trackB_circuit.b3_route rows|types --out <dir>`, then `read --out <dir> --gate-only`,
@@ -108,7 +109,11 @@ Every step has an α for every head (no head fell below 10 in-rows).
 1. **The members do not share one induction offset.** At 143000, `L7H8` puts 0.945 at offset 0
    (query `N_REP + j` → key j); `L8H6` (0.969) and `L11H14` (0.953) peak at +1 (→ key j + 1);
    `L12H5` scores 0.009 and 0.002, so it is **not an induction head on this probe at either offset**
-   (peak over 18 steps 0.011). The design took one offset for the four (the majority, here a 2–2
+   (peak over 18 steps 0.011; its sink share on the probe is 0.49, so renormalised it is still
+   about 0.02; the four's sink shares are 0.42–0.49). The repo's offset 0 is the same-token key
+   (`PROJECT.md` §3.18's Q1); +1, the successor, is the standard induction pattern. So `L8H6` and
+   `L11H14` are ordinary induction heads, and 7d's "function-vector only" for them was read at the
+   other offset: a correction to 7d (`p7d_redundancy/status-7d.md` "Corrections received"). The design took one offset for the four (the majority, here a 2–2
    tie, broken to 0), so the type score at offset 0 gives formation step 0 for `L8H6` and `L12H5`,
    which is meaningless. It also bears on unit 2: L's partner (j + 64 or j + 63) and L1's "four
    induction members".
@@ -126,12 +131,14 @@ Every step has an α for every head (no head fell below 10 in-rows).
 | revision | what it gives |
 |---|---|
 | type score at each member's own offset (143000's peak) | formation steps `L5H2` 1000, `L7H8` 4000, `L8H6` 1000, `L11H14` 1000; `L12H5` untyped (as `L10H7`), so R2 counts 4 |
-| R2's onset also requires α below step 0's 2.5th percentile (0.991) | null hit rates 0.73 (layer 5), 0.07 (7), 0 (8), 0 (11); attainable rank 1.0; G3 catches all 4 in the primary set and in 78 % of 50 sets beside |
-| C3′: one fixed head per member, drawn from a fixed pool of the K non-members nearest in mean type score over steps ≥ 512; a fake drawn from that same pool, its null the pool without it | false pass 3.0 % at K = 5, **0.75 % at K = 10** (400 fakes); `L12H5` and `L10H7` layer-matched |
+| R2's onset also requires α below step 0's 2.5th percentile (0.991) | null hit rates (others in the layer) 0.73 (layer 5), 0.07 (7), 0 (8), 0 (11); G3 catches all 4 in the primary set and in 78 % of 50 sets beside. **With the frozen exclusive pools its G2 false-passes 5.5 %** (200 fakes) |
+| … and **each tested head counts in its own pool** (inclusive; `/challenge-pr` on #224, finding 2) | G2 false pass 0 %; if each member hits, the rates are 0.75, 0.125, 0.0625, 0.0625, and rank is 0.9996 at 4 of 4, **0.986 at 3 of 4 (does not read)**: only 4 of 4 reads "members differ" |
+| C3′: one fixed head per member from a fixed pool of the K non-members nearest in mean type score over steps ≥ 512, fakes drawn from that pool | false pass with the fake left out of its pool: 3.0 % (K = 5), 0.75 % (K = 10). **With the fake kept in (inclusive): 0.0 % (K = 5), 1.0 % (K = 10)** (400 fakes); `L12H5` and `L10H7` layer-matched |
 
-Not yet checked under the revisions: G2 for R2 with the floor (null hit rates of 0 at layers 8 and
-11 make a member hit there nearly decisive), and G2 for R1 and C3′ inside `b3_route.py` itself
-rather than the variants script.
+The cause common to C3′'s and R2's failures is the same: a null pool that leaves out the head being
+tested is not exchangeable with it (`/challenge-pr` on #224 reproduced 3.1 % against 0.8 % on
+idealised heads). Not yet checked: the revised arms inside `b3_route.py` itself rather than the
+variants script (the re-gate does that).
 
 **A3's input:** Phase 10's label source names its own Stage 0 runs (re-runs of 2026-09-22 to 09-24),
 not A1a's, at every step ≥ 512 (63 of 63 directories differ). A3 reads the label source's runs, as

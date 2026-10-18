@@ -322,6 +322,7 @@ def types_step(step: int, out: Path, device: str) -> Dict:
     ind0, ind1, ind0_fv = np.zeros(N_POP), np.zeros(N_POP), np.zeros(N_POP)
     sums = np.zeros((N_POP, 5))
     cnt = np.zeros(N_POP)
+    sink = np.zeros(N_POP)
     i_all = torch.arange(1, T, device=device)
     with torch.no_grad():
         for c in range(0, N_PROBE, 4):
@@ -332,6 +333,7 @@ def types_step(step: int, out: Path, device: str) -> Dict:
                 prev[sl] += a[:, :, i_all, i_all - 1].sum((0, 2)).cpu().numpy()
                 ind0[sl] += a[:, :, q, q - N_REP].sum((0, 2)).cpu().numpy()
                 ind1[sl] += a[:, :, q, q - N_REP + 1].sum((0, 2)).cpu().numpy()
+                sink[sl] += a[:, :, ROW_FROM:, 0].sum((0, 2)).cpu().numpy()
                 if c < N_FV:
                     ind0_fv[sl] += a[:, :, q, q - N_REP].sum((0, 2)).cpu().numpy()
                 r = row_stats(a.transpose(0, 1).reshape(N_HEADS, -1, T, T).flatten(0, 1))
@@ -345,7 +347,8 @@ def types_step(step: int, out: Path, device: str) -> Dict:
            "n_seqs": N_PROBE, "n_rep": N_REP, "seed": EVAL_SEED,
            "prev": (prev / (N_PROBE * (T - 1))).tolist(), "ind0": (ind0 / (N_PROBE * N_REP)).tolist(),
            "ind1": (ind1 / (N_PROBE * N_REP)).tolist(), "ind0_fv": (ind0_fv / (N_FV * N_REP)).tolist(),
-           "alpha_probe": slope_of(sums, cnt).tolist()}
+           "alpha_probe": slope_of(sums, cnt).tolist(),
+           "sink_probe": (sink / (N_PROBE * (T - ROW_FROM))).tolist()}   # mean A_i0, rows i ≥ 16 (beside)
     (out / "types" / f"step{step}.json").write_text(json.dumps(rec) + "\n")
     return rec
 

@@ -15,6 +15,7 @@ Tier 1: exploratory, unregistered.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -70,9 +71,37 @@ def main(out: Path) -> dict:
             Ap[fk:, h] = 0.0                          # the two-partner rows' α (G1 (ii): 0 to 1e-15)
         qq = b3.q10(Ap)
         full.append(sum(hit(Ap[:, h], fk, qq) for h, fk in zip(f, fs)) == len(typed))
+    # inclusive pools (`/challenge-pr` on #224, finding 2): the tested head counts in its own
+    # layer's pool. Members' hits are not read, so the rates assume each member hits; the rank
+    # at a count c is then P(null count < c), computed exactly from the per-layer rates.
+    inc = [(r * 15 + 1) / 16 for r in rates]
+
+    def rank_at(c, rs):
+        dist = np.array([1.0])
+        for r in rs:
+            dist = np.convolve(dist, [1 - r, r])
+        return float(dist[:c].sum())
+
+    # G2 for R2 under the floor: 200 layer-matched fake sets, exclusive pools as frozen
+    Ff = b3.fake_sets([b3.parse_head(m)[0] for m in typed], b3.N_DRAW, seed_for("b3-var-g2r2"))
+    g2 = {"exclusive": [], "inclusive": []}
+    for f in Ff:
+        c = sum(hit(A[:, h], fk, q) for h, fk in zip(f, fs))
+        rs_ex, rs_in = [], []
+        for h, fk in zip(f, fs):
+            l = h // 16
+            others = [l * 16 + j for j in range(16) if l * 16 + j != h]
+            r = float(np.mean([hit(A[:, o], fk, q) for o in others]))
+            rs_ex.append(r)
+            rs_in.append((r * 15 + hit(A[:, h], fk, q)) / 16)
+        g2["exclusive"].append(rank_at(c, rs_ex))
+        g2["inclusive"].append(rank_at(c, rs_in))
     rec["R2_floor"] = {"step0_p2.5": lo0, "members": typed, "rates": rates,
                        "attainable": float(1 - np.prod(rates)), "G3_primary_all": bool(full[0]),
-                       "G3_beside_all_rate": float(np.mean(full[1:]))}
+                       "G3_beside_all_rate": float(np.mean(full[1:])),
+                       "inclusive_rates_if_hit": inc,
+                       "inclusive_rank_at": {str(c): rank_at(c, inc) for c in range(1, len(typed) + 1)},
+                       "G2_false_pass": {k: float(np.mean(np.array(v) >= b3.RANK_PASS)) for k, v in g2.items()}}
 
     # (3) C3′ with a fixed head per member
     P3, _ = b3.c3_values()
@@ -115,9 +144,18 @@ def main(out: Path) -> dict:
             pl = [np.array([h for h in p if h != f]) for p, f in zip(real, pick)]
             r.append(rank(pick, pl, seed_for("vx", K, k)))
         c3[f"exchangeable_K{K}"] = float(np.mean(np.array(r) >= b3.RANK_PASS))
+    for K in (5, 10):                             # the fake stays in its own pool (finding 2)
+        real = pools({m: b3.head_index(m) for m in b3.MEMBERS}, mem, K)
+        g = np.random.default_rng(seed_for("b3-var-c3i", K))
+        r = []
+        for k in range(N_FAKE):
+            pick = [int(p[g.integers(0, len(p))]) for p in real]
+            r.append(rank(pick, real, seed_for("vi", K, k)))
+        c3[f"inclusive_K{K}"] = float(np.mean(np.array(r) >= b3.RANK_PASS))
     rec["C3p_false_pass"] = c3
     rec["n_fake"] = N_FAKE
     rec["code"] = b3.code_sha()
+    rec["code_variants"] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
     (out / "gate_variants.json").write_text(json.dumps(rec, indent=1) + "\n")
     return rec
 

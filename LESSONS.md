@@ -1220,8 +1220,9 @@ of a design before running it, and print it on every record
   was not exchangeable with the fakes (6 % false pass). Cost: one unit's gate run (about 6 min)
   and a decision round; no member α read. Rule: **before a design that names a head type freezes,
   tabulate each member's type score at every candidate offset; and a null built from "nearest"
-  pools is gated with fakes drawn from the same fixed pool as the null, so the fake is
-  exchangeable with it.**
+  pools is gated with fakes drawn from the same fixed pool as the null, with the tested head kept
+  in that pool, so the fake is exchangeable with it** (`/challenge-pr` on #224: leaving it out
+  gave 3.0 % and 5.5 % false passes).
 
 ## 7. Literature found after the construction was built
 
