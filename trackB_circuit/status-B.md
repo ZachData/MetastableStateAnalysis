@@ -16,7 +16,8 @@
   - At step 143000 the reduction's premise fails: the real tokens hold about the random share of their norm² in V's invariant subspaces, so no head of 14 has D\* ≥ 1 (no circle); 4 read positional (D\* = 0, `L5H2` post hoc), 8 outside the paper's class (at the placed 0.5), 2 "none"; the isotropic cosine adds at most 0.08 of TV over position — `trackB_circuit/status-B.md` "B2a unit 2 (2026-10-16)"
   - The rule at all 18 steps finds no head of 14 with D\* ≥ 1 at any step: to 256 attention is near uniform and every head reads outside (nothing to fit); positional heads appear from 512 (`L5H2`, `L4H9`), and V's subspaces never carry the content a head reads; B2a is at its exit with its 4 units spent — `trackB_circuit/status-B.md` "B2a unit 3 (2026-10-16)"
   - B2a closed 2026-10-16 at its exit: on 410m no head's attention lives in a small subspace of V, mostly because trained heads are not isotropic content plus position (214 of 252 cells outside); where V's ladder was reached the tokens hold about chance in V's subspaces; V's 2D blocks are at the random-weight rate, training shows in their sign — `trackB_circuit/status-B.md` "B2a on one page (closed 2026-10-16)"
-  - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design not yet frozen — `trackB_circuit/design-B2.md` "The math"
+  - B2 (spectra from the weights) opened 2026-10-17 with a scan, a `sympy` check (a rank-64 head's symmetrised OV or QK has exactly 64 negative eigenvalues whenever its read and write spaces are in general position, so sign counts are structural) and a design frozen with its LN1 frame's QK form corrected to B2a's — `trackB_circuit/design-B2.md` "The math"
+  - B2's columns and member statistic pass their weights-only gate at every arm with the design's constants; the statistic sees a set of members only when all sit near their step's 90th (or 10th) percentile (8 % of planted sets at the 80th) — `trackB_circuit/status-B.md` "B2 unit 1 (2026-10-17)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -28,7 +29,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-17 · body `b5618dc484`
+- **Reviewed:** 2026-10-17 · body `83e6adf962`
 <!-- /phase-card -->
 
 ## Units
@@ -58,7 +59,35 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 
 | unit | state | where |
 |---|---|---|
-| 0. design, scan, `sympy` check | **done 2026-10-17**; proposed, not frozen (Blocked 61) | `design-B2.md`, `lit-B.md` "B2", `tools/math_checks/b2_symmetric_inertia.py` |
+| 0. design, scan, `sympy` check | **done 2026-10-17**; frozen by the user 2026-10-17 (Blocked 61 (a): 3 units; LN1 frame's `M_0` corrected at the freeze) | `design-B2.md`, `lit-B.md` "B2", `tools/math_checks/b2_symmetric_inertia.py` |
+| 1. columns, the rule, the gate | **done 2026-10-17: every arm passes**, constants unchanged | `trackB_circuit/b2.py`, `tests/test_b2.py`; "B2 unit 1 (2026-10-17)" below |
+
+## B2 unit 1 (2026-10-17): the columns and the gate
+
+**Input:** code `b2.code_sha()` = `7f69b19b41a6`, records
+`/run/media/system/WDS_500/Mets/data/b2/2026-10-17-gate/` (`gate.json`, `population_step{0,512,143000}.npz`
+(C1–C4 and the beside values of all 384 heads), log `../2026-10-17-gate.log`). Weights of steps 0,
+512 and 143000 from the HF cache, float64 CPU, 6 min. B2a's records for G7 as `design-B2.md` names
+them. Constructions as built: `design-B2.md` "Unit 1's gate, as built". No member value was read
+or printed. Re-run: `METS_DATA=<data> python -m trackB_circuit.b2 gate --out <dir>`.
+
+| arm | passes when | result |
+|---|---|---|
+| G0 | stored OV vs `W_O W_V` ≤ 1e-5; fold = B2a's V_h; low-rank = dense | stored is `(W_O W_V)ᵀ` at both steps (row convention), max rel 1.3e-7 (other orientation ≥ 0.74); fold 0 (same algebra as `b2a.head_weights`, so (ii) checks only the wiring); dense vs low-rank 1.9e-15, regime labels equal |
+| G1 | step-0 halves' outside rate in [0.03, 0.08] | C1 0.063, C2 0.060, C3 0.059, C4 0.060 (per-split 5–95 %: 0.03–0.10). Step-0 bands: C1 0.4963–0.5037 (raw 0.4963–0.5037, as the design quoted), C2 ±0.0126, C3 0.4959–0.5041, C4 ±0.0018 |
+| G2 | false pass ≤ 0.02 per column | 512: C1 0.020, C2 0.010, C3 0.010, C4 0.005, C6 0.010; 143000: 0.015, 0.015, 0.015, 0.020, 0.000. Two at the bound |
+| G3 | at the 90th, rank ≥ 0.99 in ≥ 80 % | dose 75th 0 %, 80th 8 %, **90th 100 %**, 95th and 99th 100 %; median rank 0.80, 0.94, 0.9998 |
+| G4 | planted pair: C2 < 0, flag set; ν = 0 own values | `L22H4`, ν 1.64: C2 −0.049, flag set; ν = 0 differs by 1.1e-16 |
+| G5 | planted rank ≥ 0.99, unplanted in the central 90 % | primary set (`L5H4` `L7H4` `L8H9` `L11H13` `L12H7`): planted C6 0.274, rank 1.0; unplanted 0.0169 (chance 1/64 = 0.0156), rank 0.18. Over 200 draws: planted 100 %, unplanted central 95.5 % |
+| G6 | asym ≤ 1e-6, C4 ≥ 0.999, gradient-flow, Table 1 row as defined | `L17H13`: asym 0, C4 1.0, `gradient_flow`, `row2_three_hyperplanes` as expected |
+| G7 | C7's inputs present and exact | 18 records, the 14 heads' `m2.qk` at each, codes and prompts hash as named, TV at D = 128 ≤ 4.5e-13 |
+
+**What the gate says about the rule's reach:** the member statistic sees a set only when its
+members sit together near the 90th percentile of their step: at the 80th it passes 1 draw in 12
+(planted upward only; |p − ½| makes the 10th the same by symmetry, untested). Members that differ
+from their layers by less, or only some of them, read "no difference shown". G3 read one step; the
+rule averages the 10 steps ≥ 512, which makes the null tighter when members are consistent across
+steps, so this reach is for one step.
 
 ## B2a on one page (closed 2026-10-16)
 

@@ -4,7 +4,9 @@
 Opened 2026-10-17 at the user's pick from `docs/ROADMAP.md` §9 order 3 (B2 over B3 and A3, asked in
 session). Row: `docs/ROADMAP.md` §7 B2. Scan: `trackB_circuit/lit-B.md` "B2". Tier 1 throughout:
 exploratory, unregistered; 410m is an exploration rung (`p8_scale_ladder/design-8.md`), so nothing
-here can score a registered row, and B2 reads no other rung. **Proposed, not frozen (Blocked 61).**
+here can score a registered row, and B2 reads no other rung. **Frozen 2026-10-17 as revised
+(Blocked 61 (a), the user's), budget 3 units, with one correction made at the freeze before any
+output, also the user's: the LN1 frame's QK form (`M_0` in "Objects").**
 **Revised after `/challenge-pr` on #218 (accept with changes, all five findings taken) before the
 freeze:** members are compared with their own step's population, with step 0 kept as a descriptive
 column (1); one scalar per column, labels descriptive, C6 read once over steps (2); C7's inputs named,
@@ -56,7 +58,7 @@ it cannot single out members, and the member statistic compares with the same st
 
 | object | definition |
 |---|---|
-| frame (C1–C4) | **B2a's LN1 frame, primary** (`design-B2a.md` "Objects"): `V_h = diag(g_ℓ) C · OV_h` and `M_0 = diag(g_ℓ) C W_Qᵀ W_K C diag(g_ℓ) / √64`, `g_ℓ` the head's block's LN1 gain, C the centring projector, biases out. **Raw frame beside** (Phases 2, 6, 7e, 2d's convention). Both computed for all 384 heads; the primary is named here, before any output |
+| frame (C1–C4) | **B2a's LN1 frame, primary** (`design-B2a.md` "Objects"): the space of LN1's rows y (gain in, `b2a.ln1`), where `V_h = diag(g_ℓ) C · OV_h` and `M_0 = W_Qᵀ W_K / √64`, `g_ℓ` the head's block's LN1 gain, C the centring projector, biases out. **Raw frame beside** (Phases 2, 6, 7e, 2d's convention). Both computed for all 384 heads; the primary is named here, before any output. *Corrected at the freeze (the user's pick, before any output):* the proposal had `M_0 = diag(g_ℓ) C W_Qᵀ W_K C diag(g_ℓ) / √64`, which applies the gain twice; B2a's logit is `yᵀ W_Qᵀ W_K y′ / √64` on those rows (`b2a.head_logits`). So `M_0` is the same in both frames, C3 has no raw column, and C1, C2, C4 differ between frames through V only |
 | frame (C6) | raw residual frame (the space heads write into and read from across layers) |
 | OV of head h | the dense `ov_head<h>_layer_<l>` in `data/phase12/p2_eigenspectra_<ts>/ov_weights_pythia-410m-step<S>.npz` (the 19 runs `data/analysis/ov_per_head_series.json` names), orientation fixed by **G0** against `W_O W_V` from the checkpoint; rank ≤ 64 |
 | M of head h | `W_Qᵀ W_K / √64` at offset 0 (2d's `qk_matrix`), from the cached checkpoint. Pythia rotates 16 of the 64 head dimensions (`rotary_pct` 0.25); at Δ = 0 rotary is the identity, so `M_0` is the full form at zero offset; the unrotated 48 dimensions' form is beside |
@@ -71,7 +73,7 @@ it cannot single out members, and the member statistic compares with the same st
 |---|---|---|---|
 | C1 | `a(V)`, the OV attractive share | raw frame; the series' V-eigenvalue split (`attractive_energy_fraction_core`) | ROADMAP B2 "symmetrised OV" |
 | C2 | signed top weight `sign(λ₁) · |λ₁| / Σ|λ|` of S (λ₁ the largest |λ|) | the **negative pair** flag (λ₁, λ₂ both negative, `|λ₂|/|λ₁| ≥ 0.8` *(placed)*, the d = 2 repulsive reduction on weights), its rate against step 0's | "dominant negative eigenpairs"; B2a: compare rates with step 0 |
-| C3 | `a(M_0)`, the QK symmetric share | 2d's asymmetry `‖Skew M_0‖_F / ‖M_0‖_F`; the unrotated part | Phase 10's `⟨Qx, Ky⟩`; 2d's condition 1 |
+| C3 | `a(M_0)`, the QK symmetric share (frame-free, "Objects") | 2d's asymmetry `‖Skew M_0‖_F / ‖M_0‖_F`; the unrotated part | Phase 10's `⟨Qx, Ky⟩`; 2d's condition 1 |
 | C4 | 2d's signed cosine `ov_qk_alignment(V, M_0)` | 2d's `head_regime` label (`gradient_flow_condition.py`, reused) | "2d's gradient-flow regime test per member" (weights half; Fences) |
 | C5 | *descriptive only*: `classify_ov_row(V, M_0)` (`table1_predictions.py`, reused), the members' rows and the population's row shares per step against step 0's | — | F18, against `2411.04990` Table 1 (left column only; Fences) |
 | C6 | **K-composition overlap**: mean `tr(P_W(A) P_K(B)) / r` over the 10 ordered pairs of the 5 circuit heads (A's layer below B's; A's write space, B's key space), averaged over steps ≥ 512 | write–write overlap (7e's item, as asked); per-step values; the same with `L10H7`; chance r/d = 1/64 | 7e's free item; `/challenge-pr` on #218 finding 5 |
@@ -127,6 +129,15 @@ C1 / C2 distributions above. No member value at any step after 0 in any column B
 | G5 | planted composition at 143000: 4 of A's 16 write directions copied into B's key space, for the 10 ordered pairs of 5 layer-matched non-member heads | C6's rank ≥ 0.99; unplanted, the same heads' rank is within the null's central 90 % |
 | G6 | planted gradient-flow head: `W_K := W_Q` and V := `M_0`'s symmetric part | asymmetry ≤ 1e-6, C4 ≥ 0.999, `head_regime` inside; `classify_ov_row` returns the row its definition implies |
 | G7 | C7's reader on the named records: the 14 heads' `m2.qk` at all 18 steps, prompts hash and code as named; `TV(128) ≤ 1e-6` (exact, B2a's G5 (ii)) | all present, all exact |
+
+**Unit 1's gate, as built** (choices this table left open, made in `b2.py` before any output; the
+module docstring has them in full): G0 adds (iii), the low-rank columns against 2d's dense
+`head_regime` and `eigvalsh` on B2a's 14 heads at 143000 (≤ 1e-8); G2, G3 and G5 read their arm's
+one step, not the rule's mean over steps ≥ 512; a set's null pool is its layers' other 15 heads,
+as the members' is; G3's dose adds `t · A Aᵀ` to V (`W_V += t Aᵀ`, A = `diag(g) C W_O`), t by
+bisection; G5 sets B's top right singular vectors of `W_K` to the planted directions (A's top 4
+for every A below B), keeping its singular values, with one seeded set primary and 200 draws
+beside. Float64 on the CPU (every operation is a QR or SVD of ≤ 1024 × 132).
 
 ## Units
 
