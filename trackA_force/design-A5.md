@@ -1,5 +1,5 @@
 <!-- trackA_force/design-A5.md -->
-# Track A, A5 — generality on the PolyPythias seeds: registration draft (2026-10-18)
+# Track A, A5 — generality on the PolyPythias seeds: registration text (drafted 2026-10-18, decided 2026-10-19)
 
 **Status: text decided 2026-10-19 (Blocked 68, the user's: D1–D9 all as recommended, listed
 below). Not registered; no seed's intermediate step downloaded or read.** Next before registering:
@@ -34,8 +34,9 @@ calibration gate named.
 
 **Decided 2026-10-19 (Blocked 68, the user's, all as recommended):** D1 (a), D2 (a), D3 (a),
 D4 (a), D5 (a), D6 (b), D7 (a), D8 (a), D9 (a), so A5 is labelled a reproducibility check, not a
-test of mechanism. The draft entry below is the decided text; it changes only if the calibration
-gate's sensitivity arm moves seed 0 out of the window.
+test of mechanism. The draft entry below is the decided text. It goes back to the user (not edited
+here) if any calibration-gate arm fails, including the known answer not reproducing the panel's
+counts, or if A3, which runs first, dates the break with another energy or statistic than D2 and D4.
 
 | # | choice | options | recommended, and why |
 |---|---|---|---|
