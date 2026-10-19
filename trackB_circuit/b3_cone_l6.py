@@ -126,6 +126,19 @@ def cmd_run(a) -> int:
     return 0
 
 
+def parts(sig: np.ndarray, J: np.ndarray) -> Dict:
+    """ℓ's two sides (added after `/challenge-pr` on #228's 2b): ℓ is log partner − log median
+    neighbour, so a Δℓ can come from either. Medians over the (sequence, j) of σ at the partner,
+    of the neighbours' median σ, and of their logs."""
+    S, nJ, _ = sig.shape
+    s, j = np.arange(S)[:, None], np.arange(nJ)[None, :]
+    num = sig[s, j, J + bc.PARTNER]
+    den = np.median(np.stack([sig[s, j, J + bc.PARTNER + m] for m in bc.MATCH], -1), -1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return {"partner": float(np.median(num)), "nbr": float(np.median(den)),
+                "log_partner": float(np.median(np.log(num))), "log_nbr": float(np.median(np.log(den)))}
+
+
 def read(out: Path) -> Dict:
     d = out / SUB
     files = sorted(d.glob("seq[0-9][0-9].npz"))
@@ -146,6 +159,8 @@ def read(out: Path) -> Dict:
     diff = fin["none"] - nul["ell_none"]
     if abs(diff) > TOL_NONE:
         raise bc.B3ConeError(f"ℓ_none here {fin['none']} vs the null pass's {nul['ell_none']}")
+    pf = {nm: parts(sig[k], J) for k, nm in enumerate(names)}
+    pm = {nm: parts(mid[k], J) for k, nm in enumerate(names)}
     rows = []
     for nm in names[1:]:
         dl = fin["none"] - fin[nm]
@@ -153,9 +168,17 @@ def read(out: Path) -> Dict:
         rows.append({"config": nm, "ell": fin[nm], "delta": dl, "share": dl / fin["none"],
                      "rank_vs_L1_null": bc.rank_of(dl, nul["null"]),
                      "ell_mid": md[nm], "delta_mid": dm,
-                     "share_mid": None if dm is None else dm / md["none"]})
+                     "share_mid": None if dm is None else dm / md["none"],
+                     "final": pf[nm], "mid": pm[nm],
+                     "dlog_partner": pf["none"]["log_partner"] - pf[nm]["log_partner"],
+                     "dlog_nbr": pf["none"]["log_nbr"] - pf[nm]["log_nbr"]})
+    s1, _, n1, J1 = bc.load_configs(out / "l1")
+    l1 = {nm: parts(s1[k], J1) for k, nm in enumerate(n1)}
     return {"code": code_sha(), "b3_cone": bc.code_sha(), "ell_none": fin["none"],
             "ell_none_null_pass_diff": diff, "ell_none_mid": md["none"], "rows": rows,
+            "none_final": pf["none"], "none_mid": pm["none"],
+            "L1_parts": {nm: {**v, "dlog_partner": l1["none"]["log_partner"] - v["log_partner"],
+                              "dlog_nbr": l1["none"]["log_nbr"] - v["log_nbr"]} for nm, v in l1.items()},
             "null_q99": float(np.quantile(nul["null"], 0.99)),
             "L1_members_delta": json.loads((out / "result.json").read_text())["L1"]["delta"]}
 
@@ -172,6 +195,16 @@ def cmd_read(a) -> int:
         dm = "—" if r["delta_mid"] is None else f"{r['delta_mid']:.3f}"
         sm = "—" if r["share_mid"] is None else f"{r['share_mid']:.2f}"
         print(f"| {r['config']} | {r['delta']:.3f} | {r['share']:.2f} | {r['rank_vs_L1_null']:.3f} | {dm} | {sm} |")
+    nf, nm_ = res["none_final"], res["none_mid"]
+    print(f"\nunablated σ: partner {nm_['partner']:.4f} at resid_pre 7, {nf['partner']:.4f} final "
+          f"(share {nm_['partner'] / nf['partner']:.2f}); neighbours {nm_['nbr']:.4f}, {nf['nbr']:.4f}")
+    print("| ablated | final σ partner | final σ nbr | Δ log partner (drop) | Δ log nbr (drop) | σ partner at resid_pre 7 |")
+    print("|---|---|---|---|---|---|")
+    for r in sorted(res["rows"], key=lambda r: -r["delta"]):
+        print(f"| {r['config']} | {r['final']['partner']:.4f} | {r['final']['nbr']:.4f} | "
+              f"{r['dlog_partner']:.3f} | {r['dlog_nbr']:.3f} | {r['mid']['partner']:.4f} |")
+    for nm, v in res["L1_parts"].items():
+        print(f"L1 {nm}: Δ log partner {v['dlog_partner']:.3f}, Δ log nbr {v['dlog_nbr']:.3f}")
     return 0
 
 

@@ -24,7 +24,7 @@
   - B3 (routing) opened 2026-10-18 with a scan, a `sympy` check and a design, frozen the same day (Blocked 65 (a)). The check shows that condensation in 2609.28448 is a large-N limit with no finite-N threshold, and that a sharp head with no growing logit gap still gives a partner-growth slope well below 1 at these context lengths. So B3 reads routing from the attention itself, with β beside, and no head is placed against a threshold — `trackB_circuit/design-B3.md` "The math"
   - B3 unit 1's gate fails before any member α is read: the stored attention and head types reproduce, and planted α reads right, but the type-matched null for C3′ false-passes 6 % and R2's onset rule misses planted onsets (init structure in the early bottom decile). The induction members do not share an offset, and `L12H5` is not an induction head on 7d's probe. Revisions are tested on the gate and put to the user — `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
   - Revised by the user's choice (Blocked 66 (a): each member typed at its own offset, `L12H5` untyped, a step-0 floor on R2's onset, inclusive null pools), the gate passes. The members' routing exponent α shows no difference from their layers' heads (R1, rank 0.80). Only `L5H2` of 4 condenses at its formation step (R2). Against the heads nearest in type, B2's QK symmetry does not set the members apart (C3′, 0.945): C3 is not shown to go beyond head type, though only two of the six pools are close in type — `trackB_circuit/status-B.md` "B3 unit 1b (2026-10-18)"
-  - The light cone (Blocked 67 (a)): a nudge at block 4 on repeated random tokens reaches the induction partner (j + 63) about 11× more than its neighbours, from step 1000. Ablating the three typed induction members removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets (L1, rank 1.000). The three nearest-type non-members remove 0.05 (0.88, not shown). Most of the cone (ℓ ≈ 2.0 at 143000) is already in the residual after block 6, before any member runs, so the members carry a part. Layer 6's single-head ablations (Blocked 69 (c)) name that jump: `L6H3` alone (ind1 0.46, untyped; a reader of `L5H2`'s write space in B2) removes all of it at `resid_pre` 7, but the final cone drops only 0.02, so later layers rebuild it. Layer 6's attention together removes 0.94 of the jump and 0.06 of the final ℓ; `L6H0` (ind0 0.75, untyped) removes the most of the final ℓ of any single layer-6 head, 0.18. Where the cone first appears is not what it needs — `trackB_circuit/status-B.md` "B3 unit 2 (2026-10-19)", "B3 unit 2b (2026-10-19)"
+  - The light cone (Blocked 67 (a)): a nudge at block 4 on repeated random tokens reaches the induction partner (j + 63) about 11× more than its neighbours, from step 1000. Ablating the three typed induction members removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets (L1, rank 1.000). The three nearest-type non-members remove 0.05 (0.88, not shown). Of the members' 0.54, about 0.24 is the partner's response falling and 0.30 the neighbours' rising, so about half of it is the response being kept off nearby tokens. ℓ ≈ 2.0 after block 6 is a ratio on a small signal: the partner's response there is 0.097, 8 % of its final 1.17, so the cone's size is added after block 6 (unit 2's "most of the cone is in place after block 6" was wrong). That early ratio is `L6H3`'s (ind1 0.46, untyped), and ablating it leaves the final response unchanged; `L6H0` (ind0 0.75, untyped) leaves the partner unchanged and lets the neighbours rise (Δℓ 0.18) — `trackB_circuit/status-B.md` "B3 unit 2 (2026-10-19)", "B3 unit 2b (2026-10-19)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -36,7 +36,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-19 · body `ead68675e8`
+- **Reviewed:** 2026-10-19 · body `b1b041c72f`
 <!-- /phase-card -->
 
 ## Units
@@ -80,7 +80,7 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 | 0. design, scan, `sympy` check | **done 2026-10-18**; frozen by the user 2026-10-18 (Blocked 65 (a): 3 units, the placed constants as written) | `design-B3.md`, `lit-B.md` "B3", `tools/math_checks/b3_condensation_exponent.py` (3 checks pass) |
 | 1. routing (R1, R2, C3′, A3's row, β beside) | **gate run 2026-10-18: G0, G1 pass; G2 (C3′) and G3 fail, so no member α was read.** Revised (Blocked 66 (a), the user's) and **re-gated 2026-10-18: G0–G3 pass; R1, R2, C3′ read "no difference shown"** | `trackB_circuit/b3_route.py`, `b3_gate_variants.py`, `tests/test_b3_route.py`; "B3 unit 1b (2026-10-18)" and "B3 unit 1 (2026-10-18)" below |
 | 2. the light cone (L0, L1; Blocked 67 (a) with the same-type arm) | **done 2026-10-19: G2 (L1), G4–G6 pass; L0 passes; L1 reads "the cone goes through the members" (rank 1.000); the same-type arm does not (0.88). B3's 3 units are spent; the close-out is next** | `trackB_circuit/b3_cone.py`, `tests/test_b3_cone.py`, `tests/test_b3_cone_smoke.py`; "B3 unit 2 (2026-10-19)" below |
-| 2b. layer 6's single-head ablations (Blocked 69 (c), one small unit on the record; descriptive, outside the family) | **done 2026-10-19: `L6H3` carries block 6's jump (1.09 of it at `resid_pre` 7), and the final cone does not need it (Δℓ −0.02); `L6H0` 0.18 final. The close-out is next** | `trackB_circuit/b3_cone_l6.py`; "B3 unit 2b (2026-10-19)" below |
+| 2b. layer 6's single-head ablations (Blocked 69 (c), one small unit on the record; descriptive, outside the family) | **done 2026-10-19: block 6's output carries 8 % of the partner's final response; its high ratio there is `L6H3`'s, which the final response does not depend on; `L6H0`'s Δℓ 0.18 is the neighbours rising. Corrects unit 2's "most of the cone is in place after block 6" (`/challenge-pr` on #228's 2b commit). The close-out is next** | `trackB_circuit/b3_cone_l6.py`; "B3 unit 2b (2026-10-19)" below |
 
 What was seen before the readings were fixed: `design-B3.md` "Seen before the readings were fixed",
 and unit 1's gate record (below), which includes the members' type scores and formation steps but
@@ -110,28 +110,50 @@ rank there means "more than three random later heads remove", not a family readi
 | `L6H3` | −0.024 | −0.01 | 0.340 | **2.207** | **1.09** |
 | the other 13 | −0.047 to 0.013 | | 0.155–0.665 | −0.057 to 0.005 | |
 
+**ℓ's two sides** (added after `/challenge-pr` on the 2b commit, findings 2–3; `b3_cone_l6.parts`,
+the same records re-read: `l6.json`, `l6_read2.txt`). ℓ = log σ_partner − log median σ_neighbours,
+so a Δℓ can come from either side; σ is ‖A‖/ε of the un-normalised residual, a running sum, so
+σ at `resid_pre` 7 and at the final residual are on one scale. Unablated: the partner's σ is
+**0.097 at `resid_pre` 7 against 1.171 at the final residual (0.08)**; the neighbours' 0.0116 and
+0.110. Drops (unablated − ablated; negative means it rose):
+
+| ablated | Δ log partner, final | Δ log neighbours, final | σ partner at `resid_pre` 7 |
+|---|---|---|---|
+| `L6H0` | −0.016 | −0.194 | 0.0970 |
+| all 16 | −0.002 | −0.131 | 0.0062 |
+| `L6H3` | −0.018 | +0.002 | 0.0086 |
+| the other 13 | −0.007 to +0.008 | −0.034 to +0.041 | 0.0968–0.0970 |
+| L1's members (`l1/`) | **+0.242** | **−0.297** | — |
+| L1's same-type set | −0.030 | −0.092 | — |
+
 Head types at 143000 (unit 1's `types/step143000.json`): `L6H3` ind1 0.461, ind0 0.009, prev 0.015
 (an offset-+1 induction-type head below the typing cut); `L6H0` ind0 0.750 (offset 0), not a
 member. In B2, `L6H3`'s keys read `L5H2`'s write space at about 9× chance (`c6_pairs.json`).
 
 **Readings (descriptive):**
 
-1. **Block 6's jump is `L6H3`'s.** Ablating it alone removes all of ℓ at `resid_pre` 7 (2.21 of
-   2.03; the ratio ends below its `resid_pre` 6 value). No other single layer-6 head moves it by
-   more than 0.21.
-2. **The final cone does not need it.** With `L6H3` ablated the final ℓ is unchanged (Δℓ −0.024,
-   rank 0.34). With all of layer 6's attention ablated, 0.94 of the jump goes and 0.06 of the
-   final ℓ. Later layers rebuild the response at the partner. So the by-layer row says where the
-   cone first appears, not what it rests on: "most of the cone is in place after block 6" does not
-   mean "most of the cone is carried by block 6".
-3. **`L6H0` is layer 6's largest single-head route to the final ℓ** (0.18, above all 200 random
-   3-sets), a third of the three members' 0.54, though it raises the ratio at `resid_pre` 7. It is
-   an offset-0 induction-type head that unit 1 did not type as a member.
+1. **The cone's size is added after block 6.** The partner's response at block 6's output is 8 %
+   of its final size. ℓ ≈ 2.0 there is a high ratio on a small signal (the neighbours are
+   smaller still). So unit 2's "most of the cone is in place after block 6" was wrong, and so was
+   the reason Blocked 69 (c) was recommended (corrected in "B3 unit 2" below).
+2. **That early ratio is `L6H3`'s, and the final response does not depend on it.** Ablating
+   `L6H3` alone takes the partner's σ at `resid_pre` 7 from 0.097 to 0.009 (Δℓ there 2.21); the
+   final partner and neighbours do not move (Δ log −0.018, +0.002). Nothing had to be rebuilt:
+   what `L6H3` writes is a small part of a running sum that later blocks add to. No other single
+   layer-6 head moves σ at `resid_pre` 7.
+3. **`L6H0`'s Δℓ of 0.18 is the neighbours rising, not the partner falling.** Ablated, the partner
+   is unchanged (Δ log −0.016) and the neighbours rise 0.19. So `L6H0` keeps the response off the
+   partner's neighbours; it is not a route to the partner. Its rank 1.000 is against 3-head sets
+   from layers 7, 8, 11; within layer 6 it is the largest of 16, and the 16 do not add (all
+   together 0.136, below `L6H0` alone).
+4. **L1 splits in two** (beside, the same records). Of the members' Δℓ 0.536, the partner's log
+   falls 0.242 and the neighbours' rises 0.297 (medians, so the two need not sum to Δℓ). L1's rank
+   stands, since its null is read the same way, but about half of "the cone goes through the
+   members" is the members keeping the response off nearby tokens.
 
-**Not established:** what rebuilds the cone downstream (the members, by L1's 0.54, are one
-candidate; `L6H3` ablated together with them was not run); whether the rebuild is self-repair in
-7d's sense or a parallel route that is always there; `L6H0`'s rank against a 1-head null; any step
-but 143000.
+**Not established:** which heads add the partner's response after block 6 (the members take 0.24
+of its log; the rest is not located); whether the neighbours' rise under ablation is a direct
+effect or the downstream heads' response to it; `L6H0` against a 1-head null; any step but 143000.
 
 ## B3 unit 2 (2026-10-19): the light cone (Blocked 67 (a) with the same-type arm)
 
@@ -176,10 +198,12 @@ ablation removes a route and that the null's spread is small beside it.
 | same-type arm (beside) | Δℓ 0.053 with `L9H9`, `L10H9`, `L8H9` ablated | rank 0.880: not shown |
 
 The members' ablation removes about a fifth of ℓ (0.54 of 2.37), and the cone stays far above 0
-without them (1.84). That fits the by-layer row (below): at 143000 most of the cone is already in
-the residual after **block 6**, before any member runs. So L1 says the cone goes through the
-members *in part*. The larger route, at or before block 6, is not identified (unit 2b, above, since found that block 6's jump is `L6H3`'s and that the final cone does not need it), and how much of the
-1.84 is self-repair (7d) is not split either. The three nearest-type heads remove a tenth as much,
+without them (1.84). So L1 says the cone goes through the members *in part*. **Corrected
+2026-10-19 (unit 2b, above):** this paragraph first said the by-layer row puts most of the cone in
+the residual after block 6, before any member runs. It does not: ℓ is a ratio, and the partner's
+response at block 6's output is 8 % of its final size. Of the 0.54, the partner's side is 0.24 and
+the neighbours' 0.30. Where the rest of the partner's response is added, and how much of the
+1.84 is self-repair (7d), are not split. The three nearest-type heads remove a tenth as much,
 but at rank 0.88 that is "not shown", and it is not evidence against induction-type heads in
 general: all three sit after block 6 (layers 8–10, not layer-matched), so they cannot speak for
 what carries the cone there (`/challenge-pr` on #228, findings 1–2).
@@ -202,7 +226,9 @@ what carries the cone there (`/challenge-pr` on #228, findings 1–2).
   `resid_pre` 5–6 from 1000; 0.07 at 512). The jump is in **block 6** at 143000 (`resid_pre` 6
   0.11 → 7 2.03) and at 4000 (0.10 → 1.27, then block 7 to 2.10), and in **block 7** at 1000
   (0.43 → 2.09). It moves one block earlier with training, and from 4000 it sits before
-  `L7H8`'s layer. The fixed rule picks up the small lean; the jump is read here post hoc.
+  `L7H8`'s layer. The fixed rule picks up the small lean; the jump is read here post hoc. The
+  jump is in the ratio, not in the size: at 143000 the partner's σ at `resid_pre` 7 is 8 % of its
+  final value (unit 2b).
 - **c:** ℓ at c = 0.01 and 0.1 is within 0.04 of c = 0.03 at every step (linear).
 - **Rounding:** partner and neighbour σ's within 10× the floor: none at every step to 32000, 400
   of 3,584 at 54000, 2,597 at 143000. They are mostly the neighbours: the final residual's floor

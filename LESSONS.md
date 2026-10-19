@@ -1693,12 +1693,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   was listed; `L9H0` is also outside 7d's causal top 10, so it is the contrast B4 needs. Rule: a
   list labelled "every" or "all" is produced over the whole population, never copied from a view
   scoped to the members.
-- 2026-10-19, B3 unit 2b (found by its own run): after #228's review, both author and reviewer
-  read "ℓ ≈ 2.0 is in the residual after block 6" as "the larger route is at or before block 6",
-  and Blocked 69 (c) was recommended to name it. Ablating `L6H3` removes all of the block-6 jump
-  and none of the final cone: later layers rebuild it. The by-layer row measures where a response
-  first appears, not what the output depends on. Rule: a "where it is" read (by layer, by
-  position) supports a sentence about a route only after an ablation read at the output.
+- 2026-10-19, B3 units 2 and 2b (found by `/challenge-pr` on the 2b commit, findings 2–3): #228's
+  first review read ℓ ≈ 2.0 at `resid_pre` 7 as "most of the cone is in place after block 6"; the
+  author took it, recommended Blocked 69 (c) on it, and 2b's first write-up said "later layers
+  rebuild the cone". ℓ is a log ratio: the partner's σ there is 8 % of its final size, so nothing
+  was in place and nothing was rebuilt. The same blindness put `L6H0`'s Δℓ (the neighbours rising)
+  down as a route, and hid that half of L1's 0.54 is the neighbours' side. Both sides were on
+  disk the whole time. Rule: a ratio statistic is read beside its numerator and denominator
+  before any sentence about size, place or route; a Δ of a ratio says which side moved.
 
 ## 12. Deleted, then needed
 
