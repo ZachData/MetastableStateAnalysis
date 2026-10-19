@@ -2906,10 +2906,11 @@ registered.
   reaches j's induction partner about 11× more than its neighbours, from step 1000 (the formation
   step of `L8H6` and `L11H14`). It follows routing the circuit is known to do; it does not place
   410m in the paper's hard-routing regime.
-- The named circuit carries a fifth of it, half of that by keeping the response off nearby tokens.
-  The partner's response is added over many blocks (7–11 and 17–23), not at the members' layers
-  alone. With B2's C6 (one head's write space read by members and non-members alike), this
-  is consistent with Track S's reading (`docs/ROADMAP.md` §7a) of a head as where routing lives, not the unit of the mechanism.
+- The three typed induction members carry a fifth of it, half of that by keeping the response off
+  nearby tokens; whether that is this circuit or any induction-type heads at these layers is not
+  shown (no layer-matched same-type control; carried to B4). The partner's response is added over
+  many blocks (6–8, 10–11 and 16–23), not at the members' layers alone. Where one block was split
+  into heads (block 6), one head (`L6H3`) carried all of it.
 - Per-head numbers again show no member difference: the routing exponent α (R1), condensation at
   formation (R2, only `L5H2`) and B2's QK symmetry against type-matched heads (C3′). The population
   sharpens with training (median α 0.95 → 0.35), and β does not track that sharpness (ρ 0.18).

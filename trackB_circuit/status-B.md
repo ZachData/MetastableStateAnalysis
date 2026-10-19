@@ -25,7 +25,7 @@
   - B3 unit 1's gate fails before any member α is read: the stored attention and head types reproduce, and planted α reads right, but the type-matched null for C3′ false-passes 6 % and R2's onset rule misses planted onsets (init structure in the early bottom decile). The induction members do not share an offset, and `L12H5` is not an induction head on 7d's probe. Revisions are tested on the gate and put to the user — `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
   - Revised by the user's choice (Blocked 66 (a): each member typed at its own offset, `L12H5` untyped, a step-0 floor on R2's onset, inclusive null pools), the gate passes. The members' routing exponent α shows no difference from their layers' heads (R1, rank 0.80). Only `L5H2` of 4 condenses at its formation step (R2). Against the heads nearest in type, B2's QK symmetry does not set the members apart (C3′, 0.945): C3 is not shown to go beyond head type, though only two of the six pools are close in type — `trackB_circuit/status-B.md` "B3 unit 1b (2026-10-18)"
   - The light cone (Blocked 67 (a)): a nudge at block 4 on repeated random tokens reaches the induction partner (j + 63) about 11× more than its neighbours, from step 1000. Ablating the three typed induction members removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets (L1, rank 1.000). The three nearest-type non-members remove 0.05 (0.88, not shown). Of the members' 0.54, about 0.24 is the partner's response falling and 0.30 the neighbours' rising, so about half of it is the response being kept off nearby tokens. ℓ ≈ 2.0 after block 6 is a ratio on a small signal: the partner's response there is 0.097, 8 % of its final 1.17, so the cone's size is added after block 6 (unit 2's "most of the cone is in place after block 6" was wrong). That early ratio is `L6H3`'s (ind1 0.46, untyped), and ablating it leaves the final response unchanged; `L6H0` (ind0 0.75, untyped) leaves the partner unchanged and lets the neighbours rise (Δℓ 0.18) — `trackB_circuit/status-B.md` "B3 unit 2 (2026-10-19)", "B3 unit 2b (2026-10-19)"
-  - B3 closed 2026-10-19 at its exit: the light cone runs along induction partners from step 1000 and goes through the three typed induction members in part (half of their share keeps the response off nearby tokens); the partner's response is added across depth, mostly in blocks 7–11 and 17–23; the members' routing exponent does not differ from their layers', and B2's QK-symmetry split is not shown to go beyond head type. Path patching and the heads after block 6 are carried to B4 — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
+  - B3 closed 2026-10-19 at its exit: the light cone runs along induction partners from step 1000 and goes through the three typed induction members in part (half of their share keeps the response off nearby tokens); the partner's response is added across depth (blocks 6–8, 10–11 and 16–23); the members' routing exponent shows no difference from their layers', and B2's QK-symmetry split is not shown to go beyond head type. Path patching, the heads that add the response, a block-6 nudge site and a layer-matched same-type control are carried to B4 — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
 - **Superseded / wrong:** B3 unit 2's "most of the cone (ℓ ≈ 2.0) is already in the residual after block 6, before any member runs" (2026-10-19, #228): ℓ is a ratio, and the partner's σ there is 8 % of its final size — `trackB_circuit/status-B.md` "B3 unit 2b (2026-10-19)"
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -37,7 +37,8 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-19 · body `9cff049387`
+  - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
+- **Reviewed:** 2026-10-19 · body `f0d939e63e`
 <!-- /phase-card -->
 
 ## Units
@@ -107,7 +108,8 @@ c = 0.03, GPU float32):**
    512, and 2.96 at 1000, the formation step of `L8H6` and `L11H14`. Control sequences (same
    distance, no partner) contain 0 at every step. The partners come from the circuit, not from
    representation space, so this says the response follows routing, not that 410m is in the
-   paper's regime (design "Fences").
+   paper's regime (design "Fences"). At 143000 ℓ's size is partly a float32 detection limit (the
+   neighbours' σ sits near the floor); ℓ at 32000, with no σ near it, is 2.40 ("B3 unit 2").
 2. **The cone goes through the members, in part, and half of that is suppression.** Ablating
    `L7H8`, `L8H6`, `L11H14` removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets
    (L1, rank 1.000). The cone stays at 1.84 without them. Of the 0.54, the partner's log falls
@@ -115,12 +117,13 @@ c = 0.03, GPU float32):**
    response to the partner and keep it off nearby tokens. The three nearest-type non-members
    remove 0.05 (0.88, not shown; not layer-matched).
 3. **The partner's response is added across depth, not at one block.** Its σ is 8 % of its final
-   size after block 6, 0.48 by `resid_pre` 12 (block 11 adds the most, 0.18), flat through block
-   16, and the other half in blocks 17–23. ℓ ≈ 2.0 after block 6 is a ratio on a small signal:
+   size after block 6, 0.48 by `resid_pre` 12 (blocks 6–8 and 10–11; block 9 adds nothing, block
+   11 the most, 0.18), flat through block 15, and the other half in blocks 16–23. ℓ ≈ 2.0 after block 6 is a ratio on a small signal:
    `L6H3` makes it, and the final response does not depend on `L6H3`. `L6H0` keeps the response
    off the neighbours (ablated, they rise; Δℓ 0.18). Unit 2's "most of the cone is in place after
    block 6" was wrong and is corrected ("B3 unit 2b").
-4. **The members' routing does not differ from their layers'.** R1 (α, the slope of log N_eff on
+4. **The members' routing shows no difference from their layers'** (not shown to differ; blind to
+   members held mid-population, where `L8H6` and `L11H14` sit). R1 (α, the slope of log N_eff on
    log n) ranks 0.80. R2: only `L5H2` of 4 condenses at its formation step (onset 512, α 0.98 →
    0.13), rank 0.234; weak evidence, since only 4 of 4 can read and 11 of layer 5's other 15
    heads also hit at that step. The population sharpens anyway: median α 0.95 at 512, 0.35 at
@@ -142,11 +145,12 @@ c = 0.03, GPU float32):**
 
 - How much of the members' 0.54, and of the 1.84 left without them, is a direct path and how much
   self-repair (no path patching).
-- Which heads add the partner's response after block 6 (blocks 7–11 and 17–23; none in 12–23 is
+- Which heads add the partner's response (blocks 6–8, 10–11 and 16–23; outside block 6 none is
   named), and whether the neighbours' rise under ablation is direct or the downstream heads'
   response.
-- That induction-type heads in general carry the cone: the same-type set sits in layers 8–10, not
-  layer-matched.
+- That L1 marks this circuit rather than its head type: the same-type set sits in layers 8–10, not
+  layer-matched, so "the cone goes through the members" is not shown to be more than "through
+  induction-type heads at these layers".
 - A routing difference for members held mid-population; R2 reads only at 4 of 4.
 - Whether C3 marks the circuit or head type: `L5H2` and `L7H8` have no close type pool among the
   384 heads.
@@ -159,9 +163,9 @@ c = 0.03, GPU float32):**
 | thread | at close |
 |---|---|
 | Split L1's 0.54 and the 1.84 into direct path and self-repair, by path patching through the three members (Blocked 69 (b)) | **carried** to B4 (`docs/ROADMAP.md` §7): it nudges the circuit's spaces, which is B4's kind of question |
-| Which heads add the partner's response after block 6, and whether the neighbours' rise is direct | **carried** to B4, with unit 2's per-block partner σ (`sweep/step143000.npz` `layers`) as its baseline |
+| Which heads add the partner's response (blocks 6–8, 10–11, 16–23), and whether the neighbours' rise is direct | **carried** to B4, with unit 2's per-block partner σ (`sweep/step143000.npz` `layers`) as its baseline |
 | A nudge site after `L5H2` (block 6) | **carried** to B4, which nudges `L5H2`'s write space |
-| A layer-matched same-type set for L1 | **dropped**: beside, outside the family; B4's contrast is `L9H0` (B2's C6) |
+| A layer-matched same-type set for L1 (circuit or head type) | **carried** to B4 (`/challenge-pr` on #230, finding 3): one more configuration on unit 2's cached run, about 2 GPU minutes, where layer-7 and -8 candidates exist (C3′'s pools name none in layer 11) |
 | `L6H0` against a 1-head null; unit 2b at other steps | **dropped**: descriptive, outside the family, so it can change no reading |
 | C3′'s shared pool for `L8H6` and `L11H14` (a null draw can count one head twice) | **dropped**: G2's fakes share it and pass, and C3′ reads "not shown" at 0.945, where 8.2 % of fakes reach 0.95 |
 | A type pool close for `L5H2` and `L7H8` | **dropped**: none exists among 384 heads (pools 0.37–0.70 and 0.14–0.61 against 0.89 and 0.67) |
@@ -221,7 +225,9 @@ the members' partner side is above all 200 (null max 0.111), their neighbour sid
 | neighbours' σ | 0.004 | 0.006 | 0.012 | 0.023 | 0.036 | 0.053 | 0.061 | 0.063 | 0.058–0.062 | 0.063 | 0.071 | 0.082 | 0.085–0.091 | 0.097 | 0.110 |
 
 The partner's response is added in steps: blocks 6–8 and 10–11 (0.48 by `resid_pre` 12; block 11,
-`L11H14`'s, adds the most, 0.18), flat through block 16, then about half in blocks 17–23.
+`L11H14`'s, adds the most, 0.18), flat through block 15, then about half in blocks 16–23
+(`resid_pre` b is block b − 1's output; first written "flat through block 16, then 17–23", one
+block late, corrected after `/challenge-pr` on #230, finding 4).
 
 Head types at 143000 (unit 1's `types/step143000.json`): `L6H3` ind1 0.461, ind0 0.009, prev 0.015
 (an offset-+1 induction-type head below the typing cut); `L6H0` ind0 0.750 (offset 0), not a
@@ -248,9 +254,9 @@ member. In B2, `L6H3`'s keys read `L5H2`'s write space at about 9× chance (`c6_
    stands, since its null is read the same way, but about half of "the cone goes through the
    members" is the members keeping the response off nearby tokens.
 
-**Not established:** which heads add the partner's response after block 6. It is added mostly in
-blocks 7–11 (to 0.48 of its final size, the members' layers among them) and 17–23 (the other
-half); the members take 0.24 of its log; no head in 12–23 is named; whether the neighbours' rise under ablation is a direct
+**Not established:** which heads add the partner's response after block 6. It is added in
+blocks 6–8 and 10–11 (to 0.48 of its final size, the members' layers among them) and 16–23 (the
+other half); the members take 0.24 of its log; no head in 12–23 is named; whether the neighbours' rise under ablation is a direct
 effect or the downstream heads' response to it; `L6H0` against a 1-head null; any step but 143000.
 
 ## B3 unit 2 (2026-10-19): the light cone (Blocked 67 (a) with the same-type arm)
