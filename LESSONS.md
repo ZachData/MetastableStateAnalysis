@@ -1701,6 +1701,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   down as a route, and hid that half of L1's 0.54 is the neighbours' side. Both sides were on
   disk the whole time. Rule: a ratio statistic is read beside its numerator and denominator
   before any sentence about size, place or route; a Δ of a ratio says which side moved.
+- 2026-10-19, B3 unit 2b and close-out (found by `/challenge-pr` on #230, finding 4): the
+  per-block table is indexed by `resid_pre` b, block b − 1's output, and 2b's prose turned it into
+  blocks one late ("flat through block 16, then 17–23"; the blocks are 6–8, 10–11, then 16–23);
+  the close-out copied it into the card, ROADMAP's B4 row and `PROJECT.md`. #228's finding 1 was
+  the same slip on the same table. Rule: a sentence naming blocks from a `resid_pre` table writes
+  the subtraction out once (`resid_pre` b → block b − 1) beside the first block it names.
 
 ## 12. Deleted, then needed
 

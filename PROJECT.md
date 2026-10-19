@@ -2895,6 +2895,28 @@ cheap and would resolve it.**
 
 ---
 
+## 3.60 Track B's B3 closed: a nudge reaches the induction partner from step 1000, and the response is built across depth (2026-10-19)
+
+**`trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+routing on v1's 7 prompts over 18 steps, the light cone on 32 repeated random sequences, nothing
+registered.
+
+- The particle picture's light cone has a sequence-space analogue in 410m: a nudge at token j
+  reaches j's induction partner about 11× more than its neighbours, from step 1000 (the formation
+  step of `L8H6` and `L11H14`). It follows routing the circuit is known to do; it does not place
+  410m in the paper's hard-routing regime.
+- The three typed induction members carry a fifth of it, half of that by keeping the response off
+  nearby tokens; whether that is this circuit or any induction-type heads at these layers is not
+  shown (no layer-matched same-type control; carried to B4). The partner's response is added over
+  many blocks (6–8, 10–11 and 16–23), not at the members' layers alone. Where one block was split
+  into heads (block 6), one head (`L6H3`) carried all of it.
+- Per-head numbers again show no member difference: the routing exponent α (R1), condensation at
+  formation (R2, only `L5H2`) and B2's QK symmetry against type-matched heads (C3′). The population
+  sharpens with training (median α 0.95 → 0.35), and β does not track that sharpness (ρ 0.18).
+
+---
+
 ## 3.59 Track B's B2 closed: in the weights `L5H2` writes into three induction heads' keys; no OV column was shown to differ (2026-10-18)
 
 **`trackB_circuit/status-B.md` "B2 on one page (closed 2026-10-18)"** holds the readings and what
