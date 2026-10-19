@@ -102,3 +102,12 @@ def test_l6_configs_single_heads_of_layer_6_and_all_together():
     assert all(len(c["ablate"]) == 1 and c["ablate"][0] // bc.N_HEADS == 6 for c in singles)
     assert sorted(cf[-1]["ablate"]) == [6 * bc.N_HEADS + h for h in range(bc.N_HEADS)]
     assert l6.LAYER > bc.SITE and l6.READ_MID == l6.LAYER + 1
+
+
+def test_l6_sides_are_log_ratios_two_sides():
+    from trackB_circuit import b3_cone_l6 as l6
+    g = np.random.default_rng(0)
+    sig = g.uniform(0.1, 2.0, (3, bc.N_J, 130))
+    J = np.stack([bc.positions(s) for s in range(3)])
+    num, den = l6.sides(sig, J)
+    assert np.allclose(np.log(num) - np.log(den), bc.log_ratio(sig, J, bc.PARTNER))

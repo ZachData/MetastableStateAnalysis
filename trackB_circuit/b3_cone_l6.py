@@ -2,8 +2,10 @@
 in L1's pass (`trackB_circuit/b3_cone.py`). Descriptive, outside the family of four.
 
 **Why.** At 143000 ℓ is 0.11 at ``resid_pre`` 6 and 2.03 at ``resid_pre`` 7 (`status-B.md`
-"B3 unit 2"; `by_layer[l]` is block l's input), so most of the cone is in place after block 6,
-before any of L1's members runs. This names which of block 6's heads, if any, carries it.
+"B3 unit 2"; `by_layer[l]` is block l's input). This was first read as "most of the cone is in
+place after block 6"; ℓ is a ratio, and the partner's σ there is 8 % of its final size, so that
+premise was wrong (``parts``, added after `/challenge-pr`). This names which of block 6's heads
+makes that early ratio, and what each does to the final response.
 
 **What runs.** L1's inputs, c, truncation (tokens < j + 68) and means (``means.npz``, repeated) at
 143000, cached from block 6. Configurations: ``none``; ``L6H0`` … ``L6H15``, each mean-ablated
@@ -33,7 +35,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -126,17 +128,31 @@ def cmd_run(a) -> int:
     return 0
 
 
-def parts(sig: np.ndarray, J: np.ndarray) -> Dict:
-    """ℓ's two sides (added after `/challenge-pr` on #228's 2b): ℓ is log partner − log median
-    neighbour, so a Δℓ can come from either. Medians over the (sequence, j) of σ at the partner,
-    of the neighbours' median σ, and of their logs."""
+def sides(sig: np.ndarray, J: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """(S, J) σ at the partner and the neighbours' median σ: ``log_ratio``'s two sides, so that
+    ``log(num) − log(den) == log_ratio(sig, J, PARTNER)`` (asserted in the tests)."""
     S, nJ, _ = sig.shape
     s, j = np.arange(S)[:, None], np.arange(nJ)[None, :]
     num = sig[s, j, J + bc.PARTNER]
     den = np.median(np.stack([sig[s, j, J + bc.PARTNER + m] for m in bc.MATCH], -1), -1)
+    return num, den
+
+
+def parts(sig: np.ndarray, J: np.ndarray) -> Dict:
+    """ℓ's two sides (added after `/challenge-pr` on #228's 2b): ℓ is log partner − log median
+    neighbour, so a Δℓ can come from either. Medians over the (sequence, j) of σ at the partner,
+    of the neighbours' median σ, and of their logs."""
+    num, den = sides(sig, J)
     with np.errstate(divide="ignore", invalid="ignore"):
         return {"partner": float(np.median(num)), "nbr": float(np.median(den)),
                 "log_partner": float(np.median(np.log(num))), "log_nbr": float(np.median(np.log(den)))}
+
+
+def by_layer_parts(out: Path) -> Dict:
+    """The partner's and neighbours' median σ at each ``resid_pre`` from 5 and the final residual,
+    unablated, at 143000 (unit 2's sweep records; added after `/challenge-pr` on #229)."""
+    z = np.load(out / "sweep" / f"step{bc.LAST}.npz")
+    return {int(l): parts(z["layers"][:, :, k], z["J"]) for k, l in enumerate(bc.READ_LAYERS)}
 
 
 def read(out: Path) -> Dict:
@@ -174,11 +190,19 @@ def read(out: Path) -> Dict:
                      "dlog_nbr": pf["none"]["log_nbr"] - pf[nm]["log_nbr"]})
     s1, _, n1, J1 = bc.load_configs(out / "l1")
     l1 = {nm: parts(s1[k], J1) for k, nm in enumerate(n1)}
+    sn, _, nn, Jn = bc.load_configs(out / "null")
+    pn = {nm: parts(sn[k], Jn) for k, nm in enumerate(nn)}
+    null_dp = np.array([pn["none"]["log_partner"] - pn[nm]["log_partner"] for nm in nn if nm.startswith("null")])
+    null_dn = np.array([pn["none"]["log_nbr"] - pn[nm]["log_nbr"] for nm in nn if nm.startswith("null")])
     return {"code": code_sha(), "b3_cone": bc.code_sha(), "ell_none": fin["none"],
             "ell_none_null_pass_diff": diff, "ell_none_mid": md["none"], "rows": rows,
             "none_final": pf["none"], "none_mid": pm["none"],
             "L1_parts": {nm: {**v, "dlog_partner": l1["none"]["log_partner"] - v["log_partner"],
                               "dlog_nbr": l1["none"]["log_nbr"] - v["log_nbr"]} for nm, v in l1.items()},
+            "L1_parts_null": {"dlog_partner_max": float(null_dp.max()), "dlog_nbr_min": float(null_dn.min()),
+                              "members_partner_rank": bc.rank_of(l1["none"]["log_partner"] - l1["members"]["log_partner"], null_dp),
+                              "members_nbr_rank_low": float((null_dn > l1["none"]["log_nbr"] - l1["members"]["log_nbr"]).mean())},
+            "by_layer_parts": by_layer_parts(out),
             "null_q99": float(np.quantile(nul["null"], 0.99)),
             "L1_members_delta": json.loads((out / "result.json").read_text())["L1"]["delta"]}
 
@@ -205,6 +229,15 @@ def cmd_read(a) -> int:
               f"{r['dlog_partner']:.3f} | {r['dlog_nbr']:.3f} | {r['mid']['partner']:.4f} |")
     for nm, v in res["L1_parts"].items():
         print(f"L1 {nm}: Δ log partner {v['dlog_partner']:.3f}, Δ log nbr {v['dlog_nbr']:.3f}")
+    q = res["L1_parts_null"]
+    print(f"L1's null (200 sets): Δ log partner max {q['dlog_partner_max']:.3f} (members' rank "
+          f"{q['members_partner_rank']:.3f}); Δ log nbr min {q['dlog_nbr_min']:.3f} (share of null "
+          f"below the members' {1 - q['members_nbr_rank_low']:.3f})")
+    print("| resid_pre | σ partner | σ nbr | partner share of final |")
+    print("|---|---|---|---|")
+    fin = res["by_layer_parts"][bc.N_LAYERS]["partner"]
+    for l, v in res["by_layer_parts"].items():
+        print(f"| {'final' if l == bc.N_LAYERS else l} | {v['partner']:.4f} | {v['nbr']:.4f} | {v['partner'] / fin:.2f} |")
     return 0
 
 
