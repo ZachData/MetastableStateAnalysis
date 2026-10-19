@@ -24,6 +24,7 @@
   - B3 (routing) opened 2026-10-18 with a scan, a `sympy` check and a design, frozen the same day (Blocked 65 (a)). The check shows that condensation in 2609.28448 is a large-N limit with no finite-N threshold, and that a sharp head with no growing logit gap still gives a partner-growth slope well below 1 at these context lengths. So B3 reads routing from the attention itself, with β beside, and no head is placed against a threshold — `trackB_circuit/design-B3.md` "The math"
   - B3 unit 1's gate fails before any member α is read: the stored attention and head types reproduce, and planted α reads right, but the type-matched null for C3′ false-passes 6 % and R2's onset rule misses planted onsets (init structure in the early bottom decile). The induction members do not share an offset, and `L12H5` is not an induction head on 7d's probe. Revisions are tested on the gate and put to the user — `trackB_circuit/status-B.md` "B3 unit 1 (2026-10-18)"
   - Revised by the user's choice (Blocked 66 (a): each member typed at its own offset, `L12H5` untyped, a step-0 floor on R2's onset, inclusive null pools), the gate passes. The members' routing exponent α shows no difference from their layers' heads (R1, rank 0.80). Only `L5H2` of 4 condenses at its formation step (R2). Against the heads nearest in type, B2's QK symmetry does not set the members apart (C3′, 0.945): C3 is not shown to go beyond head type, though only two of the six pools are close in type — `trackB_circuit/status-B.md` "B3 unit 1b (2026-10-18)"
+  - The light cone (Blocked 67 (a)): a nudge at block 4 on repeated random tokens reaches the induction partner (j + 63) about 11× more than its neighbours, from step 1000. Ablating the three typed induction members removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets (L1, rank 1.000). The three nearest-type non-members remove 0.05 (0.88). So the cone goes through these heads, not through induction-type heads in general, and most of it survives their ablation — `trackB_circuit/status-B.md` "B3 unit 2 (2026-10-19)"
 - **Superseded / wrong:** none
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -35,7 +36,7 @@
 - **After Phase 10:**
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
-- **Reviewed:** 2026-10-18 · body `51fa08e44a`
+- **Reviewed:** 2026-10-19 · body `585312f3af`
 <!-- /phase-card -->
 
 ## Units
@@ -78,11 +79,87 @@ closed at its exit condition. What follows on these instruments (B2 onward) is `
 |---|---|---|
 | 0. design, scan, `sympy` check | **done 2026-10-18**; frozen by the user 2026-10-18 (Blocked 65 (a): 3 units, the placed constants as written) | `design-B3.md`, `lit-B.md` "B3", `tools/math_checks/b3_condensation_exponent.py` (3 checks pass) |
 | 1. routing (R1, R2, C3′, A3's row, β beside) | **gate run 2026-10-18: G0, G1 pass; G2 (C3′) and G3 fail, so no member α was read.** Revised (Blocked 66 (a), the user's) and **re-gated 2026-10-18: G0–G3 pass; R1, R2, C3′ read "no difference shown"** | `trackB_circuit/b3_route.py`, `b3_gate_variants.py`, `tests/test_b3_route.py`; "B3 unit 1b (2026-10-18)" and "B3 unit 1 (2026-10-18)" below |
-| 2. the light cone (L1) | not started | `trackB_circuit/b3_cone.py` (to build) |
+| 2. the light cone (L0, L1; Blocked 67 (a) with the same-type arm) | **done 2026-10-19: G2 (L1), G4–G6 pass; L0 passes; L1 reads "the cone goes through the members" (rank 1.000); the same-type arm does not (0.88). B3's 3 units are spent; the close-out is next** | `trackB_circuit/b3_cone.py`, `tests/test_b3_cone.py`, `tests/test_b3_cone_smoke.py`; "B3 unit 2 (2026-10-19)" below |
 
 What was seen before the readings were fixed: `design-B3.md` "Seen before the readings were fixed",
 and unit 1's gate record (below), which includes the members' type scores and formation steps but
 no member α.
+
+## B3 unit 2 (2026-10-19): the light cone (Blocked 67 (a) with the same-type arm)
+
+**Input:** 32 sequences of 64 uniform token ids in [1000, 30000) repeated twice (n = 128, no BOS)
+and their controls, 16 nudge positions j ∈ [8, 56) and K = 32 directions per sequence, all seeded
+in `b3_cone.py` (`tokens`, `positions`, `directions`); `resid_pre` of block 4, c = 0.03 (0.01, 0.1
+beside); the 18 steps; unit 1's types (`data/b3/2026-10-18-unit1/types/`) for the offsets and the
+same-type set. Code `b3_cone.py` + `core/nudge.py` `bcfc2564e89a`. GPU float32 (RTX 3080), B0's
+NUMERICS; about 14 GPU hours (the sweep 11.5 min per step, G4/G6 and L1's null the rest). Records
+`data/b3/2026-10-18-unit2/` (main tree): `sweep/`, `gate/`, `null/`, `l1/`, `means.npz`,
+`gate.json`, `result.json`, `report.txt`, `run.sh`, `run.log`.
+Re-run: `data/b3/2026-10-18-unit2/run.sh`, then `python -m trackB_circuit.b3_cone read --out <dir>
+--types <unit 1 dir>/types` (`METS_DATA=<main tree>/data`).
+
+**As fixed by Blocked 67 (a):** partner i = j + 63 (offset +1: `L8H6` 0.97, `L11H14` 0.95 at
+143000; `L7H8` is at offset 0, 0.95, so j + 64 is beside). L1 mean-ablates `L7H8`, `L8H6`,
+`L11H14` (each head's output replaced by its mean over the 32 sequences' positions) against 200
+seeded layer-matched non-member 3-sets. The same-type arm uses the 3 non-members nearest in type:
+`L9H9` (for `L7H8`, 0.61 against 0.67), `L10H9` (for `L8H6`, 0.82 against 0.83), `L8H9` (for
+`L11H14`, 0.78 against 0.83). Choices the design left open, made before any output (`b3_cone.py`
+docstring): G6 is ranked against L1's own null; B1's rounding floor; causal truncation and shared
+early blocks (exact for every token read).
+
+**The gate** (run before the members' configuration):
+
+| arm | result | pass |
+|---|---|---|
+| G2 (L1) | each null set against the other 199: 1.0 % at rank ≥ 0.99 (cap 2 %) | yes |
+| G4 | planted route (one layer-8 non-member, query j + d → key j at mass 1; controls, 143000): interval above 0 in 50 of 50 seeds; smallest ℓ 0.30 | yes |
+| G5 | step 0: ℓ 0.001 [−0.001, 0.004]; controls at 143000: −0.013 [−0.047, 0.025] | yes |
+| G6 | the planted head ablated: Δℓ ≥ 0.37 in every seed, against the null's 99th percentile of 0.107: 50 of 50 | yes |
+
+G6 is weak by construction. One head at mass 1 is a large route, so G6 shows only that an
+ablation removes a route and that the null's spread is small beside it.
+
+**The readings** (143000, c = 0.03):
+
+| row | value | reads |
+|---|---|---|
+| L0 (positive control) | ℓ 2.375 [2.313, 2.426]: the partner's σ is about 11× its six neighbours' | passes |
+| L1 (family of four, 0.99) | ℓ 2.373 unablated (L1's own pass), 1.837 with the 3 members ablated: Δℓ 0.536. Null median −0.011, 99th 0.107, all 200 below 0.536 | **rank 1.000: the cone goes through the members** |
+| same-type arm (beside) | Δℓ 0.053 with `L9H9`, `L10H9`, `L8H9` ablated | rank 0.880: not shown |
+
+The members' ablation removes about a fifth of ℓ (0.54 of 2.37), and the cone stays far above 0
+without them (1.84). The rest goes through other heads or comes back by self-repair (7d); this
+unit does not split the two. The three nearest-type heads remove a tenth as much. On these
+sequences the cone goes through these heads, not through induction-type heads in general. The
+same-type set is not layer-matched (layers 8–10).
+
+**Beside (descriptive):**
+
+- **ℓ over steps:** about 0 (|ℓ| ≤ 0.004) from 0 to 128; 0.030 [0.008, 0.048] at 512; **2.96 at
+  1000**, then 2.66, 2.48 and 2.33–2.40 from 8000. The rule's onset (above 0, held at the next step)
+  is **512**, but the cone itself appears at 1000. That is the formation step of `L8H6` and
+  `L11H14`; `L7H8` forms at 4000.
+- **j + 64 (offset 0):** 0.03–0.04 at 256–512, 1.51 at 1000, 1.15–1.23 from 2000; below j + 63.
+- **Against the control token** (same i, same i − j, no partner): 2.95–3.34 from 1000. The controls'
+  own matched ℓ contains 0 at every step from 1000.
+- **Confinement share** (the partner over every token from j + 2): 0.006–0.009 to 512, 0.16 at
+  1000, 0.13 at 143000.
+- **By layer** (`resid_pre` of each block from 5): the rule's "first block above 0" is block 5 at
+  every step from 512. That comes from a small early response (ℓ 0.14–0.24 at blocks 5–6 from 1000;
+  0.07 at 512). The jump comes after block 7 at 143000 (0.11 → 2.03, `L7H8`'s layer) and at 4000
+  (0.10 → 1.27), and after block 8 at 1000 (0.43 → 2.09). The fixed rule picks up the small lean;
+  the jump is read here post hoc.
+- **c:** ℓ at c = 0.01 and 0.1 is within 0.04 of c = 0.03 at every step (linear).
+- **Rounding:** partner and neighbour σ's within 10× the floor: none at every step to 32000, 400
+  of 3,584 at 54000, 2,597 at 143000. They are mostly the neighbours: the final residual's floor
+  doubles from 54000 to 143000 (median 0.0069 → 0.0155). At 143000 ℓ's denominator is close to
+  float32 resolution, so ℓ's size there is partly a detection limit. G5's intervals contain 0 on
+  the same readout, L1 is a rank against ablations read the same way, and ℓ at 32000 (no σ near
+  the floor) is 2.40, as at 143000.
+
+**Not checked:** whether the 0.54 that the three heads carry is direct or partly self-repair (no
+path patching); a layer-matched same-type set; `L12H5` (untyped, not ablated); other nudge sites
+(block 6, after `L5H2`).
 
 ## B3 unit 1b (2026-10-18): the re-gate passes; R1, R2, C3′ read (Blocked 66 (a))
 

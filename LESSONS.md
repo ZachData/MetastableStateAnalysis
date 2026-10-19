@@ -20,6 +20,10 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-19 (B3 unit 2): again, the start hook printed the main tree's `STATE.md` at #211 while
+  `origin/main` was at #225 (14 PRs on): the main tree is never pulled, and the hook reads it.
+  Caught by Start step 1's check; read `STATE.md` from the fresh branch instead. Fix not made
+  (the hook could print `git show origin/main:STATE.md`); parked here as the cheapest one.
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
