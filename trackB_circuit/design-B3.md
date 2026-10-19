@@ -15,7 +15,10 @@ percentile of α, and R2 reads "members differ" only at 4 of 4. Every null pool 
 R1's and R2's pool is the tested head's layer, and R2's rank is exact. In C3′, one head per member
 is held fixed over the 9 steps, drawn from the member and the 5 non-members nearest it in mean type
 score over steps ≥ 512. In G3, the count is 4. Code: `b3_route.py`'s docstring, "Revised after the
-gate failed". L (unit 2) still assumes one offset and four induction members (Blocked 67).
+gate failed". L (unit 2) as below assumes one offset and four induction members; **Blocked 67 (a), the user's,
+2026-10-18, fixed it before any L output:** partner j + 63 (j + 64 beside), L1 ablates the 3 typed
+induction members (`L7H8`, `L8H6`, `L11H14`) against layer-matched 3-sets, plus a same-type arm
+beside (the 3 nearest-type non-members). Code and choices left open: `b3_cone.py`'s docstring.
 **Revised after `/challenge-pr` on #223 (accept with changes, all six findings taken) before the
 freeze:** R2's onset is read against the same step's population, since step 0's band sits at α ≈ 1
 and its edge marks only leaving uniform (1); α weights each row by its non-sink mass (2); type is
