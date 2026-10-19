@@ -23,6 +23,11 @@ WHAT IT SHOWS
    - CLAIM-B's change-mass centroid (positive increments, interval midpoints in log10(step + 1)):
      about step 830, **outside** (128, 512], pulled late by the 16000–32000 rise. So the centroid
      cannot carry a window that seed 0 itself sits in.
+   - half-rise against the 1000–4000 plateau median (57; #227's /challenge-pr, finding 2): 512;
+     interpolated in log step the crossing is about 306 (345 against 143000), so (128, 512] is
+     not symmetric about seed 0 (finding 3).
+3. **The other designs' attainable E:** 7 seeds (outliers 3, 4 beside) at p0 = 1/6 need K ≥ 6
+   (E 44); the window (128, 1000] (p0 = 3/12) needs K ≥ 8 of 9 (E 48).
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -42,6 +47,8 @@ KAPPA = sp.Rational(1, 2)
 N_SEEDS = 9
 GRID = (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 54000, 143000)
 WINDOW = (256, 512)  # the break's step on the grid: the interval (128, 256] or (256, 512]
+WIDE = (256, 512, 1000)  # D5 (c): the break in (128, 1000]
+PLATEAU = (1000, 2000, 4000)
 
 # Seed 0 (standard pythia-410m), violations summed over 7 prompts, at the 18-step grid.
 SEED0_V = {0: 0, 2: 0, 4: 0, 8: 0, 16: 0, 32: 0, 64: 0, 128: 0, 256: 19, 512: 56, 1000: 56,
@@ -56,9 +63,26 @@ def evalue(p):
     return KAPPA * p ** (KAPPA - 1)
 
 
-def half_rise(v):
-    half = sp.Rational(v[GRID[-1]], 2)
-    return next(s for s in GRID if v[s] >= half) if v[GRID[-1]] > 0 else None
+def plateau_ref(v):
+    """The median of V over the 1000-4000 plateau (after #227's /challenge-pr finding 2)."""
+    vals = sorted(v[s] for s in PLATEAU)
+    return vals[len(vals) // 2]
+
+
+def half_rise(v, ref=None):
+    ref = v[GRID[-1]] if ref is None else ref
+    half = sp.Rational(ref, 2)
+    return next(s for s in GRID if v[s] >= half) if ref > 0 else None
+
+
+def interpolated_crossing(v, ref):
+    """The half crossing interpolated linearly in log2(step) between its two grid steps."""
+    half = ref / 2
+    for a, b in zip(GRID[:-1], GRID[1:]):
+        if v[a] < half <= v[b]:
+            frac = (half - v[a]) / (v[b] - v[a])
+            return a * 2 ** (frac * math.log2(b / a)) if a > 0 else b
+    return None
 
 
 def first_nonzero(v):
@@ -92,9 +116,23 @@ def main():
         ok &= tail(0, p0) == 1
     assert ok, "binomial tail not monotone or not normalised"
 
+    # D7 (b): the 7 seeds left when the named outliers 3 and 4 are read beside; D5 (c): wider window
+    for name, p0, n in (("1/6, 7 seeds", sp.Rational(1, 6), 7),
+                        ("1/4 (window (128, 1000], 3 of 12), 9 seeds", sp.Rational(3, 12), 9),
+                        ("1/4, 7 seeds", sp.Rational(3, 12), 7)):
+        need = next(k for k in range(n + 1) if evalue(tail(k, p0, n)) >= 20)
+        print(f"p0 = {name}: E >= 20 needs K >= {need} "
+              f"(E {float(evalue(tail(need, p0, n))):.3g}; K = {need - 1}: "
+              f"E {float(evalue(tail(need - 1, p0, n))):.3g})")
+
     h, f, c = half_rise(SEED0_V), first_nonzero(SEED0_V), centroid_step(SEED0_V)
-    print(f"seed 0: half-rise {h}, first non-zero {f}, change-mass centroid ~{c:.0f}")
-    assert h in WINDOW and f in WINDOW, "seed 0 should sit inside the window"
+    ref = plateau_ref(SEED0_V)
+    hp = half_rise(SEED0_V, ref)
+    print(f"seed 0: half-rise {h} (of 143000's {SEED0_V[GRID[-1]]}), {hp} (of the plateau median "
+          f"{ref}); first non-zero {f}; change-mass centroid ~{c:.0f}")
+    print(f"seed 0: interpolated crossing ~{interpolated_crossing(SEED0_V, SEED0_V[GRID[-1]]):.0f} "
+          f"(143000 ref), ~{interpolated_crossing(SEED0_V, ref):.0f} (plateau ref)")
+    assert h in WINDOW and hp in WINDOW and f in WINDOW, "seed 0 should sit inside the window"
     assert not (128 < c <= 512), "centroid expected outside (128, 512]"
     print("PASS (3 checks)")
 

@@ -27,7 +27,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-18 · body `a38da2638f`
+- **Reviewed:** 2026-10-18 · body `f380603d0e`
 <!-- /phase-card -->
 
 ## Units
@@ -62,7 +62,7 @@ Nothing ran on a model; the only numbers are the `sympy` check's, on seed 0's pa
 | C2's novelty | not refuted: no paper found reads E_β, its monotonicity or token clustering along a real training axis; the nearest read rank, ID or anisotropy (2509.23024, 2602.15997, 2405.15471, Bernas ICML 2026), or have the energy without checkpoints (2605.07772) | `lit-C2.md` §1 |
 | C2's sequence | the break (128–512) sits where the LLC stages put n-grams, before previous-token (512–1000) and induction heads | `lit-C2.md` §2 |
 | A5's limit | all seeds share the LR warmup (to about 1430), so A5 can show the step is not seed 0's, not that it is not the schedule's | `lit-C2.md` §3 |
-| A5's draft | `P-A5`: half-rise step of the violation count in {256, 512} per seed, K of 9, K ~ Bin(9, 1/6) under H0; E ≥ 20 at K ≥ 7. Eight choices, recommendations first | `design-A5.md` |
+| A5's draft | `P-A5`: half-rise step of the violation count in {256, 512} per seed, K of 9, K ~ Bin(9, 1/6) under H0; E ≥ 20 at K ≥ 7. Nine choices, recommendations first; revised after #227's challenge (the break against the 1000–4000 plateau, not 143000; 410m seeds 3 and 4 already known outliers, counted and flagged; E labelled against a uniform-location null; the calibration gate named) | `design-A5.md` |
 | seed 0 by statistic | half-rise 512, first non-zero 256 (both in the window); `CLAIM-B`'s change-mass centroid about 830 (outside), so the centroid is not offered | `tools/math_checks/a5_seed_location.py` |
 
 **Input:** `data/analysis/colocation_panel.csv` column `p1_energy_nviol_b1` (β = 1, sphere, the
@@ -804,8 +804,9 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 
 ## Parked
 
-**From the A5 / C2 scan (2026-10-18), open:** `lit-C2.md` Parked 1–3 (full texts now fetchable;
-PolyPythias's outlier seeds, before A5 freezes; 2602.15997's top-down collapse, carried to A3).
+**From the A5 / C2 scan (2026-10-18):** `lit-C2.md` Parked 1 (full texts now fetchable) open;
+Parked 2 (PolyPythias's outlier seeds) done, already in `lit-1d.md`; Parked 3 (2602.15997's
+top-down collapse) carried to A3.
 
 **At A2's close (2026-10-17)** each item opened during A2 is *done*, *carried to X* or *dropped
 (why)*; the items carried into A2 at A1's close are settled below, under their own entries.

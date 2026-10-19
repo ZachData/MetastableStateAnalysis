@@ -73,9 +73,9 @@ nothing public on Pythia does).
 - At abstract level, neither PolyPythias nor 2407.10827 reports a per-seed induction or
   phase-transition step on 410m. So A5's descriptive arm (break and induction onset together,
   per seed) is not already published, as far as abstracts show.
-- **Outlier seeds are the risk for A5's count**: if one 410m seed is a named outlier, K = 9 may be
-  out of reach for reasons unrelated to the energy. Which sizes the outliers are is not in the
-  abstract (Parked 2).
+- **Outlier seeds are the risk for A5's count**: the repo already records that 410m seeds 3 and 4
+  are outliers (loss spikes, ≥ 2 SD below the mean downstream; `lit-1d.md` §10 row 1, [H]), so
+  K = 9 may be out of reach for reasons unrelated to the energy (`design-A5.md` D7; Parked 2).
 
 ## Parked
 
@@ -83,9 +83,9 @@ nothing public on Pythia does).
    cost: a re-check per paper; could change: any [S] row above, and `lit-1.md`'s open question of
    whether 2509.23024 normalises before RankMe). One line in `docs/LITERATURE.md` §0 when next
    edited.
-2. **PolyPythias's outlier runs, by size and seed** (why: decides whether A5 pre-names an
-   exclusion or counts all 9; cost: one full-text read of 2503.09543; could change: A5's D7 in
-   `design-A5.md`). Do before A5 freezes.
+2. *PolyPythias's outlier runs, by size and seed.* **Done, already in the repo** (#227 finding
+   1): `p1d_cluster_ensemble/lit-1d.md` §10 row 1 names 410m seeds 3 and 4 (loss spikes, ≥ 2 SD
+   below the mean downstream). A5's D7 is decided from it (`design-A5.md`).
 3. **2602.15997's Pythia checkpoints and its top-down collapse** (why: may date Phase 1's step
    8 → 16 collapse as a known warmup event; cost: one read; could change: C2's line on the early
    collapse). Carry to A3.
