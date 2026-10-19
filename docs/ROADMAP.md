@@ -243,10 +243,10 @@ S4 can start beside S1; S3 and S5 after S1.
 | 1 | Step 1, finish Phase 10 (**done 2026-10-11**, 7 units: 10.1 one, 10.2 three, 10.4 two, 10.5 one; 10.3 dropped) | ≤ 5 | §4's exit condition |
 | 1′ | Step 2's free items, beside it | 1–2 | — |
 | 2 | B0 + B1 (the harness and the positive control) (**done 2026-10-14**, 3 units with the design: B1 passes, B continues on these instruments; `trackB_circuit/status-B.md` "B1 (2026-10-14)") | 2–3 | B1's verdict decides whether B continues on these instruments |
-| 3 | A1, A2 and B2, B3 interleaved (**A1 done 2026-10-15, 5 units; B2a added and done 2026-10-16, 4 units + close-out; A2 done 2026-10-17, 5 units + close-out; B2 done 2026-10-18, 3 units + close-out; B3 done 2026-10-19, 3 units + unit 2b + close-out**: 21 units against the 4–6 estimated; row 6's order is next, Blocked 68) | 4–6 | each unit's own "done when" |
+| 3 | A1, A2 and B2, B3 interleaved (**A1 done 2026-10-15, 5 units; B2a added and done 2026-10-16, 4 units + close-out; A2 done 2026-10-17, 5 units + close-out; B2 done 2026-10-18, 3 units + close-out; B3 done 2026-10-19, 3 units + unit 2b + close-out**: 21 units against the 4–6 estimated; row 6's order taken 2026-10-19, Blocked 68) | 4–6 | each unit's own "done when" |
 | 4 | A3 (the joint timeline), B4, B5 | 3–4 | — |
 | 5 | A5 (registration, generality), C1 / C2 | — | §10.7 |
-| 6 | **Proposed 2026-10-18 (§10.8), after B3 unit 2 (the light cone, running) and B3's close-out:** C2's literature scan and A5's registration text (free) → A3 → A5 on the seeds → the preflight tool → S1 → S2 → C2's draft; S4 beside S1 as budget allows; S3, S5, B4–B6 after C2 | ~10–12 | C2's draft by mid-December |
+| 6 | **Taken 2026-10-19 (§10.8, Blocked 68, the user's); proposed 2026-10-18:** C2's literature scan and A5's registration text (free; **both done**, the text decided 2026-10-19) → A3 (**next**) → A5 on the seeds → the preflight tool → S1 → S2 → C2's draft; S4 beside S1 as budget allows; S3, S5, B4–B6 after C2 | ~10–12 | C2's draft by mid-December |
 
 **Trade-off to decide (§10.4).** The triage aimed C2 at arXiv in December. Putting Track B's
 first units before Track A's pushes that back. The order above puts B0–B1 first because the
@@ -268,13 +268,15 @@ that yardstick less than the cluster rows did, and B-pre may give an adjudicatio
 6. **`P-I5`'s target** (`STATE.md` Blocked 2) before Track B registers anything.
 7. **Which rung carries the first registration** (`STATE.md` Blocked 7): A5, `P-I7` and F14
    compete for it.
-Items 8–10 are proposed, not decided: at the 2026-10-18 check-in the user set C2's two-month
-target and liked the recommendations in general; the specific choices below are still theirs.
+Items 8 and 9 were decided 2026-10-19 (Blocked 68, the user's, as recommended); item 10 is
+proposed, not decided.
 
-8. **The order after B3** (§9 row 6, proposed 2026-10-18): C2's path first (scan, A3, A5 on the
+8. *Taken 2026-10-19 (Blocked 68):* **The order after B3** (§9 row 6, proposed 2026-10-18): C2's path first (scan, A3, A5 on the
    seeds, S2), S1 and S4 beside, B4–B6 after C2. The alternative is Track B to B5 first, which
    puts C2 past December. Recommended: C2's path first, since the user set the two-month target.
-9. **A5 on the PolyPythias seeds** (§6): the statement (e.g. "each seed's energy break falls in
+9. *Text decided 2026-10-19 (Blocked 68: `trackA_force/design-A5.md` D1–D9 as recommended, A5
+   a reproducibility check, not a test of mechanism; not registered until the calibration gate on
+   seed 0 passes and the user registers).* **A5 on the PolyPythias seeds** (§6): the statement (e.g. "each seed's energy break falls in
    [128, 512]"), the energy definition and its rule, registered before the seeds' intermediate
    steps are downloaded. This would also answer item 7 for A5 (a held-out set, not the 410m
    exploration rung). Registering is the user's (`CLAUDE.md`).
