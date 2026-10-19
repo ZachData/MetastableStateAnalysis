@@ -15,7 +15,8 @@
   - A2 opened 2026-10-16 with a scan and a frozen design (5 units); the β refit leaves A1's number in place (2 of 7 prompts outside, bar 4; at M1's β 143000 reads *below* in 7 of 7) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 closed 2026-10-17 at "a recorded reason it cannot be read": against the field is a few components, mostly early MLPs (the last block's at 143000), against-specific at 8 of 18 steps; the MLP cancels attention at 1000–4000 and carries the off-field motion; a fixed key appears from 1000 (a period, then a newline from 8000); the ablation's calibration fails on its planted control, so nothing causal is read — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
   - C2's scan (2026-10-18) found no one reading E_β along a real training axis; A5's registration is drafted on the 9 PolyPythias seeds; its text decided 2026-10-19 (D1–D9 as recommended, a reproducibility check), nothing registered or downloaded — `trackA_force/status-A.md` "A5 and C2: scan and draft (2026-10-18)"
-  - A3 opened 2026-10-19 with a scan and a proposed design, not frozen (5 units; 10 located rows on the 18 steps, E1 dated by A5's D2 (a) / D4 (a); the locator's floor 4σ, calibrated on synthetic series); nothing ran on a model — `trackA_force/design-A3.md` "Exit condition and budget"
+  - A3 opened 2026-10-19 with a scan and a design frozen as revised (Blocked 70 (ii) (a); 5 units; 10 located rows on the 18 steps, E1 dated by A5's D2 (a) / D4 (a); the locator's floor 4σ, calibrated on synthetic series) — `trackA_force/design-A3.md` "Exit condition and budget"
+  - A3's locator fails its gate on the four existing floored rows (E2–E5): the null arm passes, the effect arm cannot place a 9σ move in the gaps up to 128–256, because each row's spread grows 10⁴–10⁵-fold from step 2 to 4000 and the reference is the window's largest Δ; E2–E5 are refused, E1 reads 512 and E10 1000 (their anchors) — `trackA_force/status-A.md` "A3 unit 2, the existing rows and the locator's gate (2026-10-19)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -28,7 +29,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-19 · body `7c6402b57e`
+- **Reviewed:** 2026-10-19 · body `3a3938ebe9`
 <!-- /phase-card -->
 
 ## Units
@@ -47,13 +48,60 @@
 | A2 5. the ablation, its nulls and the reading | **done 2026-10-17 (Blocked 59 (b), (ii)): the rule's calibration fails on the planted control, so the reading is not made** (step 0 passes as the null); against-specific at 8 of 18 on the matched band; the sink's exact share > 0.05 from 2000; a newline key from 8000 (Blocked 60) | "A2 unit 5" below; `a2_ablate.py` |
 | A2 close-out | **done 2026-10-17** (Blocked 60 (a), the user's; writing only): A2 closed at "a recorded reason it cannot be read" | "A2 on one page" below |
 | A5 0. C2's scan and A5's registration draft | **done 2026-10-18 (writing only; A5 not opened, nothing registered)**; text decided 2026-10-19 (Blocked 68, the user's: D1–D9 as recommended). Next for A5: the calibration gate on seed 0, after A3 (ROADMAP §9 row 6) | "A5 and C2: scan and draft" below; `lit-C2.md`, `design-A5.md`, `tools/math_checks/a5_seed_location.py` |
-| A3 1. design and scan | **proposed 2026-10-19, revised after `/challenge-pr` on #232 (findings 1–5, 7 taken), not frozen** (Blocked 70, the user's; nothing ran on a model). #231 finding 4: A3 before A5's gate; no seed download before A5 registers (to confirm, 70 (i)). Locator check: 3σ keeps 76 % of flat series, 3.93σ keeps 95 %; placing right in 90 % needs 6σ (gap 2–4) to 9σ (2000–4000) | `design-A3.md`, `lit-A3.md`, `tools/math_checks/a3_locator.py` |
+| A3 1. design and scan | **frozen 2026-10-19 as revised after `/challenge-pr` on #232 (findings 1–5, 7 taken)** (Blocked 70 (ii) (a), the user's). #231 finding 4: A3 before A5's gate; no seed download before A5 registers (confirmed, 70 (i)). Locator check: 3σ keeps 76 % of flat series, 3.93σ keeps 95 %; placing right in 90 % needs 6σ (gap 2–4) to 9σ (2000–4000) | `design-A3.md`, `lit-A3.md`, `tools/math_checks/a3_locator.py` |
+| A3 2. the producer, the existing rows, the locator and its gate | **done 2026-10-19: the gate fails its effect arm on E2–E5** (null passes); E2–E5 refused, E1 512 and E10 1000 (anchors pass; E2's anchor unread, refused) (Blocked 71) | "A3 unit 2" below; `a3.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
 A2: 5 units plus a close-out (`design-A2.md` "Exit condition and budget"); all 5 spent; A2 closed
 2026-10-17 at its exit's "a recorded reason it cannot be read" (Blocked 60 (a)).
-A3: 5 units plus a close-out, proposed (`design-A3.md` "Exit condition and budget"); 1 spent.
+A3: 5 units plus a close-out, frozen (`design-A3.md` "Exit condition and budget"); 2 spent.
+
+## A3 unit 2, the existing rows and the locator's gate (2026-10-19)
+
+Design frozen as revised (Blocked 70 (ii) (a), the user's; 70 (i) confirmed: no seed download
+before A5 registers). `trackA_force/a3.py` builds E1–E5 and E10 on the 18 steps, gates the §4
+locator at each floored row's own design, then locates. CPU, 205 s (numpy bootstraps; no forward
+pass). **Input:** code `4e8df8b7defc`, prompts hash `976b62d677bc` (7 v1), `colocation_panel.csv`
+`a9d2604f4789`, `ov_per_head_series.json` `bfc59df7d28a`, `behavioural_series.json`
+`0eb229010c2c`, the 126 stored `attentions.npz` (`a1a.RUNS`); seed 20261019, 1000 bootstraps,
+1000 gate series per arm. Records `data/trackA/a3/2026-10-19-unit2/` (main tree).
+
+**Reproduced first (or the run refuses), all pass:** E1's per-prompt nViolRel sum to the panel's
+at every step (plateau median 57, as `design-A5.md` D4 (a)); E5's mean MinRank equals the
+panel's; E3's pool equals `behavioural_series.json` for each of the five members; E2's median
+0.504 → 0.094 by 512 (§3.12 A).
+
+**The gate.** Noise per row at its real per-step spread τ_s (across-unit SD of Δ_u(s)); planted
+move a logistic (0.25 octave) at 9 × the mean null σ at the step past the gap's centre.
+
+| row | units | null "no change" (≥ 0.95) | placed right (≥ 0.90), gaps 2–4 … 2000–4000 | arm |
+|---|---|---|---|---|
+| E2 | 384 heads, median | 1.000 | .00 .01 .02 .03 .05 .06 .27 .90 .95 .99 1.00 | **fail** |
+| E3 | 35 (prompt, member), pooled | 0.998 | .00 .02 .05 .06 .09 .08 .17 .29 .19 .98 1.00 | **fail** |
+| E4 | 7 prompts, mean | 0.980 | .00 .01 .03 .03 .04 .03 .08 1.00 .87 .90 .96 | **fail** |
+| E5 | 7 prompts, mean | 0.965 | .00 .27 .38 .36 .57 .60 .89 .95 1.00 1.00 .98 | **fail** |
+
+**Why (checked, not tuned):** τ_s/√n grows 10⁴–10⁵-fold across the window (E2 8e-8 at step 2
+to 1.4e-2 at 4000; E4 3e-7 to 1.3e-2). A move sized to its own early step is smaller than the
+late steps' noise, so the window's largest Δ, the reference, falls late and the half-point with
+it. `a3_locator.py`'s calibration had iid noise of one size at every step, which the real rows
+do not have. Late τ_s is mostly the units' real heterogeneity in the move, not noise.
+
+**Readings.** E1 **512** (D4 (a); anchor passes). E10 **1000** (anchor passes). E2, E3, E4, E5
+**refused** (their arms failed); E2's anchor (512) is therefore not tested. The change-mass
+centroids are in `a3_rows.json`, beside and not read. No pair is read (unit 5).
+
+**Caveats.** (1) "9σ at the step past the centre" was this unit's reading of §4's "the logistic
+above at 9σ"; the design does not say which step's σ. Read as σ at the reference step (where a
+planted plateau's max falls, usually late), the amplitude is larger; that reading was found after
+the failure, so it is the user's (Blocked 71), not a fix. (2) σ is the bootstrap SE of Δ, √2
+the per-step noise `a3_locator.py` states its floor in, so the floor as built is the stricter
+reading; the null arms (0.965–1.000) show it. (3) Step 0 carries no noise in the gate's model,
+so its Δs are independent across steps (a conservative null).
+
+**Re-run:** `METS_DATA=<main tree>/data python -m trackA_force.a3 run --out
+data/trackA/a3/<dir>` (the attention pass is cached in `attn_rows.json`); `report --out` reprints.
 
 ## A5 and C2: scan and draft (2026-10-18)
 
