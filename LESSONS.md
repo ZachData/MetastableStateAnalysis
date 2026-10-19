@@ -762,6 +762,11 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-19, A3 unit 2 (a calibration on noise the data do not have): `a3_locator.py` calibrated
+  the half-rise floor and power on iid noise of one size at every step. The real rows' spread
+  grows 10⁴–10⁵-fold from step 2 to 4000, so at their own design the effect arm could not place
+  early moves and E2–E5 were refused. Before a synthetic calibration fixes a constant, print the
+  real rows' per-step spread and calibrate on that shape (`trackA_force/status-A.md` "A3 unit 2").
 - 2026-10-18, B2's re-gate (a dose below the statistic's floor): `/challenge-pr` on #219 asked
   for G3's 9-step dose curve to start at the 70th percentile. With the two-sided |p − ½|, the
   null's mean is exactly ¼, so a set held at the 70th scores 0.20 and ranks below a typical

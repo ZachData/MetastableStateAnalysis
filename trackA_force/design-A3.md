@@ -1,4 +1,4 @@
-<!-- Proposed 2026-10-19; revised after /challenge-pr on #232 (findings 1-5, 7 taken); not frozen. The freeze is the user's (STATE Blocked 70). -->
+<!-- Proposed 2026-10-19; revised after /challenge-pr on #232 (findings 1-5, 7 taken); frozen as revised 2026-10-19 (STATE Blocked 70 (ii) (a), the user's; 70 (i): no seed download before A5 registers, confirmed). -->
 # Track A — design: A3, one timeline
 
 **Question** (`docs/ROADMAP.md` §6 A3): on pythia-410m's checkpoint axis, do the energy break,
