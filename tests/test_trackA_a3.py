@@ -63,7 +63,7 @@ def test_synthetic_spread_matches_the_rows_own():
     score = rng.standard_normal((n, S)) * tau + 0.004
     pooled = np.stack([score * w, np.broadcast_to(w, (n, S))], axis=-1)
     for units, name in ((score[..., None], "mean"), (pooled, "pooled")):
-        real = a3.unit_scores(units, name)
+        real = a3.unit_scores(units, name)[..., 0]
         want = np.std(real - real[:, :1], axis=0, ddof=1)
         syn = a3._synthetic(units, "up", name, rng, 4000)
         got = np.std(a3.unit_scores(syn.reshape((-1,) + syn.shape[2:]), name)
@@ -102,7 +102,12 @@ def test_planted_shape_shifts_each_statistic_exactly():
     n, S = 35, len(STEPS)
     w = rng.integers(400, 3000, size=(n, 1)).astype(float)
     z = rng.standard_normal((n, S)); sh = np.linspace(0, 2, S)
-    for name in ("mean", "median", "pooled"):
+    for name in ("mean", "median", "pooled", "medmed"):
+        if name == "medmed":                       # 4 types, layers resampled together
+            zt = rng.standard_normal((n, S, 4))
+            st = a3.STATS[name]
+            assert np.allclose(st(zt + sh[:, None]), st(zt) + sh)
+            continue
         if name == "pooled":
             mk = lambda y: np.stack([y * w, np.broadcast_to(w, (n, S))], axis=-1)
         else:
@@ -134,3 +139,38 @@ def test_gate_floor_is_rederived_and_checked(monkeypatch):
     assert 1.5 < g["floor"] < 6 and g["null_no_change"] >= 0.95   # the upper bound's margin
     assert all(e["power"] is not None and e["power"] <= 18 for e in g["effect"])
     assert g["effect"][0]["curve"]["2"] < g["effect"][0]["curve"]["9"]   # power rises
+
+
+def test_floor_is_at_least_four(monkeypatch):
+    """Blocked 72 (iii) (a): the floor used is max(4, the row's own bound)."""
+    monkeypatch.setattr(a3, "N_GATE", 300)
+    monkeypatch.setattr(a3, "N_BOOT", 100)
+    rng = np.random.default_rng(8)
+    g = a3.gate_row("E2", rng.standard_normal((384, len(STEPS), 1)), rng)
+    assert g["own_floor"] < 4 and g["floor"] == 4.0
+
+
+def test_medmed_row_gates(monkeypatch):
+    monkeypatch.setattr(a3, "N_GATE", 200)
+    monkeypatch.setattr(a3, "N_BOOT", 100)
+    rng = np.random.default_rng(9)
+    u = rng.standard_normal((24, len(STEPS), 4)); u[:, 0, :] = 0
+    syn = a3._synthetic(u, "up", "medmed", rng, 5)
+    assert syn.shape == (5, 24, len(STEPS), 4)
+    g = a3.gate_row("E7", u, rng)
+    assert g["floor"] >= 4 and g["null_no_change"] >= 0.9
+
+
+def test_powerlaw_alpha_recovers_pareto():
+    from trackA_force.a3_weights import powerlaw_alpha
+    rng = np.random.default_rng(10)
+    for a in (2.0, 3.0, 4.5):
+        x = (1 - rng.random(2000)) ** (-1 / (a - 1))
+        assert abs(powerlaw_alpha(x)["alpha"] - a) < 0.25
+
+
+def test_n_clusters():
+    from trackA_force.a3_sim import n_clusters
+    e = np.eye(4)
+    U = np.stack([e[0], e[0], e[1], (e[1] + 0.01 * e[2]) / np.linalg.norm(e[1] + 0.01 * e[2]), e[3]])
+    assert n_clusters(U) == 3
