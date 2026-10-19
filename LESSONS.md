@@ -23,9 +23,10 @@ world moves, nobody updates the line, and the next session acts on it.
 - 2026-10-19 (A3 opened): Claude put "A3 first, and start the 9-seed download now" to the user as
   the recommended answer to #231's finding 4, from the reviewer's wording alone; the user took
   it. The decided `design-A5.md` (step 3, and its line 19) registers *before* the seeds are
-  downloaded, which is what makes A5 a held-out test, and the 131 GB would not fit (50 GB free).
-  Caught one call later by reading the design before launching; the download half was dropped
-  and said so. Again, the start hook printed `STATE.md` at #211 with `origin/main` at #231.
+  downloaded, which is what makes A5 a held-out test. Caught one call later by reading the
+  design before launching; the download half was dropped and said so, with a second reason
+  that was wrong too ("131 GB would not fit, 50 GB free": that is WDS_500; A5's target
+  `HDD_1TB` had 265 GB, as `design-A5.md` itself says; `/challenge-pr` on #232, finding 6). Again, the start hook printed `STATE.md` at #211 with `origin/main` at #231.
   Rule: an option offered to the user is checked against the decided text it touches first.
 - 2026-10-19 (B3 unit 2): again, the start hook printed the main tree's `STATE.md` at #211 while
   `origin/main` was at #225 (14 PRs on): the main tree is never pulled, and the hook reads it.

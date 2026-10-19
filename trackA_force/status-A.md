@@ -15,7 +15,7 @@
   - A2 opened 2026-10-16 with a scan and a frozen design (5 units); the β refit leaves A1's number in place (2 of 7 prompts outside, bar 4; at M1's β 143000 reads *below* in 7 of 7) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 closed 2026-10-17 at "a recorded reason it cannot be read": against the field is a few components, mostly early MLPs (the last block's at 143000), against-specific at 8 of 18 steps; the MLP cancels attention at 1000–4000 and carries the off-field motion; a fixed key appears from 1000 (a period, then a newline from 8000); the ablation's calibration fails on its planted control, so nothing causal is read — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
   - C2's scan (2026-10-18) found no one reading E_β along a real training axis; A5's registration is drafted on the 9 PolyPythias seeds; its text decided 2026-10-19 (D1–D9 as recommended, a reproducibility check), nothing registered or downloaded — `trackA_force/status-A.md` "A5 and C2: scan and draft (2026-10-18)"
-  - A3 opened 2026-10-19 with a scan and a proposed design, not frozen (5 units; 11 rows on the 18 steps, E1 dated by A5's D2 (a) / D4 (a)); nothing ran — `trackA_force/design-A3.md` "Exit condition and budget"
+  - A3 opened 2026-10-19 with a scan and a proposed design, not frozen (5 units; 10 located rows on the 18 steps, E1 dated by A5's D2 (a) / D4 (a); the locator's floor 4σ, calibrated on synthetic series); nothing ran on a model — `trackA_force/design-A3.md` "Exit condition and budget"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -28,7 +28,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-19 · body `cf5fe7a2ea`
+- **Reviewed:** 2026-10-19 · body `7c6402b57e`
 <!-- /phase-card -->
 
 ## Units
@@ -47,7 +47,7 @@
 | A2 5. the ablation, its nulls and the reading | **done 2026-10-17 (Blocked 59 (b), (ii)): the rule's calibration fails on the planted control, so the reading is not made** (step 0 passes as the null); against-specific at 8 of 18 on the matched band; the sink's exact share > 0.05 from 2000; a newline key from 8000 (Blocked 60) | "A2 unit 5" below; `a2_ablate.py` |
 | A2 close-out | **done 2026-10-17** (Blocked 60 (a), the user's; writing only): A2 closed at "a recorded reason it cannot be read" | "A2 on one page" below |
 | A5 0. C2's scan and A5's registration draft | **done 2026-10-18 (writing only; A5 not opened, nothing registered)**; text decided 2026-10-19 (Blocked 68, the user's: D1–D9 as recommended). Next for A5: the calibration gate on seed 0, after A3 (ROADMAP §9 row 6) | "A5 and C2: scan and draft" below; `lit-C2.md`, `design-A5.md`, `tools/math_checks/a5_seed_location.py` |
-| A3 1. design and scan | **proposed 2026-10-19, not frozen** (Blocked 70, the user's; writing only, nothing ran). #231 finding 4 decided by the user: A3 before A5's gate; no seed download before A5 registers | `design-A3.md`, `lit-A3.md` |
+| A3 1. design and scan | **proposed 2026-10-19, revised after `/challenge-pr` on #232 (findings 1–5, 7 taken), not frozen** (Blocked 70, the user's; nothing ran on a model). #231 finding 4: A3 before A5's gate; no seed download before A5 registers (to confirm, 70 (i)). Locator check: 3σ keeps 76 % of flat series, 3.93σ keeps 95 %; placing right in 90 % needs 6σ (gap 2–4) to 9σ (2000–4000) | `design-A3.md`, `lit-A3.md`, `tools/math_checks/a3_locator.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
