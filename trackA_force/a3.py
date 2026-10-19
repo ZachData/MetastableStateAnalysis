@@ -412,8 +412,9 @@ def gate_row(rid: str, units: np.ndarray, rng) -> dict:
 
 
 def low_power(r: dict, gate: dict) -> Optional[bool]:
-    """Re-derived mark: ref / σ below the row's power at the gap it was located in; None
-    where that gap was not gated (located at step 2) or no amplitude in AMPS reached 90 %."""
+    """Re-derived mark: ref / σ̄_ref (the gap's own unit, in which its power is stated) below the
+    row's power at the gap it was located in; None where that gap was not gated (located at
+    step 2). No amplitude in AMPS reaching 90 % marks it low power."""
     if r.get("reading") != "located":
         return None
     g = next((g for g in gate["effect"] if g["to_index"] == r["index"]), None)
@@ -421,7 +422,7 @@ def low_power(r: dict, gate: dict) -> Optional[bool]:
         return None
     if g["power"] is None:
         return True
-    return bool(r["ref_over_sigma"] < g["power"])
+    return bool(r["ref"] / g["sigma_ref"] < g["power"])
 
 
 # ---------------------------------------------------------------- run

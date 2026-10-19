@@ -117,18 +117,20 @@ def test_censored_and_rederived_low_power():
     assert a3.censored(r) is True
     r2 = a3.place(_step_at(STEPS.index(256)), "up", sigma=0.1)    # ref / σ = 10
     assert a3.censored(r2) is False
-    gate = {"effect": [{"to_index": STEPS.index(256), "power": 12}]}
+    gate = {"effect": [{"to_index": STEPS.index(256), "power": 12, "sigma_ref": 0.1}]}
     assert a3.low_power(r2, gate) is True
     gate["effect"][0]["power"] = 6
     assert a3.low_power(r2, gate) is False
+    gate["effect"][0]["sigma_ref"] = 0.5          # power is in the gap's σ̄_ref, not the row's σ
+    assert a3.low_power(r2, gate) is True
     assert a3.low_power({"reading": "no change"}, gate) is None
 
 
 def test_gate_floor_is_rederived_and_checked(monkeypatch):
-    monkeypatch.setattr(a3, "N_GATE", 300)
+    monkeypatch.setattr(a3, "N_GATE", 1000)
     monkeypatch.setattr(a3, "N_BOOT", 200)
     rng = np.random.default_rng(7)
     g = a3.gate_row("E4", rng.standard_normal((7, len(STEPS), 1)), rng)
-    assert 1.5 < g["floor"] < 6 and g["null_no_change"] >= 0.9
+    assert 1.5 < g["floor"] < 6 and g["null_no_change"] >= 0.95   # the upper bound's margin
     assert all(e["power"] is not None and e["power"] <= 18 for e in g["effect"])
     assert g["effect"][0]["curve"]["2"] < g["effect"][0]["curve"]["9"]   # power rises

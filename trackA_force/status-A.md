@@ -17,7 +17,7 @@
   - C2's scan (2026-10-18) found no one reading E_β along a real training axis; A5's registration is drafted on the 9 PolyPythias seeds; its text decided 2026-10-19 (D1–D9 as recommended, a reproducibility check), nothing registered or downloaded — `trackA_force/status-A.md` "A5 and C2: scan and draft (2026-10-18)"
   - A3 opened 2026-10-19 with a scan and a design frozen as revised (Blocked 70 (ii) (a); 5 units; 10 located rows on the 18 steps, E1 dated by A5's D2 (a) / D4 (a); the locator's floor 4σ, calibrated on synthetic series) — `trackA_force/design-A3.md` "Exit condition and budget"
   - A3's locator fails its gate on the four existing floored rows (E2–E5): the null arm passes, the effect arm cannot place a 9σ move in the gaps up to 128–256, because each row's spread grows 10⁴–10⁵-fold from step 2 to 4000 and the reference is the window's largest Δ; E2–E5 are refused, E1 reads 512 and E10 1000 (their anchors) — `trackA_force/status-A.md` "A3 unit 2, the existing rows and the locator's gate (2026-10-19)"
-  - A3's re-gate (Blocked 71, the user's: the effect arm at 9σ at the reference step, each row's floor and power re-derived from its own per-step spread, a censored mark) passes every arm; E2 reads 512 (its anchor), E4 1000, E5 8, E1 512, E10 1000, none censored or low power; E3 reads "no change" (2.0σ at 4000): of the five members only `L7H8` rises, so E4–E3 and E3–E2 are unread — `trackA_force/status-A.md` "A3 unit 2c, the re-gate (Blocked 71, 2026-10-19)"
+  - A3's re-gate (Blocked 71, the user's: the effect arm at 9σ at the reference step, each row's floor and power re-derived from its own per-step spread, a censored mark) passes every arm; E2 reads 512 (its anchor), E4 1000, E5 8, E1 512, E10 1000, none censored or low power; E3 reads "no change" (2.0σ at 4000), likely because it scores the same-token key, not the successor that the 2026-10-18 correction names, so E4–E3 and E3–E2 are unread — `trackA_force/status-A.md` "A3 unit 2c, the re-gate (Blocked 71, 2026-10-19)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -30,7 +30,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-19 · body `bfbb788138`
+- **Reviewed:** 2026-10-19 · body `c586793718`
 <!-- /phase-card -->
 
 ## Units
@@ -51,7 +51,7 @@
 | A5 0. C2's scan and A5's registration draft | **done 2026-10-18 (writing only; A5 not opened, nothing registered)**; text decided 2026-10-19 (Blocked 68, the user's: D1–D9 as recommended). Next for A5: the calibration gate on seed 0, after A3 (ROADMAP §9 row 6) | "A5 and C2: scan and draft" below; `lit-C2.md`, `design-A5.md`, `tools/math_checks/a5_seed_location.py` |
 | A3 1. design and scan | **frozen 2026-10-19 as revised after `/challenge-pr` on #232 (findings 1–5, 7 taken)** (Blocked 70 (ii) (a), the user's). #231 finding 4: A3 before A5's gate; no seed download before A5 registers (confirmed, 70 (i)). Locator check: 3σ keeps 76 % of flat series, 3.93σ keeps 95 %; placing right in 90 % needs 6σ (gap 2–4) to 9σ (2000–4000) | `design-A3.md`, `lit-A3.md`, `tools/math_checks/a3_locator.py` |
 | A3 2. the producer, the existing rows, the locator and its gate | **done 2026-10-19: the gate fails its effect arm on E2–E5** (null passes); E2–E5 refused, E1 512 and E10 1000 (anchors pass; E2's anchor unread, refused) (Blocked 71) | "A3 unit 2" below; `a3.py` |
-| A3 2c. the re-gate (Blocked 71, the user's) | **done 2026-10-19: every arm passes; E2 512 (anchor passes), E4 1000, E5 8, E3 no change (2.0σ at 4000, only `L7H8` rises), E1 512, E10 1000; no located row censored or low power** (Blocked 72) | "A3 unit 2c" below; `a3.py` |
+| A3 2c. the re-gate (Blocked 71, the user's) | **done 2026-10-19: every arm passes; E2 512 (anchor passes), E4 1000, E5 8, E3 no change (2.0σ at 4000; scored at offset 0, not +1), E1 512, E10 1000; no located row censored or low power** (Blocked 72) | "A3 unit 2c" below; `a3.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
@@ -65,11 +65,13 @@ re-gate, Blocked 71, took one; the planned units 3–5 now exceed the budget by 
 Blocked 71, the user's: (i) **(a)**, the effect arm at 9σ with σ at the reference step; (ii) a
 **censored** mark for a located row whose reference is 4000; line 102 **re-derived per row** (floor
 and power from each row's own per-step spread). `design-A3.md` §4 "Revised 2026-10-19". CPU,
-140 s. **Input:** code `e2e5a1c411da`, the same inputs and seed as unit 2b (prompts
+140 s. **Input:** code `7952a72193eb` (after `/challenge-pr` on #234: the low-power mark in the
+gap's own unit; the gate is bit-identical to the PR's first run `e2e5a1c411da`, records
+`2026-10-19-unit3b/`), the same inputs and seed as unit 2b (prompts
 `976b62d677bc`, `colocation_panel.csv` `a9d2604f4789`, `ov_per_head_series.json` `bfc59df7d28a`,
 `behavioural_series.json` `0eb229010c2c`, attention cache copied from `2026-10-19-unit2b/`), 1000
 bootstraps; 1000 null series to derive each floor, 1000 fresh to check it and to plant the effect.
-Records `data/trackA/a3/2026-10-19-unit3b/` (main tree).
+Records `data/trackA/a3/2026-10-19-unit3c/` (main tree).
 
 **How it is built.** A planted shape added to every unit shifts the statistic (mean, median,
 pooled) by exactly the shape and leaves the bootstrap SE unchanged (tested), so each noise draw is
@@ -94,11 +96,15 @@ is 229σ, above either floor and above the frozen 4σ.
 | E4 | 3.11 | 0.960 | 0.982 | 0.965 | 3 ×7, 6, 9, 6, 9 | pass |
 | E5 | 3.72 | 0.968 | 0.973 | 0.980 | 4 ×5, 6 ×5, 9 | pass |
 
-(`2026-10-19-unit3b/a3_rows.json` → `gate`; unit 3a's floors 2.34, 2.37, 3.01, 3.40.) As stated
-before the run (Blocked 71 (a)), the 9σ_ref arm passes nearly by construction: it vouches for
-moves large against the late noise; power is the informative number.
+(`2026-10-19-unit3c/a3_rows.json` → `gate`; unit 3a's floors 2.34, 2.37, 3.01, 3.40.) **Both
+arms pass by construction here, up to sampling.** As stated before the run (Blocked 71 (a)), the
+9σ_ref arm vouches only for moves large against the late noise; and the floor and its fresh check
+come from the same noise model, so the null arm can fail only by sampling (#234 finding 2). The
+gate now tests the rule's mechanics under that model, not the model; power is the informative
+number. Every reading is the same at the frozen 4σ (`reading_at_frozen_floor`).
 
-**Readings** (§4's rule at each row's floor; none censored, none low power):
+**Readings** (§4's rule at each row's floor; none censored, none low power: ref / σ̄_ref at the
+located gap against its power, E2 27.8 against 3, E4 80.0 against 9, E5 5.0 against 4):
 
 | id | row | reading | step | ref step | ref / σ | centroid (beside) |
 |---|---|---|---|---|---|---|
@@ -109,15 +115,22 @@ moves large against the late noise; power is the informative number.
 | E5 | MinRank, mean over prompts | located | **8** | 16 | 20.8 | 1774 (≥ 2 steps) |
 | E10 | LR schedule | located | 1000 | 2000 | — | 539 |
 
-**E3 is "no change" because the members disagree, not because nothing moves.** On the v1 prompts
-each member sits near 0.004 per pair through 512; by 4000 `L7H8` rises to 0.037 while `L8H6`,
-`L11H14`, `L12H5`, `L8H9` end at 0.002–0.004 (each after a peak of 0.005–0.006 near 512–1000). σ is over the 35 (prompt, member) units, so the
-disagreement is its noise; the design named the choice (`design-A3.md` "Worth challenging" 6). Its
-reference is at 4000, so a located E3 would also have been censored. Pairs E4–E3 and E3–E2 (C2's
-order inside the circuit) are unread under the frozen rule (Blocked 72 (ii)).
+**E3 is "no change", and its definition is the likely reason** (`/challenge-pr` on #234, finding
+1). E3 scores attention at the same-token key (offset 0: `induction_candidates`' repo condition,
+as `behavioural_series.json`). The correction of 2026-10-18 (`p7d_redundancy/status-7d.md`
+"Corrections received"; B3 unit 1), a day before A3 froze, says that at the successor (+1, the
+standard pattern) `L8H6` and `L11H14` score 0.969 and 0.953 at 143000, and `L12H5` is not an
+induction head. At offset 0, by 4000 `L7H8` rises (0.004 → 0.037) while `L8H6`, `L11H14`,
+`L12H5`, `L8H9` end at 0.002–0.004, and `L8H6`, `L11H14` fall below their step-0 value by 143000.
+That fits heads read one position from their target, not members disagreeing. σ over (prompt,
+member) counts the spread as noise. E3 at +1 has **not** been computed. Its reference is at 4000,
+so a located E3 would be censored. Pairs E4–E3 and E3–E2 are unread (Blocked 72 (ii)).
 
 **Caveats.** Unit 2's caveats 2–4 stand (σ is the SE of Δ; step 0 noiseless in the null; E2's
-point mass at 0). E5's centroid is ≥ 2 grid steps from its reading (beside, not read). No pair is
+point mass at 0). E5's centroid is ≥ 2 grid steps from its reading (beside, not read). **E5 is a
+dip and a recovery** (MinRank 14.7 → 2.1 at 16, then up to 44 by 4000), a shape the gate never
+planted (only steady rises): its 8 dates the fall, under a rule tested on monotone moves (#234
+finding 5); unit 5 reads E1 against E5 with this said. No pair is
 read here (unit 5).
 
 **Re-run:** as unit 2 (`METS_DATA=<main tree>/data python -m trackA_force.a3 run --out <dir>`).

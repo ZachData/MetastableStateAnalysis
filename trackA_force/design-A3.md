@@ -123,10 +123,12 @@ and the rule are two or more grid steps apart.
 on E2–E5 (`status-A.md` "A3 unit 2"). (i) **(a)**: the effect arm's 9σ is σ *at the reference
 step* (the paragraph above's definition, read literally), taken as the largest mean null σ over
 the planted plateau's steps; the arm then vouches only for moves large against the late noise.
-**Line 102 re-derived per row**: each floored row's floor is the 95th percentile of ref / σ over
-1000 null series at its own per-step spread, checked on 1000 fresh ones (≥ 95 %), replacing 4σ
-for that row; its power is, per gap, the least amplitude (grid 2 … 90, units of that σ) placed
-right in ≥ 90 %, and a located row whose ref / σ is below its gap's power is **low power**,
+**Line 102 re-derived per row**: each floored row's floor is the 95 % upper confidence bound of the
+95th percentile of ref / σ over 1000 null series at its own per-step spread (added in unit 2c,
+after the bare percentile failed its own check: `status-A.md` "A3 unit 2c"), checked on 1000
+fresh ones (≥ 95 %), replacing 4σ for that row; its power is, per gap, the least amplitude (grid
+2 … 90, units of that σ) placed right in ≥ 90 %, and a located row whose ref, in that unit, is
+below its gap's power is **low power**,
 replacing the flat 9σ. (ii) A located row whose reference is at 4000 (still rising at the
 window's end) is marked **censored**, and its pairs are read with that mark (unit 5).
 
