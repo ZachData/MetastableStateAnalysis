@@ -1693,6 +1693,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   was listed; `L9H0` is also outside 7d's causal top 10, so it is the contrast B4 needs. Rule: a
   list labelled "every" or "all" is produced over the whole population, never copied from a view
   scoped to the members.
+- 2026-10-19, B3 unit 2b (found by its own run): after #228's review, both author and reviewer
+  read "ℓ ≈ 2.0 is in the residual after block 6" as "the larger route is at or before block 6",
+  and Blocked 69 (c) was recommended to name it. Ablating `L6H3` removes all of the block-6 jump
+  and none of the final cone: later layers rebuild it. The by-layer row measures where a response
+  first appears, not what the output depends on. Rule: a "where it is" read (by layer, by
+  position) supports a sentence about a route only after an ablation read at the output.
 
 ## 12. Deleted, then needed
 
