@@ -14,9 +14,9 @@
   - H-WARP does not collapse the curves (2 of 18 steps; its planted check passes); 1e's one-well question is not answered — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
   - A2 opened 2026-10-16 with a scan and a frozen design (5 units); the β refit leaves A1's number in place (2 of 7 prompts outside, bar 4; at M1's β 143000 reads *below* in 7 of 7) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 closed 2026-10-17 at "a recorded reason it cannot be read": against the field is a few components, mostly early MLPs (the last block's at 143000), against-specific at 8 of 18 steps; the MLP cancels attention at 1000–4000 and carries the off-field motion; a fixed key appears from 1000 (a period, then a newline from 8000); the ablation's calibration fails on its planted control, so nothing causal is read — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
-  - C2's scan (2026-10-18) found no one reading E_β along a real training axis; A5's registration is drafted on the 9 PolyPythias seeds, nothing registered or downloaded — `trackA_force/status-A.md` "A5 and C2: scan and draft (2026-10-18)"
+  - C2's scan (2026-10-18) found no one reading E_β along a real training axis; A5's registration is drafted on the 9 PolyPythias seeds; its text decided 2026-10-19 (D1–D9 as recommended, a reproducibility check), nothing registered or downloaded — `trackA_force/status-A.md` "A5 and C2: scan and draft (2026-10-18)"
 - **Superseded / wrong:** none
-- **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5` is a draft, not in the registry (STATE Blocked 68) — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
+- **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
 - **Feeds:** none
 - **Open threads:**
@@ -27,7 +27,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-18 · body `f380603d0e`
+- **Reviewed:** 2026-10-19 · body `68b99f9581`
 <!-- /phase-card -->
 
 ## Units
@@ -45,7 +45,7 @@
 | A2 4. the batch and the ranking (18 steps) | **done 2026-10-16** (Blocked 58 (a1), (b1), (c1)): against is few and MLP at 11–13 of 18 steps (against-specific at 6); the MLP cancels attention at 1000–4000; the top-key selector is biased (unread); block 23's step against is its MLP; the null for unit 5 is near degenerate (Blocked 59) | "A2 unit 4" below; `a2_batch.py` |
 | A2 5. the ablation, its nulls and the reading | **done 2026-10-17 (Blocked 59 (b), (ii)): the rule's calibration fails on the planted control, so the reading is not made** (step 0 passes as the null); against-specific at 8 of 18 on the matched band; the sink's exact share > 0.05 from 2000; a newline key from 8000 (Blocked 60) | "A2 unit 5" below; `a2_ablate.py` |
 | A2 close-out | **done 2026-10-17** (Blocked 60 (a), the user's; writing only): A2 closed at "a recorded reason it cannot be read" | "A2 on one page" below |
-| A5 0. C2's scan and A5's registration draft | **done 2026-10-18 (writing only; A5 not opened, nothing registered)**: the draft waits on Blocked 68 | "A5 and C2: scan and draft" below; `lit-C2.md`, `design-A5.md`, `tools/math_checks/a5_seed_location.py` |
+| A5 0. C2's scan and A5's registration draft | **done 2026-10-18 (writing only; A5 not opened, nothing registered)**; text decided 2026-10-19 (Blocked 68, the user's: D1–D9 as recommended). Next for A5: the calibration gate on seed 0, after A3 (ROADMAP §9 row 6) | "A5 and C2: scan and draft" below; `lit-C2.md`, `design-A5.md`, `tools/math_checks/a5_seed_location.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.

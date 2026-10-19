@@ -1,7 +1,9 @@
 <!-- trackA_force/design-A5.md -->
-# Track A, A5 — generality on the PolyPythias seeds: registration draft (2026-10-18)
+# Track A, A5 — generality on the PolyPythias seeds: registration text (drafted 2026-10-18, decided 2026-10-19)
 
-**Status: DRAFT. Not frozen, nothing registered, no seed's intermediate step downloaded or read.**
+**Status: text decided 2026-10-19 (Blocked 68, the user's: D1–D9 all as recommended, listed
+below). Not registered; no seed's intermediate step downloaded or read.** Next before registering:
+the calibration gate on seed 0 ("Before it can be registered" 2), which is A5's unit 1.
 Registering is the user's (`CLAUDE.md` "Literature scans and the registry"); this file proposes
 the text and lists the choices in it. ROADMAP §6 A5, §10.7 and §10.9. Scan: `lit-C2.md`.
 Numbers: `tools/math_checks/a5_seed_location.py` (3 checks pass), which owns every p and E below.
@@ -29,6 +31,12 @@ download and the batch (`runner`), (3) the reading.
 Revised 2026-10-18 after `/challenge-pr` on #227 (findings 1–5 taken): D4's reference, D5's
 asymmetry and its (c) corrected, D6's label, D7 decided from the known outliers, D9 added, the
 calibration gate named.
+
+**Decided 2026-10-19 (Blocked 68, the user's, all as recommended):** D1 (a), D2 (a), D3 (a),
+D4 (a), D5 (a), D6 (b), D7 (a), D8 (a), D9 (a), so A5 is labelled a reproducibility check, not a
+test of mechanism. The draft entry below is the decided text. It goes back to the user (not edited
+here) if any calibration-gate arm fails, including the known answer not reproducing the panel's
+counts, or if A3, which runs first, dates the break with another energy or statistic than D2 and D4.
 
 | # | choice | options | recommended, and why |
 |---|---|---|---|
@@ -64,7 +72,7 @@ forward passes.
 
 ## Before it can be registered, in order
 
-1. Your calls on D1–D9 (any you leave take the recommendation, said on the record).
+1. Your calls on D1–D9: **done 2026-10-19**, all as recommended (Blocked 68).
 2. **The calibration gate** (`CLAUDE.md` "Calibration gate"; free, seed 0 is the development
    set), every arm before registering:
    - *known answer:* the new producer on `pythia-410m` reproduces the panel's counts (0 through
