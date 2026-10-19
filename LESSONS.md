@@ -144,6 +144,10 @@ world moves, nobody updates the line, and the next session acts on it.
   printed R6's in-PR `STATE.md`. Caught by Start step 1 (read `git show origin/main:STATE.md`).
   **Again 2026-10-15:** the main tree at #194, 9 merges behind (#195–#203); the hook printed
   Phase 10's close-out `STATE.md` while Track A sat at Blocked 47. Caught by Start step 1.
+  **Again 2026-10-18 (C2 scan):** the main tree at #211, 15 merges behind (#212–#226); the hook
+  printed B2a's close-out. Caught by Start step 1. Same session, a stale doc of another kind:
+  `docs/LITERATURE.md` §0 says scholarly hosts are blocked, and `WebFetch` read eight arXiv
+  abstract pages (`trackA_force/lit-C2.md` marks them [A]).
   **Again 2026-10-06 (after #156):** still at `6abbcb8`, now 5 merges behind (#152–#156): the
   five sessions in between each read `origin/main` and none fast-forwarded the main tree. The
   hook printed R6's `STATE.md` again; Start step 1 caught it, and the main tree was fast-forwarded.

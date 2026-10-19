@@ -14,8 +14,9 @@
   - H-WARP does not collapse the curves (2 of 18 steps; its planted check passes); 1e's one-well question is not answered — `trackA_force/status-A.md` "A1b, the reading (2026-10-15)"
   - A2 opened 2026-10-16 with a scan and a frozen design (5 units); the β refit leaves A1's number in place (2 of 7 prompts outside, bar 4; at M1's β 143000 reads *below* in 7 of 7) — `trackA_force/status-A.md` "A2 unit 2, the β refit at 143000 (2026-10-16)"
   - A2 closed 2026-10-17 at "a recorded reason it cannot be read": against the field is a few components, mostly early MLPs (the last block's at 143000), against-specific at 8 of 18 steps; the MLP cancels attention at 1000–4000 and carries the off-field motion; a fixed key appears from 1000 (a period, then a newline from 8000); the ablation's calibration fails on its planted control, so nothing causal is read — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
+  - C2's scan (2026-10-18) found no one reading E_β along a real training axis; A5's registration is drafted on the 9 PolyPythias seeds, nothing registered or downloaded — `trackA_force/status-A.md` "A5 and C2: scan and draft (2026-10-18)"
 - **Superseded / wrong:** none
-- **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication — `trackA_force/design-A.md` "Fences"
+- **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5` is a draft, not in the registry (STATE Blocked 68) — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
 - **Feeds:** none
 - **Open threads:**
@@ -26,7 +27,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-17 · body `9213b6c159`
+- **Reviewed:** 2026-10-18 · body `f380603d0e`
 <!-- /phase-card -->
 
 ## Units
@@ -44,11 +45,29 @@
 | A2 4. the batch and the ranking (18 steps) | **done 2026-10-16** (Blocked 58 (a1), (b1), (c1)): against is few and MLP at 11–13 of 18 steps (against-specific at 6); the MLP cancels attention at 1000–4000; the top-key selector is biased (unread); block 23's step against is its MLP; the null for unit 5 is near degenerate (Blocked 59) | "A2 unit 4" below; `a2_batch.py` |
 | A2 5. the ablation, its nulls and the reading | **done 2026-10-17 (Blocked 59 (b), (ii)): the rule's calibration fails on the planted control, so the reading is not made** (step 0 passes as the null); against-specific at 8 of 18 on the matched band; the sink's exact share > 0.05 from 2000; a newline key from 8000 (Blocked 60) | "A2 unit 5" below; `a2_ablate.py` |
 | A2 close-out | **done 2026-10-17** (Blocked 60 (a), the user's; writing only): A2 closed at "a recorded reason it cannot be read" | "A2 on one page" below |
+| A5 0. C2's scan and A5's registration draft | **done 2026-10-18 (writing only; A5 not opened, nothing registered)**: the draft waits on Blocked 68 | "A5 and C2: scan and draft" below; `lit-C2.md`, `design-A5.md`, `tools/math_checks/a5_seed_location.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
 A2: 5 units plus a close-out (`design-A2.md` "Exit condition and budget"); all 5 spent; A2 closed
 2026-10-17 at its exit's "a recorded reason it cannot be read" (Blocked 60 (a)).
+
+## A5 and C2: scan and draft (2026-10-18)
+
+Writing only (ROADMAP §9 row 6's first item; §10.8 is proposed, so this is the free part).
+Nothing ran on a model; the only numbers are the `sympy` check's, on seed 0's panel counts.
+
+| item | result | where |
+|---|---|---|
+| C2's novelty | not refuted: no paper found reads E_β, its monotonicity or token clustering along a real training axis; the nearest read rank, ID or anisotropy (2509.23024, 2602.15997, 2405.15471, Bernas ICML 2026), or have the energy without checkpoints (2605.07772) | `lit-C2.md` §1 |
+| C2's sequence | the break (128–512) sits where the LLC stages put n-grams, before previous-token (512–1000) and induction heads | `lit-C2.md` §2 |
+| A5's limit | all seeds share the LR warmup (to about 1430), so A5 can show the step is not seed 0's, not that it is not the schedule's | `lit-C2.md` §3 |
+| A5's draft | `P-A5`: half-rise step of the violation count in {256, 512} per seed, K of 9, K ~ Bin(9, 1/6) under H0; E ≥ 20 at K ≥ 7. Nine choices, recommendations first; revised after #227's challenge (the break against the 1000–4000 plateau, not 143000; 410m seeds 3 and 4 already known outliers, counted and flagged; E labelled against a uniform-location null; the calibration gate named) | `design-A5.md` |
+| seed 0 by statistic | half-rise 512, first non-zero 256 (both in the window); `CLAIM-B`'s change-mass centroid about 830 (outside), so the centroid is not offered | `tools/math_checks/a5_seed_location.py` |
+
+**Input:** `data/analysis/colocation_panel.csv` column `p1_energy_nviol_b1` (β = 1, sphere, the
+7 v1 prompts), seed 0 only, copied into the check. Re-run: `python
+tools/math_checks/a5_seed_location.py`.
 
 ## A2 on one page (closed 2026-10-17)
 
@@ -784,6 +803,10 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 `tests/test_trackA_a1a.py`.
 
 ## Parked
+
+**From the A5 / C2 scan (2026-10-18):** `lit-C2.md` Parked 1 (full texts now fetchable) open;
+Parked 2 (PolyPythias's outlier seeds) done, already in `lit-1d.md`; Parked 3 (2602.15997's
+top-down collapse) carried to A3.
 
 **At A2's close (2026-10-17)** each item opened during A2 is *done*, *carried to X* or *dropped
 (why)*; the items carried into A2 at A1's close are settled below, under their own entries.
