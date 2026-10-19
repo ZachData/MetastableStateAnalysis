@@ -1372,7 +1372,8 @@ so the run was killed a few minutes in and relaunched. Before a stamped run: mak
 unit owes to a hashed file first, then launch.
 2026-10-18 (the user's check-in): `STATE.md` at 149 lines and 46 kB, so the start hook's output was
 persisted to a file and read again; the 2026-10-01 fix (a byte cap) was never built. Over the cost
-log, context re-read is 1.54B tokens against 7.6M of tool output (200×). The byte cap and a
+log, context re-read is 1.54B tokens against 7.6M of tool output (200×; 127k per call on average
+from 2026-10-13, read from `docs/cost_log.md`). The byte cap and a
 per-read attribution in `tools/session_cost.py` are now `docs/ROADMAP.md` §5 rows.
 
 ## 10. Tangents: interesting findings that hijack the plan

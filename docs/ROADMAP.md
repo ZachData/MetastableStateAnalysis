@@ -122,9 +122,9 @@ close-out.
 | Alternatives at design time (2026-10-18) | per design | before a design freezes, a fresh-context pass lists five ways to answer its question, simplest first; the design says why it took its own (`/challenge-pr` does this only after the run) |
 | More than one null (2026-10-18) | per design | where several nulls exist, the design fixes how they combine before any is read: all must agree, or all are reported side by side. "One may fail and we still claim" is not a combination rule (it picks the null that passes) |
 | Pre-authorised fallbacks (2026-10-18) | per design | a design names its likely gate failures and the revision each gets ("if G2 fails by X, apply Y and re-gate"), so a planned revision runs in the same unit instead of ending it on a Blocked item; scope (a phase opened or closed, what counts as a claim, registration) still goes to the user. A `CLAUDE.md` rule, so the user's |
-| `STATE.md` byte cap (`LESSONS.md` 9) | minutes | the 150-line cap does not bound bytes: 46 kB on 2026-10-18, so the start hook's output is persisted to a file and re-read. A byte cap in `tools/lint_repo.py`, the 1d / 1e / phase-review rows moved to their status files. After B3 unit 2's PR merges, since that unit is editing `STATE.md` |
+| `STATE.md` byte cap (`LESSONS.md` 9, 2026-10-18) | minutes | the 150-line cap does not bound bytes, so the start hook's output is persisted to a file and re-read. A byte cap in `tools/lint_repo.py`, the 1d / 1e / phase-review rows moved to their status files. After B3 unit 2's PR merges, since that unit is editing `STATE.md` |
 | Start hook reads `origin/main` (`LESSONS.md` 1) | the user's | `git fetch -q` then `git show origin/main:STATE.md` in `.claude/settings.json`; the hook has printed a stale `STATE.md` six times |
-| Per-read cost attribution (`LESSONS.md` 9) | small | `tools/session_cost.py` ranks tool results by size × calls remaining after them, naming the reads that drive the per-call context (127k per call on average since 2026-10-13; context re-read is 200× the tool output over the log) |
+| Per-read cost attribution (`LESSONS.md` 9, 2026-10-18) | small | `tools/session_cost.py` ranks tool results by size × calls remaining after them, naming the reads that drive the per-call context |
 | Refuse-on-empty writer (`LESSONS.md` 2) | check first | whether every runner writes through one `core/` writer that refuses empty, NaN or constant outputs and records the counts; if not, build it |
 
 ## 6. Track A: the anti-collapse force
@@ -148,8 +148,8 @@ compression prior art (`2510.06477`); literature trigger 1 before A2's design fr
 seeds are cached only at step 0 and 143000. Hugging Face is **not** blocked from the local box
 (2026-10-18: its API answers; `HF_HUB_OFFLINE=1` is the scripts' setting, not a block), and each
 410m seed has all 154 branches (`step0` … `step143000`, Pythia's grid) at 0.91 GB per checkpoint,
-so the 16 missing steps of the 18-step grid are about 131 GB for 9 seeds (`HDD_1TB` had 310 GB
-free on 2026-09-29). ALBERT (B0′) and the CRFM GPT-2 checkpoints (B6) are not cached, not checked.
+so the 16 missing steps of the 18-step grid are about 131 GB for 9 seeds (`HDD_1TB` had 265 GB
+free on 2026-10-18; S1's 8-step grid needs less). ALBERT (B0′) and the CRFM GPT-2 checkpoints (B6) are not cached, not checked.
 
 ## 7. Track B: particles in a known circuit
 
@@ -195,11 +195,13 @@ unit of the mechanism. Each S unit opens under §3 (scan, exit condition, unit b
 
 - Particles are the tokens' residual states. A dictionary feature is a direction (a coordinate),
   not a particle; a transcoder feature is closer to a mechanism (an input-to-output map).
-- QK sets who interacts and how strongly. Its symmetric part is a pseudo-metric on the read space,
-  so each head measures closeness in its own warped geometry; for a rank-64 product its signature
-  is split by construction (`tools/math_checks/b2_symmetric_inertia.py`), so the information is in
-  which directions and how large, not in how many are negative. Its antisymmetric part is a
-  directed term, not a metric.
+- QK sets who interacts and how strongly. Its symmetric part is an indefinite similarity form on
+  the read space (a metric tensor in the pseudo-Riemannian sense, **not a distance**), so each head
+  scores closeness in its own warped geometry; for a rank-64 product its signature is split, 64
+  and 64, by construction (`tools/math_checks/b2_symmetric_inertia.py`), so the information is in
+  which directions and how large, not in how many are negative. Only its positive part is an inner
+  product, and a distance. Its antisymmetric part is a directed term. Pythia rotates 16 of each
+  head's 64 dimensions by position (rotary), so a QK form is read at one offset (B2 used 0).
 - OV sets what an interaction does: its symmetric part pushes toward or away; a complex pair
   rotates content inside a fixed plane; a map from one subspace into an orthogonal one moves
   content between subspaces with every eigenvalue zero.
@@ -207,8 +209,7 @@ unit of the mechanism. Each S unit opens under §3 (scan, exit condition, unit b
   (singular) side sees transfer between subspaces, which is how the previous-token head feeds the
   induction keys (B2's C6).
 - Complex pairs are the random default (a real Gaussian n × n matrix has about √(2n/π) real
-  eigenvalues, Edelman–Kostlan–Shub 1994; 6.7 of 64 and 25.6 of 1024 in a 20-draw numpy check),
-  and 2b's headline was an identity under global orthogonal maps
+  eigenvalues, Edelman–Kostlan–Shub 1994), and 2b's headline was an identity under global orthogonal maps
   (`p2b_imaginary/status-2b.md`), so every rotation reading needs a null and a test that is not
   invariant under such a map.
 - Two archived leads are on ALBERT (tied weights, the theory's setting): Phase 4's dense low-rank
@@ -218,9 +219,9 @@ unit of the mechanism. Each S unit opens under §3 (scan, exit condition, unit b
 
 | # | unit | what | done when |
 |---|---|---|---|
-| S1 | the shared-subspace atlas (weights only; est. 2–3 units) | at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 on 410m: each head's OV invariant subspaces (real negative, real positive, complex pairs with their angle) and its OV and QK write / read singular subspaces; the mean of the heads' projectors, whose eigenvalues above step 0's and a norm-matched random draw's mark the shared directions; per shared subspace, its radial sign, rotation angle and negative-pair gap (the d = 2 reduction's "collapsibility") across the 8 steps | the number of shared subspaces and their spectra at each step, each against step 0 and the random draw |
-| S2 | what rotation does (est. 2 units) | 2b's after-Phase-10 item: `W_OV := S` (each OV replaced by its symmetric part) through `core/intervention.py`: does the energy turn monotone after 512, does induction survive (7d's score), and is S1's shared rotation what carries it | each read against a norm-matched ablation of the same size |
-| S3 | clusters inside subspaces (est. 2 units) | cluster tokens in each S1 subspace, and under a head's QK pseudo-metric, with 1d's instruments, against the same projection at step 0 and 1d's Gaussian null: are clusters too faint in the full space (1d) present in a shared subspace? The user's guess, recorded as a guess | a plateau count per subspace against both nulls |
+| S1 | the shared-subspace atlas (weights only; est. 2–3 units) | at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 on 410m: each head's OV invariant subspaces (real negative, real positive, complex pairs with their angle) and its OV and QK write / read singular subspaces; the mean of the heads' projectors, whose eigenvalues above the nulls mark the shared directions. Nulls: step 0, a norm-matched random draw, and (since trained heads mostly fail isotropic nulls, B2a's 214 of 252 cells outside) the trained heads at the same step each rotated by its own random orthogonal map, which keeps every head's spectrum and kills only the alignment between heads; beside it, the shared directions' share in the residual stream's top-variance directions, so a few global anisotropic directions are not read as sharing. Per shared subspace, its radial sign, rotation angle and negative-pair gap (the d = 2 reduction's "collapsibility") across the 8 steps | the number of shared subspaces and their spectra at each step, each against step 0 and the random draw |
+| S2 | what rotation does (est. 2 units) | through `core/intervention.py`, two arms: (a) 2b's after-Phase-10 item, `W_OV := S` (each OV replaced by its symmetric part; this doubles the rank to 128 and writes into the read space, so it is not rotation alone); (b) rotation alone: in OV's real block form each complex pair's angle set to 0 (λ → Re λ), keeping its invariant planes, rank and write space. Does the energy turn monotone after 512, does induction survive (7d's score), and is S1's shared rotation what carries it | each arm read against a norm-matched ablation of the same size |
+| S3 | clusters inside subspaces (est. 2 units) | cluster tokens in each S1 subspace, and in a head's QK positive read subspace at offset 0 (where the form is an inner product, so distances exist), with 1d's instruments, against the same projection at step 0 and 1d's Gaussian null: are clusters too faint in the full space (1d) present in a shared subspace? The user's guess, recorded as a guess | a plateau count per subspace against both nulls |
 | S4 | a toy induction model (est. 3–4 units) | a 2-layer attention-only transformer (and one with MLPs) on an induction task, tied and untied, with and without repeated tokens in the data, every step saved, several seeds on the RTX 3080: a known circuit for S1–S3 and S5, and an energy curve across its training (does the break move when induction cannot form? the causal arm C2 lacks) | S1's atlas and the energy curve on it, with the circuit known |
 | S5 | the carve (est. 3 units) | on S4, then on 410m's induction set: ablate S1's subspaces across heads (not whole heads), keeping what the induction score needs, until a minimal set is left (parameter decomposition in spirit, on subspaces) | a minimal subspace set that keeps the induction score, or a recorded reason none is found |
 
@@ -232,7 +233,7 @@ S4 can start beside S1; S3 and S5 after S1.
 | # | paper | inputs | when |
 |---|---|---|---|
 | C1 | "What counts as a token cluster?", a null-model audit | 1d, Phase 10 §1, F13 (10.2); the 8 items carried to C1 at Phase 10's close, and 1e's (c3x purity in the centred frame against any proximity partition), each needed only if C1 quotes the reading it refines (`p10_cluster_function/handoff-10.md` "At close (10.5)") | after Phase 10 closes |
-| C2 | **re-scoped 2026-10-18 (the user's check-in): the interaction energy along Pythia's training axis, with the energy break (128–512), induction formation ((512, 4000]) and the OV repulsive phase (1000–2000) read as a sequence; target about two months, mid-December 2026 (the user's).** Inputs: A3, A5 on the seeds, S2 as the intervention, S4 as the causal arm if it is ready; a literature scan first (the induction phase change, 2209.11895; developmental stages by LLC), since "nobody reads this energy across training" is unverified. Kept: the anti-collapse force along Pythia's training axis (from A2 at close: no causal claim about which components push apart until the ablation is re-calibrated: one synthetic model on 7 starts, headroom on (iii), step 0 reading "refused", and a depth control for MLPs, which has no design yet; and an energy split per component (`PROJECT.md` §3.8.3) before any energy sentence about components; `trackA_force/status-A.md` "A2 on one page") | Track A | after A2 and A5 |
+| C2 | **re-scoped 2026-10-18 (the user's check-in): the interaction energy along Pythia's training axis, with the energy break (128–512), induction formation ((512, 4000]) and the OV repulsive phase (1000–2000) read as a sequence; target about two months, mid-December 2026 (the user's).** Inputs: A3, A5 on the seeds, S2 as the intervention, S4 as the causal arm if it is ready; a literature scan first (the induction phase change, 2209.11895; developmental stages by LLC), since "nobody reads this energy across training" is unverified. Kept: the anti-collapse force along Pythia's training axis (from A2 at close: no causal claim about which components push apart until the ablation is re-calibrated: one synthetic model on 7 starts, headroom on (iii), step 0 reading "refused", and a depth control for MLPs, which has no design yet; and an energy split per component (`PROJECT.md` §3.8.3) before any energy sentence about components; `trackA_force/status-A.md` "A2 on one page") | Track A | after A3 and A5; a draft by mid-December if §10.8 is taken |
 | C3 | particles in a known circuit | Track B | after B4 |
 
 ## 9. Order and budget
@@ -267,6 +268,9 @@ that yardstick less than the cluster rows did, and B-pre may give an adjudicatio
 6. **`P-I5`'s target** (`STATE.md` Blocked 2) before Track B registers anything.
 7. **Which rung carries the first registration** (`STATE.md` Blocked 7): A5, `P-I7` and F14
    compete for it.
+Items 8–10 are proposed, not decided: at the 2026-10-18 check-in the user set C2's two-month
+target and liked the recommendations in general; the specific choices below are still theirs.
+
 8. **The order after B3** (§9 row 6, proposed 2026-10-18): C2's path first (scan, A3, A5 on the
    seeds, S2), S1 and S4 beside, B4–B6 after C2. The alternative is Track B to B5 first, which
    puts C2 past December. Recommended: C2's path first, since the user set the two-month target.
