@@ -762,6 +762,12 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-19, A3 unit 2c (a check that a correct answer fails half the time): the re-derived
+  floor was the bare 95th percentile of the null's ref / σ, then checked at ≥ 95 % on fresh
+  draws. A correct floor passes that about half the time; E2 failed it (0.936) and was refused,
+  and the fix (the percentile's 95 % upper bound) came after seeing the failure. Rule: **a floor
+  derived on draws and checked at the same level on fresh ones needs a margin (an upper
+  confidence bound) chosen before the run** (`trackA_force/status-A.md` "A3 unit 2c").
 - 2026-10-19, A3 unit 2 (a calibration on noise the data do not have): `a3_locator.py` calibrated
   the half-rise floor and power on iid noise of one size at every step. The real rows' spread
   grows 10⁴–10⁵-fold from step 2 to 4000, so at their own design the effect arm could not place

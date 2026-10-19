@@ -99,7 +99,8 @@ every step, step 0 included; 3σ gives 76 %). σ is the bootstrap standard error
 resamples, over the row's units in §2) of Δ at the reference step: the noise in the move
 itself, for activation and weights-only rows alike. For weights-only rows the floor is the
 same number but not calibrated for their noise, which is over heads or layers, not over draws
-(*placed*). Unit 2 re-runs the calibration on each row's own σ at every step.
+(*placed*). Unit 2 re-runs the calibration on each row's own σ at every step (re-derived
+per row as floor and power: "Revised 2026-10-19" below).
 
 **Power** (*calibrated*, the same script): with the floor at 3.93σ and a logistic step in
 log2(step) of scale 0.25 octave (*placed*) centred mid-gap, the rule places the step just past
@@ -117,6 +118,19 @@ with a reference under 9σ is marked **low power** on the table.
 A failed arm refuses its rows; it is not tuned after the fact. Beside, described and not read:
 `core.changepoint_colocation.change_profile`'s change-mass centroid per row, flagged where it
 and the rule are two or more grid steps apart.
+
+**Revised 2026-10-19 (Blocked 71, the user's; unit 3).** Unit 2's gate failed its effect arm
+on E2–E5 (`status-A.md` "A3 unit 2"). (i) **(a)**: the effect arm's 9σ is σ *at the reference
+step* (the paragraph above's definition, read literally), taken as the largest mean null σ over
+the planted plateau's steps; the arm then vouches only for moves large against the late noise.
+**Line 102 re-derived per row**: each floored row's floor is the 95 % upper confidence bound of the
+95th percentile of ref / σ over 1000 null series at its own per-step spread (added in unit 2c,
+after the bare percentile failed its own check: `status-A.md` "A3 unit 2c"), checked on 1000
+fresh ones (≥ 95 %), replacing 4σ for that row; its power is, per gap, the least amplitude (grid
+2 … 90, units of that σ) placed right in ≥ 90 %, and a located row whose ref, in that unit, is
+below its gap's power is **low power**,
+replacing the flat 9σ. (ii) A located row whose reference is at 4000 (still rising at the
+window's end) is marked **censored**, and its pairs are read with that mark (unit 5).
 
 ## 5. Fences
 

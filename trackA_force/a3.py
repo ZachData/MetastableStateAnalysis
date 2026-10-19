@@ -1,4 +1,4 @@
-"""trackA_force/a3.py — A3 unit 2: the producer, the existing rows, the locator and its gate
+"""trackA_force/a3.py — A3 units 2–3: the producer, the existing rows, the locator and its gate
 (`design-A3.md` §2, §4; frozen 2026-10-19 as revised, Blocked 70 (ii) (a)).
 
 Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one point):
@@ -32,10 +32,14 @@ readings. The gate measures it at each row's own design.
 **The gate (§4), before any real row is located** (a failed arm refuses its rows; nothing is
 tuned after it). Per floored row, at its own units, statistic and per-step spread (τ_s, the
 across-unit SD of the row's real Δ_u(s); step 0 carries none, so the Δs are independent across
-steps, a conservative null): *null* ``N_GATE`` flat series read "no change" in ≥ 95 %; *effect*
-a logistic in log2(step) of scale 0.25 octave centred in each gap 2–4 … 2000–4000, at 9 × the
-mean null σ at the step past the centre, ``N_GATE`` each, placed there in ≥ 90 %. *Anchors:* E1
-at 512, E2 at 512, E10 at 1000. Turning-point rows are gated in unit 4 on E6's own σ.
+steps, a conservative null). As revised by Blocked 71 (the user's, 2026-10-19): the row's own
+**floor** is the 95 % upper bound of the 95th percentile of ref / σ over ``N_GATE`` null series, and the *null* arm checks
+it on ``N_GATE`` fresh ones (≥ 95 % "no change"); the *effect* arm plants a logistic in log2(step)
+of scale 0.25 octave centred in each gap 2–4 … 2000–4000 at 9 × σ at the reference step (§4's σ,
+read literally: (i) (a)), placed there in ≥ 90 %; the row's **power** per gap is the least
+amplitude in ``AMPS`` reaching 90 % (line 102, re-derived), and a located row below it at its gap
+is **low power**. A located row whose reference is 4000 is marked **censored** ((ii)). *Anchors:*
+E1 at 512, E2 at 512, E10 at 1000. Turning-point rows are gated in unit 4 on E6's own σ.
 
 Beside, described and not read: `core.changepoint_colocation.change_profile`'s change-mass
 centroid per row, flagged where it and the rule are ≥ 2 grid steps apart. No pair is read here
@@ -72,6 +76,7 @@ N_GATE = 1000
 GATE_NULL = 0.95
 GATE_EFFECT = 0.90
 WIDTH = 0.25         # placed: logistic scale, octaves
+AMPS = (2, 3, 4, 6, 9, 12, 18, 27, 40, 60, 90)   # power grid, in units of σ̄_ref (Blocked 71)
 WARMUP, TOTAL, LR_MIN = 1430, 143000, 0.1
 SEED = 20261019
 E2_REPRO = {0: 0.504, 512: 0.094}   # PROJECT.md §3.12 A, design-A3 §3 (ii)
@@ -148,10 +153,18 @@ def boot_se(units: np.ndarray, stat: Callable, j: int, rng: np.random.Generator,
 
 
 def locate_units(units: np.ndarray, stat: Callable, direction: str, rng, kind="half",
-                 n_boot: int = N_BOOT) -> dict:
+                 n_boot: int = N_BOOT, floor: Optional[float] = FLOOR) -> dict:
     x = stat(units)
     j = reference(x, direction, kind)
-    return place(x, direction, boot_se(units, stat, j, rng, n_boot), kind)
+    return place(x, direction, boot_se(units, stat, j, rng, n_boot), kind, floor=floor)
+
+
+def censored(r: dict) -> Optional[bool]:
+    """Blocked 71 (ii): the window's maximum (or minimum) is at 4000, so the half-point is set by
+    where the window was cut. None where the row was not located."""
+    if r.get("reading") != "located":
+        return None
+    return r["ref_index"] == WIN[-1]
 
 
 def d4a(v: np.ndarray) -> dict:
@@ -311,30 +324,105 @@ def _synthetic(units: np.ndarray, direction: str, stat_name: str, rng, n: int,
     return z[..., None]
 
 
-def gate_row(rid: str, units: np.ndarray, rng) -> dict:
+def boot_se_all(units: np.ndarray, stat: Callable, rng: np.random.Generator,
+                n_boot: int = N_BOOT) -> np.ndarray:
+    """Bootstrap SE of stat(j) − stat(0) for every j in WIN, paired resamples; [0] = 0."""
+    n = units.shape[0]
+    idx = rng.integers(0, n, size=(n_boot, n))
+    s = stat(units[:, list(WIN), :][idx])                        # (B, W)
+    return np.std(s - s[:, :1], axis=0, ddof=1)
+
+
+def _noise_draws(units: np.ndarray, rid: str, rng, n: int):
+    """n flat series at the row's spread: their statistic (n, S) and Δ's SE at each WIN step.
+
+    A planted shape is added to every unit alike, so it shifts each statistic (mean, median,
+    pooled) by exactly the shape and leaves the bootstrap SE unchanged: one bootstrap per draw
+    serves every gap and amplitude."""
     _, direction, sname, _ = ROWS[rid]
     stat = STATS[sname]
-    null = _synthetic(units, direction, sname, rng, N_GATE)
-    reads = [locate_units(u, stat, direction, rng) for u in null]
-    p_null = float(np.mean([r["reading"] == "no change" for r in reads]))
-    # the mean null σ at each step in WIN, for the planted amplitude
-    sig = np.zeros(len(WIN))
-    probe = null[:200]
-    for j in WIN[1:]:
-        sig[j] = np.mean([boot_se(u, stat, j, rng) for u in probe])
+    syn = _synthetic(units, direction, sname, rng, n)
+    xs = np.stack([stat(u) for u in syn])
+    sig = np.stack([boot_se_all(u, stat, rng) for u in syn])
+    return xs, sig
+
+
+def _read(x: np.ndarray, sig: np.ndarray, direction: str, floor: float) -> dict:
+    j = reference(x, direction)
+    return place(x, direction, float(sig[j]), floor=floor)
+
+
+def _ratio(x, sig, direction) -> float:
+    """ref / σ at the reference step; −inf where ref ≤ 0 (always "no change")."""
+    w = np.asarray(x, float)[list(WIN)]
+    j = reference(x, direction)
+    ref = SIGN[direction] * (w[j] - w[0])
+    return float(ref / sig[j]) if ref > 0 else -np.inf
+
+
+def _shape(i: int) -> np.ndarray:
+    centre = (X[i] + X[i + 1]) / 2
+    sh = 1 / (1 + np.exp(-(X - centre) / WIDTH))
+    return sh - sh[0]
+
+
+def gate_row(rid: str, units: np.ndarray, rng) -> dict:
+    """§4's gate as revised by Blocked 71 (decided 2026-10-19, the user's).
+
+    (i) (a): the effect arm plants 9 × σ at the reference step (σ̄_ref, the largest mean null σ
+    over the planted plateau's steps, where its reference can fall). Line 102, re-derived: the
+    row's own floor is the 95 % upper bound of the 95th percentile of ref / σ over N_GATE
+    null draws (derivation set),
+    checked on an independent N_GATE (check set); its power is, per gap, the least amplitude in
+    AMPS (units of σ̄_ref) placed right in ≥ 90 % at that floor (check set). The frozen 4σ null
+    rate and unit 2's arm (9 × σ̄ at the step past the centre) are recomputed beside, as a check."""
+    direction = ROWS[rid][1]
+    xd, sd = _noise_draws(units, rid, rng, N_GATE)
+    xc, sc = _noise_draws(units, rid, rng, N_GATE)
+    r = np.array([_ratio(x, s, direction) for x, s in zip(xd, sd)])
+    # the 95 % upper confidence bound of the 95th percentile, so a correct floor passes its check
+    # on fresh draws with high probability (the bare percentile passes it about half the time:
+    # unit 3's first run, E2 at 0.936)
+    from scipy.stats import binom
+    k = int(binom.ppf(GATE_NULL, len(r), GATE_NULL)) + 1
+    floor = float(np.ceil(np.sort(r)[min(k, len(r)) - 1] * 100) / 100)
+    rc = np.array([_ratio(x, s, direction) for x, s in zip(xc, sc)])
+    p_null = float(np.mean(rc < floor))
+    p_null_frozen = float(np.mean(rc < FLOOR))
+    sbar = sc.mean(axis=0)                                        # (W,)
     gaps = []
     for i in WIN[1:-1]:
-        centre = (X[i] + X[i + 1]) / 2
-        shape = 1 / (1 + np.exp(-(X - centre) / WIDTH)); shape = shape - shape[0]
-        amp = LOW_POWER * sig[i + 1]
-        planted = _synthetic(units, direction, sname, rng, N_GATE,
-                             amp_shape=SIGN[direction] * amp * shape)
-        ok = float(np.mean([locate_units(u, stat, direction, rng)["index"] == i + 1
-                            for u in planted]))
-        gaps.append({"gap": f"{STEPS[i]}-{STEPS[i + 1]}", "amplitude": float(amp),
-                     "placed_right": ok, "pass": ok >= GATE_EFFECT})
-    return {"null_no_change": p_null, "null_pass": p_null >= GATE_NULL, "effect": gaps,
+        sref = float(sbar[i + 1:].max())
+        sh = SIGN[direction] * _shape(i)
+
+        def placed(amp, fl):
+            return float(np.mean([_read(x + amp * sh, s, direction, fl)["index"] == i + 1
+                                  for x, s in zip(xc, sc)]))
+        ok = placed(LOW_POWER * sref, floor)
+        curve = {a: placed(a * sref, floor) for a in AMPS}
+        power = next((a for a in AMPS if curve[a] >= GATE_EFFECT), None)
+        gaps.append({"gap": f"{STEPS[i]}-{STEPS[i + 1]}", "to_index": i + 1,
+                     "sigma_ref": sref, "amplitude": LOW_POWER * sref, "placed_right": ok,
+                     "pass": ok >= GATE_EFFECT, "power": power,
+                     "curve": {str(a): v for a, v in curve.items()},
+                     "unit2_arm": placed(LOW_POWER * float(sbar[i + 1]), FLOOR)})
+    return {"floor": floor, "null_no_change": p_null, "null_pass": p_null >= GATE_NULL,
+            "null_no_change_at_frozen_floor": p_null_frozen, "effect": gaps,
             "pass": p_null >= GATE_NULL and all(g["pass"] for g in gaps)}
+
+
+def low_power(r: dict, gate: dict) -> Optional[bool]:
+    """Re-derived mark: ref / σ̄_ref (the gap's own unit, in which its power is stated) below the
+    row's power at the gap it was located in; None where that gap was not gated (located at
+    step 2). No amplitude in AMPS reaching 90 % marks it low power."""
+    if r.get("reading") != "located":
+        return None
+    g = next((g for g in gate["effect"] if g["to_index"] == r["index"]), None)
+    if g is None:
+        return None
+    if g["power"] is None:
+        return True
+    return bool(r["ref"] / g["sigma_ref"] < g["power"])
 
 
 # ---------------------------------------------------------------- run
@@ -360,7 +448,7 @@ def run(out: Path) -> dict:
                       ("colocation_panel.csv", "ov_per_head_series.json",
                        "behavioural_series.json")},
            "constants": {"FLOOR": FLOOR, "LOW_POWER": LOW_POWER, "N_BOOT": N_BOOT,
-                         "N_GATE": N_GATE, "WIDTH": WIDTH, "SEED": SEED}}
+                         "N_GATE": N_GATE, "WIDTH": WIDTH, "SEED": SEED, "AMPS": list(AMPS)}}
     r15 = rows_e1_e5()
     units = {"E2": row_e2(), "E5": r15["E5"], **rows_e3_e4(out / "attn_rows.json")}
     print(f"rows built ({time.time() - t0:.0f} s)", flush=True)
@@ -370,7 +458,7 @@ def run(out: Path) -> dict:
     for rid in ROWS:
         rec["gate"][rid] = gate_row(rid, units[rid], rng)
         g = rec["gate"][rid]
-        print(f"gate {rid}: null {g['null_no_change']:.3f}, effect min "
+        print(f"gate {rid}: floor {g['floor']:.2f}, null {g['null_no_change']:.3f}, effect min "
               f"{min(e['placed_right'] for e in g['effect']):.3f} -> "
               f"{'pass' if g['pass'] else 'FAIL'} ({time.time() - t0:.0f} s)", flush=True)
     (out / "a3_gate.json").write_text(json.dumps(rec, indent=1) + "\n")
@@ -389,7 +477,13 @@ def run(out: Path) -> dict:
         if not rec["gate"][rid]["pass"]:
             r.update(reading="refused", step=None, index=None)
         else:
-            r.update(locate_units(units[rid], STATS[sname], direction, rng))
+            g = rec["gate"][rid]
+            r.update(locate_units(units[rid], STATS[sname], direction, rng, floor=g["floor"]))
+            r["low_power_frozen"] = r["low_power"]           # ref / σ < 9, as frozen
+            r["low_power"] = low_power(r, g)
+            r["censored"] = censored(r)
+            r["reading_at_frozen_floor"] = ("located" if r["ref_over_sigma"] >= FLOOR
+                                            else "no change")
         rows[rid] = r
     for rid, r in rows.items():
         r["beside"] = beside(np.asarray(r["series"]), r["dir"], r.get("index"))
@@ -403,16 +497,20 @@ def run(out: Path) -> dict:
 
 
 def table(rec: dict) -> str:
-    h = "| id | row | dir | reading | step | ref / σ | low power | centroid (beside) |"
-    lines = [h, "|---|---|---|---|---|---|---|---|"]
+    h = ("| id | row | dir | reading | step | ref / σ | floor | low power | censored "
+         "| centroid (beside) |")
+    lines = [h, "|---|---|---|---|---|---|---|---|---|---|"]
     for rid in ("E1", "E2", "E3", "E4", "E5", "E10"):
         r = rec["rows"][rid]
         ros = r.get("ref_over_sigma")
         b = r["beside"]
         cen = (f"{b['centroid_step']:.0f}" + (" (≥ 2 steps)" if b.get("flag") else "")
                if b.get("centroid_step") is not None else "—")
+        fl = rec["gate"].get(rid, {}).get("floor")
+        dash = lambda v: "—" if v is None else v
         lines.append(f"| {rid} | {r['row']} | {r['dir']} | {r['reading']} | {r.get('step') or '—'} "
-                     f"| {f'{ros:.1f}' if ros else '—'} | {r.get('low_power') if r.get('low_power') is not None else '—'} | {cen} |")
+                     f"| {f'{ros:.1f}' if ros else '—'} | {f'{fl:.2f}' if fl else '—'} "
+                     f"| {dash(r.get('low_power'))} | {dash(r.get('censored'))} | {cen} |")
     return "\n".join(lines)
 
 
