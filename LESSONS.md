@@ -270,6 +270,15 @@ world moves, nobody updates the line, and the next session acts on it.
   #194 while `origin/main` had #195–#211; caught at Start step 1 and the main tree fast-forwarded
   (`git pull --ff-only`, clean). Fifth instance; a closing session's last step could fast-forward
   the main tree, but the hook fix is still the user's.
+- **2026-10-18, the start hook's `STATE.md` 14 merges old** (the user's check-in): the main tree
+  sat at #211 while `origin/main` had #212–#225; caught at Start step 1, read from `origin/main`.
+  Sixth instance. The main tree was not fast-forwarded, because B3 unit 2's batch was running
+  from `../Mets-work` with data in the main tree. The hook fix is now a `docs/ROADMAP.md` §5 row.
+- **2026-10-18, a "blocked" that was a setting** (the same check-in): `docs/ROADMAP.md` §6 said
+  Hugging Face downloads are blocked from this machine, so A5 on seeds needed steps "fetched
+  elsewhere". One `curl` on the refs API answered (all 154 steps per seed); `HF_HUB_OFFLINE=1`
+  is the scripts' setting. The cloud container's block had been carried over to the local box.
+  Rule as before: check the tree (or the network) before planning around a doc's "cannot".
 - **2026-10-10, a frame named for what it is not** (F13): `handoff-10.md` Stage 3 and
   `docs/readings/2411.04990.md` §8 said `core/ln_frame.py`'s Gram *is* the paper's `⟨Qx, Ky⟩`
   geometry. It is `LN(x)·LN(y)`: no `W_Q`, `W_K`, and in Pythia rotary makes `⟨Qx_i, Kx_j⟩`
@@ -1361,6 +1370,11 @@ It now follows `<session>/subagents/` and splits context by model.
 required (the `ln_from` merge) was made; the change edits a file the gate's code stamp hashes,
 so the run was killed a few minutes in and relaunched. Before a stamped run: make every change the
 unit owes to a hashed file first, then launch.
+2026-10-18 (the user's check-in): `STATE.md` at 149 lines and 46 kB, so the start hook's output was
+persisted to a file and read again; the 2026-10-01 fix (a byte cap) was never built. Over the cost
+log, context re-read is 1.54B tokens against 7.6M of tool output (200×; 127k per call on average
+from 2026-10-13, read from `docs/cost_log.md`). The byte cap and a
+per-read attribution in `tools/session_cost.py` are now `docs/ROADMAP.md` §5 rows.
 
 ## 10. Tangents: interesting findings that hijack the plan
 
