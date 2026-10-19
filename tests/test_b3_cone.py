@@ -91,3 +91,23 @@ def test_g4_draws_layer8_non_members_and_d_range():
 def test_floored_replaces_and_counts():
     s, b = bc.floored(np.array([[0.0, 1e-3, 1.0]]), np.array([1e-3]), 0.5)
     assert np.allclose(s, [[2e-3, 2e-3, 2.0]]) and b.tolist() == [[True, True, False]]
+
+
+def test_l6_configs_single_heads_of_layer_6_and_all_together():
+    from trackB_circuit import b3_cone_l6 as l6
+    cf = l6.configs()
+    assert cf[0] == {"name": "none"} and len(cf) == 1 + bc.N_HEADS + 1
+    singles = cf[1:-1]
+    assert [c["name"] for c in singles] == [f"L6H{h}" for h in range(bc.N_HEADS)]
+    assert all(len(c["ablate"]) == 1 and c["ablate"][0] // bc.N_HEADS == 6 for c in singles)
+    assert sorted(cf[-1]["ablate"]) == [6 * bc.N_HEADS + h for h in range(bc.N_HEADS)]
+    assert l6.LAYER > bc.SITE and l6.READ_MID == l6.LAYER + 1
+
+
+def test_l6_sides_are_log_ratios_two_sides():
+    from trackB_circuit import b3_cone_l6 as l6
+    g = np.random.default_rng(0)
+    sig = g.uniform(0.1, 2.0, (3, bc.N_J, 130))
+    J = np.stack([bc.positions(s) for s in range(3)])
+    num, den = l6.sides(sig, J)
+    assert np.allclose(np.log(num) - np.log(den), bc.log_ratio(sig, J, bc.PARTNER))
