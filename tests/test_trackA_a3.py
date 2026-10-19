@@ -54,6 +54,34 @@ def test_lr_anchor_is_1000_and_d4a():
     assert a3.d4a(v)["step"] == 512
 
 
+def test_synthetic_spread_matches_the_rows_own():
+    """The gate's noise has the real row's per-step spread, in the statistic's units."""
+    rng = np.random.default_rng(1)
+    n, S = 35, len(STEPS)
+    tau = np.geomspace(1e-6, 1e-2, S); tau[0] = 0
+    w = rng.integers(400, 3000, size=(n, 1)).astype(float)
+    score = rng.standard_normal((n, S)) * tau + 0.004
+    pooled = np.stack([score * w, np.broadcast_to(w, (n, S))], axis=-1)
+    for units, name in ((score[..., None], "mean"), (pooled, "pooled")):
+        real = a3.unit_scores(units, name)
+        want = np.std(real - real[:, :1], axis=0, ddof=1)
+        syn = a3._synthetic(units, "up", name, rng, 4000)
+        got = np.std(a3.unit_scores(syn.reshape((-1,) + syn.shape[2:]), name)
+                     .reshape(4000, n, S), axis=(0, 1))
+        assert np.allclose(got[1:], want[1:], rtol=0.05)
+
+
+def test_gate_with_constant_noise_passes_like_the_calibration(monkeypatch):
+    """With one noise size at every step the gate passes, as a3_locator.py's iid model does."""
+    monkeypatch.setattr(a3, "N_GATE", 200)
+    monkeypatch.setattr(a3, "N_BOOT", 200)
+    rng = np.random.default_rng(2)
+    u = rng.standard_normal((7, len(STEPS), 1))
+    g = a3.gate_row("E4", u, rng)
+    assert g["null_no_change"] >= 0.95
+    assert min(e["placed_right"] for e in g["effect"]) >= 0.85
+
+
 def test_bootstrap_se_of_mean_delta():
     rng = np.random.default_rng(0)
     u = np.zeros((400, len(STEPS), 1)); u[:, 5, 0] = rng.standard_normal(400)

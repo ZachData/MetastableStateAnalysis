@@ -29,7 +29,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-19 · body `3a3938ebe9`
+- **Reviewed:** 2026-10-19 · body `55038cb2bf`
 <!-- /phase-card -->
 
 ## Units
@@ -61,11 +61,13 @@ A3: 5 units plus a close-out, frozen (`design-A3.md` "Exit condition and budget"
 
 Design frozen as revised (Blocked 70 (ii) (a), the user's; 70 (i) confirmed: no seed download
 before A5 registers). `trackA_force/a3.py` builds E1–E5 and E10 on the 18 steps, gates the §4
-locator at each floored row's own design, then locates. CPU, 205 s (numpy bootstraps; no forward
-pass). **Input:** code `4e8df8b7defc`, prompts hash `976b62d677bc` (7 v1), `colocation_panel.csv`
+locator at each floored row's own design, then locates. CPU, 200 s (numpy bootstraps; no forward
+pass). **Input:** code `dd7edc6bdcdb` (after `/challenge-pr` on #233: E2's check added, E3's gate
+noise in per-pair units; first run `4e8df8b7defc`, records `2026-10-19-unit2/`, same readings),
+prompts hash `976b62d677bc` (7 v1), `colocation_panel.csv`
 `a9d2604f4789`, `ov_per_head_series.json` `bfc59df7d28a`, `behavioural_series.json`
 `0eb229010c2c`, the 126 stored `attentions.npz` (`a1a.RUNS`); seed 20261019, 1000 bootstraps,
-1000 gate series per arm. Records `data/trackA/a3/2026-10-19-unit2/` (main tree).
+1000 gate series per arm. Records `data/trackA/a3/2026-10-19-unit2b/` (main tree).
 
 **Reproduced first (or the run refuses), all pass:** E1's per-prompt nViolRel sum to the panel's
 at every step (plateau median 57, as `design-A5.md` D4 (a)); E5's mean MinRank equals the
@@ -78,7 +80,7 @@ move a logistic (0.25 octave) at 9 × the mean null σ at the step past the gap'
 | row | units | null "no change" (≥ 0.95) | placed right (≥ 0.90), gaps 2–4 … 2000–4000 | arm |
 |---|---|---|---|---|
 | E2 | 384 heads, median | 1.000 | .00 .01 .02 .03 .05 .06 .27 .90 .95 .99 1.00 | **fail** |
-| E3 | 35 (prompt, member), pooled | 0.998 | .00 .02 .05 .06 .09 .08 .17 .29 .19 .98 1.00 | **fail** |
+| E3 | 35 (prompt, member), pooled | 0.998 | .00 .03 .04 .04 .06 .05 .28 .29 .24 .94 1.00 | **fail** |
 | E4 | 7 prompts, mean | 0.980 | .00 .01 .03 .03 .04 .03 .08 1.00 .87 .90 .96 | **fail** |
 | E5 | 7 prompts, mean | 0.965 | .00 .27 .38 .36 .57 .60 .89 .95 1.00 1.00 .98 | **fail** |
 
@@ -93,12 +95,15 @@ do not have. Late τ_s is mostly the units' real heterogeneity in the move, not 
 centroids are in `a3_rows.json`, beside and not read. No pair is read (unit 5).
 
 **Caveats.** (1) "9σ at the step past the centre" was this unit's reading of §4's "the logistic
-above at 9σ"; the design does not say which step's σ. Read as σ at the reference step (where a
-planted plateau's max falls, usually late), the amplitude is larger; that reading was found after
-the failure, so it is the user's (Blocked 71), not a fix. (2) σ is the bootstrap SE of Δ, √2
+above at 9σ". §4 defines σ once, as the SE of Δ *at the reference step* (#233 finding 3), so
+that reading is the frozen text's literal one; under it the arm passes nearly by construction and
+restates the low-power mark. It is the user's (Blocked 71 (a)), not applied here. (2) σ is the bootstrap SE of Δ, √2
 the per-step noise `a3_locator.py` states its floor in, so the floor as built is the stricter
 reading; the null arms (0.965–1.000) show it. (3) Step 0 carries no noise in the gate's model,
-so its Δs are independent across steps (a conservative null).
+so its Δs are independent across steps (a conservative null). (4) E2 is not Gaussian: more
+than half the heads sit at exactly 0 at 1000 and 2000 (62 %, 65 %; 43 % at 4000), so its median's bootstrap SE there is set
+by the point mass, and the Gaussian null does not model it. (5) A row whose window maximum is
+at 4000 has its half-point set by the window's cut (#233 finding 4; Blocked 71 (ii)).
 
 **Re-run:** `METS_DATA=<main tree>/data python -m trackA_force.a3 run --out
 data/trackA/a3/<dir>` (the attention pass is cached in `attn_rows.json`); `report --out` reprints.

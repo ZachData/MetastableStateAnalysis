@@ -74,6 +74,7 @@ GATE_EFFECT = 0.90
 WIDTH = 0.25         # placed: logistic scale, octaves
 WARMUP, TOTAL, LR_MIN = 1430, 143000, 0.1
 SEED = 20261019
+E2_REPRO = {0: 0.504, 512: 0.094}   # PROJECT.md §3.12 A, design-A3 §3 (ii)
 X = np.log2(np.maximum(np.asarray(STEPS, float), 1.0)); X[0] = -1.0   # as a3_locator.py
 
 
@@ -226,6 +227,10 @@ def row_e2() -> np.ndarray:
     keys = [f"{l},{h}" for l in range(o["n_blocks"]) for h in range(o["n_heads"])]
     u = np.array([[o["per_head"][k]["attractive_energy_fraction_core"][c] for c in cols]
                   for k in keys])
+    med = np.median(u, axis=0)
+    for s, want in E2_REPRO.items():                  # §3.12 A's published medians
+        if round(float(med[STEPS.index(s)]), 3) != want:
+            raise A3Refused(f"E2: median at {s} is {med[STEPS.index(s)]:.4f}, §3.12 A has {want}")
     return u[..., None]
 
 
@@ -285,10 +290,17 @@ ROWS = {  # id: (row, direction, statistic, σ over)
 
 # ---------------------------------------------------------------- the gate
 
+def unit_scores(units: np.ndarray, stat_name: str) -> np.ndarray:
+    """(n_units, S) in the statistic's own units: per-pair means for the pooled row."""
+    if stat_name == "pooled":
+        return units[..., 0] / units[..., 1]
+    return units[..., 0]
+
+
 def _synthetic(units: np.ndarray, direction: str, stat_name: str, rng, n: int,
                amp_shape: Optional[np.ndarray] = None) -> np.ndarray:
     """(n, n_units, S, k) flat noise at the row's per-step spread, plus a planted shape."""
-    real = units[..., 0]
+    real = unit_scores(units, stat_name)
     tau = np.std(real - real[:, :1], axis=0, ddof=1)             # (S,), tau[0] = 0
     z = rng.standard_normal((n,) + real.shape) * tau
     if amp_shape is not None:
