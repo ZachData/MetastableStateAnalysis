@@ -14,8 +14,8 @@ gate → what that gate is worth. It is the file to read when the question is
 
 ## Where the evidence stands
 
-- **39** registered predictions across **6** phases and **5** claims.
-- **11** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
+- **40** registered predictions across **7** phases and **5** claims.
+- **12** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
 - **19** are dormant — pre-registered, falsifier intact, instrument archived.
 - **0 have been adjudicated.** Every E below is 1 and every decision is "not adjudicated". The apparatus is built; no p-value against a real artifact exists yet.
 
@@ -26,6 +26,7 @@ gate → what that gate is worth. It is the file to read when the question is
 | `1` | 3 | 2 | 2 | 0 | `H-EMERGE`, `H-RESIST`, `H-TRANSFER` |
 | `6` | 12 | 4 | 2 | 0 | `H-OPERATOR` |
 | `7` | 9 | 4 | 4 | 0 | `H-BRIDGE` |
+| `A` | 1 | 1 | 1 | 0 | `H-RESIST` |
 | `1c` | 4 | 1 | 1 | 0 | `H-RESIST` |
 | `2d` | 2 | 2 | 2 | 0 | `H-OPERATOR` |
 | `5b` | 9 | 2 | 0 | 0 | `H-BRIDGE` |
@@ -83,6 +84,12 @@ null that was tried and found invalid, kept visible rather than dropped.
 | 7-steering | `P-ST1` | `H-BRIDGE` | e-value | active | `p7_motifs.steering_gate:p_value_p_st1` | `claims/audits/p_st1_dry_run.json` | — | Sign contrast of the effective-rank change between two matched-norm steering arms, built 2026-08-25 in p7_motifs/steering_gate.py and fixed BEFORE an… |
 | qk-symmetry-sweep | `P-I7` | `H-BRIDGE` | needs-null | active | — | — | — | DESIGN FIXED HERE; THE NULL ITSELF IS TO BE BUILT AND CALIBRATED IN THE CHUNK, which is why this registers as needs-null rather than claiming an e-va… |
 
+### Phase A — `trackA_force/`
+
+| experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
+|---|---|---|---|---|---|---|---|---|
+| A5 | `P-A5` | `H-RESIST` | e-value | active | `trackA_force.a5_seeds:p_value_p_a5` | `claims/audits/p_a5_dry_run.json` | — | Exact binomial over seeds: K ~ Bin(9, 1/6) under H0 (D6 (b): the step uniform over the 12 non-zero grid steps up to 4000, of which 2 are inside), p =… |
+
 ### Phase 1c — `p1c_frames/`
 
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
@@ -132,6 +139,7 @@ behaviour of the construction (`claims/calibration/`).
 | `P-AB1` | `7` · 7-patching | `H-BRIDGE` | **none** | patching_exponent.json | — | — | not adjudicated |
 | `P-I1` | `7` · 7-A | `H-BRIDGE` | claim_b_p_i1_dry_run.json | — | — | — | not adjudicated |
 | `P-I3` | `7` · 7-C | `H-BRIDGE` | **none** | cross_head_association.json | — | — | not adjudicated |
+| `P-A5` | `A` · A5 | `H-RESIST` | p_a5_dry_run.json | — | — | — | not adjudicated |
 
 ## Per claim
 
@@ -141,7 +149,7 @@ behaviour of the construction (`claims/calibration/`).
 | `H-BUDGET` | **none** | 0 | 0 | 1 | not adjudicated |
 | `H-EMERGE` | `1` | 1 | 1 | 1 | not adjudicated |
 | `H-OPERATOR` | `6`, `2d` | 14 | 4 | 1 | not adjudicated |
-| `H-RESIST` | `1`, `1c` | 5 | 1 | 1 | not adjudicated |
+| `H-RESIST` | `1`, `A`, `1c` | 6 | 2 | 1 | not adjudicated |
 | `H-TRANSFER` | `1` | 1 | 1 | 1 | not adjudicated |
 
 ## Gaps
@@ -160,6 +168,7 @@ would otherwise have to reconstruct from five files.
 | `5` | `p5_single_mstate_analysis/` | archived 2026-08-22; six code-level blockers, no falsifier registered. |
 | `8` | `p8_scale_ladder/` | UNEXPLAINED — active phase, see the section below. |
 | `9` | `p9_metric_intervention/` | parked, pre-design and deliberately unregistered. `plan-9.md` §13 states it: no construction frozen, no `P-*` id. Nothing has run under its name; its E0 ran as Phase 10's F1. |
+| `B` | `trackB_circuit/` | Track B, the circuit side; tier 1 on 410m, an exploration rung, and deliberately unregistered: B0–B3 closed with readings, no `P-*` id (`trackB_circuit/status-B.md`). |
 | `10` | `p10_cluster_function/` | pre-design and deliberately unregistered. `notes-10.md` §13 states it: no construction frozen, no `P-*` id, `claims/registry.json` untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their records under `data/analysis/` are tier 1, exploratory, and not quotable as adjudications. |
 | `1b` | `p1b_hemisphere/` | hemisphere geometry; its findings feed P-H1 and CLAIM-A rather than carrying a falsifier of their own. |
 | `1d` | `p1d_cluster_ensemble/` | code restored 2026-09-25 from its tag after a 2026-09-23 deletion; `P-C1`–`P-C4` written, never registered, and cannot be scored blind on the v1 runs already seen. `p1d_cluster_ensemble/status-1d.md`. |

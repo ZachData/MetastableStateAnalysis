@@ -85,3 +85,26 @@ def test_tie_break_untied_reports_dates_only():
 def test_break_share_is_against_plateau_median():
     br = _row("break", SEED0_V)
     assert a5.share(br, STEPS.index(256)) == pytest.approx(19 / 57)
+
+
+def test_record_margins_read_v_at_the_window_edges():
+    from trackA_force import a5_record
+    score = {"per_seed": {"1": {"plateau_median": 57.0}}, "notes": {"1": {"V": SEED0_V.tolist()}}}
+    assert a5_record.margins(score) == {"1": {"half": 28.5, "V128": 0.0, "V256": 19.0, "V512": 56.0}}
+
+
+def test_record_refuses_an_incomplete_seed(tmp_path):
+    from trackA_force import a5_record
+    (tmp_path / "records").mkdir()
+    (tmp_path / "records" / "step0_x.json").write_text("{}")
+    with pytest.raises(SystemExit, match="refusing"):
+        a5_record.seed_hashes(tmp_path)
+
+
+def test_record_refuses_a_seed_without_pinned_revisions(tmp_path):
+    from trackA_force import a5_record
+    refs = tmp_path / "hub" / "models--EleutherAI--pythia-410m-seed1" / "refs"
+    refs.mkdir(parents=True)
+    (refs / "step0").write_text("abc\n")
+    with pytest.raises(SystemExit, match="no cached ref"):
+        a5_record.revisions(tmp_path, 1)

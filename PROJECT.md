@@ -2895,6 +2895,23 @@ cheap and would resolve it.**
 
 ---
 
+## 3.62 The first registered prediction scored on held-out runs: `P-A5`, K = 9 of 9 (2026-10-20)
+
+**`trackA_force/status-A.md` "A5 units 2 and 3, the batch and the reading (2026-10-20)"** holds
+the numbers; this section says why it is project-wide.
+
+- `P-A5` was registered by the user (`c2eb9a7`) before any of the 9 PolyPythias 410m seeds'
+  intermediate steps was downloaded. It is the project's first prediction scored on data nobody
+  here had seen, and the first `e-value` entry with a real-run record.
+- Every seed's energy break is at 256 or 512 (K = 9; its E is against a uniform-location null, a
+  null nobody holds). Seed 0's date of the break is the recipe's, so C2 can quote it for 410m's
+  recipe and not just one run. All seeds share the LR warmup, so it does not say training rather
+  than the schedule sets it.
+- Not yet in the falsification ledger: writing the first adjudication record is the user's
+  (STATE Blocked 78). Written, it would put H-RESIST over 1/α on this one factor.
+
+---
+
 ## 3.61 Track A's A3 closed: on one timeline the energy break comes with the OV turn and after the n-gram minima, all inside the warmup (2026-10-20)
 
 **`trackA_force/status-A.md` "A3 on one page (closed 2026-10-20)"** holds the readings and what

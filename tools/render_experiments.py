@@ -97,6 +97,9 @@ PHASES_WITHOUT_PREDICTIONS = {
           "untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their "
           "records under `data/analysis/` are tier 1, exploratory, and not "
           "quotable as adjudications.",
+    "B": "Track B, the circuit side; tier 1 on 410m, an exploration rung, and "
+         "deliberately unregistered: B0–B3 closed with readings, no `P-*` id "
+         "(`trackB_circuit/status-B.md`).",
 }
 
 #: Which `claims/audits/*.json` is a known-answer dry run, as opposed to a
@@ -216,6 +219,14 @@ def _evidence_index() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
             for pid, gate_mod in gate_of.items():
                 if gate_mod in mods:
                     sink.setdefault(pid, set()).add(f.name)
+    # The entry's own `calibration_record` is declared evidence (check_registry
+    # keeps it tracked), so it counts whatever its prose says: a gate record
+    # written as plain data carries neither a marker nor a `.py` path.
+    for p in reg.get("predictions", []):
+        rec = p.get("calibration_record")
+        if rec and (ROOT / rec).exists():
+            sink = dry if Path(rec).parent == AUDITS.relative_to(ROOT) else calib
+            sink.setdefault(p["id"], set()).add(Path(rec).name)
     return dry, calib
 
 
@@ -226,12 +237,13 @@ def _phases_on_disk() -> dict[str, Path]:
         if not base.exists():
             continue
         for d in sorted(base.iterdir()):
-            if not d.is_dir() or not re.fullmatch(r"p[0-9]+[a-z]?_.*", d.name):
+            # Phases are `p<N>_*`; tracks (INDEX.md's A, B, ...) are `track<X>_*`.
+            if not d.is_dir() or not re.fullmatch(r"(?:p[0-9]+[a-z]?|track[A-Z])_.*", d.name):
                 continue
-            m = re.match(r"p([0-9]+[a-z]?)_", d.name)
+            m = re.match(r"(?:p([0-9]+[a-z]?)|track([A-Z]))_", d.name)
             if m and (list(d.glob("status-*.md")) or list(d.glob("design-*.md"))
                       or list(d.glob("math-*.md"))):
-                found.setdefault(m.group(1), d)
+                found.setdefault(m.group(1) or m.group(2), d)
     return found
 
 

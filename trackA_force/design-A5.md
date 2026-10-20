@@ -3,8 +3,10 @@
 
 **Status: text decided 2026-10-19 (Blocked 68, the user's: D1–D9 all as recommended, listed
 below); D10 decided (a) 2026-10-20 (Blocked 76, the user's). The calibration gate on seed 0 passes
-(A5's unit 1, 2026-10-20: `status-A.md` "A5 unit 1"). Not registered; no seed's intermediate step
-downloaded or read.** Next: the user registers ("Before it can be registered" 3; STATE Blocked 77).
+(A5's unit 1, 2026-10-20: `status-A.md` "A5 unit 1"). Registered 2026-10-20 by the user
+(`c2eb9a7`, relevance 0.6; Blocked 77 (a)) before any seed's intermediate step was downloaded;
+then scored: K = 9 of 9 (`status-A.md` "A5 units 2 and 3").** Next: the adjudication (STATE
+Blocked 78), then the close-out.
 Registering is the user's (`CLAUDE.md` "Literature scans and the registry"); this file proposes
 the text and lists the choices in it. ROADMAP §6 A5, §10.7 and §10.9. Scan: `lit-C2.md`.
 Numbers: `tools/math_checks/a5_seed_location.py` (3 checks pass), which owns every p and E below.
