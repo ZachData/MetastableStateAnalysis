@@ -1190,7 +1190,18 @@ needs the user to enable it on GitHub.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
-(`max_attainable_E`). Status: ✅ in the runners since §3.51; 📋 for new designs.
+(`max_attainable_E`). Status: ✅ in the runners since §3.51; for new designs, ✅ in part:
+`tools/design_preflight.py` (2026-10-20) takes a statistic's values on its nulls, the per-unit
+trained population at one step off the scored grid and a planted control at dose 0 and three
+doses. It reports the floor and the detection curve, read at the p one factor needs for E ≥ 1/α
+unless the design names its own level. It refuses on five of this lesson's shapes: a band
+nearly everything leaves, a control at its ceiling or reading an effect unplanted, a dose not
+past the null's mean, a floor below 1/α, and a largest dose seen < 80 %. Its tests replay B2's
+band, A2's control, B2's re-gate dose and `P-S1`'s 500 draws, and A3 unit 2's *shape* (not its
+cause). ⚠️ It does not check the others: calibration noise shaped unlike the data (A3 unit 2),
+a floor checked at its own level (A3 unit 2c), a bound shown on one planted case (B2a), a
+comparator's bias (E1m, E1p) (`/challenge-pr` on #242, finding 3). 📋 "A design cites its
+report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80).
 
 - 2026-10-09 (E1m, `/challenge-pr` on #177): a comparator built to give "a pull towards near tokens
   scores 0" was never shown to do so. Its test planted a nearest-8 pull and asserted |X| < 0.15,
