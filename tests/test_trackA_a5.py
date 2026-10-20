@@ -35,6 +35,19 @@ def test_inside_iff_planted_in_window():
         assert a5.inside(r) == (s in a5.WINDOW), s
 
 
+def test_k_counts_failed_seeds_outside():
+    per = {1: a5.break_reading(SEED0_V), 2: a5.break_reading(a5.shift(SEED0_V, 1)),
+           3: {"reading": "failed to load", "inside": False}}
+    assert a5.k_of(per) == 1
+
+
+def test_seed_records_from_another_run_refuse():
+    recs = {(s, "x"): {"seed": 2, "repo": a5.repo_for(2), "revision": f"step{s}", "code": "c"} for s in STEPS}
+    assert a5.check_seed_records(recs, 2) == ["c"]
+    with pytest.raises(a5.A5Refused):
+        a5.check_seed_records(recs, 1)
+
+
 def test_gate_tail_and_e():
     g = a5.p_value_p_a5(7)
     assert abs(g["p"] - 9.387066250063505e-05) < 1e-15 and round(g["e"]) == 52

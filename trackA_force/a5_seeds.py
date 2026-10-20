@@ -61,7 +61,9 @@ TOKENIZER = ("EleutherAI/pythia-410m", "step143000")
 ENERGY_TOL = 1e-4                              # placed: per-layer |ΔE| / E against Phase 1's CPU run
 ATTN_TOL = 1e-4                                # placed: |Δ score| against A3's rows (stored attentions)
 A3_ROWS = "trackA/a3/2026-10-20-A3u5/a3_rows.json"
-N_NULL = 100_000
+AUDIT = "claims/audits/p_a5_dry_run.json"     # the gate's record, tracked (the registry's calibration_record)
+N_NULL = 20_000                                # each draw goes through break_reading and k_of
+TOP_N = 5                                      # D10's pick sensitivity, beside
 SEED = 20261020
 
 
@@ -182,7 +184,47 @@ def rows_for(recs: Dict[Tuple[int, str], dict], heads: Dict[str, Tuple[int, int]
 
 
 def d10(rows: Dict[str, dict]) -> List[dict]:
+    """A pair whose row is not located (e.g. a head that forms after 4000) has ``tie`` None:
+    it stays unordered, said so; a censored row is ordered and marked."""
     return [tie_break(rows["break"], rows["ind"]), tie_break(rows["prev"], rows["ind"])]
+
+
+def break_reading(v: np.ndarray) -> dict:
+    """The scored reading of one seed's V: D4 (a) and whether it is inside D5 (a)'s window."""
+    r = a3.d4a(v)
+    return {**r, "inside": inside(r)}
+
+
+def k_of(per_seed: Dict[int, dict]) -> int:
+    """K: seeds inside. A seed that failed to load carries inside False (D7 (a))."""
+    return int(sum(bool(r["inside"]) for r in per_seed.values()))
+
+
+def seed_reading(recs: Dict[Tuple[int, str], dict], rng: np.random.Generator) -> dict:
+    """Everything the entry reports for one seed: the scored break, and its notes (D10's heads,
+    dates, ties and shares; induction onset against the break; step-0 violations; E_3.5 beside)."""
+    v = series_v(recs)
+    sc = head_scores(recs)
+    picks = {k: pick(sc[k]) for k in ("prev", "ind")}
+    rows = rows_for(recs, {k: (p["L"], p["h"]) for k, p in picks.items()}, rng)
+    b, i = rows["break"].get("step"), rows["ind"].get("step")
+    onset = (None if b is None or i is None else "before" if i < b else "same" if i == b else "after")
+    keep = ("head", "reading", "step", "ref_step", "ref_over_sigma", "censored", "plateau_median")
+    v35 = series_v(recs, key="e35")
+    return {"break": break_reading(v), "V": v.tolist(), "violations_step0": float(v[0]),
+            "d10": {"picks": picks, "rows": {k: {f: r.get(f) for f in keep} for k, r in rows.items()},
+                    "pairs": d10(rows)},
+            "induction_vs_break": onset,
+            "beside_ln1_b35": {"V": v35.tolist(), "break": a3.d4a(v35)}}
+
+
+def check_seed_records(recs: Dict[Tuple[int, str], dict], seed: int) -> List[str]:
+    """Refuse records that are not this seed's; return the code hashes they carry."""
+    bad = [f"{s}|{p}" for (s, p), r in recs.items() if r["seed"] != seed or r["repo"] != repo_for(seed)
+           or r["revision"] != f"step{s}"]
+    if bad:
+        raise A5Refused(f"seed {seed}: records from another run: {bad[:3]}")
+    return sorted({r["code"] for r in recs.values()})
 
 
 # ---------------------------------------------------------------- records
@@ -218,6 +260,17 @@ def check_populated(rec: dict) -> None:
         bad.append(f"ind {ind.shape}, n_ind {rec['n_ind']}")
     if bad:
         raise A5Refused(f"step {rec['step']} {rec['prompt']}: not populated: {', '.join(bad)}")
+
+
+def revision_absent(repo: str, step: int) -> bool:
+    """True only if the hub answers and ``step{step}`` is not among the repo's branches."""
+    from huggingface_hub import HfApi
+    return f"step{step}" not in {b.name for b in HfApi().list_repo_refs(repo).branches}
+
+
+def load_failed(out: Path, step: int, why: str) -> None:
+    (out / f"load_failed_step{step}.json").write_text(json.dumps({"step": step, "why": why}) + "\n")
+    print(f"step {step}: the checkpoint fails to load (counts as outside): {why}", flush=True)
 
 
 def one_pass(model, tok, prompt: str, ln: Dict, device) -> dict:
@@ -288,12 +341,21 @@ def run(a) -> int:
         try:
             model = from_pretrained_eager(GPTNeoXForCausalLM, repo, revision=f"step{step}",
                                           torch_dtype=torch.float32).to(device).eval()
-        except Exception as e:                     # D7 (a): a seed that fails to load counts as outside
-            (out / f"load_failed_step{step}.txt").write_text(f"{type(e).__name__}: {e}\n")
-            print(f"step {step}: load failed: {e}", flush=True)
+        except Exception as e:
+            # D7 (a) counts a seed that fails to load as outside. Only the checkpoint's own
+            # failure counts: its revision absent from the repo. Offline, a network drop, a full
+            # disk or an OOM is ours, and refuses instead of lowering K.
+            if not a.allow_download or not revision_absent(repo, step):
+                raise A5Refused(f"step {step}: load failed ({type(e).__name__}: {e}); not the "
+                                f"checkpoint's own failure, so not counted") from e
+            load_failed(out, step, f"revision step{step} absent from {repo}'s refs ({e})")
             continue
         if next(model.parameters()).dtype != torch.float32:
             raise A5Refused(f"step {step}: weights are not float32")
+        if not all(bool(torch.isfinite(p).all()) for p in model.parameters()):
+            load_failed(out, step, "non-finite weights")
+            del model
+            continue
         ln = {"w": [l.input_layernorm.weight.detach().double().cpu().numpy() for l in model.gpt_neox.layers],
               "b": [l.input_layernorm.bias.detach().double().cpu().numpy() for l in model.gpt_neox.layers],
               "eps": float(model.gpt_neox.layers[0].input_layernorm.eps)}
@@ -355,17 +417,20 @@ def planted_effect(v: np.ndarray) -> dict:
 
 
 def planted_null(v: np.ndarray, rng: np.random.Generator) -> dict:
-    """Seed 0's series moved so its half-rise sits at each of the null's 12 steps; then K over 9
-    series with the step drawn from h0, against Bin(9, 1/6). Checks the code, not the null."""
+    """Seed 0's series moved so its half-rise sits at each of the null's 12 steps (the check:
+    inside exactly at 256 and 512); then K over 9 such series with the step drawn from h0, each
+    through `break_reading` and `k_of` as `score` reads them. Given the table, Bin(9, 1/6)
+    follows by construction, so the draws check the counting path, not the null."""
     i0 = STEPS.index(512)
     table = []
     for s in NULL_STEPS:
-        r = a3.d4a(shift(v, STEPS.index(s) - i0))
+        r = break_reading(shift(v, STEPS.index(s) - i0))
         table.append({"planted": s, "reads": r["step"], "plateau_median": r["plateau_median"],
-                      "inside": inside(r)})
+                      "inside": r["inside"]})
     exact = all(t["inside"] == (t["planted"] in WINDOW) for t in table)
-    ins = np.array([t["inside"] for t in table])
-    k = ins[rng.integers(0, len(NULL_STEPS), size=(N_NULL, 9))].sum(axis=1)
+    draws = rng.integers(0, len(NULL_STEPS), size=(N_NULL, 9))
+    k = np.array([k_of({j: break_reading(shift(v, STEPS.index(NULL_STEPS[t]) - i0))
+                        for j, t in enumerate(row)}) for row in draws])
     pmf = np.bincount(k, minlength=10) / N_NULL
     want = np.array([math.comb(9, j) * P0 ** j * (1 - P0) ** (9 - j) for j in range(10)])
     se = np.sqrt(want * (1 - want) / N_NULL)
@@ -384,19 +449,40 @@ def sensitivity(recs: Dict[Tuple[int, str], dict]) -> dict:
             "leave_one_out": {k: {"step": r["step"], "plateau_median": r["plateau_median"]} for k, r in lopo.items()}}
 
 
-def d10_known(recs: Dict[Tuple[int, str], dict], rng: np.random.Generator) -> dict:
-    """D10 (a) on seed 0: the rule's heads, their dates, the ties and shares; A3's heads beside."""
+def pick_sensitivity(recs: Dict[Tuple[int, str], dict], picks: Dict[str, dict], n: int = TOP_N) -> dict:
+    """Beside D10: the date and the previous-token–induction pair for each of the top n heads of
+    one kind, the other kind held at the rule's pick."""
     sc = head_scores(recs)
-    picks = {k: pick(sc[k]) for k in ("prev", "ind")}
-    rule = rows_for(recs, {k: (p["L"], p["h"]) for k, p in picks.items()}, rng)
+    out = {}
+    for kind in ("prev", "ind"):
+        rows_k = []
+        for j in np.argsort(-sc[kind].ravel(), kind="stable")[:n]:
+            L, h = divmod(int(j), sc[kind].shape[1])
+            heads = {k: (p["L"], p["h"]) for k, p in picks.items()}
+            heads[kind] = (L, h)
+            rows = rows_for(recs, heads, np.random.default_rng(SEED))
+            r, pair = rows[kind], d10(rows)[1]
+            rows_k.append({"head": f"L{L}H{h}", "score": float(sc[kind][L, h]), "step": r.get("step"),
+                           "ref_step": r.get("ref_step"), "censored": r.get("censored"),
+                           "tie": pair["tie"], "shares": pair.get("shares"), "further": pair.get("further")})
+        out[kind] = rows_k
+    return out
+
+
+def d10_known(recs: Dict[Tuple[int, str], dict], rng: np.random.Generator) -> dict:
+    """D10 (a) on seed 0 through `seed_reading`, as `score` reads a seed; the pick's sensitivity
+    and A3's heads beside."""
+    sr = seed_reading(recs, rng)
+    sc = head_scores(recs)
     a3h = rows_for(recs, {"prev": a3.PREV, "ind": a3.MEMBERS_P1[0]}, rng)
     keep = ("head", "reading", "step", "ref_step", "ref_over_sigma", "censored", "plateau_median")
-    return {"picks": picks,
+    return {**sr["d10"], "induction_vs_break": sr["induction_vs_break"],
             "a3_heads_rank": {"L5H2 (prev)": rank_of(sc["prev"], *a3.PREV),
                               **{f"L{L}H{h} (ind)": rank_of(sc["ind"], L, h) for L, h in a3.MEMBERS_P1}},
-            "rule": {"rows": {k: {f: r.get(f) for f in keep} for k, r in rule.items()}, "pairs": d10(rule)},
+            "pick_sensitivity": pick_sensitivity(recs, sr["d10"]["picks"]),
             "a3_heads_beside": {"rows": {k: {f: r.get(f) for f in keep} for k, r in a3h.items()},
-                                "pairs": d10(a3h)}}
+                                "pairs": d10(a3h)},
+            "seed_reading": {k: sr[k] for k in ("break", "violations_step0", "beside_ln1_b35")}}
 
 
 def gate(a) -> int:
@@ -405,12 +491,15 @@ def gate(a) -> int:
     rng = np.random.default_rng(SEED)
     ka = known_answer(recs)
     v = np.asarray(ka["V"])
-    res = {"code": code_sha(), "prompts_hash": prompts_hash(), "records": str(out),
+    res = {"code": code_sha(), "record_codes": check_seed_records(recs, 0), "prompts_hash": prompts_hash(),
+           "records": str(out.relative_to(DATA)) if out.is_relative_to(DATA) else str(out),
            "known_answer": ka, "planted_effect": planted_effect(v), "planted_null": planted_null(v, rng),
-           "sensitivity": sensitivity(recs), "d10": d10_known(recs, rng),
-           "beside": {"V_ln1_b35": series_v(recs, key="e35").tolist()}}
+           "sensitivity": sensitivity(recs), "d10": d10_known(recs, rng)}
     res["pass"] = all(res[k]["pass"] for k in ("known_answer", "planted_effect", "planted_null", "sensitivity"))
-    (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
+    text = json.dumps(res, indent=1) + "\n"
+    (out / "gate.json").write_text(text)
+    if a.audit:                                    # the registry's calibration_record, git-tracked
+        (REPO / AUDIT).write_text(text)
     print(json.dumps({k: (res[k]["pass"] if isinstance(res[k], dict) and "pass" in res[k] else res[k])
                       for k in ("known_answer", "planted_effect", "planted_null", "sensitivity", "pass")}))
     return 0 if res["pass"] else 1
@@ -427,18 +516,28 @@ def p_value_p_a5(k: int, n: int = 9) -> dict:
 
 
 def score(a) -> int:
+    """K over seeds 1–9 and every note. A seed counts as failed to load only where `run`
+    recorded the checkpoint's own failure; missing records without one refuse."""
     root = Path(a.out)
-    per = {}
+    rng = np.random.default_rng(SEED)
+    per, notes, codes = {}, {}, set()
     for seed in SEEDS[1:]:
         d = root / f"seed{seed}"
-        recs = load_records(d, need=False) if d.exists() else {}
-        if len(recs) < len(STEPS) * len(V1):
-            per[seed] = {"reading": "failed to load", "inside": False, "outlier": seed in OUTLIERS}
+        failed = sorted(d.glob("load_failed_step*.json")) if d.exists() else []
+        if failed:
+            per[seed] = {"reading": "failed to load", "inside": False, "outlier": seed in OUTLIERS,
+                         "why": [json.loads(f.read_text()) for f in failed]}
             continue
-        r = a3.d4a(series_v(recs))
-        per[seed] = {**r, "inside": inside(r), "outlier": seed in OUTLIERS}
-    g = p_value_p_a5(sum(r["inside"] for r in per.values()))
-    res = {"code": code_sha(), **g, "per_seed": per}
+        recs = load_records(d)                     # refuses on a missing record
+        codes.update(check_seed_records(recs, seed))
+        sr = seed_reading(recs, rng)
+        per[seed] = {**sr["break"], "outlier": seed in OUTLIERS}
+        notes[seed] = {k: v for k, v in sr.items() if k != "break"}
+    g = p_value_p_a5(k_of(per))
+    res = {"code": code_sha(), **g, "per_seed": per, "notes": notes,
+           "input_set": {"prompts_hash": prompts_hash(), "record_codes": sorted(codes),
+                         "seeds": list(SEEDS[1:]), "repos": [repo_for(s) for s in SEEDS[1:]],
+                         "revisions": [f"step{s}" for s in STEPS]}}
     (root / "score.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps(g))
     return 0
@@ -454,6 +553,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--allow-download", action="store_true")
     g = sub.add_parser("gate")
     g.add_argument("--out", required=True)
+    g.add_argument("--audit", action="store_true", help=f"also write {AUDIT}")
     s = sub.add_parser("score")
     s.add_argument("--out", required=True, help="the directory holding seed1 … seed9")
     a = ap.parse_args(argv)

@@ -36,7 +36,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-20 · body `e9d76a8881`
+- **Reviewed:** 2026-10-20 · body `8e05ad6077`
 <!-- /phase-card -->
 
 ## Units
@@ -81,8 +81,16 @@ nothing is registered and no seed is downloaded or read.
 **Input set:** `EleutherAI/pythia-410m` (seed 0), the 18 steps (`a1a.STEPS`), the 7 v1 prompts
 (hash `976b62d677bc`), truncation at 512 tokens, tokenizer `pythia-410m@step143000`; RTX 3080,
 float32, eager, TF32 off, offline (`HF_HUB_OFFLINE` unless `--allow-download`); code
-`0fc0d5871509` (`a5_seeds.py`, `a3.py`, `a1a.py`); 126 records and `gate.json` (sha256
-`a684e17cfb5b`) in `data/trackA/a5/2026-10-20-u1/seed0/` (main tree).
+`7ae0bff62ada` (`a5_seeds.py`, `a3.py`, `a1a.py`; revised after `/challenge-pr` on #239, all 126
+records re-run on it); records in `data/trackA/a5/2026-10-20-u1/seed0/` (main tree); the gate's
+record, tracked, is `claims/audits/p_a5_dry_run.json` (sha256 `bbc4b679ca2f`).
+
+**As built, after `/challenge-pr` on #239:** a seed counts as "fails to load" (D7 (a)) only when
+the checkpoint itself fails: its revision is absent from the repo's refs (checked online), or its
+weights are non-finite. Any other load error (offline, network, disk, GPU memory) refuses and
+counts nothing. `score` refuses missing records without such a record, and records from another
+seed or revision. `score` reports every note of the entry through `seed_reading`, the function
+the gate also runs on seed 0, so the hash registered is the one that reads the seeds.
 
 **The gate: every arm passes.**
 
@@ -90,7 +98,7 @@ float32, eager, TF32 off, offline (`HF_HUB_OFFLINE` unless `--allow-download`); 
 |---|---|---|
 | known answer | tokens against Phase 1's `tokens.txt`; per-layer E_1 against Phase 1's CPU `energies.json`; V on the 18 steps against the panel; D4 (a); A3's E4 and E3 series (from the stored attentions) | tokens equal in 126 of 126; max relative ΔE 1.5e-6 (tol 1e-4, placed); V equal at all 18 steps; plateau median 57, half-rise 512; E4 within 3e-8, E3 within 6e-9 (tol 1e-4, placed); 0 violations at step 0 |
 | planted effect | seed 0's V one grid step later | 1000, outside |
-| planted null | seed 0's V moved so that its half-rise sits at each of the 12 null steps; then 100,000 draws of 9 seeds from h0 | inside exactly when planted at 256 or 512 (12 of 12); K against Bin(9, 1/6): max \|z\| 2.4, P(K ≥ 7) 1.0e-4 against 9.4e-5 |
+| planted null | seed 0's V moved so that its half-rise sits at each of the 12 null steps; then 20,000 draws of 9 seeds from h0, each through `break_reading` and `k_of` as `score` counts | inside exactly when planted at 256 or 512 (12 of 12, the check); K against Bin(9, 1/6): max \|z\| 2.4, which follows from the table by construction and checks only the counting path |
 | sensitivity | half-rise at rel_tol 1e-4, 1e-3, 1e-2; leave one prompt out (7) | 512 in all 10 (plateau medians 61, 57, 29; 47–51 leaving one out) |
 
 - **Planted at 4000 reads 2000:** the plateau median then takes values from before the rise. It is
@@ -112,11 +120,12 @@ over the 384 heads.
 - previous-token–induction: 1000 and 1000, tied. The shares at 512 are 0.350 and 0.005 (LR schedule
   0.358), so previous-token is further along; neither row is censored. Beside, with A3's `L8H6`
   alone as the induction head: 0.350 and 0.014, the same order.
-- *Beside, from the same records after the gate:* the rule's pick sits on a near-tie (4 %), but
-  each of the top 5 induction heads at 143000 (`L7H1`, `L8H9`, `L8H7`, `L6H3`, `L8H6`) dates
-  1000, ties previous-token and is behind it at 512 (shares 0.005–0.124; `L6H3`'s reference is
-  at 4000, so it is censored). The top 3 previous-token heads date 1000; the 4th and 5th (`L21H2`,
-  `L1H10`) date 2000.
+- *Beside, in the gate's record (`pick_sensitivity`; first computed after the gate, then built in
+  after `/challenge-pr` on #239, finding 5):* the rule's pick sits on a near-tie (4 %), but each of
+  the top 5 induction heads at 143000 (`L7H1`, `L8H9`, `L8H7`, `L6H3`, `L8H6`) dates 1000, ties
+  previous-token and is behind it at 512 (`L6H3` censored). The top 3 previous-token heads date
+  1000 (`L3H1` censored); the 4th and 5th (`L21H2`, `L1H10`) date 2000. A seed whose induction
+  head is not located (e.g. it forms after 4000) leaves its pair unordered, and says so.
 - *Beside, not scored:* V for E_3.5 in the LN1 frame (D2 (b)) is 0 through 128, 9 at 256, 49 at
   512, plateau median 58, half-rise 512.
 
@@ -125,8 +134,9 @@ with E by `core.evalues.calibrate`: K = 3 gives E 1.18, K = 6 gives 14.8, K = 7 
 `tools/math_checks/a5_seed_location.py`).
 
 **Re-run:** `python -m trackA_force.a5_seeds run --seed 0 --out <dir>` (about 2 min on cached
-checkpoints), then `METS_DATA=<main tree>/data python -m trackA_force.a5_seeds gate --out <dir>`.
-Tests: `tests/test_trackA_a5.py` (10).
+checkpoints), then `METS_DATA=<main tree>/data python -m trackA_force.a5_seeds gate --out <dir>
+--audit`. Tests: `tests/test_trackA_a5.py` (12). `tools/check_registry.py` now accepts phase `A`
+(INDEX.md's Track A row).
 
 **Next:** registering `P-A5` (STATE Blocked 77, yours), then unit 2, the download (about 131 GB)
 and the batch.
