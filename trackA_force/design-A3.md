@@ -155,6 +155,40 @@ floor is **max(4, its own bound)**; the null arm and the power are taken at that
   5, 10, 20, 50, 100 are drawn beside.
 - D1's `W_V` half (beside in §2) is not built in unit 3; ΔW's stable rank is.
 
+**Placed before any unit 4 output (2026-10-20)** (§2's E6 and §5's corpus leave these open;
+Blocked 73, the user's, all (a), changes none of them):
+- *Corpus:* the Pile's validation split, `the-eye.eu`'s `val.jsonl.zst` as copied to
+  `mit-han-lab/pile-val-backup` (sha256 `264c875d8bbd…`, its LFS oid; all 22 subsets; held out of
+  Pythia's training). Documents in file order, each tokenized with 410m's tokenizer and followed
+  by `<|endoftext|>` (as Pythia trains). A document sharing any 13-token run with one of the 7 v1
+  prompts is dropped (count recorded).
+- *Scored set:* **64 blocks of 1024 tokens**, each its own forward pass from an empty context.
+  A block starts at a document's start and takes that document and its successors until it
+  holds 1024 tokens; the rest of its last document is discarded and the next block starts at the
+  next document. So no document is in two blocks (the blocks are the bootstrap's units) and a long
+  document does not fill many. *Table set:* the documents after the scored set's, in order,
+  until **2,000,000** tokens.
+- *Predictors:* unigram q_u, the table set's token frequencies (MLE; unseen tokens 0). Bigram
+  q_b(·|v), Witten–Bell interpolated with q_u: (c(v, ·) + T(v) q_u) / (c(v) + T(v)), T(v) the
+  number of distinct successors of v; q_u where c(v) = 0. Parameter-free.
+- *E6u, E6b:* KL(q ‖ p_model) in nats at every position of a block (q given that position's
+  token, against the model's next-token distribution), mean over the block's 1024 positions; the
+  row is the mean over the 64 blocks, σ over blocks. This direction because the model's softmax
+  has full support, so the KL is finite where the MLE n-gram has zeros; the other direction would
+  be set by the smoothing. Model float32 on the GPU, logits over 50,304 (q is 0 on the padding).
+  **Beside, not located:** the model's next-token loss on the scored set at each step, and the two
+  predictors' own (constants).
+- *Located* by §4's turning-point rule (the minimum over ≤ 4000; the floor on x(0) − x(min)); a
+  minimum at 4000 is **censored**, as for half-rise rows.
+- *Gate (§4's dip):* the null arm and the own floor as for every row, ref / σ taken by the
+  turning-point rule. The effect arm, per gap (i, i + 1) from 2–4 to 2000–4000: a logistic fall of
+  the amplitude centred in that gap and a rise of half of it centred in the next gap, both of
+  scale 0.25 octave, so the planted minimum is step i + 1, and placed right is located there.
+  Amplitude 9 × σ̄_ref, σ̄_ref as for half-rise rows; the power on the same grid.
+- *Checks before reading* (refuse on failure): at 143000 the model's loss on the scored set is
+  1.5–4 nats; at step 0, E6u is within 10 % of KL(q_u ‖ uniform over 50,304) (an untrained softmax
+  is near flat); no document is in both sets.
+
 ## 5. Fences
 
 - **No registration and no adjudication.** 410m is exploration; the v1 prompts only, so v2's 12
