@@ -118,7 +118,7 @@ close-out.
 | 5c frequency regression | free | only if a "what is in a cluster" claim is written (C1) |
 | Blocked 2 (`P-I5`'s target), Blocked 7 (which rung registers first) | the user's | both before Track B registers anything |
 | Blocked 3, 4, 12, 13 | the user's | independent; no work waits on them |
-| Design preflight tool (`LESSONS.md` 6; 2026-10-18) | 1 unit | given a statistic, run it on step 0, on matched random weights, on the trained population at one trained step and on a planted effect at three doses; report the attainable floor and the detection curve; refuse on "a band nearly everything leaves", "a control already at its ceiling", "a dose below the null's mean". A design after it cites its output before the freeze. Built before S1's design freezes |
+| Design preflight tool (`LESSONS.md` 6; 2026-10-18) | 1 unit | given a statistic, run it on step 0, on matched random weights, on the trained population at one trained step and on a planted effect at three doses; report the attainable floor and the detection curve; refuse on "a band nearly everything leaves", "a control already at its ceiling", "a dose below the null's mean". A design after it cites its output before the freeze. Built before S1's design freezes. **Done 2026-10-20:** `tools/design_preflight.py` (values in, a JSON report out, exit 1 on refusal; also refuses a floor below 1/α, a control reading an effect unplanted and a largest dose seen < 80 %); `tests/test_tools_design_preflight.py` replays B2's band, A2's control, B2's re-gate dose, `P-S1`'s 500 draws and A3's effect arm as known answers; `tools/math_checks/design_preflight_floor.py` (n ≥ 1599 draws for E ≥ 20). "A design cites its report before the freeze" as a `CLAUDE.md` rule is the user's (STATE Blocked 80) |
 | Alternatives at design time (2026-10-18) | per design | before a design freezes, a fresh-context pass lists five ways to answer its question, simplest first; the design says why it took its own (`/challenge-pr` does this only after the run) |
 | More than one null (2026-10-18) | per design | where several nulls exist, the design fixes how they combine before any is read: all must agree, or all are reported side by side. "One may fail and we still claim" is not a combination rule (it picks the null that passes) |
 | Pre-authorised fallbacks (2026-10-18) | per design | a design names its likely gate failures and the revision each gets ("if G2 fails by X, apply Y and re-gate"), so a planned revision runs in the same unit instead of ending it on a Blocked item; scope (a phase opened or closed, what counts as a claim, registration) still goes to the user. A `CLAUDE.md` rule, so the user's |
@@ -225,7 +225,7 @@ unit of the mechanism. Each S unit opens under §3 (scan, exit condition, unit b
 | S4 | a toy induction model (est. 3–4 units) | a 2-layer attention-only transformer (and one with MLPs) on an induction task, tied and untied, with and without repeated tokens in the data, every step saved, several seeds on the RTX 3080: a known circuit for S1–S3 and S5, and an energy curve across its training (does the break move when induction cannot form? the causal arm C2 lacks) | S1's atlas and the energy curve on it, with the circuit known |
 | S5 | the carve (est. 3 units) | on S4, then on 410m's induction set: ablate S1's subspaces across heads (not whole heads), keeping what the induction score needs, until a minimal set is left (parameter decomposition in spirit, on subspaces) | a minimal subspace set that keeps the induction score, or a recorded reason none is found |
 
-Order inside S: the preflight tool (§5) before S1's design freezes; S1, then S2 (C2 needs it);
+Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
 
 ## 8. Track C: write-ups
@@ -246,7 +246,7 @@ S4 can start beside S1; S3 and S5 after S1.
 | 3 | A1, A2 and B2, B3 interleaved (**A1 done 2026-10-15, 5 units; B2a added and done 2026-10-16, 4 units + close-out; A2 done 2026-10-17, 5 units + close-out; B2 done 2026-10-18, 3 units + close-out; B3 done 2026-10-19, 3 units + unit 2b + close-out**: 21 units against the 4–6 estimated; row 6's order taken 2026-10-19, Blocked 68) | 4–6 | each unit's own "done when" |
 | 4 | A3 (the joint timeline), B4, B5 (*superseded 2026-10-19 by row 6: B4, B5 after C2*) | 3–4 | — |
 | 5 | A5 (registration, generality), C1 / C2 (*superseded 2026-10-19 by row 6*) | — | §10.7 |
-| 6 | **Taken 2026-10-19 (§10.8, Blocked 68, the user's); proposed 2026-10-18:** C2's literature scan and A5's registration text (free; **both done**, the text decided 2026-10-19) → A3 (**closed 2026-10-20**, before A5's gate: #231 finding 4, the user's) → A5 on the seeds (**closed 2026-10-20**, adjudicated) → the preflight tool → S1 → S2 → C2's draft; S4 beside S1 as budget allows; S3, S5, B4–B6 after C2 | ~10–12 | C2's draft by mid-December |
+| 6 | **Taken 2026-10-19 (§10.8, Blocked 68, the user's); proposed 2026-10-18:** C2's literature scan and A5's registration text (free; **both done**, the text decided 2026-10-19) → A3 (**closed 2026-10-20**, before A5's gate: #231 finding 4, the user's) → A5 on the seeds (**closed 2026-10-20**, adjudicated) → the preflight tool (**built 2026-10-20**) → S1 → S2 → C2's draft; S4 beside S1 as budget allows; S3, S5, B4–B6 after C2 | ~10–12 | C2's draft by mid-December |
 
 **Trade-off to decide (§10.4).** The triage aimed C2 at arXiv in December. Putting Track B's
 first units before Track A's pushes that back. The order above puts B0–B1 first because the
@@ -283,8 +283,9 @@ proposed, not decided.
    (128, 512]"), the energy definition and its rule, registered before the seeds' intermediate
    steps are downloaded. This would also answer item 7 for A5 (a held-out set, not the 410m
    exploration rung). Registering is the user's (`CLAUDE.md`).
-10. **The §5 process items:** the preflight tool first (one unit, before S1 freezes);
-    pre-authorised fallbacks and the alternatives step as `CLAUDE.md` rules; the start-hook fix.
+10. **The §5 process items:** the preflight tool first (one unit, before S1 freezes; **built
+    2026-10-20**, its citation rule STATE Blocked 80); pre-authorised fallbacks and the
+    alternatives step as `CLAUDE.md` rules; the start-hook fix.
 
 ## 11. What each phase gives the plan
 

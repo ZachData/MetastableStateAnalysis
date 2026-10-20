@@ -1190,7 +1190,14 @@ needs the user to enable it on GitHub.
 
 **The rule now.** Compute the **attainable floor** (best possible p / max e)
 of a design before running it, and print it on every record
-(`max_attainable_E`). Status: ✅ in the runners since §3.51; 📋 for new designs.
+(`max_attainable_E`). Status: ✅ in the runners since §3.51; ✅ for new designs, the tool:
+`tools/design_preflight.py` (2026-10-20) takes a statistic's values on its nulls, the trained
+population at one trained step and a planted control at dose 0 and three doses, reports the
+floor and the detection curve, and refuses on this lesson's five shapes (a band nearly
+everything leaves, a control at its ceiling or reading an effect unplanted, a dose not past the
+null's mean, a floor below 1/α, a largest dose seen < 80 %); its tests replay B2's band, A2's
+control, B2's re-gate dose, `P-S1`'s 500 draws and A3's effect arm. 📋 "A design cites its
+report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80).
 
 - 2026-10-09 (E1m, `/challenge-pr` on #177): a comparator built to give "a pull towards near tokens
   scores 0" was never shown to do so. Its test planted a nearest-8 pull and asserted |X| < 0.15,
