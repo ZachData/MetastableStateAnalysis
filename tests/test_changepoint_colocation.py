@@ -870,7 +870,9 @@ class TestClaimBAdjudication:
                              alpha=0.05, adjudicate=True,
                              adjudications_dir=pathlib.Path(
                                  tempfile.mkdtemp()))
-        real = pathlib.Path(__file__).resolve().parents[1] / "claims" / "adjudications"
+        # The real ledger holds records since P-A5 (2026-10-20), so the check is
+        # CLAIM-B's own slot, not the directory.
+        real = pathlib.Path(__file__).resolve().parents[1] / "claims" / "adjudications" / "CLAIM-B.json"
         assert not real.exists(), (
             f"{real} exists after an adjudicating test; every call here must "
             f"pass an isolated adjudications_dir")

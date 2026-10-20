@@ -14,9 +14,7 @@ prose around it.
 
 ## Status
 
-**No prediction has been adjudicated.** The apparatus is built and the ledger
-is empty — which is the honest state, not an omission. Nothing in this project
-has yet produced a p-value against real artifacts.
+1 prediction(s) adjudicated across 1 claim(s).
 
 ## Per-claim evidence
 
@@ -25,7 +23,7 @@ has yet produced a p-value against real artifacts.
 | `H-BRIDGE` | 0 | 0 | 1 | not adjudicated |
 | `H-EMERGE` | 0 | 0 | 1 | not adjudicated |
 | `H-OPERATOR` | 0 | 0 | 1 | not adjudicated |
-| `H-RESIST` | 0 | 0 | 1 | not adjudicated |
+| `H-RESIST` | 1 | 7.37 | 1587 | reject_null (read with its notes, `H-RESIST` below) |
 | `H-TRANSFER` | 0 | 0 | 1 | not adjudicated |
 
 ### H-BRIDGE
@@ -88,7 +86,13 @@ has yet produced a p-value against real artifacts.
 
 6 registered · 2 adjudicable now · 0 dormant
 
-*No adjudications.*
+| # | prediction | p | e | running E | decision after |
+|---|---|---|---|---|---|
+| 1 | `P-A5` | 9.923e-08 | 1587 | 1587 | reject_null |
+
+- **`P-A5`, notes on record:** First ledger record (STATE Blocked 78 (a), the user's, 2026-10-20). A reproducibility check, not a test of mechanism (design-A5.md D9 (a)): E is against a uniform-location null nobody holds (D6 (b)), so a large E is cheap; relevance is the registry's floor (0.6); all 9 seeds share Pythia's LR warmup (to about step 1430), so K = 9 says the step is the recipe's, not whether it is training's or the schedule's. H-RESIST's reject_null after this record rests on this entry alone; every quote of that decision carries this line.
+
+The threshold is crossed (E ≥ 20).
 
 <details><summary>Registered but not adjudicable (4)</summary>
 

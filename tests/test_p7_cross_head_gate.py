@@ -580,13 +580,15 @@ class TestTheRegisteredMatchingKey:
         assert "is NOT what this p-value tests" in notes
         assert "dropped as unstraddleable" in notes
 
-    def test_the_real_adjudications_directory_is_not_created(self):
+    def test_the_real_ledger_holds_no_p_i3_record(self):
         """
         Asserted here rather than left to the call sites -- 6r added the same
-        test for CLAIM-B and this is the second construction to carry it.
+        test for CLAIM-B and this is the second construction to carry it. The
+        real ledger holds records since P-A5 (2026-10-20), so the check is
+        P-I3's own slot.
         """
         from tools.check_registry import ADJUDICATIONS
-        assert not ADJUDICATIONS.exists()
+        assert not (ADJUDICATIONS / "P-I3.json").exists()
 
 
 # ---------------------------------------------------------------------------

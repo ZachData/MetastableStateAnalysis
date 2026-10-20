@@ -692,9 +692,10 @@ class TestTheRegisteredExchangeableUnit(unittest.TestCase):
             self.assertEqual(sorted(p.name for p in Path(d).glob("*.json")),
                              ["P6-R2.json"])
 
-    def test_the_ledger_is_still_empty(self):
+    def test_the_ledger_holds_no_p6_record(self):
+        # The real ledger holds records since P-A5 (2026-10-20); these two slots stay empty.
         d = REPO / "claims" / "adjudications"
-        self.assertEqual(sorted(p.name for p in d.glob("*.json")), [])
+        self.assertEqual(sorted(p.name for p in d.glob("P6-R*.json")), [])
 
     @staticmethod
     def _tmp_dir():

@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "prediction_id": "P-A5",
+  "claim": "H-RESIST",
+  "statement": "In each of the 9 PolyPythias pythia-410m-seed{1..9} runs, the energy break (the first of the 18 grid steps at which the layer-monotonicity violations of E_1, summed over the 7 v1 prompts, reach half their median over steps 1000, 2000 and 4000) is step 256 or 512. Seeds 3 and 4, PolyPythias's named outliers, count and are flagged.",
+  "h0": "The break's step is the run's: across seeds it falls anywhere among the 12 non-zero grid steps up to 4000, each with probability 1/12, independently.",
+  "test_name": "exact one-sided binomial tail P(Bin(9, 1/6) >= K), K = seeds whose energy break is step 256 or 512 (trackA_force.a5_seeds:p_value_p_a5)",
+  "p_value": 9.92290301275212e-08,
+  "e_value": 1587.2693533234994,
+  "kappa": 0.5,
+  "alpha": 0.05,
+  "artifact_hashes": [
+    "36fcbad35abbbc3d66b88979dcc79b055eba85b7e2ef3c811928277e79ad6f6c",
+    "4b0a7392087d463ce3d900619380c6c744a71932977cf35f2f28e0a2c2ddc789",
+    "52b70415c57428ea11b11fd50d0d9b923d93e05f813aad226b6f252d24a290d6",
+    "77a33aea57125ee3a4410cd24912748da1438254929a487d39efda3b37ca738f",
+    "7d65e705a800fb4a28311e258adc362f765eafc1291713ff0e1897f698d625d3",
+    "84a26a82de48cf201538a492524d45524871672711f711987d3ec67e384df2ec",
+    "aa1905079da3f776d178776730311c202be67e0ecc8732a90618acfb18cad469",
+    "b9832cde5a1ca7332b8c6d2568ba677f33c45a0d66fc966352ff24f2b9eebd53",
+    "c5e838ef335b7dea66f667345376dbb1035fb3e4e552e03cc5bea696bd44ecfa"
+  ],
+  "run_manifest": {
+    "real_run_record": "claims/audits/p_a5_real_run.json",
+    "real_run_record_sha256": "e812fccb0d859a71ce8260b83068f54264b4b273d5866e4763f2930cab28d40f",
+    "producer": "trackA_force.a5_seeds score",
+    "code": "7ae0bff62ada",
+    "order": {
+      "registered_commit": "c2eb9a754c6a",
+      "registered_at": "2026-10-20T13:36:35-05:00",
+      "first_record_at": "2026-10-20T18:39:17+00:00",
+      "registered_first": true
+    },
+    "records": "trackA/a5/2026-10-20-u2",
+    "score_sha256": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
+    "rescored": "2026-10-20: score re-run from the 9 seeds' records (hashes equal to the audit's); K, p, E, per-seed readings identical"
+  },
+  "adjudicated_at": "2026-10-20T20:24:46.256260+00:00",
+  "claim_sequence_index": 1,
+  "claim_log_E_after": 7.369770430966302,
+  "claim_E_after": 1587.2693533234985,
+  "claim_decision_after": "reject_null",
+  "next_p_needed": 1.0,
+  "notes": "First ledger record (STATE Blocked 78 (a), the user's, 2026-10-20). A reproducibility check, not a test of mechanism (design-A5.md D9 (a)): E is against a uniform-location null nobody holds (D6 (b)), so a large E is cheap; relevance is the registry's floor (0.6); all 9 seeds share Pythia's LR warmup (to about step 1430), so K = 9 says the step is the recipe's, not whether it is training's or the schedule's. H-RESIST's reject_null after this record rests on this entry alone; every quote of that decision carries this line."
+}

@@ -267,6 +267,12 @@ def render() -> str:
                 and p.get("status", "active") == "active"
                 and float(p.get("relevance", 0)) >= r0)
 
+    # A decision is quoted with the notes its records carry (STATE Blocked 78 (a)).
+    def with_notes(decision: str, pids) -> str:
+        if any(records.get(pid, {}).get("notes") for pid in pids):
+            return decision + " (notes: `claims/FALSIFICATION.md`)"
+        return decision
+
     L: list[str] = []
     W = L.append
 
@@ -378,7 +384,7 @@ def render() -> str:
           f"`{p['claim']}` | {dr} | {cal} | "
           f"{_fmt(rec['p_value']) if rec else '—'} | "
           f"{_fmt(rec['e_value']) if rec else '—'} | "
-          f"{rec['claim_decision_after'] if rec else 'not adjudicated'} |")
+          f"{with_notes(rec['claim_decision_after'], [pid]) if rec else 'not adjudicated'} |")
     W("")
 
     # -- claim rollup -------------------------------------------------------
@@ -392,7 +398,8 @@ def render() -> str:
         proc = procs.get(claim)
         phases = sorted({p.get("phase", "?") for p in rows}, key=lambda s: (len(s), s))
         E = _fmt(proc.E) if proc else "1"
-        dec = (proc.decision() if proc and proc.adjudications else "not adjudicated")
+        dec = (with_notes(proc.decision(), [a.prediction_id for a in proc.adjudications])
+               if proc and proc.adjudications else "not adjudicated")
         W(f"| `{claim}` | {', '.join('`' + x + '`' for x in phases) or '**none**'} | "
           f"{len(rows)} | {sum(1 for p in rows if adjudicable(p))} | {E} | {dec} |")
     W("")
