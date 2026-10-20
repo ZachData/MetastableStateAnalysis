@@ -2908,6 +2908,9 @@ section says why it is project-wide.
   share the LR warmup. It is not evidence that trained weights resist the collapse dynamics.
   The record's notes say this, and the generated tables (`claims/FALSIFICATION.md`,
   `claims/EXPERIMENTS.md`) now print every decision with its record's notes, so no quote drops them.
+- Open (`/challenge-pr` on #241): nothing argues that H-RESIST's null implies `P-A5`'s, so the
+  factor's validity for the claim's product is not shown (`claims/CLAIMS.md` H-RESIST (i)); and
+  the crossing would take 7 factors at p = 1 to undo.
 - Taking it into the ledger, rather than holding it out after seeing K, was chosen because
   reclassifying an `e-value` entry after its data is the selective record the gate exists to stop.
 - The registry's `real_run_record` for `P-A5` is still null; setting it is the user's (STATE Blocked 79).

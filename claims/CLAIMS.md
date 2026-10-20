@@ -33,8 +33,23 @@ trained weights while staying close to monotone under random ones.
 **Null (H0-RESIST):** the observed departure from collapse is what the
 architecture and initialization give for free — training adds nothing.
 
-Instruments: `p1_mstate_tracking`, `p1b_hemisphere`, `p1c_frames`, `core/nulls.py`.
-Predictions: `P-γ1`, `P-γ2`, `P-H1`, `P-S1`, `CLAIM-A`.
+Instruments: `p1_mstate_tracking`, `p1b_hemisphere`, `p1c_frames`, `core/nulls.py`,
+`trackA_force/a5_seeds.py`.
+Predictions: `P-γ1`, `P-γ2`, `P-H1`, `P-S1`, `CLAIM-A`, `P-A5`.
+
+**`P-A5` was adjudicated on 2026-10-20 and is H-RESIST's only factor** (`PROJECT.md` §3.63;
+`claims/adjudications/P-A5.json`). Its E (1587) puts the claim over 1/α, so H-RESIST reads
+`reject_null` on a reproducibility check: is the energy break's step shared across the 9
+PolyPythias seeds? That is tested against a uniform-location null nobody holds. Two things
+are open, and every quote of the decision carries them:
+(i) **validity:** nothing here argues that H0-RESIST ("training adds nothing") implies
+`P-A5`'s h0 (the break's step uniform over the grid). If training adds nothing, each
+seed's counts stay at step 0's level (0 to 8 violations on these seeds). A zero plateau
+counts as outside. A small non-zero plateau puts the half-rise wherever the noise falls,
+and how often that lands in the window has not been measured. A count that rises for
+a reason other than training, such as the shared LR warmup, is a further gap.
+(ii) **reversibility:** at κ = 0.5 a factor at p = 1 halves E, so falling back below 20
+would take 7 such factors. H-RESIST has one other adjudicable entry (`P-S1`).
 
 **`P-S1` was run on inputs whose answer is known on 2026-08-27 and gained an
 `(m, d)` refusal** (`POPPER_PLAN.md` §6p, `claims/audits/p_s1_dry_run.json`).

@@ -38,7 +38,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-20 · body `d1ad64884f`
+- **Reviewed:** 2026-10-20 · body `414d8c16fb`
 <!-- /phase-card -->
 
 ## Units
@@ -117,6 +117,11 @@ of mechanism (D9 (a)).
 - Any mechanism, and any order inside the 512–1000 gap beyond D10's description.
 - Other rungs or recipes: 410m's PolyPythias seeds only.
 - That H-RESIST holds: its one factor is this check.
+- **That this factor is valid for H-RESIST's e-process** (`/challenge-pr` on #241, finding 2):
+  nothing argues that H0-RESIST ("training adds nothing") implies `P-A5`'s uniform-location h0.
+  Under it each seed's counts sit near step 0's (0–8 here), and how often a half-rise on such a
+  plateau lands in the window is unmeasured (`claims/CLAIMS.md` H-RESIST (i)). The crossing is
+  also hard to undo: 7 factors at p = 1 to fall back below 20.
 
 **Units at close:**
 

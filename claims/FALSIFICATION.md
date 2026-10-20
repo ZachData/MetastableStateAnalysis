@@ -92,7 +92,7 @@ prose around it.
 
 - **`P-A5`, notes on record:** First ledger record (STATE Blocked 78 (a), the user's, 2026-10-20). A reproducibility check, not a test of mechanism (design-A5.md D9 (a)): E is against a uniform-location null nobody holds (D6 (b)), so a large E is cheap; relevance is the registry's floor (0.6); all 9 seeds share Pythia's LR warmup (to about step 1430), so K = 9 says the step is the recipe's, not whether it is training's or the schedule's. H-RESIST's reject_null after this record rests on this entry alone; every quote of that decision carries this line.
 
-The threshold is crossed (E ≥ 20).
+The threshold is crossed (E ≥ 20). Falling back below it would take 7 further factors at p = 1 (each multiplies E by κ = 0.5).
 
 <details><summary>Registered but not adjudicable (4)</summary>
 

@@ -308,7 +308,8 @@ def render() -> str:
           "\"not adjudicated\". The apparatus is built; no p-value against a real "
           "artifact exists yet.")
     else:
-        W(f"- **{n_adjudicated}** have been adjudicated; see `claims/FALSIFICATION.md` "
+        W(f"- **{n_adjudicated}** {'has' if n_adjudicated == 1 else 'have'} been adjudicated; "
+          f"see `claims/FALSIFICATION.md` "
           f"for the running E.")
     W("")
 

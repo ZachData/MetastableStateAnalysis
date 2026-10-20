@@ -865,15 +865,17 @@ class TestClaimBAdjudication:
         behind it, so it is asserted rather than left to the call sites.
         """
         e, f, ctrl, dirs = self._ok()
+        # The real ledger holds records since P-A5 (2026-10-20), so the check is
+        # that the call leaves it byte-for-byte as it found it.
+        real = pathlib.Path(__file__).resolve().parents[1] / "claims" / "adjudications"
+        snapshot = lambda: {p.name: p.read_bytes() for p in real.glob("*.json")}
+        before = snapshot()
         C.adjudicate_claim_b(REGISTERED_SWEEP, e, f, ctrl, dirs,
                              control_family=C.CLAIM_B_ANCHOR_CONTROL_FAMILY,
                              alpha=0.05, adjudicate=True,
                              adjudications_dir=pathlib.Path(
                                  tempfile.mkdtemp()))
-        # The real ledger holds records since P-A5 (2026-10-20), so the check is
-        # CLAIM-B's own slot, not the directory.
-        real = pathlib.Path(__file__).resolve().parents[1] / "claims" / "adjudications" / "CLAIM-B.json"
-        assert not real.exists(), (
+        assert snapshot() == before, (
             f"{real} exists after an adjudicating test; every call here must "
             f"pass an isolated adjudications_dir")
 

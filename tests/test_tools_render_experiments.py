@@ -231,7 +231,9 @@ class TestDecisionsCarryTheirNotes:
         from core.adjudication import load_adjudications
         from tools import render_falsification as rf
         exp, fal = rx.render(), rf.render()
-        for r in (r for r in load_adjudications() if r.get("notes")):
+        noted = [r for r in load_adjudications() if r.get("notes")]
+        assert noted, "the ledger has held a noted record since P-A5; none read means a wrong path"
+        for r in noted:
             row = next(l for l in exp.splitlines() if l.startswith(f"| `{r['prediction_id']}` |"))
             assert "(notes: `claims/FALSIFICATION.md`)" in row
             assert f"- **`{r['prediction_id']}`, notes on record:** {r['notes']}" in fal

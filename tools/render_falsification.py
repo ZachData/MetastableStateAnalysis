@@ -135,7 +135,11 @@ def render() -> str:
                     W(f"- **`{a.prediction_id}`, notes on record:** {note}")
             W("")
             if proc.decision() == "reject_null":
-                W(f"The threshold is crossed (E ≥ {1.0 / alpha:.0f}).")
+                # How hard the crossing is to undo: a factor at p = 1 multiplies E by kappa.
+                kappa = float(reg.get("kappa", 0.5))
+                n_back = math.floor((proc.log_E - math.log(1.0 / alpha)) / -math.log(kappa)) + 1
+                W(f"The threshold is crossed (E ≥ {1.0 / alpha:.0f}). Falling back below it "
+                  f"would take {n_back} further factors at p = 1 (each multiplies E by κ = {kappa}).")
             else:
                 W(f"Next experiment on this claim must return "
                   f"**p < {_fmt(proc.next_p_needed())}** to cross the threshold.")

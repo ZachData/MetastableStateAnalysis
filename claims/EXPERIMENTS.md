@@ -17,7 +17,7 @@ gate → what that gate is worth. It is the file to read when the question is
 - **40** registered predictions across **7** phases and **5** claims.
 - **12** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
 - **19** are dormant — pre-registered, falsifier intact, instrument archived.
-- **1** have been adjudicated; see `claims/FALSIFICATION.md` for the running E.
+- **1** has been adjudicated; see `claims/FALSIFICATION.md` for the running E.
 
 ## Per phase
 
