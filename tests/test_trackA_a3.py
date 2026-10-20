@@ -288,3 +288,28 @@ def test_rows_ngram_reads_and_refuses(tmp_path):
         d = tmp_path / str(len(kw) + hash(str(kw)) % 1000); d.mkdir()
         with pytest.raises(a3.A3Refused):
             a3.rows_ngram(_ngram_dir(d, **kw))
+
+
+def test_overlap_check_equals_the_set_check():
+    """Unit 5's fast check is unit 4's ``ngrams(ids) & bad``, including on hash collisions'
+    confirmation (design-A3 §4 "Placed before any unit 5 output")."""
+    from trackA_force.a3_ngram import ngrams, overlap_check
+    rng = np.random.default_rng(14)
+    prompts = [rng.integers(0, 50, size=40).tolist() for _ in range(3)]
+    bad = set().union(*(ngrams(p, n=5) for p in prompts))
+    hit = overlap_check(bad, n=5)
+    for k in range(300):
+        d = rng.integers(0, 50, size=int(rng.integers(0, 60))).tolist()
+        if k % 3 == 0 and len(d) > 10:                     # plant a run from a prompt
+            p = prompts[k % 3]; a = int(rng.integers(0, 35))
+            d[3:8] = p[a:a + 5]
+        assert hit(d) == bool(ngrams(d, n=5) & bad)
+
+
+def test_tables_chunked_counts_every_pair_once():
+    from trackA_force import a3_ngram as ng
+    rng = np.random.default_rng(15)
+    table = rng.integers(0, 30, size=1001).astype(np.int32)
+    one, many = ng.tables(table, V=40), ng.tables(table, V=40, chunk=7)
+    assert (one["B"] != many["B"]).nnz == 0 and one["B"].sum() == len(table) - 1
+    assert np.array_equal(one["c"], many["c"]) and np.array_equal(one["T"], many["T"])
