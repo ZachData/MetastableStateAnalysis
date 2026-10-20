@@ -17,7 +17,7 @@ dropped the download half because `design-A5.md` registers before the seeds are 
   **aligned**, **misaligned** or **unread**, and the located steps are given as an order (ties
   at grid resolution), with the warmup named on each pair at or below 2000. Or a recorded
   reason the table cannot be made (e.g. the locator's gate fails).
-- **Budget: 5 units**, each its own PR, plus a close-out (writing only):
+- **Budget: 5 units** (6 on the record since Blocked 72 (i) (a), §4 "Revised 2026-10-19 (Blocked 72)"), each its own PR, plus a close-out (writing only):
   (1) this design and the scan; (2) the producer, the existing rows, the locator and its gate;
   (3) the weights-only rows and the simulator row; (4) the n-gram rows (M2);
   (5) the reading: table, figure, pairs, a page. At the budget A3 closes at what it knows.
@@ -131,6 +131,29 @@ fresh ones (≥ 95 %), replacing 4σ for that row; its power is, per gap, the le
 below its gap's power is **low power**,
 replacing the flat 9σ. (ii) A located row whose reference is at 4000 (still rising at the
 window's end) is marked **censored**, and its pairs are read with that mark (unit 5).
+
+**Revised 2026-10-19 (Blocked 72, the user's; unit 3).** (i) **(a)**: the budget is **6 units**
+on the record (the re-gate took one); unit 3 is the weights-only rows, the simulator row and E3,
+unit 4 the n-gram rows, unit 5 the reading, unit 6 spare. (ii) **(a)**: the frozen E3 (five
+members at offset 0) is **refused as defined**, because the 2026-10-18 correction that predates
+the freeze says it scores the wrong key. **E3 is re-defined** as the pooled attention of `L8H6` and
+`L11H14` (the two that correction names as induction heads at +1) at the standard pairs
+(`induction_candidates(strict=True)`: the key follows an earlier copy of the query's token),
+averaged over the two, with σ over the 14 (prompt, member) units, and it is gated before it is read.
+The offset-0 series is drawn beside, not read. (iii) **(a)**: from unit 3 on, every floored row's
+floor is **max(4, its own bound)**; the null arm and the power are taken at that floor.
+
+**Placed before any unit 3 output (2026-10-19)** (§2's rows leave these open):
+- *E7, E8:* located on the median over the four types of the per-type median over 24 layers, with
+  σ over layers (the same layers resampled for every type); per type drawn beside. E8's α is the
+  Clauset–Shalizi–Newman continuous power-law MLE on the eigenvalues of W Wᵀ, λ_min by least KS
+  distance over tails of at least 10 (as WeightWatcher); the weight, not the bias.
+- *E11:* the start is A1a's (`f_0(x_0)`, position 0 out, rebuilt from the stored activations and
+  checked against A1a's `g0`), β the prompt's bracket p50 (median over blocks 0–22 of the layer
+  β), the causal dynamics at dt 0.01 (checked by halving on one cell), and the count is read at
+  t = 200 (A1a's `T_MAX`). A cluster is a connected component of "cos ≥ 0.99". Counts at t = 1, 2,
+  5, 10, 20, 50, 100 are drawn beside.
+- D1's `W_V` half (beside in §2) is not built in unit 3; ΔW's stable rank is.
 
 ## 5. Fences
 

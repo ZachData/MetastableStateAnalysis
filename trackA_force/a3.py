@@ -1,5 +1,6 @@
-"""trackA_force/a3.py — A3 units 2–3: the producer, the existing rows, the locator and its gate
-(`design-A3.md` §2, §4; frozen 2026-10-19 as revised, Blocked 70 (ii) (a)).
+"""trackA_force/a3.py — A3 units 2–4: the producer, the rows, the locator and its gate
+(`design-A3.md` §2, §4; frozen 2026-10-19 as revised, Blocked 70 (ii) (a); unit 3 by Blocked 72,
+the user's: E3 at +1, the floor at max(4, the row's own), E7, E8, E11).
 
 Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one point):
 
@@ -8,15 +9,23 @@ Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one po
   1000–4000 plateau), not by §4. The per-prompt counts from each step's Phase 1 report must sum
   to the panel's.
 - **E2** OV: median over 384 heads of ``attractive_energy_fraction_core`` (down; σ over heads).
-- **E3** induction: the five typed members' pooled induction attention (``behavioural_series``'s
-  pair-count-weighted pool over the 7 prompts, averaged over members; up; σ over the 35
-  (prompt, member) units, each carrying its prompt's pair count). Must reproduce
+- **E3** induction, re-defined by Blocked 72 (ii) (a): the pooled attention of ``L8H6`` and
+  ``L11H14`` (the members the 2026-10-18 correction names as induction heads at the successor)
+  at the standard induction pairs (``induction_candidates(strict=True)``: the key follows an
+  earlier copy of the query's token), pair-count-weighted over the 7 prompts and averaged over
+  the two (up; σ over the 14 (prompt, member) units). *Beside, refused as defined:* the frozen E3
+  (five members at offset 0, ``strict=False``), which must still reproduce
   ``behavioural_series.json`` per member.
 - **E4** previous-token score of ``L5H2``: mean attention from query i to key i − 1, i ≥ 1
   (`p7d_redundancy.prev_token_profile`'s ``prev_all``), mean over prompts (up; σ over prompts).
   B1's records hold a signature, not this score, so it is read from ``attentions.npz``.
 - **E5** effective rank on the sphere (``MinRank``), mean over prompts (down; σ over prompts).
   Must reproduce the panel's ``p1_eff_rank_normed_mean``.
+- **E7** weight change ``‖W_t − W_0‖_F / ‖W_0‖_F`` and **E8** the ESD tail exponent α, per matrix
+  type and layer (`a3_weights.py`); located on the median over the four types of the median over
+  24 layers (up / down; σ over layers, the same layers resampled for every type).
+- **E11** the causal simulator's cluster count at t = 200 from the measured start at the prompt's
+  β (`a3_sim.py`), mean over prompts (down; σ over prompts).
 - **E10** the LR schedule (warmup to 1430, cosine to 0.1×), analytic, the confound row, located
   by §4 with no floor.
 
@@ -36,9 +45,10 @@ steps, a conservative null). As revised by Blocked 71 (the user's, 2026-10-19): 
 **floor** is the 95 % upper bound of the 95th percentile of ref / σ over ``N_GATE`` null series, and the *null* arm checks
 it on ``N_GATE`` fresh ones (≥ 95 % "no change"); the *effect* arm plants a logistic in log2(step)
 of scale 0.25 octave centred in each gap 2–4 … 2000–4000 at 9 × σ at the reference step (§4's σ,
-read literally: (i) (a)), placed there in ≥ 90 %; the row's **power** per gap is the least
-amplitude in ``AMPS`` reaching 90 % (line 102, re-derived), and a located row below it at its gap
-is **low power**. A located row whose reference is 4000 is marked **censored** ((ii)). *Anchors:*
+read literally: (i) (a)), placed there in ≥ 90 %; from unit 3 the floor used is max(4, that
+bound) (Blocked 72 (iii) (a)), and the null arm and the power are taken at the floor used; the
+row's **power** per gap is the least amplitude in ``AMPS`` reaching 90 % (line 102, re-derived),
+and a located row below it at its gap is **low power**. A located row whose reference is 4000 is marked **censored** ((ii)). *Anchors:*
 E1 at 512, E2 at 512, E10 at 1000. Turning-point rows are gated in unit 4 on E6's own σ.
 
 Beside, described and not read: `core.changepoint_colocation.change_profile`'s change-mass
@@ -46,8 +56,8 @@ centroid per row, flagged where it and the rule are ≥ 2 grid steps apart. No p
 (that is unit 5).
 
 Tier 1: exploratory, unregistered; v1 prompts only. CPU: numpy bootstraps over at most 384 units,
-minutes; no forward pass.
-    python -m trackA_force.a3 run --out <dir>
+minutes; no forward pass here (E7, E8 and E11 are read from their producers' records).
+    python -m trackA_force.a3 run --out <dir> --weights <a3_weights dir> --sim <a3_sim dir>
 """
 
 from __future__ import annotations
@@ -66,7 +76,8 @@ import numpy as np
 
 from .a1a import DATA, REPO, STEPS, V1, prompts_hash, run_dir
 
-MEMBERS = ((8, 6), (7, 8), (11, 14), (12, 5), (8, 9))  # L5H2's partners, design-A3 §2 E3
+MEMBERS = ((8, 6), (7, 8), (11, 14), (12, 5), (8, 9))  # L5H2's partners, design-A3 §2 E3 (frozen)
+MEMBERS_P1 = ((8, 6), (11, 14))   # E3 at +1, Blocked 72 (ii) (a): the 2026-10-18 correction's two
 PREV = (5, 2)
 WIN = tuple(i for i, s in enumerate(STEPS) if s <= 4000)      # indices 0..12
 FLOOR = 4.0          # calibrated (a3_locator.py: 3.93 for 95 %), in σ = SE of Δ
@@ -103,7 +114,13 @@ def stat_pooled(u):
     return u[..., 0].sum(axis=-2) / u[..., 1].sum(axis=-2)
 
 
-STATS: Dict[str, Callable] = {"mean": stat_mean, "median": stat_median, "pooled": stat_pooled}
+def stat_medmed(u):
+    """k = matrix types: the median over types of the median over units (layers)."""
+    return np.median(np.median(u, axis=-3), axis=-1)
+
+
+STATS: Dict[str, Callable] = {"mean": stat_mean, "median": stat_median, "pooled": stat_pooled,
+                              "medmed": stat_medmed}
 SIGN = {"up": 1.0, "down": -1.0}
 
 
@@ -253,11 +270,16 @@ def _attn_one(step: int, prompt: str, tokenizer) -> dict:
     d = run_dir(step, prompt)
     a = np.load(d / "attentions.npz")["attentions"]
     n = a.shape[-1]
-    pairs = induction_candidates(prompt_ids(tokenizer, prompt, n, d))
+    ids = prompt_ids(tokenizer, prompt, n, d)
+    pairs = induction_candidates(ids)
     q = np.array([p[0] for p in pairs]); k = np.array([p[1] for p in pairs])
+    p1 = induction_candidates(ids, strict=True)
+    q1 = np.array([p[0] for p in p1], int); k1 = np.array([p[1] for p in p1], int)
     i = np.arange(1, n)
     return {"member_sums": [float(a[l, h, q, k].astype(np.float64).sum()) for l, h in MEMBERS],
             "n_pairs": len(pairs),
+            "p1_sums": [float(a[l, h, q1, k1].astype(np.float64).sum()) for l, h in MEMBERS_P1],
+            "n_pairs_p1": len(p1),
             "prev": float(a[PREV[0], PREV[1], i, i - 1].astype(np.float64).mean())}
 
 
@@ -275,9 +297,12 @@ def rows_e3_e4(cache: Path) -> dict:
                 rec[f"{s}|{p}"] = _attn_one(s, p, tok)
             print(f"  attentions read: step {s}", flush=True)
         cache.write_text(json.dumps(rec) + "\n")
-    n = {p: {rec[f"{s}|{p}"]["n_pairs"] for s in STEPS} for p in V1}
-    if any(len(v) != 1 for v in n.values()):
-        raise A3Refused(f"E3: a prompt's induction pair count changes across steps: {n}")
+    for key in ("n_pairs", "n_pairs_p1"):
+        n = {p: {rec[f"{s}|{p}"][key] for s in STEPS} for p in V1}
+        if any(len(v) != 1 for v in n.values()):
+            raise A3Refused(f"E3: a prompt's {key} changes across steps: {n}")
+        if any(min(v) == 0 for v in n.values()):
+            raise A3Refused(f"E3: a prompt has no pairs ({key}): {n}")
     e3 = np.array([[[rec[f"{s}|{p}"]["member_sums"][m], rec[f"{s}|{p}"]["n_pairs"]]
                     for s in STEPS] for p in V1 for m in range(len(MEMBERS))])
     beh = json.loads((DATA / "analysis" / "behavioural_series.json").read_text())
@@ -289,39 +314,87 @@ def rows_e3_e4(cache: Path) -> dict:
         if not np.allclose(got, want, rtol=1e-5, atol=1e-9):
             raise A3Refused(f"E3: L{l}H{h}'s pool does not reproduce behavioural_series.json")
     e4 = np.array([[rec[f"{s}|{p}"]["prev"] for s in STEPS] for p in V1])[..., None]
-    return {"E3": e3, "E4": e4}
+    p1 = np.array([[[rec[f"{s}|{p}"]["p1_sums"][m], rec[f"{s}|{p}"]["n_pairs_p1"]]
+                    for s in STEPS] for p in V1 for m in range(len(MEMBERS_P1))])
+    return {"E3": p1, "E3_offset0": e3, "E4": e4}
+
+
+def rows_weights(wdir: Path) -> dict:
+    """E7, E8 units (24 layers, 18 steps, 4 types); the 32-step medians beside."""
+    from .a3_weights import ALL_STEPS, TYPES, load_steps
+    recs = load_steps(wdir)
+    codes = {r["code"] for r in recs.values()}
+    if len(codes) != 1:
+        raise A3Refused(f"weights rows: records from {len(codes)} codes {codes}")
+    out = {"code": codes.pop(), "dense": {}}
+    for rid, key in (("E7", "rel_change"), ("E8", "alpha")):
+        out[rid] = np.array([[recs[s][key][t] for s in STEPS] for t in TYPES]).transpose(2, 1, 0)
+        dense = np.array([[recs[s][key][t] for s in ALL_STEPS] for t in TYPES]).transpose(2, 1, 0)
+        out["dense"][rid] = {"steps": list(ALL_STEPS),
+                             "per_type": {t: np.median(dense[..., i], 0).tolist()
+                                          for i, t in enumerate(TYPES)},
+                             "row": stat_medmed(dense).tolist()}
+    sr = {t: [None if s == 0 else float(np.median(recs[s]["dW_stable_rank"][t])) for s in ALL_STEPS]
+          for t in TYPES}
+    out["dense"]["dW_stable_rank"] = {"steps": list(ALL_STEPS), "per_type": sr}
+    if not np.all(out["E7"][:, 0, :] == 0):
+        raise A3Refused("E7: the weight change at step 0 is not 0")
+    return out
+
+
+def rows_sim(sdir: Path) -> dict:
+    """E11 units (7 prompts, 18 steps, 1): the cluster count at T_FINAL; the trajectory beside."""
+    from .a3_sim import T_FINAL, TIMES, load_cells
+    recs = load_cells(sdir)
+    codes = {r["code"] for r in recs.values()}
+    if len(codes) != 1:
+        raise A3Refused(f"E11: records from {len(codes)} codes {codes}")
+    u = np.array([[recs[(s, p)]["traj"][str(T_FINAL)]["clusters"] for s in STEPS]
+                  for p in V1], float)[..., None]
+    traj = {str(T): np.mean([[recs[(s, p)]["traj"][str(T)]["clusters"] for s in STEPS]
+                             for p in V1], 0).tolist() for T in TIMES}
+    start = np.mean([[recs[(s, p)]["clusters_at_start"] for s in STEPS] for p in V1], 0).tolist()
+    return {"E11": u, "code": codes.pop(), "beside": {"mean_clusters_at": traj,
+                                                      "mean_clusters_at_start": start}}
 
 
 ROWS = {  # id: (row, direction, statistic, σ over)
     "E2": ("OV: median attractive_energy_fraction_core, 384 heads", "down", "median", "heads"),
-    "E3": ("induction: five typed members' pooled induction attention", "up", "pooled",
+    "E3": ("induction at +1: L8H6, L11H14 pooled attention (strict pairs)", "up", "pooled",
            "prompts × members"),
     "E4": ("previous-token score of L5H2", "up", "mean", "prompts"),
     "E5": ("effective rank on the sphere (MinRank), mean over prompts", "down", "mean", "prompts"),
+    "E7": ("weight change ‖W−W0‖/‖W0‖, median over types of median over layers", "up", "medmed",
+           "layers"),
+    "E8": ("ESD tail α, median over types of median over layers", "down", "medmed", "layers"),
+    "E11": ("causal simulator's cluster count at t = 200, mean over prompts", "down", "mean",
+            "prompts"),
 }
 
 
 # ---------------------------------------------------------------- the gate
 
 def unit_scores(units: np.ndarray, stat_name: str) -> np.ndarray:
-    """(n_units, S) in the statistic's own units: per-pair means for the pooled row."""
+    """(n_units, S, k′) in the statistic's own units: per-pair means for the pooled row (k′ = 1);
+    every type for the medmed rows."""
     if stat_name == "pooled":
-        return units[..., 0] / units[..., 1]
-    return units[..., 0]
+        return (units[..., 0] / units[..., 1])[..., None]
+    return units
 
 
 def _synthetic(units: np.ndarray, direction: str, stat_name: str, rng, n: int,
                amp_shape: Optional[np.ndarray] = None) -> np.ndarray:
     """(n, n_units, S, k) flat noise at the row's per-step spread, plus a planted shape."""
     real = unit_scores(units, stat_name)
-    tau = np.std(real - real[:, :1], axis=0, ddof=1)             # (S,), tau[0] = 0
+    tau = np.std(real - real[:, :1], axis=0, ddof=1)             # (S, k′), tau[0] = 0
     z = rng.standard_normal((n,) + real.shape) * tau
     if amp_shape is not None:
-        z = z + amp_shape
+        z = z + amp_shape[:, None]
     if stat_name == "pooled":
         w = units[:, :1, 1]                                       # prompt pair counts
+        z = z[..., 0]
         return np.stack([z * w, np.broadcast_to(w, z.shape)], axis=-1)
-    return z[..., None]
+    return z
 
 
 def boot_se_all(units: np.ndarray, stat: Callable, rng: np.random.Generator,
@@ -385,7 +458,8 @@ def gate_row(rid: str, units: np.ndarray, rng) -> dict:
     # unit 3's first run, E2 at 0.936)
     from scipy.stats import binom
     k = int(binom.ppf(GATE_NULL, len(r), GATE_NULL)) + 1
-    floor = float(np.ceil(np.sort(r)[min(k, len(r)) - 1] * 100) / 100)
+    own = float(np.ceil(np.sort(r)[min(k, len(r)) - 1] * 100) / 100)
+    floor = max(FLOOR, own)                       # Blocked 72 (iii) (a), from unit 3 on
     rc = np.array([_ratio(x, s, direction) for x, s in zip(xc, sc)])
     p_null = float(np.mean(rc < floor))
     p_null_frozen = float(np.mean(rc < FLOOR))
@@ -406,9 +480,16 @@ def gate_row(rid: str, units: np.ndarray, rng) -> dict:
                      "pass": ok >= GATE_EFFECT, "power": power,
                      "curve": {str(a): v for a, v in curve.items()},
                      "unit2_arm": placed(LOW_POWER * float(sbar[i + 1]), FLOOR)})
-    return {"floor": floor, "null_no_change": p_null, "null_pass": p_null >= GATE_NULL,
+    return {"floor": floor, "own_floor": own, "null_no_change": p_null, "null_pass": p_null >= GATE_NULL,
             "null_no_change_at_frozen_floor": p_null_frozen, "effect": gaps,
             "pass": p_null >= GATE_NULL and all(g["pass"] for g in gaps)}
+
+
+def constant_row(units: np.ndarray, stat_name: str) -> bool:
+    """Every unit equal to its step-0 value at every step (#235 finding 4): the gate cannot plant
+    a move against zero noise, so the row is refused by name, not by a degenerate arm."""
+    real = unit_scores(units, stat_name)
+    return bool(np.all(real == real[:, :1]))
 
 
 def low_power(r: dict, gate: dict) -> Optional[bool]:
@@ -439,7 +520,7 @@ def beside(x: np.ndarray, direction: str, idx: Optional[int]) -> dict:
             "flag": (idx is not None and abs(near - idx) >= 2)}
 
 
-def run(out: Path) -> dict:
+def run(out: Path, wdir: Path, sdir: Path) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     rng = np.random.default_rng(SEED)
@@ -450,12 +531,21 @@ def run(out: Path) -> dict:
            "constants": {"FLOOR": FLOOR, "LOW_POWER": LOW_POWER, "N_BOOT": N_BOOT,
                          "N_GATE": N_GATE, "WIDTH": WIDTH, "SEED": SEED, "AMPS": list(AMPS)}}
     r15 = rows_e1_e5()
-    units = {"E2": row_e2(), "E5": r15["E5"], **rows_e3_e4(out / "attn_rows.json")}
+    wr, sr = rows_weights(wdir), rows_sim(sdir)
+    rec["inputs"].update({"a3_weights_code": wr["code"], "a3_sim_code": sr["code"],
+                          "a3_weights_dir": str(wdir), "a3_sim_dir": str(sdir)})
+    units = {"E2": row_e2(), "E5": r15["E5"], **rows_e3_e4(out / "attn_rows.json"),
+             "E7": wr["E7"], "E8": wr["E8"], "E11": sr["E11"]}
     print(f"rows built ({time.time() - t0:.0f} s)", flush=True)
 
     # gate first: nothing real is located before every arm is recorded
     rec["gate"] = {}
     for rid in ROWS:
+        if constant_row(units[rid], ROWS[rid][2]):
+            rec["gate"][rid] = {"pass": False, "refused": "constant: no spread at any step",
+                                "floor": None, "null_no_change": None, "effect": []}
+            print(f"gate {rid}: refused, constant row", flush=True)
+            continue
         rec["gate"][rid] = gate_row(rid, units[rid], rng)
         g = rec["gate"][rid]
         print(f"gate {rid}: floor {g['floor']:.2f}, null {g['null_no_change']:.3f}, effect min "
@@ -475,7 +565,8 @@ def run(out: Path) -> dict:
         r = {"row": name, "dir": direction, "sigma_over": over, "n_units": int(units[rid].shape[0]),
              "series": x.tolist()}
         if not rec["gate"][rid]["pass"]:
-            r.update(reading="refused", step=None, index=None)
+            r.update(reading="refused", step=None, index=None,
+                     why=rec["gate"][rid].get("refused", "a gate arm failed"))
         else:
             g = rec["gate"][rid]
             r.update(locate_units(units[rid], STATS[sname], direction, rng, floor=g["floor"]))
@@ -485,6 +576,18 @@ def run(out: Path) -> dict:
             r["reading_at_frozen_floor"] = ("located" if r["ref_over_sigma"] >= FLOOR
                                             else "no change")
         rows[rid] = r
+    # beside, not located (Blocked 72 (ii) (a)): the frozen E3 at offset 0, refused as defined
+    e30 = units["E3_offset0"]
+    rows["E3_offset0"] = {"row": "frozen E3: five members at offset 0 (strict=False)", "dir": "up",
+                          "series": stat_pooled(e30).tolist(), "reading": "refused (definition)",
+                          "step": None, "index": None,
+                          "per_member": {f"L{l}H{h}": stat_pooled(e30[m::len(MEMBERS)]).tolist()
+                                         for m, (l, h) in enumerate(MEMBERS)}}
+    rows["E3"]["per_member"] = {f"L{l}H{h}": stat_pooled(units["E3"][m::len(MEMBERS_P1)]).tolist()
+                                for m, (l, h) in enumerate(MEMBERS_P1)}
+    rows["E7"]["dense"], rows["E8"]["dense"] = wr["dense"]["E7"], wr["dense"]["E8"]
+    rows["E7"]["dW_stable_rank_beside"] = wr["dense"]["dW_stable_rank"]
+    rows["E11"]["trajectory_beside"] = sr["beside"]
     for rid, r in rows.items():
         r["beside"] = beside(np.asarray(r["series"]), r["dir"], r.get("index"))
     anchors = {"E1": 512, "E2": 512, "E10": 1000}
@@ -500,7 +603,7 @@ def table(rec: dict) -> str:
     h = ("| id | row | dir | reading | step | ref / σ | floor | low power | censored "
          "| centroid (beside) |")
     lines = [h, "|---|---|---|---|---|---|---|---|---|---|"]
-    for rid in ("E1", "E2", "E3", "E4", "E5", "E10"):
+    for rid in ("E1", "E2", "E3", "E4", "E5", "E7", "E8", "E11", "E10", "E3_offset0"):
         r = rec["rows"][rid]
         ros = r.get("ref_over_sigma")
         b = r["beside"]
@@ -518,10 +621,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run"); r.add_argument("--out", type=Path, required=True)
+    r.add_argument("--weights", type=Path, required=True)
+    r.add_argument("--sim", type=Path, required=True)
     t = sub.add_parser("report"); t.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.cmd == "run":
-        rec = run(a.out)
+        rec = run(a.out, a.weights, a.sim)
     else:
         rec = json.loads((a.out / "a3_rows.json").read_text())
     print(table(rec))
