@@ -1,6 +1,7 @@
-"""trackA_force/a3.py — A3 units 2–4: the producer, the rows, the locator and its gate
-(`design-A3.md` §2, §4; frozen 2026-10-19 as revised, Blocked 70 (ii) (a); unit 3 by Blocked 72,
-the user's: E3 at +1, the floor at max(4, the row's own), E7, E8, E11; unit 4: E6u, E6b).
+"""trackA_force/a3.py — A3 units 2–5: the producer, the rows, the locator and its gate, the
+reading (`design-A3.md` §2–§4; frozen 2026-10-19 as revised, Blocked 70 (ii) (a); unit 3 by
+Blocked 72, the user's: E3 at +1, the floor at max(4, the row's own), E7, E8, E11; unit 4: E6u,
+E6b; unit 5 by Blocked 73 and 74, the user's: E6b′, the pairs, the order, the figure's lanes).
 
 Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one point):
 
@@ -27,6 +28,9 @@ Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one po
 - **E6u, E6b** KL(q ‖ p_model) of a unigram and a Witten–Bell bigram predictor (from 2M tokens
   of the Pile's validation split) to the model's next-token distribution, mean over 64 blocks of
   1024 held-out tokens (`a3_ngram.py`; σ over blocks); turning-point rows, located at the minimum.
+- **E6b′** (unit 5, Blocked 74 (a)): E6b with the bigram counted on table set′, every document
+  of the split outside the scored set (``--ngram-full``); gated and located as E6b, after every
+  other row so their gate draws stay the same. A second date for E6b, not a row of its own.
 - **E11** the causal simulator's cluster count at t = 200 from the measured start at the prompt's
   β (`a3_sim.py`), mean over prompts (down; σ over prompts).
 - **E10** the LR schedule (warmup to 1430, cosine to 0.1×), analytic, the confound row, located
@@ -57,13 +61,18 @@ centred in the gap and a rise of half of it centred in the next, placed right at
 minimum (`design-A3.md` §4 "Placed before any unit 4 output").
 
 Beside, described and not read: `core.changepoint_colocation.change_profile`'s change-mass
-centroid per row, flagged where it and the rule are ≥ 2 grid steps apart. No pair is read here
-(that is unit 5).
+centroid per row, flagged where it and the rule are ≥ 2 grid steps apart.
+
+**The reading (unit 5; §3, §4 "Placed before any unit 5 output").** The eleven pairs by grid
+distance: ≤ 1 aligned, ≥ 2 misaligned with the order; unread if either row is "no change",
+refused or censored. E6b and E8 carry two dates (E6b′; E8 from its peak, which must be unit 3's
+512), and a pair with either is read only where both dates give one verdict. Then the order of
+the located rows and the figure's lanes (Δ / ref on the 18 steps).
 
 Tier 1: exploratory, unregistered; v1 prompts only. CPU: numpy bootstraps over at most 384 units,
 minutes; no forward pass here (E7, E8 and E11 are read from their producers' records).
     python -m trackA_force.a3 run --out <dir> --weights <a3_weights dir> --sim <a3_sim dir> \
-        --ngram <a3_ngram dir>
+        --ngram <a3_ngram dir> [--ngram-full <a3_ngram --scored dir>]
 """
 
 from __future__ import annotations
@@ -399,7 +408,7 @@ def rows_ngram(ndir: Path) -> dict:
                                                  "device": sorted({r["device"] for r in recs.values()})}}
 
 
-TURN = {"E6u", "E6b"}   # turning-point rows (§4): located at the minimum, gated on a planted dip
+TURN = {"E6u", "E6b", "E6b_full"}   # turning-point rows (§4): the minimum, gated on a planted dip
 
 ROWS = {  # id: (row, direction, statistic, σ over)
     "E2": ("OV: median attractive_energy_fraction_core, 384 heads", "down", "median", "heads"),
@@ -415,6 +424,9 @@ ROWS = {  # id: (row, direction, statistic, σ over)
     # after the unit 2–3 rows, so their gate draws stay the same
     "E6u": ("KL(unigram ‖ model), mean over 64 blocks", "turn", "mean", "blocks"),
     "E6b": ("KL(bigram ‖ model), mean over 64 blocks", "turn", "mean", "blocks"),
+    # unit 5 (Blocked 74 (a)): last, so every earlier row's gate draws stay the same
+    "E6b_full": ("E6b′: KL(bigram from table set′ ‖ model), mean over 64 blocks", "turn", "mean",
+                 "blocks"),
 }
 
 
@@ -563,6 +575,148 @@ def low_power(r: dict, gate: dict) -> Optional[bool]:
     return bool(r["ref"] / g["sigma_ref"] < g["power"])
 
 
+# ---------------------------------------------------------------- the reading (unit 5, pure)
+# design-A3.md §3 and §4 "Placed before any unit 5 output" (Blocked 73, 74, the user's).
+
+PAIRS = tuple(("E1", r) for r in ("E2", "E3", "E4", "E5", "E6u", "E6b", "E7", "E8", "E11")) + \
+    (("E4", "E3"), ("E3", "E2"))
+SECOND_DATE = {"E6b": "E6b_full", "E8": "E8_peak"}     # Blocked 74 (a), 73 (iii)
+E8_PEAK_UNIT3 = 512                                    # unit 3's peak date; the code must give it
+ORDERED = ("E1", "E2", "E3", "E4", "E5", "E6u", "E6b", "E7", "E8", "E11", "E10")
+
+
+def from_peak(x: np.ndarray, direction: str) -> dict:
+    """The half-move back from the row's opposite extreme (its peak for a down row) over ≤ 4000:
+    the reference is the largest move in the declared direction after the peak within the
+    window; the date the first step after the peak reaching half of it."""
+    w = np.asarray(x, float)[list(WIN)]
+    p = int(np.argmax(-SIGN[direction] * w))
+    d = SIGN[direction] * (w[p + 1:] - w[p])
+    if len(d) == 0 or d.max() <= 0:
+        return {"reading": "no change", "index": None, "step": None, "peak_step": STEPS[p]}
+    j = int(np.argmax(d)) + p + 1
+    i = int(np.argmax(d >= d.max() / 2)) + p + 1
+    return {"reading": "located", "index": i, "step": STEPS[i], "peak_step": STEPS[p],
+            "ref_step": STEPS[j], "ref": float(d.max()), "censored": j == WIN[-1]}
+
+
+def dates(rows: dict, rid: str):
+    """(grid indices, None), one per date of the row, or (None, why it is unread)."""
+    out = []
+    for k in (rid,) + ((SECOND_DATE[rid],) if rid in SECOND_DATE else ()):
+        r = rows.get(k)
+        if r is None:
+            return None, f"{k} not computed"
+        if r["reading"] != "located":
+            return None, f"{k} {r['reading']}"
+        if r.get("censored"):
+            return None, f"{k} censored"
+        out.append(r["index"])
+    return out, None
+
+
+def verdict(i: int, j: int, a: str, b: str) -> tuple:
+    """§3: equal or one grid step apart is aligned; two or more is misaligned, with the order."""
+    if abs(i - j) <= 1:
+        return ("aligned",)
+    return ("misaligned", a if i < j else b)
+
+
+def read_pair(rows: dict, a: str, b: str) -> dict:
+    da, wa = dates(rows, a)
+    db, wb = dates(rows, b)
+    if da is None or db is None:
+        return {"pair": [a, b], "verdict": "unread", "why": wa or wb}
+    st = {a: [STEPS[i] for i in da], b: [STEPS[i] for i in db]}
+    vs = {verdict(i, j, a, b) for i in da for j in db}
+    if len(vs) > 1:
+        two = a if a in SECOND_DATE else b
+        return {"pair": [a, b], "steps": st, "verdict": "unread (table)" if two == "E6b"
+                else "unread (two dates)", "why": f"{two}'s two dates give "
+                + " and ".join(sorted(" ".join(v) for v in vs))}
+    v = vs.pop()
+    out = {"pair": [a, b], "steps": st, "verdict": v[0], "notes": []}
+    if v[0] == "misaligned":
+        out["first"] = v[1]
+    else:
+        lo, hi = min(da + db), max(da + db)
+        out["notes"].append(f"aligned: one grid step either side, {STEPS[max(lo - 1, 0)]}–"
+                            f"{STEPS[min(hi + 1, len(STEPS) - 1)]}")
+    if max(st[a] + st[b]) <= 2000:
+        out["notes"].append("inside warmup (E10)")
+    if {a, b} == {"E1", "E2"}:
+        out["notes"].append("a reproduction (§3 (ii)), not a finding")
+    return out
+
+
+def order(rows: dict) -> List[dict]:
+    """The located, uncensored rows by step; equal sets of dates are ties (one entry), so 256 / 256
+    ties with 256 (#237 finding 4)."""
+    ents = {}
+    for rid in ORDERED:
+        d, _ = dates(rows, rid)
+        if d:
+            ents.setdefault(tuple(sorted(set(d))), []).append(rid)
+    return [{"steps": [STEPS[i] for i in k], "rows": v}
+            for k, v in sorted(ents.items(), key=lambda kv: (min(kv[0]), max(kv[0])))]
+
+
+def unigram_first(rows: dict) -> Optional[bool]:
+    """Stated only where E6u is before both of E6b's dates; None where either is unread."""
+    du, _ = dates(rows, "E6u")
+    db, _ = dates(rows, "E6b")
+    if not du or not db:
+        return None
+    return du[0] < min(db)
+
+
+QUOTED = (  # design-A3 §2 "Quoted rows": drawn as bands, never located, never in a pair
+    ("Belrose: n-gram-sequence loss trough", 64, 256),
+    ("Belrose: rise after the trough", 256, 1000),
+    ("RankMe collapse (410m)", 32, 256),
+    ("RankMe recovery", 256, 1000),
+    ("induction phase change (Olsson)", 1200, 2400),
+    ("R6f embedding move (Phase 10)", 512, 2000),
+    ("U2 regime change (1e)", 2000, 4000),
+    ("A1: step 16 collapse at state 23", 16, 16),
+    ("A2: MLP cancels attention", 1000, 4000),
+    ("A2: fixed key, a period", 2000, 4000),
+    ("A2: fixed key, a newline", 8000, 143000),
+    ("A2: sink share rising", 1000, 143000),
+)
+
+
+def lane(r: dict, rid: str) -> dict:
+    """The figure's lane: Δ / ref on the 18 steps (0 at step 0, 1 at the reference)."""
+    x = np.asarray(r["series"], float)
+    if rid == "E1":                                   # D4 (a): V / plateau median, half at 0.5
+        y, how = x / r["plateau_median"], "V / plateau median (D4 (a))"
+    elif r["dir"] == "turn":
+        y, how = (x[0] - x) / r["ref"], "fall from step 0 / fall into the minimum"
+    elif r.get("ref"):
+        y, how = SIGN[r["dir"]] * (x - x[0]) / r["ref"], "Δ / ref"
+    else:
+        m = np.max(np.abs(x - x[0])) or 1.0
+        y, how = SIGN[r["dir"]] * (x - x[0]) / m, "Δ / max |Δ| (not located)"
+    out = {"id": rid, "row": r["row"], "y": y.tolist(), "how": how, "index": r.get("index"),
+           "step": r.get("step"), "reading": r["reading"],
+           "hollow": r["reading"] != "located" or bool(r.get("censored"))}
+    if "dense" in r and r.get("ref"):
+        dx = np.asarray(r["dense"]["row"], float)
+        out["dense"] = {"steps": r["dense"]["steps"],
+                        "y": (SIGN[r["dir"]] * (dx - dx[0]) / r["ref"]).tolist()}
+    return out
+
+
+def reading(rows: dict) -> dict:
+    """Pairs, order and the figure's lanes, from the located rows."""
+    lanes = [lane(rows[k], k) for k in ORDERED + ("E6b_full",) if k in rows]
+    return {"pairs": [read_pair(rows, a, b) for a, b in PAIRS], "order": order(rows),
+            "unigram_first": unigram_first(rows), "lanes": lanes,
+            "quoted": [{"label": l, "from": a, "to": b} for l, a, b in QUOTED],
+            "warmup_end": WARMUP, "steps": list(STEPS)}
+
+
 # ---------------------------------------------------------------- run
 
 def beside(x: np.ndarray, direction: str, idx: Optional[int]) -> dict:
@@ -577,7 +731,36 @@ def beside(x: np.ndarray, direction: str, idx: Optional[int]) -> dict:
             "flag": (idx is not None and abs(near - idx) >= 2)}
 
 
-def run(out: Path, wdir: Path, sdir: Path, ndir: Path) -> dict:
+def check_full(nf: dict, ndir: Path, fdir: Path) -> None:
+    """design-A3 §4 "Placed before any unit 5 output": table set′ starts with unit 4's table, the
+    blocks are unit 4's, the bigram′ is sharper on the scored set, and the forward pass is the
+    same (the model's loss per block as unit 4's). Refuse on failure."""
+    m4 = json.loads((ndir / "corpus.json").read_text())
+    mf = json.loads((fdir / "corpus.json").read_text())
+    if mf.get("first_n_table_sha") != m4["table_sha"] or mf["blocks_sha"] != m4["blocks_sha"]:
+        raise A3Refused(f"E6b′: table set′ starts {mf.get('first_n_table_sha')}, blocks "
+                        f"{mf['blocks_sha']}; unit 4 {m4['table_sha']}, {m4['blocks_sha']}")
+    n4 = len({d for ds in m4["block_docs"] for d in ds})       # #237 finding 3: an accounting
+    if mf["scored_docs_excluded"] != n4 or mf["docs_in_split"] != (     # check, not a copy compared
+            mf["table_docs"] + n4 + len(mf["dropped_overlap"])):        # with itself
+        raise A3Refused(f"E6b′: {mf['docs_in_split']} documents in the split are not "
+                        f"{mf['table_docs']} in table set′ + {n4} scored + "
+                        f"{len(mf['dropped_overlap'])} dropped")
+    l4 = json.loads((ndir / "predictor_losses.json").read_text())["bigram"]["loss"]
+    lf = json.loads((fdir / "predictor_losses.json").read_text())["bigram"]["loss"]
+    if not lf < l4:
+        raise A3Refused(f"E6b′: the bigram′'s own loss {lf:.3f} is not below the 2M bigram's {l4:.3f}")
+    from .a3_ngram import load_steps
+    a, b = load_steps(ndir), load_steps(fdir)
+    gap = max(abs(x - y) for s in STEPS for x, y in zip(a[s]["loss"], b[s]["loss"]))
+    if gap > 1e-4:
+        raise A3Refused(f"E6b′: the model's loss differs from unit 4's by {gap:.2e} nats")
+    nf["beside"].update(bigram_loss=lf, bigram_loss_2m=l4, loss_gap_to_unit4=gap,
+                        unigram_loss=json.loads((fdir / "predictor_losses.json").read_text())
+                        ["unigram"]["loss"])
+
+
+def run(out: Path, wdir: Path, sdir: Path, ndir: Path, fdir: Optional[Path] = None) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     rng = np.random.default_rng(SEED)
@@ -589,17 +772,24 @@ def run(out: Path, wdir: Path, sdir: Path, ndir: Path) -> dict:
                          "N_GATE": N_GATE, "WIDTH": WIDTH, "SEED": SEED, "AMPS": list(AMPS)}}
     r15 = rows_e1_e5()
     wr, sr, nr = rows_weights(wdir), rows_sim(sdir), rows_ngram(ndir)
+    nf = None
+    if fdir is not None:                                   # unit 5: E6b′ (Blocked 74 (a))
+        nf = rows_ngram(fdir)
+        check_full(nf, ndir, fdir)
+        rec["inputs"].update({"a3_ngram_full_code": nf["code"], "a3_ngram_full_dir": str(fdir)})
     rec["inputs"].update({"a3_weights_code": wr["code"], "a3_sim_code": sr["code"],
                           "a3_ngram_code": nr["code"], "a3_weights_dir": str(wdir),
                           "a3_sim_dir": str(sdir), "a3_ngram_dir": str(ndir)})
     units = {"E2": row_e2(), "E5": r15["E5"], **rows_e3_e4(out / "attn_rows.json"),
              "E7": wr["E7"], "E8": wr["E8"], "E11": sr["E11"], "E6u": nr["E6u"],
              "E6b": nr["E6b"]}
+    if nf is not None:
+        units["E6b_full"] = nf["E6b"]
     print(f"rows built ({time.time() - t0:.0f} s)", flush=True)
 
     # gate first: nothing real is located before every arm is recorded
     rec["gate"] = {}
-    for rid in ROWS:
+    for rid in (k for k in ROWS if k in units):
         if constant_row(units[rid], ROWS[rid][2]):
             rec["gate"][rid] = {"pass": False, "refused": "constant: no spread at any step",
                                 "floor": None, "null_no_change": None, "effect": []}
@@ -620,6 +810,8 @@ def run(out: Path, wdir: Path, sdir: Path, ndir: Path) -> dict:
     rows["E10"] = {"row": "LR schedule (confound)", "dir": "up", "series": e10.tolist(),
                    **place(e10, "up", None, floor=None), "located_by": "§4, no floor"}
     for rid, (name, direction, sname, over) in ROWS.items():
+        if rid not in units:
+            continue
         x = STATS[sname](units[rid])
         r = {"row": name, "dir": direction, "sigma_over": over, "n_units": int(units[rid].shape[0]),
              "series": x.tolist()}
@@ -649,13 +841,25 @@ def run(out: Path, wdir: Path, sdir: Path, ndir: Path) -> dict:
     rows["E7"]["dW_stable_rank_beside"] = wr["dense"]["dW_stable_rank"]
     rows["E11"]["trajectory_beside"] = sr["beside"]
     rows["E6u"]["model_loss_beside"] = nr["beside"]
+    if nf is not None:
+        rows["E6b_full"]["beside_full"] = {**nf["beside"], "E6u_full_series":
+                                           stat_mean(nf["E6u"]).tolist()}
+    # unit 5: E8's second date, from its peak (Blocked 73 (iii)); unit 3 gave 512
+    rows["E8_peak"] = {"row": "E8 dated from its peak", "dir": "down",
+                       **from_peak(np.asarray(rows["E8"]["series"]), "down")}
+    if rows["E8_peak"]["step"] != E8_PEAK_UNIT3:
+        raise A3Refused(f"E8 from its peak reads {rows['E8_peak']['step']}, unit 3 gave "
+                        f"{E8_PEAK_UNIT3}")
     for rid, r in rows.items():
+        if rid == "E8_peak":
+            continue
         d = "down" if r["dir"] == "turn" else r["dir"]               # a turn row's fall
         r["beside"] = beside(np.asarray(r["series"]), d, r.get("index"))
     anchors = {"E1": 512, "E2": 512, "E10": 1000}
     rec["anchors"] = {k: {"want": v, "got": rows[k].get("step"), "pass": rows[k].get("step") == v}
                       for k, v in anchors.items()}
     rec["rows"] = rows
+    rec["reading"] = reading(rows)
     rec["elapsed_s"] = round(time.time() - t0)
     (out / "a3_rows.json").write_text(json.dumps(rec, indent=1) + "\n")
     return rec
@@ -665,8 +869,10 @@ def table(rec: dict) -> str:
     h = ("| id | row | dir | reading | step | ref / σ | floor | low power | censored "
          "| centroid (beside) |")
     lines = [h, "|---|---|---|---|---|---|---|---|---|---|"]
-    for rid in ("E1", "E2", "E3", "E4", "E5", "E6u", "E6b", "E7", "E8", "E11", "E10",
+    for rid in ("E1", "E2", "E3", "E4", "E5", "E6u", "E6b", "E6b_full", "E7", "E8", "E11", "E10",
                 "E3_offset0"):
+        if rid not in rec["rows"]:
+            continue
         r = rec["rows"][rid]
         ros = r.get("ref_over_sigma")
         b = r["beside"]
@@ -687,14 +893,30 @@ def main(argv=None):
     r.add_argument("--weights", type=Path, required=True)
     r.add_argument("--sim", type=Path, required=True)
     r.add_argument("--ngram", type=Path, required=True)
+    r.add_argument("--ngram-full", type=Path, help="unit 5: table set′'s records (E6b′)")
     t = sub.add_parser("report"); t.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.cmd == "run":
-        rec = run(a.out, a.weights, a.sim, a.ngram)
+        rec = run(a.out, a.weights, a.sim, a.ngram, a.ngram_full)
     else:
         rec = json.loads((a.out / "a3_rows.json").read_text())
     print(table(rec))
     print("anchors:", {k: (v["got"], "pass" if v["pass"] else "FAIL") for k, v in rec["anchors"].items()})
+    if "reading" in rec:
+        print(pairs_table(rec["reading"]))
+
+
+def pairs_table(rd: dict) -> str:
+    lines = ["| pair | steps | verdict | first | notes |", "|---|---|---|---|---|"]
+    for p in rd["pairs"]:
+        st = "; ".join(f"{k} {' / '.join(map(str, v))}" for k, v in p.get("steps", {}).items())
+        notes = "; ".join(p.get("notes", [])) or p.get("why", "")
+        lines.append(f"| {p['pair'][0]}–{p['pair'][1]} | {st or '—'} | {p['verdict']} "
+                     f"| {p.get('first', '—')} | {notes} |")
+    lines.append("order: " + " < ".join(
+        "=".join(o["rows"]) + f" ({' / '.join(map(str, o['steps']))})" for o in rd["order"]))
+    lines.append(f"unigram first: {rd['unigram_first']}")
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":

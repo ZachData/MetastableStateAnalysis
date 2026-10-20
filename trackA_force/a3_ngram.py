@@ -12,6 +12,10 @@
 - **E6u, E6b:** KL(q ‖ p_model) in nats at every position of a block, mean over the block; one
   value per block and step (the bootstrap's units in `a3.py`). Beside: the model's next-token
   loss per block.
+- **The full table (unit 5, Blocked 74 (a); `design-A3.md` §4 "Placed before any unit 5
+  output"):** with ``--scored <unit 4 dir>``, the table set′ is every kept document of the split
+  that is not in that dir's scored set, in file order; its first ``N_TABLE`` tokens must be unit
+  4's table, and the blocks are unit 4's. The records are written as in unit 4 (E6u′, E6b′).
 
 KL(q ‖ p) = Σ q log q − Σ q log p. The first term does not depend on the step and is computed
 once per context token; the second is ``logp @ q_u`` for the unigram and, for the bigram,
@@ -22,6 +26,7 @@ Every step's record is written as it finishes, so a stopped run resumes. Model f
 
 Tier 1: exploratory, unregistered. v1 prompts are read only for the overlap check.
     python -m trackA_force.a3_ngram run --corpus <val.jsonl.zst> --out <dir> [--steps 0 143000]
+        [--scored <unit 4 dir>]
 """
 
 from __future__ import annotations
@@ -32,7 +37,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Iterable, Iterator, List, Sequence, Tuple
+from typing import Iterable, Iterator, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -47,6 +52,8 @@ VOCAB = 50304           # 410m's logits (the tokenizer's 50,277 padded)
 EOS = 0                 # <|endoftext|>
 LOSS_143000 = (1.5, 4.0)        # placed check: the trained model's loss on the scored set, nats
 STEP0_TOL = 0.10                # placed check: E6u at step 0 against KL(q_u ‖ uniform)
+CHUNK = 25_000_000              # tokens per bigram count chunk (memory only; counts are exact)
+BATCH_DOCS = 1000               # documents per tokenizer call in the full pass
 
 
 class NgramRefused(RuntimeError):
@@ -57,6 +64,30 @@ class NgramRefused(RuntimeError):
 
 def ngrams(ids: Sequence[int], n: int = OVERLAP_N) -> set:
     return {tuple(ids[i:i + n]) for i in range(len(ids) - n + 1)}
+
+
+_P = np.uint64(1_000_003)
+
+
+def _window_hashes(ids: np.ndarray, n: int) -> np.ndarray:
+    """A polynomial hash (mod 2⁶⁴) of every n-token window."""
+    from numpy.lib.stride_tricks import sliding_window_view
+    a = np.asarray(ids, np.uint64)
+    if len(a) < n:
+        return np.zeros(0, np.uint64)
+    pw = np.cumprod(np.full(n, _P, np.uint64)) // _P              # P^0 … P^(n−1), wrapping
+    return (sliding_window_view(a, n) * pw).sum(axis=1, dtype=np.uint64)
+
+
+def overlap_check(bad: set, n: int = OVERLAP_N):
+    """A function equal to ``lambda ids: bool(ngrams(ids, n) & bad)``, fast on long documents:
+    a hash hit is confirmed on the tokens themselves."""
+    bad_h = np.array([_window_hashes(np.array(b), n)[0] for b in bad], np.uint64)
+
+    def hit(ids: Sequence[int]) -> bool:
+        h = _window_hashes(np.asarray(ids), n)
+        return any(tuple(ids[i:i + n]) in bad for i in np.flatnonzero(np.isin(h, bad_h)))
+    return hit
 
 
 def pack_blocks(docs: Iterable[Tuple[int, List[int]]], n_blocks: int, block: int, n_table: int
@@ -92,13 +123,17 @@ def iter_docs(path: Path) -> Iterator[Tuple[int, str, str]]:
         p.stdout.close(); p.kill(); p.wait()
 
 
-def build_corpus(path: Path, tok) -> dict:
+def _check_corpus(path: Path) -> None:
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 24), b""):
             h.update(chunk)
     if h.hexdigest() != CORPUS_SHA:
         raise NgramRefused(f"{path}: sha256 {h.hexdigest()[:12]}, expected {CORPUS_SHA[:12]}")
+
+
+def build_corpus(path: Path, tok) -> dict:
+    _check_corpus(path)
     from core.config import PROMPTS
     bad = set().union(*(ngrams(tok(PROMPTS[k])["input_ids"]) for k in V1))
     dropped, subset = [], {}
@@ -125,16 +160,78 @@ def build_corpus(path: Path, tok) -> dict:
     return c
 
 
+def _sha12(a: np.ndarray) -> str:
+    return hashlib.sha256(a.tobytes()).hexdigest()[:12]
+
+
+def scored_set(scored: Path) -> dict:
+    """Unit 4's corpus (blocks, table, the scored documents), its arrays checked against its
+    manifest."""
+    man = json.loads((scored / "corpus.json").read_text())
+    z = np.load(scored / "corpus.npz")
+    for key in ("blocks", "table"):
+        if _sha12(z[key]) != man[f"{key}_sha"]:
+            raise NgramRefused(f"{scored}: {key} is {_sha12(z[key])}, manifest {man[f'{key}_sha']}")
+    return {"blocks": z["blocks"], "table": z["table"], "manifest": man,
+            "docs": {d for ds in man["block_docs"] for d in ds}}
+
+
+def build_full(path: Path, tok, scored: Path) -> dict:
+    """Table set′ (unit 5, Blocked 74 (a)): every kept document of the split not in unit 4's
+    scored set, in file order, each ended with EOS; its first N_TABLE tokens must be unit 4's
+    table."""
+    u4 = scored_set(scored)
+    _check_corpus(path)
+    from core.config import PROMPTS
+    hit = overlap_check(set().union(*(ngrams(tok(PROMPTS[k])["input_ids"]) for k in V1)))
+    dropped, parts, subsets, batch = [], [], {}, []
+
+    def flush():
+        for (i, _, name), ids in zip(batch, tok([b[1] for b in batch])["input_ids"]):
+            ids = ids + [EOS]
+            if hit(ids):
+                dropped.append(i)
+                continue
+            parts.append(np.asarray(ids, np.int32))
+            subsets[name] = subsets.get(name, 0) + 1
+        batch.clear()
+    n_seen = 0
+    for i, text, name in iter_docs(path):
+        n_seen += 1
+        if i in u4["docs"]:
+            continue
+        batch.append((i, text, name))
+        if len(batch) == BATCH_DOCS:
+            flush()
+    flush()
+    table = np.concatenate(parts)
+    first = _sha12(table[:N_TABLE].astype(np.int64))
+    if first != u4["manifest"]["table_sha"]:
+        raise NgramRefused(f"table set′'s first {N_TABLE} tokens are {first}, unit 4's table is "
+                           f"{u4['manifest']['table_sha']}")
+    return {"blocks": u4["blocks"], "table": table,
+            "manifest": {"corpus_sha256": CORPUS_SHA, "scored_from": str(scored),
+                         "docs_in_split": n_seen, "scored_docs_excluded": len(u4["docs"]),
+                         "dropped_overlap": dropped, "table_docs": len(parts),
+                         "table_tokens": int(len(table)), "table_subsets": dict(sorted(
+                             subsets.items())), "first_n_table_sha": first,
+                         "blocks_sha": _sha12(u4["blocks"]), "table_sha": _sha12(table)}}
+
+
 # ---------------------------------------------------------------- predictors (pure)
 
-def tables(table: np.ndarray, V: int = VOCAB) -> dict:
-    """q_u, the bigram counts (CSR, V × V), c(v) and T(v)."""
-    from scipy.sparse import coo_matrix
+def tables(table: np.ndarray, V: int = VOCAB, chunk: int = CHUNK) -> dict:
+    """q_u, the bigram counts (CSR, V × V), c(v) and T(v); counted ``chunk`` tokens at a time
+    (the chunks overlap by one token, so every adjacent pair is counted once)."""
+    from scipy.sparse import coo_matrix, csr_matrix
     if table.max() >= V:
         raise NgramRefused(f"a token id {table.max()} is outside the {V} logits")
     uni = np.bincount(table, minlength=V).astype(np.float64)
-    B = coo_matrix((np.ones(len(table) - 1), (table[:-1], table[1:])), shape=(V, V)).tocsr()
-    B.sum_duplicates()
+    B = csr_matrix((V, V), dtype=np.float64)
+    for a in range(0, len(table) - 1, chunk):
+        s = table[a:a + chunk + 1]
+        B = B + coo_matrix((np.ones(len(s) - 1), (s[:-1], s[1:])), shape=(V, V)).tocsr()
+    B.sum_duplicates(); B.sort_indices()
     return {"q_u": uni / uni.sum(), "B": B, "c": np.asarray(B.sum(axis=1)).ravel(),
             "T": np.diff(B.indptr).astype(np.float64)}
 
@@ -182,17 +279,24 @@ def code_sha() -> str:
     return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12]
 
 
-def prepare(corpus: Path, out: Path, tok) -> dict:
-    """The corpus and the step-independent terms, cached in ``out``."""
+def prepare(corpus: Path, out: Path, tok, scored: Optional[Path] = None) -> dict:
+    """The corpus and the step-independent terms, cached in ``out``. With ``scored`` (unit 4's
+    dir), the table is table set′ and the blocks are unit 4's."""
     f = out / "corpus.npz"
     if not f.exists():
-        c = build_corpus(corpus, tok)
+        if scored is None:
+            c = build_corpus(corpus, tok)
+            extra = {"block_docs": c["block_docs"]}
+        else:
+            c = build_full(corpus, tok, scored)
+            extra = {"block_docs": scored_set(scored)["manifest"]["block_docs"]}
         np.savez(f, blocks=c["blocks"], table=c["table"])
         (out / "corpus.json").write_text(json.dumps(
-            {**c["manifest"], "block_docs": c["block_docs"], "code": code_sha()}) + "\n")
+            {**c["manifest"], **extra, "code": code_sha()}) + "\n")
     z = np.load(f)
     blocks, table = z["blocks"], z["table"]
-    if blocks.shape != (N_BLOCKS, BLOCK) or len(table) != N_TABLE:
+    if blocks.shape != (N_BLOCKS, BLOCK) or not (len(table) == N_TABLE if scored is None
+                                                 else len(table) > N_TABLE):
         raise NgramRefused(f"corpus shapes {blocks.shape}, {len(table)}")
     t = tables(table)
     for v in (EOS, int(blocks[0, 0]), int(np.argmax(t["c"]))):     # a few rows sum to 1
@@ -203,7 +307,7 @@ def prepare(corpus: Path, out: Path, tok) -> dict:
     return {"blocks": blocks, "t": t}
 
 
-def run(corpus: Path, out: Path, steps, device: str) -> None:
+def run(corpus: Path, out: Path, steps, device: str, scored: Optional[Path] = None) -> None:
     import torch
     from transformers import AutoTokenizer
     from tools.run.behavioural import TOKENIZER_ID
@@ -214,9 +318,12 @@ def run(corpus: Path, out: Path, steps, device: str) -> None:
     code = code_sha()
     tok = AutoTokenizer.from_pretrained(TOKENIZER_ID)
     t0 = time.time()
-    P = prepare(corpus, out, tok)
+    P = prepare(corpus, out, tok, scored)
     blocks, t = P["blocks"], P["t"]
     print(f"corpus and tables ready ({time.time() - t0:.0f} s)", flush=True)
+    if not (out / "predictor_losses.json").exists():
+        (out / "predictor_losses.json").write_text(json.dumps(
+            {**predictor_losses(out, t), "code": code}) + "\n")
     q_u = torch.from_numpy(t["q_u"]).to(device)
     negH_b = np.array([[t["negH_b"][int(v)] for v in b] for b in blocks])     # (N_BLOCKS, BLOCK)
     for s in steps:
@@ -251,11 +358,11 @@ def run(corpus: Path, out: Path, steps, device: str) -> None:
     print("done", flush=True)
 
 
-def predictor_losses(out: Path) -> dict:
+def predictor_losses(out: Path, t: Optional[dict] = None) -> dict:
     """Beside: the two predictors' next-token loss on the scored set (positions where q > 0),
     and how many next tokens they give probability 0."""
     z = np.load(out / "corpus.npz")
-    t = tables(z["table"])
+    t = tables(z["table"]) if t is None else t
     res = {}
     for name in ("unigram", "bigram"):
         nll, zeros = [], 0
@@ -294,12 +401,13 @@ def main(argv=None):
     r.add_argument("--corpus", type=Path, required=True)
     r.add_argument("--steps", nargs="*", type=int)
     r.add_argument("--device", default="cuda")
+    r.add_argument("--scored", type=Path, help="unit 4's dir: count table set′ (unit 5)")
     a = ap.parse_args(argv)
     steps = tuple(a.steps) if a.steps else STEPS
     bad = [s for s in steps if s not in STEPS]
     if bad:
         raise SystemExit(f"refusing: steps {bad} are not on the 18-step axis")
-    run(a.corpus, a.out, steps, a.device)
+    run(a.corpus, a.out, steps, a.device, a.scored)
 
 
 if __name__ == "__main__":
