@@ -18,6 +18,7 @@
   - A3 opened 2026-10-19 with a scan and a design frozen as revised (Blocked 70 (ii) (a); 5 units; 10 located rows on the 18 steps, E1 dated by A5's D2 (a) / D4 (a); the locator's floor 4σ, calibrated on synthetic series) — `trackA_force/design-A3.md` "Exit condition and budget"
   - A3's locator fails its gate on the four existing floored rows (E2–E5): the null arm passes, the effect arm cannot place a 9σ move in the gaps up to 128–256, because each row's spread grows 10⁴–10⁵-fold from step 2 to 4000 and the reference is the window's largest Δ; E2–E5 are refused, E1 reads 512 and E10 1000 (their anchors) — `trackA_force/status-A.md` "A3 unit 2, the existing rows and the locator's gate (2026-10-19)"
   - A3's re-gate (Blocked 71, the user's: the effect arm at 9σ at the reference step, each row's floor and power re-derived from its own per-step spread, a censored mark) passes every arm; E2 reads 512 (its anchor), E4 1000, E5 8, E1 512, E10 1000, none censored or low power; E3 reads "no change" (2.0σ at 4000), likely because it scores the same-token key, not the successor that the 2026-10-18 correction names, so E4–E3 and E3–E2 are unread — `trackA_force/status-A.md` "A3 unit 2c, the re-gate (Blocked 71, 2026-10-19)"
+  - A3 unit 3 (Blocked 72, the user's: 6 units, E3 re-defined at +1 on `L8H6` and `L11H14`, every floor max(4, own)): E3 reads 1000 (a peak, then a fall), E7 weight change 2000 (censored), E8 ESD α 1000 (a rise to 256, then a fall); E11 refused, since the simulator's count is 1 in every cell at its placed horizon t = 200 (beside: at t = 5–10 late checkpoints stay split from 8000 on) — `trackA_force/status-A.md` "A3 unit 3, E3 at +1 and the weights-only and simulator rows (Blocked 72, 2026-10-19)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -30,7 +31,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-19 · body `c586793718`
+- **Reviewed:** 2026-10-19 · body `463309758c`
 <!-- /phase-card -->
 
 ## Units
@@ -52,13 +53,95 @@
 | A3 1. design and scan | **frozen 2026-10-19 as revised after `/challenge-pr` on #232 (findings 1–5, 7 taken)** (Blocked 70 (ii) (a), the user's). #231 finding 4: A3 before A5's gate; no seed download before A5 registers (confirmed, 70 (i)). Locator check: 3σ keeps 76 % of flat series, 3.93σ keeps 95 %; placing right in 90 % needs 6σ (gap 2–4) to 9σ (2000–4000) | `design-A3.md`, `lit-A3.md`, `tools/math_checks/a3_locator.py` |
 | A3 2. the producer, the existing rows, the locator and its gate | **done 2026-10-19: the gate fails its effect arm on E2–E5** (null passes); E2–E5 refused, E1 512 and E10 1000 (anchors pass; E2's anchor unread, refused) (Blocked 71) | "A3 unit 2" below; `a3.py` |
 | A3 2c. the re-gate (Blocked 71, the user's) | **done 2026-10-19: every arm passes; E2 512 (anchor passes), E4 1000, E5 8, E3 no change (2.0σ at 4000; scored at offset 0, not +1), E1 512, E10 1000; no located row censored or low power** (Blocked 72) | "A3 unit 2c" below; `a3.py` |
+| A3 3. E3 at +1, the weights-only rows, the simulator row (Blocked 72, the user's) | **done 2026-10-19: every arm passes but E11's; E3 (+1, `L8H6`, `L11H14`) 1000, E7 2000 (censored), E8 1000; E11 refused (count 1 in all 126 cells at t = 200); E2, E4, E5 unchanged at floor 4** (Blocked 73) | "A3 unit 3" below; `a3.py`, `a3_weights.py`, `a3_sim.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
 A2: 5 units plus a close-out (`design-A2.md` "Exit condition and budget"); all 5 spent; A2 closed
 2026-10-17 at its exit's "a recorded reason it cannot be read" (Blocked 60 (a)).
-A3: 5 units plus a close-out, frozen (`design-A3.md` "Exit condition and budget"); 3 spent (the
-re-gate, Blocked 71, took one; the planned units 3–5 now exceed the budget by one: Blocked 72).
+A3: 6 units plus a close-out (5 frozen, 6 on the record since Blocked 72 (i) (a)); 4 spent (the
+re-gate, Blocked 71, took one); left: the n-gram rows, the reading, one spare.
+
+## A3 unit 3, E3 at +1 and the weights-only and simulator rows (Blocked 72, 2026-10-19)
+
+Blocked 72, the user's: (i) **(a)** 6 units on the record; (ii) **(a)** the frozen E3 refused as
+defined and re-defined at +1 on `L8H6`, `L11H14`, gated before reading; (iii) **(a)** every floor
+max(4, own). `design-A3.md` §4 "Revised 2026-10-19 (Blocked 72)", with unit 3's placed constants
+(E7/E8's statistic and α fit; E11's start, β, dt, horizon t = 200, cos ≥ 0.99), committed before
+any output (`d0db3b1`). **Input:** `a3.py` `389ef9ffd7a8`, `a3_weights.py` `eefcc5a8dea1`,
+`a3_sim.py` + `sa_sim.py` `a1732e526ffc`; unit 2c's inputs and seed (prompts `976b62d677bc`,
+`colocation_panel.csv` `a9d2604f4789`, `ov_per_head_series.json` `bfc59df7d28a`,
+`behavioural_series.json` `0eb229010c2c`), the 126 `attentions.npz` and `activations.npz`, A1a's
+126 records (`a1a_batch_2026-10-15`), the 32 cached checkpoints. Weights: CPU float64 on float32
+checkpoints, 29 min; simulator: GPU float64, 95 min (dt halving on step 143000 `homer_iliad`
+agrees at every time); `a3.py`: CPU, 5 min. Records `data/trackA/a3/2026-10-19-unit4/` (rows and
+gate), `…-unit4w/` (32 steps), `…-unit4sim/` (126 cells) (main tree). The first `a3.py` run
+refused on its own step-0 check (E7's array transposed); fixed before any gate ran.
+
+**Gate** (floor used 4.00 for every row; own bounds E2 2.51, E3 2.76, E4 3.39, E5 3.78, E7 2.10,
+E8 2.40):
+
+| row | units | null "no change" at 4 (≥ 0.95) | effect at 9σ_ref, min over gaps (≥ 0.90) | power, gaps 2–4 … 2000–4000 (× σ̄_ref) | arm |
+|---|---|---|---|---|---|
+| E2 | 384 heads | 1.000 | 0.999 | 4 ×8, 6, 6, 9 | pass |
+| E3 | 14 (prompt, member), pooled | 0.990 | 0.965 | 6 ×10, 9 | pass |
+| E4 | 7 prompts | 0.984 | 0.964 | 4 ×7, 6, 9, 9, 9 | pass |
+| E5 | 7 prompts | 0.972 | 0.971 | 4, 4, 6 ×7, 9, 9 | pass |
+| E7 | 24 layers × 4 types | 1.000 | 0.978 | 4 ×8, 6, 6, 9 | pass |
+| E8 | 24 layers × 4 types | 1.000 | 0.992 | 4 ×5, 6 ×5, 9 | pass |
+| E11 | 7 prompts | 1.000 | **0.000** | none | **fail** |
+
+**Readings** (none low power):
+
+| id | row | reading | step | ref step | ref / σ | censored | centroid (beside) |
+|---|---|---|---|---|---|---|---|
+| E1 | energy violations (D4 (a)) | located | 512 | — | — | — | 827 |
+| E2 | OV median attractive fraction | located | 512 | 512 | 229 | no | 335 |
+| E3 | `L8H6`, `L11H14` at +1, pooled | located | **1000** | 1000 | 11.2 | no | 697 |
+| E4 | `L5H2` previous-token score | located | 1000 | 1000 | 117 | no | 561 |
+| E5 | MinRank, mean over prompts | located | 8 | 16 | 20.9 | no | 1774 (≥ 2 steps) |
+| E7 | weight change, median of medians | located | **2000** | 4000 | 28.6 | **yes** | 4901 |
+| E8 | ESD α, median of medians | located | **1000** | 2000 | 8.5 | no | 654 |
+| E11 | simulator's cluster count at t = 200 | **refused** | — | — | — | — | — |
+| E10 | LR schedule | located | 1000 | 2000 | — | — | 539 |
+
+E2, E4, E5 read as in unit 2c (the floor at 4 changes none; ref / σ moves by the bootstrap's draw).
+Anchors pass (E1 512, E2 512, E10 1000). No pair is read here (unit 5).
+
+**E3 at +1** rises at 1000 in both heads (`L8H6` 0.005 → 0.072, `L11H14` 0.007 → 0.057; pooled
+0.006 at 512, 0.065 at 1000) and then *falls* (0.021 by 143000), so its reference is the peak, not
+the window's end. The offset-0 series (beside, refused) never exceeds 0.010.
+
+**E7** rises steadily on every type through the window (median rel. change 0.18 at 512, 0.49 at
+1000, 1.29 at 2000, 2.38 at 4000, 3.63 at 8000; O and MLP out reach 11 and 10 at 32000–40000, then fall), so it
+is censored: its 2000 dates the window's cut, not a change. **E8** is a rise then a fall: α
+13.5 at init, up to 17.1 at 256 (all four types rise at 128–256), then 10.1 at 512, 5.5 at 1000,
+4.2 at 2000, and 3.3–5.7 per type thereafter. The rule dates the fall at 1000 against step 0. The gate
+planted only monotone moves, so, as with E5's dip, 1000 dates the fall under a rule tested on
+steady moves.
+
+**E11 is refused: the count at t = 200 is 1 in all 126 cells**, so the row has no spread, σ̄_ref
+is 0, and no planted move can be placed (the arm fails by degeneracy; nothing tuned). The placed
+horizon is past every collapse: A1a's t* at 143000 is 2.5–6.4 (the bracket's ends), and t = 200
+is 30–80× that. **Beside, not read (seen after the refusal):** the mean count at t = 5 is 1.6–2.0
+from 0 to 4000, then 3.9 at 8000, 9.6 at 16000, 21.3 at 32000, 31.4 at 54000, 25.1 at 143000; at
+t = 10 it is 1 to 8000, then 1.6–5.4 from 16000; at t = 20 at most 1.6. So under the causal
+dynamics at the measured β, late checkpoints' clouds stay split longer, from 8000 on; every one
+reaches one cluster by t = 50. At the start the count is each prompt's number of distinct tokens
+(checked on all 7 at 512: identical tokens embed identically), the same at every step. Whether to re-place E11's horizon now that this
+has been seen is Blocked 73.
+
+**Caveats.** (1) E3 is a re-definition made after the frozen E3 read "no change", for a reason
+that predates the freeze (Blocked 72 (ii)). It is on 2 heads, not 5. `L7H8` (the offset-0 member)
+is outside it. (2) E7/E8's σ is the spread across layers, not noise; their floors are as placed
+in §4. (3) E8's α at init (≈ 12–17) is a fit to a Marchenko–Pastur bulk, where a power law is a
+poor model. Its *values* there mean little; the fall to about 4 is what the row dates. (4) E7's
+O and MLP-out changes are about 10× their init norm, so relative change mostly reads their small
+init. (5) D1's `W_V` half is not built (design §4 "Placed before any unit 3 output").
+
+**Re-run:** `METS_DATA=<main>/data HF_HOME=<main>/data/hf HF_HUB_OFFLINE=1`, then
+`python -m trackA_force.a3_weights run --out <w>`, `python -m trackA_force.a3_sim run --out <s>`
+(`--quick` first: the dt check), `python -m trackA_force.a3 run --out <dir> --weights <w> --sim <s>`.
 
 ## A3 unit 2c, the re-gate (Blocked 71, 2026-10-19)
 

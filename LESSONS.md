@@ -1267,6 +1267,14 @@ of a design before running it, and print it on every record
   reading changed. Rule: **G2 calls the read's own pool builder on each fake (one function for
   both), and a false-pass rate near its cap is quoted from enough fakes to separate the two (200
   cannot tell 0.5 % from 1.5 %).**
+- 2026-10-19 (A3 unit 3): E11's horizon t = 200 was placed before output as A1a's `T_MAX`
+  (Claude's choice). That is the simulator's give-up time, not the dynamics' time scale. A1a's t*
+  at 143000 was already on record at 2.5–6.4, so t = 200 was 30–80× past it, and the count is 1
+  in every one of 126 cells. The row was refused by degeneracy after 95 GPU minutes, and the
+  signal sits at t = 5–10, where it can no longer be chosen blind. Rule: **a placed read-out time
+  (or threshold) is checked against the quantity's known scale before output, and a row that
+  could be constant across every cell gets a populated-and-varying check on its quick slice
+  (the `--quick` cell at 143000 already read 1 cluster from t = 20).**
 
 ## 7. Literature found after the construction was built
 
