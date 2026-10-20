@@ -301,6 +301,8 @@ world moves, nobody updates the line, and the next session acts on it.
   placeholder: Claude asked rather than take the recommendation (the user chose (a)). Also a
   wasted call: the gate run from `../Mets-work` read `data/` under the worktree (empty) until
   `METS_DATA` pointed at the main tree's; `a1a.DATA` defaults to the code's own tree.
+- **2026-10-20, the start hook's `STATE.md` one merge old** (A5 units 2–3): the main tree at
+  #238, `origin/main` at #239; caught at Start step 1, read from `origin/main`.
 - **2026-10-18, a "blocked" that was a setting** (the same check-in): `docs/ROADMAP.md` §6 said
   Hugging Face downloads are blocked from this machine, so A5 on seeds needed steps "fetched
   elsewhere". One `curl` on the refs API answered (all 154 steps per seed); `HF_HUB_OFFLINE=1`
@@ -558,6 +560,15 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-20, `P-A5`'s registration: the first entry from a track directory. A5 unit 1 had
+  taught `check_registry` the phase value `A` and written "accepted" in STATE, but two other
+  readers of the registry still assumed every phase lives in `p<N>_*`: `check_registry`'s ID
+  allowlist (`P-A5`'s mentions in the tree were invisible to the coverage check) and
+  `render_experiments._phases_on_disk` (a test failed: phase `A` "has no directory"; once fixed,
+  `trackB_circuit/` showed as an unexplained phase). Found by reading the allowlist and by
+  running `check.sh` on the registration branch, both before any PR; no seed was affected. Rule: **a new value in a registry field is
+  checked by every reader of that field** (`grep -rn '"phase"\|\["phase"\]' tools/`), not only the
+  one that rejected it first.
 - 2026-10-17, A2 unit 5: the per-component pass ran out of GPU memory on the 2,041-token
   passages twice; the second time because the shared loader sets `output_attentions=True`, so
   all 24 layers' (16, n, n) maps stayed alive through a pass that never read them (v1's n ≈ 511
