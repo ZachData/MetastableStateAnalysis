@@ -11,7 +11,8 @@ WHAT IT SHOWS
 -------------
 1. **The floor.** With e = κ p^(κ−1) and a rank p of 1/(n + 1), E_max = κ (n + 1)^(1−κ), so
    E_max ≥ 1/α exactly when n ≥ (1/(ακ))^(1/(1−κ)) − 1. At α = 1/20, κ = 1/2 that is n ≥ 1599
-   (E 20 exactly). 500 draws (`P-S1`'s default) give E = √501 / 2 ≈ 11.2.
+   (E 20 exactly). 500 draws (`P-S1`'s default) give E = √501 / 2 ≈ 11.2. The same bound read
+   for p is the tool's default decision level: p ≤ (ακ)^(1/(1−κ)) = 1/1600.
 2. **The two-sided dose.** For p ~ U(0, 1), E|p − ½| = ¼ exactly, so a set held at the 70th
    percentile scores 0.2 < ¼ and sits below the null's mean (B2's re-gate,
    `tools/math_checks/b2_two_sided_floor.py`).
@@ -25,7 +26,7 @@ WHAT IT DOES NOT PROVE
 """
 import sympy as sp
 
-from tools.design_preflight import min_null_draws
+from tools.design_preflight import e_bar_p, min_null_draws
 
 
 def main():
@@ -37,6 +38,10 @@ def main():
     assert e_max.subs({k: kappa, n: 1599}) == 20
     assert e_max.subs({k: kappa, n: 1598}) < 20
     assert min_null_draws(0.05, 0.5) == 1599
+    # The default decision level: one factor's E >= 1/alpha needs p <= (alpha kappa)^(1/(1-kappa)).
+    q = sp.symbols("q", positive=True)
+    p_bar = sp.solve(sp.Eq(kappa * q ** (kappa - 1), 1 / alpha), q)
+    assert p_bar == [sp.Rational(1, 1600)] and abs(e_bar_p(0.05, 0.5) - 1 / 1600) < 1e-15
     e500 = e_max.subs({k: kappa, n: 500})
     assert e500 == sp.sqrt(501) / 2 and float(e500) < 20
     print(f"floor: n >= {need[0]} null draws for E >= 20; 500 draws give E = {float(e500):.3g}")
