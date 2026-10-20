@@ -196,6 +196,42 @@ Blocked 73, the user's, all (a), changes none of them):
   1.5–4 nats; at step 0, E6u is within 10 % of KL(q_u ‖ uniform over 50,304) (an untrained softmax
   is near flat); no document is in both sets.
 
+**Revised 2026-10-20 (Blocked 74, the user's, (a); for unit 5).** Unit 5 also counts the bigram on
+the rest of the validation split, states both of E6b's dates, and reads a pair with E6b, and
+"unigram first", only where both agree, as for E8 (73 (iii)).
+
+**Placed before any unit 5 output (2026-10-20):**
+- *Table set′:* every document of the split, in file order, that is not in the scored set (unit
+  4's 149 documents, blocks `cfa4542e0a81`) and not dropped by the 13-token overlap check;
+  tokenized, ended with `<|endoftext|>` and concatenated as in unit 4. Its first 2,000,000 tokens
+  must be unit 4's table set (`817f2fdf2db8`). q_u′ is its frequencies, q_b′ Witten–Bell on q_u′
+  as frozen.
+- *E6b′:* KL(q_b′ ‖ p_model) on unit 4's 64 blocks at the 18 steps, computed as E6b. It is gated
+  (null; planted dip; floor max(4, own)) and located by the turning-point rule. **Beside, not
+  located or read:** E6u′ (KL(q_u′ ‖ p)) and the two predictors′ own losses.
+- *Checks before reading* (refuse on failure): the first-2M reproduction; no scored document in
+  table set′; the bigram′'s own loss on the scored set below the 2M bigram's (7.02 nats); E6u′ at
+  step 0 within 10 % of KL(q_u′ ‖ uniform); the 143000 loss check as in unit 4.
+- *E6b's two dates:* 256 (2M) and E6b′'s. A pair with E6b is read only where both dates give the
+  same verdict (aligned; or misaligned, in the same order), else **unread (table)**. If E6b′ is
+  "no change", refused or censored, every pair with E6b is unread. "Unigram first" is stated only
+  where E6u's step is before both dates.
+- *E8's two dates* (73 (iii)): 1000 (the rule against step 0) and the half-fall from its peak.
+  The peak is the maximum over ≤ 4000; the reference is the largest x(peak) − x(s) after it within
+  ≤ 4000, and the date is the first step after the peak reaching half of it. Unit 3 gave 512; the
+  code must reproduce it (refuse otherwise).
+- *Pairs:* computed by code from the located rows (`a3.py` `pairs`), by grid distance on the 18
+  steps. A distance ≤ 1 is aligned and ≥ 2 misaligned, with the order stated. A pair is unread if
+  either row is "no change", refused or censored (73 (ii)). A pair with both steps ≤ 2000 carries
+  "inside warmup (E10)"; an aligned pair states its span; E1–E2 is marked a reproduction (§3 (ii)).
+- *Order:* the located rows that are not censored, sorted by step, with equal steps as ties; E6b
+  and E8 are given at both dates.
+- *Figure:* one lane per row on the 18 steps (log axis, step 0 at the left edge). Each lane shows
+  Δ / ref (0 at step 0, 1 at the reference; for turning-point rows, the fall into the minimum),
+  with the located step marked. The warmup (to 1430) is a band across all lanes. The quoted rows
+  (§2) get a lane of their own as bands. Refused and censored rows are drawn hollow. E7 and E8 also
+  show their 32-step curves, faint.
+
 ## 5. Fences
 
 - **No registration and no adjudication.** 410m is exploration; the v1 prompts only, so v2's 12
