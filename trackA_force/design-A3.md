@@ -143,6 +143,13 @@ averaged over the two, with σ over the 14 (prompt, member) units, and it is gat
 The offset-0 series is drawn beside, not read. (iii) **(a)**: from unit 3 on, every floored row's
 floor is **max(4, its own bound)**; the null arm and the power are taken at that floor.
 
+**Revised 2026-10-20 (Blocked 73, the user's, all (a); for unit 5).** (i) E11 stays refused (a
+constant row: Theorem 4.1 of 2411.04990 makes the final count 1 for V = Id); its trajectory is
+drawn as description and nothing is carried. (ii) A **censored** row's pairs are **unread**
+(replacing (ii) of Blocked 71's revision, "read with that mark"), decided before any pair is seen.
+(iii) Unit 5 states both of E8's dates (1000 against step 0, 512 from its peak at 256) and reads
+a pair with E8 only where both give the same verdict.
+
 **Placed before any unit 3 output (2026-10-19)** (§2's rows leave these open):
 - *E7, E8:* located on the median over the four types of the per-type median over 24 layers, with
   σ over layers (the same layers resampled for every type); per type drawn beside. E8's α is the

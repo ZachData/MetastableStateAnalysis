@@ -1,6 +1,6 @@
 """trackA_force/a3.py — A3 units 2–4: the producer, the rows, the locator and its gate
 (`design-A3.md` §2, §4; frozen 2026-10-19 as revised, Blocked 70 (ii) (a); unit 3 by Blocked 72,
-the user's: E3 at +1, the floor at max(4, the row's own), E7, E8, E11).
+the user's: E3 at +1, the floor at max(4, the row's own), E7, E8, E11; unit 4: E6u, E6b).
 
 Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one point):
 
@@ -24,6 +24,9 @@ Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one po
 - **E7** weight change ``‖W_t − W_0‖_F / ‖W_0‖_F`` and **E8** the ESD tail exponent α, per matrix
   type and layer (`a3_weights.py`); located on the median over the four types of the median over
   24 layers (up / down; σ over layers, the same layers resampled for every type).
+- **E6u, E6b** KL(q ‖ p_model) of a unigram and a Witten–Bell bigram predictor (from 2M tokens
+  of the Pile's validation split) to the model's next-token distribution, mean over 64 blocks of
+  1024 held-out tokens (`a3_ngram.py`; σ over blocks); turning-point rows, located at the minimum.
 - **E11** the causal simulator's cluster count at t = 200 from the measured start at the prompt's
   β (`a3_sim.py`), mean over prompts (down; σ over prompts).
 - **E10** the LR schedule (warmup to 1430, cosine to 0.1×), analytic, the confound row, located
@@ -31,7 +34,7 @@ Rows built here, on the 18 distinct steps (`a1a.STEPS`; steps 0 and 1 are one po
 
 **The locator (§4).** Δ(s) = x(s) − x(0), signed in the declared direction; the reference is the
 largest Δ over steps ≤ 4000; the change step is the first with Δ ≥ reference / 2. Turning-point
-rows (E6, unit 4) are located at the minimum over ≤ 4000, the floor on the fall into it. **No
+rows (E6u, E6b) are located at the minimum over ≤ 4000, the floor on the fall into it. **No
 change** if the reference is ≤ 0 or below ``FLOOR`` σ, σ the bootstrap SE (``N_BOOT`` resamples
 over the row's units) of Δ at the reference step; **low power** below ``LOW_POWER`` σ.
 `tools/math_checks/a3_locator.py` states its floor in units of per-step noise; σ here is the SE of
@@ -49,7 +52,9 @@ read literally: (i) (a)), placed there in ≥ 90 %; from unit 3 the floor used i
 bound) (Blocked 72 (iii) (a)), and the null arm and the power are taken at the floor used; the
 row's **power** per gap is the least amplitude in ``AMPS`` reaching 90 % (line 102, re-derived),
 and a located row below it at its gap is **low power**. A located row whose reference is 4000 is marked **censored** ((ii)). *Anchors:*
-E1 at 512, E2 at 512, E10 at 1000. Turning-point rows are gated in unit 4 on E6's own σ.
+E1 at 512, E2 at 512, E10 at 1000. Turning-point rows (unit 4) plant a dip instead: a fall
+centred in the gap and a rise of half of it centred in the next, placed right at the planted
+minimum (`design-A3.md` §4 "Placed before any unit 4 output").
 
 Beside, described and not read: `core.changepoint_colocation.change_profile`'s change-mass
 centroid per row, flagged where it and the rule are ≥ 2 grid steps apart. No pair is read here
@@ -57,7 +62,8 @@ centroid per row, flagged where it and the rule are ≥ 2 grid steps apart. No p
 
 Tier 1: exploratory, unregistered; v1 prompts only. CPU: numpy bootstraps over at most 384 units,
 minutes; no forward pass here (E7, E8 and E11 are read from their producers' records).
-    python -m trackA_force.a3 run --out <dir> --weights <a3_weights dir> --sim <a3_sim dir>
+    python -m trackA_force.a3 run --out <dir> --weights <a3_weights dir> --sim <a3_sim dir> \
+        --ngram <a3_ngram dir>
 """
 
 from __future__ import annotations
@@ -358,6 +364,38 @@ def rows_sim(sdir: Path) -> dict:
                                                       "mean_clusters_at_start": start}}
 
 
+def rows_ngram(ndir: Path) -> dict:
+    """E6u, E6b units (64 blocks, 18 steps, 1), with the checks placed before output (refuse on
+    failure); the model's loss per step beside."""
+    from .a3_ngram import (LOSS_143000, STEP0_TOL, VOCAB, NgramRefused, load_steps, neg_entropy,
+                           tables)
+    recs = load_steps(ndir)
+    codes = {r["code"] for r in recs.values()}
+    if len(codes) != 1:
+        raise A3Refused(f"E6: records from {len(codes)} codes {codes}")
+    u = {rid: np.array([recs[s][key] for s in STEPS]).T[..., None]
+         for rid, key in (("E6u", "kl_u"), ("E6b", "kl_b"))}
+    loss = np.array([recs[s]["loss"] for s in STEPS]).T                # (blocks, steps)
+    lo, hi = LOSS_143000
+    l_end = float(loss[:, STEPS.index(143000)].mean())
+    if not lo <= l_end <= hi:
+        raise A3Refused(f"E6: the loss at 143000 is {l_end:.3f}, outside {LOSS_143000}")
+    try:
+        z = np.load(ndir / "corpus.npz")
+        q_u = tables(z["table"])["q_u"]
+    except (OSError, NgramRefused) as e:
+        raise A3Refused(f"E6: corpus tables: {e}")
+    flat = neg_entropy(q_u) + math.log(VOCAB)                          # KL(q_u ‖ uniform)
+    e6u0 = float(u["E6u"][:, 0, 0].mean())
+    if abs(e6u0 - flat) > STEP0_TOL * flat:
+        raise A3Refused(f"E6u at step 0 is {e6u0:.3f}, KL(q_u ‖ uniform) is {flat:.3f}")
+    return {**u, "code": codes.pop(), "beside": {"loss": loss.mean(0).tolist(),
+                                                 "kl_u_uniform": flat,
+                                                 "device": sorted({r["device"] for r in recs.values()})}}
+
+
+TURN = {"E6u", "E6b"}   # turning-point rows (§4): located at the minimum, gated on a planted dip
+
 ROWS = {  # id: (row, direction, statistic, σ over)
     "E2": ("OV: median attractive_energy_fraction_core, 384 heads", "down", "median", "heads"),
     "E3": ("induction at +1: L8H6, L11H14 pooled attention (strict pairs)", "up", "pooled",
@@ -369,7 +407,14 @@ ROWS = {  # id: (row, direction, statistic, σ over)
     "E8": ("ESD tail α, median over types of median over layers", "down", "medmed", "layers"),
     "E11": ("causal simulator's cluster count at t = 200, mean over prompts", "down", "mean",
             "prompts"),
+    # after the unit 2–3 rows, so their gate draws stay the same
+    "E6u": ("KL(unigram ‖ model), mean over 64 blocks", "turn", "mean", "blocks"),
+    "E6b": ("KL(bigram ‖ model), mean over 64 blocks", "turn", "mean", "blocks"),
 }
+
+
+def kind_of(rid: str) -> str:
+    return "turn" if rid in TURN else "half"
 
 
 # ---------------------------------------------------------------- the gate
@@ -420,16 +465,17 @@ def _noise_draws(units: np.ndarray, rid: str, rng, n: int):
     return xs, sig
 
 
-def _read(x: np.ndarray, sig: np.ndarray, direction: str, floor: float) -> dict:
-    j = reference(x, direction)
-    return place(x, direction, float(sig[j]), floor=floor)
+def _read(x: np.ndarray, sig: np.ndarray, direction: str, floor: float,
+          kind: str = "half") -> dict:
+    j = reference(x, direction, kind)
+    return place(x, direction, float(sig[j]), kind, floor=floor)
 
 
-def _ratio(x, sig, direction) -> float:
+def _ratio(x, sig, direction, kind: str = "half") -> float:
     """ref / σ at the reference step; −inf where ref ≤ 0 (always "no change")."""
     w = np.asarray(x, float)[list(WIN)]
-    j = reference(x, direction)
-    ref = SIGN[direction] * (w[j] - w[0])
+    j = reference(x, direction, kind)
+    ref = SIGN[direction] * (w[j] - w[0]) if kind == "half" else w[0] - w[j]
     return float(ref / sig[j]) if ref > 0 else -np.inf
 
 
@@ -437,6 +483,12 @@ def _shape(i: int) -> np.ndarray:
     centre = (X[i] + X[i + 1]) / 2
     sh = 1 / (1 + np.exp(-(X - centre) / WIDTH))
     return sh - sh[0]
+
+
+def _dip(i: int) -> np.ndarray:
+    """A turning-point row's planted shape (§4 "Placed before any unit 4 output"): a fall of 1
+    centred in gap (i, i + 1), a rise of 1/2 centred in (i + 1, i + 2); its minimum is i + 1."""
+    return -_shape(i) + 0.5 * _shape(i + 1)
 
 
 def gate_row(rid: str, units: np.ndarray, rng) -> dict:
@@ -449,10 +501,10 @@ def gate_row(rid: str, units: np.ndarray, rng) -> dict:
     checked on an independent N_GATE (check set); its power is, per gap, the least amplitude in
     AMPS (units of σ̄_ref) placed right in ≥ 90 % at that floor (check set). The frozen 4σ null
     rate and unit 2's arm (9 × σ̄ at the step past the centre) are recomputed beside, as a check."""
-    direction = ROWS[rid][1]
+    direction, kind = ROWS[rid][1], kind_of(rid)
     xd, sd = _noise_draws(units, rid, rng, N_GATE)
     xc, sc = _noise_draws(units, rid, rng, N_GATE)
-    r = np.array([_ratio(x, s, direction) for x, s in zip(xd, sd)])
+    r = np.array([_ratio(x, s, direction, kind) for x, s in zip(xd, sd)])
     # the 95 % upper confidence bound of the 95th percentile, so a correct floor passes its check
     # on fresh draws with high probability (the bare percentile passes it about half the time:
     # unit 3's first run, E2 at 0.936)
@@ -460,17 +512,17 @@ def gate_row(rid: str, units: np.ndarray, rng) -> dict:
     k = int(binom.ppf(GATE_NULL, len(r), GATE_NULL)) + 1
     own = float(np.ceil(np.sort(r)[min(k, len(r)) - 1] * 100) / 100)
     floor = max(FLOOR, own)                       # Blocked 72 (iii) (a), from unit 3 on
-    rc = np.array([_ratio(x, s, direction) for x, s in zip(xc, sc)])
+    rc = np.array([_ratio(x, s, direction, kind) for x, s in zip(xc, sc)])
     p_null = float(np.mean(rc < floor))
     p_null_frozen = float(np.mean(rc < FLOOR))
     sbar = sc.mean(axis=0)                                        # (W,)
     gaps = []
     for i in WIN[1:-1]:
         sref = float(sbar[i + 1:].max())
-        sh = SIGN[direction] * _shape(i)
+        sh = _dip(i) if kind == "turn" else SIGN[direction] * _shape(i)
 
         def placed(amp, fl):
-            return float(np.mean([_read(x + amp * sh, s, direction, fl)["index"] == i + 1
+            return float(np.mean([_read(x + amp * sh, s, direction, fl, kind)["index"] == i + 1
                                   for x, s in zip(xc, sc)]))
         ok = placed(LOW_POWER * sref, floor)
         curve = {a: placed(a * sref, floor) for a in AMPS}
@@ -520,7 +572,7 @@ def beside(x: np.ndarray, direction: str, idx: Optional[int]) -> dict:
             "flag": (idx is not None and abs(near - idx) >= 2)}
 
 
-def run(out: Path, wdir: Path, sdir: Path) -> dict:
+def run(out: Path, wdir: Path, sdir: Path, ndir: Path) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     rng = np.random.default_rng(SEED)
@@ -531,11 +583,13 @@ def run(out: Path, wdir: Path, sdir: Path) -> dict:
            "constants": {"FLOOR": FLOOR, "LOW_POWER": LOW_POWER, "N_BOOT": N_BOOT,
                          "N_GATE": N_GATE, "WIDTH": WIDTH, "SEED": SEED, "AMPS": list(AMPS)}}
     r15 = rows_e1_e5()
-    wr, sr = rows_weights(wdir), rows_sim(sdir)
+    wr, sr, nr = rows_weights(wdir), rows_sim(sdir), rows_ngram(ndir)
     rec["inputs"].update({"a3_weights_code": wr["code"], "a3_sim_code": sr["code"],
-                          "a3_weights_dir": str(wdir), "a3_sim_dir": str(sdir)})
+                          "a3_ngram_code": nr["code"], "a3_weights_dir": str(wdir),
+                          "a3_sim_dir": str(sdir), "a3_ngram_dir": str(ndir)})
     units = {"E2": row_e2(), "E5": r15["E5"], **rows_e3_e4(out / "attn_rows.json"),
-             "E7": wr["E7"], "E8": wr["E8"], "E11": sr["E11"]}
+             "E7": wr["E7"], "E8": wr["E8"], "E11": sr["E11"], "E6u": nr["E6u"],
+             "E6b": nr["E6b"]}
     print(f"rows built ({time.time() - t0:.0f} s)", flush=True)
 
     # gate first: nothing real is located before every arm is recorded
@@ -569,7 +623,8 @@ def run(out: Path, wdir: Path, sdir: Path) -> dict:
                      why=rec["gate"][rid].get("refused", "a gate arm failed"))
         else:
             g = rec["gate"][rid]
-            r.update(locate_units(units[rid], STATS[sname], direction, rng, floor=g["floor"]))
+            r.update(locate_units(units[rid], STATS[sname], direction, rng, kind_of(rid),
+                                  floor=g["floor"]))
             r["low_power_frozen"] = r["low_power"]           # ref / σ < 9, as frozen
             r["low_power"] = low_power(r, g)
             r["censored"] = censored(r)
@@ -588,8 +643,10 @@ def run(out: Path, wdir: Path, sdir: Path) -> dict:
     rows["E7"]["dense"], rows["E8"]["dense"] = wr["dense"]["E7"], wr["dense"]["E8"]
     rows["E7"]["dW_stable_rank_beside"] = wr["dense"]["dW_stable_rank"]
     rows["E11"]["trajectory_beside"] = sr["beside"]
+    rows["E6u"]["model_loss_beside"] = nr["beside"]
     for rid, r in rows.items():
-        r["beside"] = beside(np.asarray(r["series"]), r["dir"], r.get("index"))
+        d = "down" if r["dir"] == "turn" else r["dir"]               # a turn row's fall
+        r["beside"] = beside(np.asarray(r["series"]), d, r.get("index"))
     anchors = {"E1": 512, "E2": 512, "E10": 1000}
     rec["anchors"] = {k: {"want": v, "got": rows[k].get("step"), "pass": rows[k].get("step") == v}
                       for k, v in anchors.items()}
@@ -603,7 +660,8 @@ def table(rec: dict) -> str:
     h = ("| id | row | dir | reading | step | ref / σ | floor | low power | censored "
          "| centroid (beside) |")
     lines = [h, "|---|---|---|---|---|---|---|---|---|---|"]
-    for rid in ("E1", "E2", "E3", "E4", "E5", "E7", "E8", "E11", "E10", "E3_offset0"):
+    for rid in ("E1", "E2", "E3", "E4", "E5", "E6u", "E6b", "E7", "E8", "E11", "E10",
+                "E3_offset0"):
         r = rec["rows"][rid]
         ros = r.get("ref_over_sigma")
         b = r["beside"]
@@ -623,10 +681,11 @@ def main(argv=None):
     r = sub.add_parser("run"); r.add_argument("--out", type=Path, required=True)
     r.add_argument("--weights", type=Path, required=True)
     r.add_argument("--sim", type=Path, required=True)
+    r.add_argument("--ngram", type=Path, required=True)
     t = sub.add_parser("report"); t.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.cmd == "run":
-        rec = run(a.out, a.weights, a.sim)
+        rec = run(a.out, a.weights, a.sim, a.ngram)
     else:
         rec = json.loads((a.out / "a3_rows.json").read_text())
     print(table(rec))

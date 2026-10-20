@@ -193,3 +193,69 @@ def test_strict_pairs_key_follows_an_earlier_copy_of_the_query():
     assert all(ids[k - 1] == ids[q] for q, k in strict)
     off0 = set(induction_candidates(ids))
     assert (5, 1) in off0 and all(ids[k - 1] == ids[q - 1] for q, k in off0)
+
+
+def test_dip_has_its_minimum_one_step_past_the_gap():
+    for i in a3.WIN[1:-1]:
+        d = a3._dip(i)
+        assert int(np.argmin(d[list(a3.WIN)][1:])) + 1 == i + 1
+        x = 10 * d
+        r = a3.place(x, "turn", sigma=0.1, kind="turn")
+        assert r["index"] == i + 1 and r["reading"] == "located"
+
+
+def test_turn_row_gates_on_its_dip(monkeypatch):
+    """E6's gate (design-A3 §4, unit 4): the null and the planted dip at the row's own noise."""
+    monkeypatch.setattr(a3, "N_GATE", 300)
+    monkeypatch.setattr(a3, "N_BOOT", 100)
+    rng = np.random.default_rng(11)
+    g = a3.gate_row("E6u", rng.standard_normal((64, len(STEPS), 1)), rng)
+    assert g["floor"] >= 4 and g["null_no_change"] >= 0.93
+    assert min(e["placed_right"] for e in g["effect"]) >= 0.85
+
+
+def test_turn_ratio_is_the_fall_into_the_minimum():
+    x = np.zeros(len(STEPS)); x[STEPS.index(64)] = -3.0; x[STEPS.index(128):] = -1.0
+    sig = np.ones(len(a3.WIN))
+    assert a3._ratio(x, sig, "turn", "turn") == 3.0
+    assert a3._ratio(-x, sig, "turn", "turn") == -np.inf      # no fall: always "no change"
+
+
+def test_pack_blocks_starts_at_documents_and_shares_none():
+    from trackA_force.a3_ngram import pack_blocks
+    docs = [(i, [i + 1] * n + [0]) for i, n in enumerate([3, 9, 2, 2, 5, 1, 7, 4, 4, 4])]
+    c = pack_blocks(iter(docs), n_blocks=3, block=4, n_table=6)
+    assert c["block_docs"] == [[0], [1], [2, 3]]
+    assert c["blocks"].tolist() == [[1, 1, 1, 0], [2] * 4, [3, 3, 0, 4]]
+    assert c["table_docs"] == [4] and c["table"].tolist() == [5, 5, 5, 5, 5, 0]
+
+
+def test_ngram_overlap_runs():
+    from trackA_force.a3_ngram import ngrams
+    assert ngrams([1, 2, 3, 4], n=3) == {(1, 2, 3), (2, 3, 4)}
+    assert ngrams([1, 2], n=3) == set()
+
+
+def test_witten_bell_rows_and_cross_terms_match_dense_kl():
+    """The sparse cross term gives KL(q ‖ p) as computed densely, for both predictors."""
+    import torch
+    from trackA_force import a3_ngram as ng
+    rng = np.random.default_rng(12)
+    V = 40
+    table = rng.integers(0, 30, size=3000)            # ids 30..39 unseen: q_u = 0 there
+    t = ng.tables(table, V=V)
+    assert abs(t["q_u"].sum() - 1) < 1e-12
+    for v in range(V):
+        assert abs(ng.q_b_row(t, v).sum() - 1) < 1e-12
+    assert np.array_equal(ng.q_b_row(t, 35), t["q_u"])     # unseen context: q_u
+    ctx = np.array([0, 5, 35, 5, 29])
+    logp = torch.log_softmax(torch.from_numpy(rng.standard_normal((len(ctx), V))), dim=-1)
+    cu, cb = ng.cross_terms(logp, ctx, t, torch.from_numpy(t["q_u"]))
+    P = logp.numpy()
+    for k, v in enumerate(ctx):
+        qb = ng.q_b_row(t, int(v))
+        want_u = ng.neg_entropy(t["q_u"]) - t["q_u"] @ P[k]
+        want_b = ng.neg_entropy(qb) - qb @ P[k]
+        assert abs((ng.neg_entropy(t["q_u"]) - float(cu[k])) - want_u) < 1e-10
+        assert abs((ng.neg_entropy(qb) - float(cb[k])) - want_b) < 1e-10
+        assert want_b >= 0 and want_u >= 0

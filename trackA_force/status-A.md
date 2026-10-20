@@ -19,6 +19,7 @@
   - A3's locator fails its gate on the four existing floored rows (E2–E5): the null arm passes, the effect arm cannot place a 9σ move in the gaps up to 128–256, because each row's spread grows 10⁴–10⁵-fold from step 2 to 4000 and the reference is the window's largest Δ; E2–E5 are refused, E1 reads 512 and E10 1000 (their anchors) — `trackA_force/status-A.md` "A3 unit 2, the existing rows and the locator's gate (2026-10-19)"
   - A3's re-gate (Blocked 71, the user's: the effect arm at 9σ at the reference step, each row's floor and power re-derived from its own per-step spread, a censored mark) passes every arm; E2 reads 512 (its anchor), E4 1000, E5 8, E1 512, E10 1000, none censored or low power; E3 reads "no change" (2.0σ at 4000), likely because it scores the same-token key, not the successor that the 2026-10-18 correction names, so E4–E3 and E3–E2 are unread — `trackA_force/status-A.md` "A3 unit 2c, the re-gate (Blocked 71, 2026-10-19)"
   - A3 unit 3 (Blocked 72, the user's: 6 units, E3 re-defined at +1 on `L8H6` and `L11H14`, every floor max(4, own)): E3 reads 1000 (a peak, then a fall), E7 weight change 2000 (censored), E8 ESD α 1000 (a rise to 256, then a fall); E11 refused as a constant row: the simulator's final count is 1 in every cell, as Theorem 4.1 of 2411.04990 makes it for V = Id at any long horizon (beside: at t = 5–10 late checkpoints stay split from 8000 on, as A1a's t* already showed); E8's 1000 may be its fit's (512 from its peak) — `trackA_force/status-A.md` "A3 unit 3, E3 at +1 and the weights-only and simulator rows (Blocked 72, 2026-10-19)"
+  - A3 unit 4 (Blocked 73, the user's, all (a): E11 stays refused, censored rows' pairs unread, E8 read only where its two dates agree): the n-gram rows reproduce Belrose's trough on 410m's own grid, the KL of a unigram predictor to the model least at 128 and of a bigram at 256, then rising to 143000; both inside the warmup — `trackA_force/status-A.md` "A3 unit 4, the n-gram rows (2026-10-20)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -31,7 +32,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-19 · body `86440a9256`
+- **Reviewed:** 2026-10-20 · body `7f36248dda`
 <!-- /phase-card -->
 
 ## Units
@@ -54,13 +55,82 @@
 | A3 2. the producer, the existing rows, the locator and its gate | **done 2026-10-19: the gate fails its effect arm on E2–E5** (null passes); E2–E5 refused, E1 512 and E10 1000 (anchors pass; E2's anchor unread, refused) (Blocked 71) | "A3 unit 2" below; `a3.py` |
 | A3 2c. the re-gate (Blocked 71, the user's) | **done 2026-10-19: every arm passes; E2 512 (anchor passes), E4 1000, E5 8, E3 no change (2.0σ at 4000; scored at offset 0, not +1), E1 512, E10 1000; no located row censored or low power** (Blocked 72) | "A3 unit 2c" below; `a3.py` |
 | A3 3. E3 at +1, the weights-only rows, the simulator row (Blocked 72, the user's) | **done 2026-10-19: every arm passes but E11's; E3 (+1, `L8H6`, `L11H14`) 1000, E7 2000 (censored), E8 1000; E11 refused (count 1 in all 126 cells at t = 200); E2, E4, E5 unchanged at floor 4** (Blocked 73) | "A3 unit 3" below; `a3.py`, `a3_weights.py`, `a3_sim.py` |
+| A3 4. the n-gram rows (Blocked 73, the user's: all (a)) | **done 2026-10-20: both arms pass (planted dip); E6u (KL to a unigram) 128, E6b (to a Witten–Bell bigram) 256, then a rise to 143000; corpus the Pile's validation split** | "A3 unit 4" below; `a3_ngram.py`, `a3.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
 A2: 5 units plus a close-out (`design-A2.md` "Exit condition and budget"); all 5 spent; A2 closed
 2026-10-17 at its exit's "a recorded reason it cannot be read" (Blocked 60 (a)).
-A3: 6 units plus a close-out (5 frozen, 6 on the record since Blocked 72 (i) (a)); 4 spent (the
-re-gate, Blocked 71, took one); left: the n-gram rows, the reading, one spare.
+A3: 6 units plus a close-out (5 frozen, 6 on the record since Blocked 72 (i) (a)); 5 spent (the
+re-gate, Blocked 71, took one); left: the reading, one spare.
+
+## A3 unit 4, the n-gram rows (2026-10-20)
+
+Blocked 73, the user's, all (a) (2026-10-20): E11 stays refused, drawn as description; a censored
+row's pairs are unread; unit 5 states both of E8's dates (1000, 512) and reads a pair with E8 only
+where both agree (`design-A3.md` §4 "Revised 2026-10-20 (Blocked 73)"). Unit 4's constants were
+placed and committed before any output (`e63ec4e`; §4 "Placed before any unit 4 output").
+**Input:** the Pile's validation split (`val.jsonl.zst` from `mit-han-lab/pile-val-backup`,
+sha256 `264c875d8bbd`, 471 MB, main tree `data/trackA/a3/corpus/`); scored set 64 blocks × 1024
+(tokens `cfa4542e0a81`; 149 documents: Pile-CC 38, Github 21, PubMed Abstracts 18, OpenWebText2
+17, StackExchange 17, Wikipedia 12, 9 subsets with 1–7), table set 2,000,000 tokens (`817f2fdf2db8`,
+1,267 documents, 18 subsets); no document shares a 13-token run with a v1 prompt (0 dropped).
+`a3_ngram.py` `6057e3857228`, GPU float32 (RTX 3080), 18 steps at 7–8 s each (steps 0 and 143000
+first, as the quick slice; same code). `a3.py` `12ce8a01afc0` with unit 3's inputs (weights
+`eefcc5a8dea1`, simulator `a1732e526ffc`, the three `data/analysis` files as unit 2c), CPU, 4 min;
+`attn_rows.json` copied from `2026-10-19-A3u3b/` (a cache of the stored attentions). Records
+`data/trackA/a3/2026-10-20-A3u4-ngram/` (per step, `corpus.json`, `predictor_losses.json`) and
+`…/2026-10-20-A3u4/` (gate and rows) (main tree).
+
+**Gate** (floor used 4.00; own bounds E6u 2.34, E6b 2.50; the unit 3 rows' arms are bit-identical
+to unit 3's, since E6's draws come after theirs):
+
+| row | units | null "no change" at 4 (≥ 0.95) | planted dip at 9σ_ref, min over gaps (≥ 0.90) | power, gaps 2–4 … 2000–4000 (× σ̄_ref) | arm |
+|---|---|---|---|---|---|
+| E6u | 64 blocks | 1.000 | 0.968 | 6 ×9, 9, 9 | pass |
+| E6b | 64 blocks | 1.000 | 0.971 | 6 ×8, 9 ×3 | pass |
+
+**Checks placed before output:** the loss at 143000 is 2.22 nats (1.5–4); E6u at step 0 is 3.300
+against KL(q_u ‖ uniform) 3.105 (6.3 %, within 10 %); no document is in both sets. All pass.
+
+**Readings** (neither low power nor censored): **E6u at 128** (the fall into the minimum 1.845 nats,
+ref / σ 116) and **E6b at 256** (3.596 nats, 143). The other rows read as in unit 3 (E1 512, E2
+512, E3 1000, E4 1000, E5 8, E7 2000 censored, E8 1000, E10 1000, E11 refused); their ref / σ moves
+by the bootstrap's draw (E2 219.5, E3 10.5, E4 115.5, E5 20.2, E7 29.1, E8 7.8). Anchors pass. No
+pair is read here (unit 5).
+
+| step | 0 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1000 | 2000 | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| E6u, KL(q_u ‖ p), nats | 3.30 | 3.30 | 3.14 | 2.69 | 2.16 | 2.18 | 2.16 | **1.46** | 1.55 | 2.59 | 4.12 | 5.65 | 6.58 | 7.23 | 7.47 | 7.90 | 8.11 | 8.60 |
+| E6b, KL(q_b ‖ p), nats | 5.52 | 5.52 | 5.34 | 4.84 | 4.24 | 3.93 | 3.42 | 2.55 | **1.92** | 2.39 | 3.63 | 4.78 | 5.56 | 6.12 | 6.37 | 6.71 | 6.89 | 7.32 |
+| model loss (beside), nats | 11.02 | 11.02 | 10.81 | 10.24 | 9.57 | 9.20 | 8.58 | 7.51 | 6.35 | 5.28 | 3.88 | 3.10 | 2.75 | 2.56 | 2.44 | 2.36 | 2.31 | 2.22 |
+
+**Beside, not read** (computed after the readings were seen). The minima are firm: in 10,000
+resamples of the 64 blocks the minimum is at 128 (E6u) and at 256 (E6b) every time; per block, 58
+of 64 and 62 of 64; E6u(256) − E6u(128) = 0.093 ± 0.013 nats. The predictors' own loss on the
+scored set: unigram 7.95, bigram 7.02 nats, over the 65,472 next tokens they give mass (728, 1.1 %,
+are unseen in the table set). The model's loss passes the unigram's between 64 and 128 and the
+bigram's between 128 and 256, and each KL is least at the step just after. After its minimum each
+KL rises to 143000 with no second fall on this grid; Belrose's loss on sampled n-gram sequences
+falls again after about 1000 (`lit-A3.md`), a different observable (§2 "Worth challenging" 5).
+
+**What it says.** Belrose's trough (64–256, quoted) is reproduced on 410m's own grid with KL on
+real text: the model is closest to the unigram predictor at 128 and to the bigram at 256, unigram
+first, one grid step apart, both inside the warmup (E10 reads 1000).
+
+**Caveats.** (1) The bigram is counted on 2M tokens and is a weak predictor (its loss 7.02 against
+the unigram's 7.95). A table from more tokens is sharper, and its KL minimum could sit later
+(Parked below). (2) The change-mass centroid (beside) is flagged on both rows (20, 34). It reads
+monotone change mass, and most of each row's fall from step 0 lies at 8–64; it is not a
+turning-point statistic. (3) E6u falls in two stages: 3.30 → 2.16 by 16, flat at 16–64, then 1.46
+at 128. The rule dates the minimum, not the first stage. (4) Each block holds 1–5 documents and
+the 64 blocks 149, so σ over blocks is across documents and their subsets; Pile-CC and Github are
+38 and 21 of them.
+
+**Re-run:** `METS_DATA=<main>/data HF_HOME=<main>/data/hf HF_HUB_OFFLINE=1`, then
+`python -m trackA_force.a3_ngram run --corpus <main>/data/trackA/a3/corpus/val.jsonl.zst --out <n>`
+(`--steps 0 143000` first), then `python -m trackA_force.a3 run --out <dir> --weights <w> --sim <s>
+--ngram <n>`.
 
 ## A3 unit 3, E3 at +1 and the weights-only and simulator rows (Blocked 72, 2026-10-19)
 
@@ -1029,6 +1099,11 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 `tests/test_trackA_a1a.py`.
 
 ## Parked
+
+**From A3 unit 4 (2026-10-20):** E6b's bigram table size (why: 2M tokens make a weak bigram, its
+loss 7.02 against the unigram's 7.95; cost: count the rest of the validation split, CPU minutes,
+and re-run the 18-step pass, 3 GPU minutes; could change: E6b's step, so the E1–E6b pair in unit 5,
+which is aligned at 256 or 512 or 1000 and misaligned only past 1000).
 
 **From the A5 / C2 scan (2026-10-18):** `lit-C2.md` Parked 1 (full texts now fetchable) open;
 Parked 2 (PolyPythias's outlier seeds) done, already in `lit-1d.md`; Parked 3 (2602.15997's
