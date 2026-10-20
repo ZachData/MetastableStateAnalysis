@@ -2895,6 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
+## 3.61 Track A's A3 closed: on one timeline the energy break comes with the OV turn and after the n-gram minima, all inside the warmup (2026-10-20)
+
+**`trackA_force/status-A.md` "A3 on one page (closed 2026-10-20)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+18 steps, v1's 7 prompts and 64 Pile validation blocks, nothing registered.
+
+- C2's sequence now has a measured order on one run: the sphere's effective rank (8), closest to
+  unigram (128) and bigram (256) statistics, the energy break with the OV attractive fraction's
+  fall (512), previous-token and induction (1000). The half-point rule cannot order the last two;
+  the share done at 512 (0.35 against 0.03) does, as description only.
+- The OV "repulsive phase" splits in two: its fall starts with the break, and its bottom (0 from
+  1000 to 4000) comes with induction. A paper sentence of the form "break, then induction, then
+  the OV phase" is true only of the bottom.
+- Nothing here separates a shared cause from the LR schedule: every row from 128 to 1000 is
+  inside the warmup (to 1430). A5's seeds share it, so they can show the break's step is the
+  recipe's, not that it is not the schedule's. A share-done statistic is proposed for A5's text
+  (`design-A5.md` D10), where it can be fixed before output.
+
+---
+
 ## 3.60 Track B's B3 closed: a nudge reaches the induction partner from step 1000, and the response is built across depth (2026-10-19)
 
 **`trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"** holds the readings and what

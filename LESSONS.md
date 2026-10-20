@@ -175,6 +175,10 @@ world moves, nobody updates the line, and the next session acts on it.
   cleanup command this time includes `git pull --ff-only` and goes to the user.
   **Again 2026-10-15 (A1b, after #205):** still `edc8e8c`; the hook printed 10-11's `STATE.md`.
   Caught by Start step 1 (`git show origin/main:STATE.md`); the pull is still the user's.
+  **Again 2026-10-20 (A3's close, after #237):** the main tree at `f99d01b` (#211), 26 merges
+  behind; the hook printed B2a's close (Blocked 55) when the prompt named Blocked 75. Caught by
+  Start step 1; the session read `origin/main`'s `STATE.md` from the worktree. The main tree was
+  not fast-forwarded (another session may be in it); the pull is still the user's.
 - 2026-10-13 (B-pre): `claims/registry.json`'s `P-ST1` says twice that its activations and Phase 2's
   projectors "do not exist in this repository"; both have been on disk since 2026-08-31
   (`data/phase12/*/ov_projectors_*`, the v1 sweep). The registry is not edited outside a

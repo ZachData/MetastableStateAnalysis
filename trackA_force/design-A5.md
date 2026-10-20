@@ -2,7 +2,8 @@
 # Track A, A5 — generality on the PolyPythias seeds: registration text (drafted 2026-10-18, decided 2026-10-19)
 
 **Status: text decided 2026-10-19 (Blocked 68, the user's: D1–D9 all as recommended, listed
-below). Not registered; no seed's intermediate step downloaded or read.** Next before registering:
+below); D10 proposed 2026-10-20 at A3's close, yours (STATE Blocked 76). Not registered; no
+seed's intermediate step downloaded or read.** Next before registering:
 the calibration gate on seed 0 ("Before it can be registered" 2), which is A5's unit 1.
 Registering is the user's (`CLAUDE.md` "Literature scans and the registry"); this file proposes
 the text and lists the choices in it. ROADMAP §6 A5, §10.7 and §10.9. Scan: `lit-C2.md`.
@@ -49,6 +50,25 @@ counts, or if A3, which runs first, dates the break with another energy or stati
 | D7 | which seeds count | (a) all 9, seeds 3 and 4 flagged; a seed that fails to load or has a zero plateau counts as outside; (b) seeds 1, 2, 5–9 scored (7), seeds 3 and 4 read beside | PolyPythias already names **410m seeds 3 and 4 as outliers** (loss spikes, ≥ 2 SD below the mean downstream; `p1d_cluster_ensemble/lit-1d.md` §10 row 1, `design-1d.md`, which kept and flagged them), so this is decided now, not after a read (#227 finding 1). **(a), narrowly.** The claim is that the recipe sets the step, and outlier runs are the recipe too; D4 (a)'s plateau reference keeps a late spike from moving the break. The cost: if both outliers miss, the other 7 must all land (K = 7, E 52). (b) is pre-specified on a criterion independent of the energy and needs K ≥ 6 of 7 (E 44; K = 5 gives 11). Take (b) if you want the test to lose only for an energy reason |
 | D9 | what kind of first adjudication this is | (a) a reproducibility check, labelled so: it can say the dated break is not seed 0's, and is cheap to pass against D6's null; (b) make it riskier first (D5 (b), 512 only); (c) let another row carry the first adjudication (`P-ST1`, Blocked 41 (a)) and run A5 as C2's seed-robustness check | **(a)**, because C2 needs to know whether its date is seed 0's, and A5's value is that one fact. But (a) is the project's first adjudication only in name: it tests no mechanism. If "first adjudication" should mean a hypothesis that could lose on its merits, (c) (#227 finding 4) |
 | D8 | the claim, relevance | (a) H-RESIST ("trained weights resist the collapse dynamics"; the break is its founding observation, absent at init); (b) H-EMERGE, beside `CLAIM-B` | **(a)**. H-EMERGE is about co-location with circuit formation, which (a) of D1 does not test. Relevance on the rubric is yours (0.6 is the floor to enter the product) |
+
+### Proposed 2026-10-20 at A3's close: D10, yours before any seed is read
+
+A3 closed with the break and induction one grid step apart on seed 0, and the half-point rule
+cannot order steps inside one grid step. At step 512, though, the share of each move already done
+does order them (`trackA_force/status-A.md` "A3 on one page", reading 4). That was seen after
+A3's readings, so on 410m it is description. The seeds are unread, so A5 is the first place it
+can be fixed before output (`design-A3.md` §5; Blocked 75 (c)). D1–D9 stand as decided; the entry
+below changes only if (b) is taken.
+
+| # | choice | options | recommended, and why |
+|---|---|---|---|
+| D10 | ordering the break and induction inside one grid step | (a) descriptive, beside K, fixed now: per seed, the share of each move done at step 512. For the break, V(512) over D4's plateau median; for induction, Δ(512)/ref with A3's locator (Δ from step 0, ref the largest Δ over steps ≤ 4000), on the induction row the notes already report. Reported per seed, with the count of seeds whose break share exceeds their induction share; a seed whose induction reference is at 4000 is marked censored, as in A3; no p, no E; (b) as (a), but scored as a second entry; (c) leave it out | **(a).** D1 (b) was rejected because the grid has nothing between 512 and 1000. The share reads inside that gap without a new checkpoint, and it is the one statistic that orders C2's sequence there. (b) rests on a statistic seen on seed 0 after the readings, needs its own null and calibration gate, and puts a second entry under one claim (D2 (c)'s objection). (c) keeps A5 simpler, but then C2 can quote the order on seed 0 only |
+
+If (a) is taken: the notes gain one line. The calibration gate's known-answer arm also states
+both shares on seed 0 before any seed is read. The break's is 56 / 57 = 0.98, which follows
+from the panel counts it already checks. The induction share depends on how the notes' per-seed
+induction row picks its head, since seeds do not share `L8H6` and `L11H14`. That choice is fixed
+in A5's unit 1, before the gate.
 
 **Not a choice, fixed with the entry:** the 18-step grid (`trackA_force/a1a.py` `STEPS`; the
 statistic reads steps up to the half-rise and 143000, the rest are descriptive); one-sided; the
