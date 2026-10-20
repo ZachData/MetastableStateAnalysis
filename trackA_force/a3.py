@@ -904,12 +904,12 @@ def main(argv=None):
 def pairs_table(rd: dict) -> str:
     lines = ["| pair | steps | verdict | first | notes |", "|---|---|---|---|---|"]
     for p in rd["pairs"]:
-        st = "; ".join(f"{k} {' | '.join(map(str, v))}" for k, v in p.get("steps", {}).items())
+        st = "; ".join(f"{k} {' / '.join(map(str, v))}" for k, v in p.get("steps", {}).items())
         notes = "; ".join(p.get("notes", [])) or p.get("why", "")
         lines.append(f"| {p['pair'][0]}–{p['pair'][1]} | {st or '—'} | {p['verdict']} "
                      f"| {p.get('first', '—')} | {notes} |")
     lines.append("order: " + " < ".join(
-        "=".join(o["rows"]) + f" ({' | '.join(map(str, o['steps']))})" for o in rd["order"]))
+        "=".join(o["rows"]) + f" ({' / '.join(map(str, o['steps']))})" for o in rd["order"]))
     lines.append(f"unigram first: {rd['unigram_first']}")
     return "\n".join(lines)
 

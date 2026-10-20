@@ -1277,6 +1277,15 @@ of a design before running it, and print it on every record
   repo's own theorems say its value is in the limit; a statistic fixed by a theorem is not a
   row. Also, a quick slice that already shows the final value (the `--quick` cell read 1 from
   t = 20) stops the batch.**
+- 2026-10-20 (A3 unit 5): #236's review re-worded E6 as "the step where the model's loss passes each
+  predictor's own", and Claude adopted it on a check run on the same 2M tables (48 and 55 of 64
+  blocks). That check could not reject the other reading, that the minimum belongs to the model's
+  trajectory and not to the table. Blocked 74 (a)'s recount (a bigram 1.24 nats sharper) kept the
+  minimum at 256 while the crossing moved to 512 (a match in 7 of 64 blocks), so the wording went
+  into the card and was corrected one unit later. Cost: a correction line; no reading changed.
+  Rule: **an explanation of where a statistic lands is checked against a variant that moves the
+  proposed cause (here the table's quality) before it goes into the card; a check on the inputs it
+  was built from is a description.**
 
 ## 7. Literature found after the construction was built
 

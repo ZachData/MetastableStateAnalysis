@@ -19,7 +19,8 @@
   - A3's locator fails its gate on the four existing floored rows (E2–E5): the null arm passes, the effect arm cannot place a 9σ move in the gaps up to 128–256, because each row's spread grows 10⁴–10⁵-fold from step 2 to 4000 and the reference is the window's largest Δ; E2–E5 are refused, E1 reads 512 and E10 1000 (their anchors) — `trackA_force/status-A.md` "A3 unit 2, the existing rows and the locator's gate (2026-10-19)"
   - A3's re-gate (Blocked 71, the user's: the effect arm at 9σ at the reference step, each row's floor and power re-derived from its own per-step spread, a censored mark) passes every arm; E2 reads 512 (its anchor), E4 1000, E5 8, E1 512, E10 1000, none censored or low power; E3 reads "no change" (2.0σ at 4000), likely because it scores the same-token key, not the successor that the 2026-10-18 correction names, so E4–E3 and E3–E2 are unread — `trackA_force/status-A.md` "A3 unit 2c, the re-gate (Blocked 71, 2026-10-19)"
   - A3 unit 3 (Blocked 72, the user's: 6 units, E3 re-defined at +1 on `L8H6` and `L11H14`, every floor max(4, own)): E3 reads 1000 (a peak, then a fall), E7 weight change 2000 (censored), E8 ESD α 1000 (a rise to 256, then a fall); E11 refused as a constant row: the simulator's final count is 1 in every cell, as Theorem 4.1 of 2411.04990 makes it for V = Id at any long horizon (beside: at t = 5–10 late checkpoints stay split from 8000 on, as A1a's t* already showed); E8's 1000 may be its fit's (512 from its peak) — `trackA_force/status-A.md` "A3 unit 3, E3 at +1 and the weights-only and simulator rows (Blocked 72, 2026-10-19)"
-  - A3 unit 4 (Blocked 73, the user's, all (a): E11 stays refused, censored rows' pairs unread, E8 read only where its two dates agree): the KL of a unigram predictor to the model is least at 128 and of a bigram at 256 (inside Belrose's 64–256 band, a different observable), each where the model's loss passes that predictor's own; both inside the warmup; E6b's step may move with the bigram table (Blocked 74) — `trackA_force/status-A.md` "A3 unit 4, the n-gram rows (2026-10-20)"
+  - A3 unit 4 (Blocked 73, the user's, all (a): E11 stays refused, censored rows' pairs unread, E8 read only where its two dates agree): the KL of a unigram predictor to the model is least at 128 and of a bigram at 256 (inside Belrose's 64–256 band, a different observable), both inside the warmup; the match with where the model's loss passes each predictor's own held for the 2M tables only (corrected by unit 5) — `trackA_force/status-A.md` "A3 unit 4, the n-gram rows (2026-10-20)"
+  - A3 unit 5, the reading (Blocked 74 (a), the user's): the bigram counted on 340M tokens still reads 256; of the 11 pairs 7 are aligned, all inside the warmup (E1 with E2, E3, E4, E6b, E8; E4–E3; E3–E2), 2 misaligned (the rank collapse at 8 and the unigram minimum at 128 come before the energy break at 512), 2 unread (E7 censored, E11 refused); the order is E5 < E6u < E6b < E1 = E2 < E8 < E3 = E4 = E10, and previous-token and induction are not ordered on this grid — `trackA_force/status-A.md` "A3 unit 5, the reading (2026-10-20)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -32,7 +33,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-20 · body `90b4bb8ba6`
+- **Reviewed:** 2026-10-20 · body `a2d49c92b0`
 <!-- /phase-card -->
 
 ## Units
@@ -56,13 +57,137 @@
 | A3 2c. the re-gate (Blocked 71, the user's) | **done 2026-10-19: every arm passes; E2 512 (anchor passes), E4 1000, E5 8, E3 no change (2.0σ at 4000; scored at offset 0, not +1), E1 512, E10 1000; no located row censored or low power** (Blocked 72) | "A3 unit 2c" below; `a3.py` |
 | A3 3. E3 at +1, the weights-only rows, the simulator row (Blocked 72, the user's) | **done 2026-10-19: every arm passes but E11's; E3 (+1, `L8H6`, `L11H14`) 1000, E7 2000 (censored), E8 1000; E11 refused (count 1 in all 126 cells at t = 200); E2, E4, E5 unchanged at floor 4** (Blocked 73) | "A3 unit 3" below; `a3.py`, `a3_weights.py`, `a3_sim.py` |
 | A3 4. the n-gram rows (Blocked 73, the user's: all (a)) | **done 2026-10-20: both arms pass (planted dip); E6u (KL to a unigram) 128, E6b (to a Witten–Bell bigram) 256, then a rise to 143000; corpus the Pile's validation split** | "A3 unit 4" below; `a3_ngram.py`, `a3.py` |
+| A3 5. the reading (Blocked 74, the user's: (a)) | **done 2026-10-20: E6b′ (the bigram on 340M tokens) 256, as E6b; 7 pairs aligned (all inside warmup), 2 misaligned (E5 and E6u before E1), 2 unread (E7 censored, E11 refused); order E5 < E6u < E6b < E1 = E2 < E8 < E3 = E4 = E10; E4–E3 not ordered on the grid; unit 4's loss-milestone wording corrected** | "A3 unit 5" below; `a3.py`, `a3_ngram.py` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
 A2: 5 units plus a close-out (`design-A2.md` "Exit condition and budget"); all 5 spent; A2 closed
 2026-10-17 at its exit's "a recorded reason it cannot be read" (Blocked 60 (a)).
-A3: 6 units plus a close-out (5 frozen, 6 on the record since Blocked 72 (i) (a)); 5 spent (the
-re-gate, Blocked 71, took one); left: the reading, one spare.
+A3: 6 units plus a close-out (5 frozen, 6 on the record since Blocked 72 (i) (a)); 6 spent (the
+re-gate, Blocked 71, took one; unit 5, the reading, is the sixth); left: the close-out (writing
+only). The spare was not needed.
+
+## A3 unit 5, the reading (2026-10-20)
+
+Blocked 74, the user's, (a) (2026-10-20): the bigram is also counted on the rest of the validation
+split, E6b is given at both dates, and a pair with E6b, or "unigram first", is read only where both
+agree. The rules for this unit (table set′, E6b′, its checks, the two-date rule for E6b and E8, the
+pairs, the order, the figure) were placed and committed before any output (`ca99578`; `design-A3.md`
+§4 "Placed before any unit 5 output"). **Input:** table set′ is every kept document of the split
+outside the scored set: 214,509 documents in 22 subsets, 340,525,892 tokens (`12dc3dcf879e`). Of
+the split's 214,670 documents, 149 are scored and 12 were dropped by the 13-token overlap check.
+The scored set is unit 4's 64 blocks (`cfa4542e0a81`). `a3_ngram.py` `f5932517f0ca`, CPU tables
+and GPU float32 forward passes, 8 min. `a3.py` `92c992e25340` (the next commit changes only the
+report's separator), with unit 4's inputs; CPU, 4.5 min. Records `data/trackA/a3/2026-10-20-A3u5-ngram-full/`
+and `…/2026-10-20-A3u5/` (rows, gate and reading; main tree).
+
+**Checks placed before output:** all pass.
+- Table set′'s first 2,000,000 tokens are unit 4's table (`817f2fdf2db8`).
+- No scored document is in table set′ (all 149 excluded by index).
+- The bigram′'s own loss on the scored set is 5.78 nats, below the 2M bigram's 7.02.
+- E6u′ at step 0 is 3.099, against KL(q_u′ ‖ uniform) 2.911 (6.5 %, within 10 %).
+- The model's loss is 2.22 nats at 143000, and identical per block to unit 4's (largest gap 0.0).
+- E8 dated from its peak reads 512, as unit 3 gave.
+
+The earlier rows' gate arms are bit-identical to unit 4's (E6b′ is gated last).
+
+**Gate, E6b′** (64 blocks; own bound 2.52, floor used 4.00): the null gives "no change" in 1.000;
+the planted dip is placed right in at least 0.956 (the 2000–4000 gap); power 6 × 8, then 9 × 3.
+Pass.
+
+**The table** (`design-A3.md` exit: every row has a reading):
+
+| id | row | reading | ref / σ | marks |
+|---|---|---|---|---|
+| E5 | effective rank on the sphere | **8** | 20.7 | |
+| E6u | KL to a unigram | **128** | 118.4 | turning point |
+| E6b | KL to a bigram, 2M tokens / table set′ | **256 / 256** | 140.4 / 156.4 | turning point; two dates (74 (a)) |
+| E1 | energy violations (D4 (a)) | **512** | — | anchor |
+| E2 | OV attractive fraction | **512** | 226.7 | anchor |
+| E8 | ESD tail α, against step 0 / from its peak at 256 | **1000 / 512** | 8.3 | two dates (73 (iii)) |
+| E3 | induction at +1 (`L8H6`, `L11H14`) | **1000** | 11.9 | re-defined (72 (ii)) |
+| E4 | previous-token score of `L5H2` | **1000** | 120.6 | |
+| E10 | LR schedule | **1000** | — | the confound; anchor |
+| E7 | weight change | 2000 | 29.2 | **censored** (reference at 4000) |
+| E11 | simulator's final cluster count | **refused** | — | constant row |
+
+None is low power. The change-mass centroid (beside) is flagged on E5, E6u, E6b and E6b′, as
+before (caveat 2 of unit 4).
+
+**The pairs** (§3; by code, `a3.py` `read_pair`):
+
+| pair | steps | verdict | notes |
+|---|---|---|---|
+| E1–E2 | 512, 512 | aligned | a reproduction (§3 (ii)), not a finding; inside warmup |
+| E1–E3 | 512, 1000 | aligned | one grid step: anything in 256–2000; inside warmup |
+| E1–E4 | 512, 1000 | aligned | as E1–E3 |
+| E1–E5 | 512, 8 | **misaligned, E5 first** | six grid steps; inside warmup |
+| E1–E6u | 512, 128 | **misaligned, E6u first** | two grid steps; inside warmup |
+| E1–E6b | 512, 256 / 256 | aligned at both dates | one grid step; inside warmup |
+| E1–E7 | — | unread | E7 censored (73 (ii)) |
+| E1–E8 | 512, 1000 / 512 | aligned at both dates | inside warmup |
+| E1–E11 | — | unread | E11 refused |
+| E4–E3 | 1000, 1000 | aligned | the same step: previous-token and induction are not ordered on this grid |
+| E3–E2 | 1000, 512 | aligned | one grid step; inside warmup |
+
+So 7 aligned, 2 misaligned, 2 unread. **The order** (equal steps are ties): E5 (8) < E6u (128) <
+E6b (256 / 256) < E1 = E2 (512) < E8 (1000 / 512) < E3 = E4 = E10 (1000). E7 (censored) and E11
+(refused) are not in it. **Unigram first:** yes; 128 is before both of E6b's dates, by one grid step.
+
+**The figure** is on the page (https://claude.ai/artifact/PDA1NVy7PCSH6gexkqh1xB; built from `…/2026-10-20-A3u5/a3_rows.json`'s `reading`). It has one lane per row (Δ / ref on the 18 steps), the warmup
+band, the window's end, E7 and E8's 32-step curves, and the quoted rows as bands.
+
+| step | 0 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1000 | 2000 | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| E6b′, KL(q_b′ ‖ p), nats | 5.32 | 5.32 | 5.13 | 4.59 | 3.96 | 3.62 | 3.04 | 2.11 | **1.27** | 1.54 | 2.70 | 3.76 | 4.49 | 5.02 | 5.26 | 5.59 | 5.76 | 6.15 |
+| E6u′ (beside), nats | 3.10 | 3.10 | 2.92 | 2.44 | 1.89 | 1.92 | 1.92 | **1.23** | 1.33 | 2.36 | 3.89 | 5.41 | 6.34 | 6.97 | 7.21 | 7.64 | 7.85 | 8.32 |
+
+**Beside, not read** (computed after the readings were seen):
+- E6b′'s minimum is at 256 in 10,000 of 10,000 block resamples, and in 62 of 64 blocks.
+  E6b′(512) − E6b′(256) is 0.270 ± 0.024 nats.
+- **The minimum did not follow the predictor's loss.** The model's loss passes the bigram′'s own
+  5.78 nats between 256 (6.35) and 512 (5.28). Per block, the first step below 5.78 is 512 in 45
+  of 64 blocks and 256 in only 5. The KL minimum is at that first crossing in 7 of 64 blocks,
+  against 55 for the 2M bigram.
+- E6u′ (the unigram on table set′, loss 7.90 against 7.95) stays at 128 (10,000 of 10,000).
+
+**What it says.**
+- On pythia-410m's 18 checkpoints, the measured changes come in this order:
+  1. the sphere's effective rank (8);
+  2. closest to unigram statistics (128);
+  3. closest to bigram statistics (256, the same at 2M and at 340M tokens of table);
+  4. the energy break and the OV repulsive turn (512, together);
+  5. previous-token and induction at +1 (1000, together, with the ESD fall).
+- Weight change is still rising when the window ends.
+- The energy break (E1) is aligned with the bigram minimum, the OV turn, induction, previous-token
+  and the ESD fall. It is misaligned with the rank collapse and with the unigram minimum, which both
+  come first.
+- Every row from 128 to 1000 sits inside the LR warmup (E10 reads 1000; it ends at 1430). So no
+  alignment here separates a shared cause from the schedule (§3 (i)).
+- "Aligned" is a doubling of the step. E4–E3 is at one step, and E3–E2 one step apart, so C2's
+  order inside the circuit (previous-token before induction before the OV turn) is **not resolved
+  by this grid**. No checkpoint lies between 512 and 1000, or between 1000 and 2000 (§1).
+- **Correction to unit 4's "What it says"** (#236 finding 1's re-wording). E6 is not simply
+  "when the model's loss passes each predictor's own". That held for both 2M predictors (48 and 55
+  of 64 blocks), but the bigram′ is 1.24 nats sharper, and its minimum stays at 256 while the
+  crossing moves to 512. E6b's date did not move with the table; its match with the loss crossing
+  held for the 2M tables only.
+
+**Caveats.**
+1. Every aligned pair is inside the warmup.
+2. E6b′ is the same row with a sharper table, not an independent row. Its agreement shows the date
+   is robust to table size, which is all Blocked 74 asked.
+3. E8's two dates differ by one step and give one verdict against E1. Its fall is not ordered
+   against E1 or E2 (unit 3, caveat 3).
+4. The table, pairs and order read only the frozen family. The quoted rows are drawn on the page,
+   not read.
+5. 410m only, v1 prompts and 64 blocks; tier 1, unregistered (§5).
+
+**Re-run:** `METS_DATA=<main>/data HF_HOME=<main>/data/hf HF_HUB_OFFLINE=1`, then
+`python -m trackA_force.a3_ngram run --corpus <main>/data/trackA/a3/corpus/val.jsonl.zst --out <f>
+--scored <unit 4's dir>` (`--steps 0 143000` first), then `python -m trackA_force.a3 run --out
+<dir> --weights <w> --sim <s> --ngram <unit 4's dir> --ngram-full <f>` (`attn_rows.json` copied
+into `<dir>` as in unit 4).
 
 ## A3 unit 4, the n-gram rows (2026-10-20)
 
@@ -124,7 +249,10 @@ is the first step whose block loss is below that predictor's in 48 of 64 blocks 
 64 (E6b), and within one step in 63 and 64 (checked on these records). On real text the rise
 after the minimum is forced: a model that uses context must move away from any n-gram. So E6 is a
 loss milestone at the predictors' levels, and E6b's step moves with the bigram table's quality
-(caveat 1, STATE Blocked 74). Unit 5 states it so.
+(caveat 1, STATE Blocked 74). Unit 5 states it so. *(Corrected by unit 5, 2026-10-20: with the bigram
+counted on table set′ (its loss 5.78), the minimum stays at 256 while the loss crossing moves to
+512 (first crossing = minimum in 7 of 64 blocks). The milestone reading held for the 2M tables only,
+and E6b's step did not move: "A3 unit 5".)*
 
 **Caveats.** (1) The bigram is counted on 2M tokens and is a weak predictor (its loss 7.02 against
 the unigram's 7.95). A table from more tokens is sharper, and its KL minimum could sit later
@@ -1114,7 +1242,8 @@ at 5.6, n = 467), so A1's comparator is the causal simulation from the measured 
 loss 7.02 against the unigram's 7.95; cost: count the rest of the validation split, CPU minutes,
 and re-run the 18-step pass, 3 GPU minutes; could change: E6b's step, so the E1–E6b pair in unit 5,
 which is aligned at 256, 512 or 1000 and misaligned only past 1000, and "unigram first"). Raised
-to the user as STATE Blocked 74 (`/challenge-pr` on #236, finding 2).
+to the user as STATE Blocked 74 (`/challenge-pr` on #236, finding 2). **Done** (unit 5, Blocked 74
+(a)): E6b′ on 340M tokens reads 256, as E6b; nothing it could change changed.
 
 **From the A5 / C2 scan (2026-10-18):** `lit-C2.md` Parked 1 (full texts now fetchable) open;
 Parked 2 (PolyPythias's outlier seeds) done, already in `lit-1d.md`; Parked 3 (2602.15997's
