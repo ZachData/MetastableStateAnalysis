@@ -23,7 +23,7 @@
   - A3 unit 5, the reading (Blocked 74 (a), the user's): the bigram counted on 340M tokens still reads 256; of the 11 pairs 7 are aligned, all inside the warmup (E1 with E2, E3, E4, E6b, E8; E4–E3; E3–E2), 2 misaligned (the rank collapse at 8 and the unigram minimum at 128 come before the energy break at 512), 2 unread (E7 censored, E11 refused); the order is E5 < E6u < E6b < E1 = E2 < E8 < E3 = E4 = E10, and the half-point rule does not order previous-token and induction (at 512 the shares of their moves done are 0.35 and 0.03, beside the break's 0.98 and the OV fall's 0.81, seen after the readings) — `trackA_force/status-A.md` "A3 unit 5, the reading (2026-10-20)"
   - A3 closed 2026-10-20 at its exit (Blocked 75 (c)): the order on one table, every aligned pair inside the LR warmup; C2's "break, then induction, then the OV phase" is shown in neither reading (the OV fall starts with the break, its bottom ties induction); a tie-breaker inside one grid step is proposed for A5's text, not used on 410m — `trackA_force/status-A.md` "A3 on one page (closed 2026-10-20)"
   - A5's calibration gate passes on seed 0 (D10 (a) taken, Blocked 76): the new producer reproduces the panel's counts at all 18 steps and the half-rise at 512; a one-step-later plant reads 1000; the planted null is inside exactly at 256 and 512; 512 at every tolerance and with any prompt left out; D10's rule ties previous-token and induction at 1000 on seed 0, previous-token further along at 512 — `trackA_force/status-A.md` "A5 unit 1, the producer and the calibration gate on seed 0 (2026-10-20)"
-  - `P-A5` on the 9 PolyPythias seeds, registered before any was downloaded: K = 9 of 9 (7 at 512, seeds 3 and 9 at 256), p 9.9e-8, E 1587 against a uniform-location null; no seed near the window's edges; the step is the recipe's, not seed 0's, though the shared LR warmup cannot be told apart; not yet adjudicated — `trackA_force/status-A.md` "A5 units 2 and 3, the batch and the reading (2026-10-20)"
+  - `P-A5` on the 9 PolyPythias seeds, registered before any intermediate step was downloaded: K = 9 of 9 (7 at 512, seeds 3 and 9 at 256), p 9.9e-8, E 1587 against a uniform-location null; no seed near the window's edges; the step is the recipe's, not seed 0's, though the shared LR warmup cannot be told apart; not yet adjudicated — `trackA_force/status-A.md` "A5 units 2 and 3, the batch and the reading (2026-10-20)"
 - **Superseded / wrong:** none
 - **Registry:** `P-A5` (registered 2026-10-20 by the user, `c2eb9a7`; scored, K = 9, not yet in the ledger, Blocked 78); A1 gives `P-gamma2` a number on 410m, an exploration rung, not an adjudication — `trackA_force/design-A5.md`; `trackA_force/design-A.md` "Fences"
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -37,7 +37,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-20 · body `bacc651c6d`
+- **Reviewed:** 2026-10-20 · body `4e51de86ea`
 <!-- /phase-card -->
 
 ## Units
@@ -65,7 +65,7 @@
 | A3 close-out | **done 2026-10-20** (Blocked 75 (c); writing only): A3 closed at its exit; a tie-breaker proposed as `design-A5.md` D10 | "A3 on one page" below |
 | A5 1. the producer and the calibration gate on seed 0 (Blocked 76 (a), the user's) | **done 2026-10-20: every arm passes** (the panel's counts reproduced at all 18 steps, half-rise 512; planted effect 1000; planted null inside exactly at 256 and 512; sensitivity 512 in 10 of 10); D10's rule picks `L5H2` and `L7H1` on seed 0, previous-token–induction tied at 1000, previous-token further along at 512 (Blocked 77) | "A5 unit 1" below; `a5_seeds.py` |
 | A5 2. the download and the batch (after `P-A5` registered, Blocked 77 (a), the user's) | **done 2026-10-20: 9 seeds × 126 records, none failed to load** (`runner`, 1 h 16 min, no fix) | "A5 units 2 and 3" below |
-| A5 3. the reading | **done 2026-10-20: K = 9 of 9, p 9.9e-8, E 1587 against the uniform-location null**; 7 at 512, seeds 3 and 9 at 256; no seed near an edge; step 0 not monotone in 5 seeds (beside); D10: previous-token ahead at 512 on 7 of 8 ties. Not adjudicated (Blocked 78) | "A5 units 2 and 3" below; `a5_record.py`, `claims/audits/p_a5_real_run.json` |
+| A5 3. the reading | **done 2026-10-20: K = 9 of 9**; 7 at 512, seeds 3 and 9 at 256; no seed near an edge; step 0 not monotone in 5 seeds (beside); D10: previous-token ahead at 512 on 7 of 8 ties. Not adjudicated (Blocked 78) | "A5 units 2 and 3" below; `a5_record.py`, `claims/audits/p_a5_real_run.json` |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
@@ -80,8 +80,18 @@ the reading); the exit's "K and its E reported on the 9 seeds" is met. Next: the
 
 ## A5 units 2 and 3, the batch and the reading (2026-10-20)
 
-`P-A5` registered by the user before any seed step was downloaded (Blocked 77 (a), the user's;
-commit `c2eb9a7`, relevance 0.6, the user's). Then unit 2, the batch, and unit 3, the reading.
+`P-A5` registered by the user before any seed's intermediate step was downloaded (Blocked 77 (a),
+the user's; commit `c2eb9a7`, relevance 0.6, the user's). Each seed's steps 0 and 143000 were
+already cached, and 1d had read step 0. Then unit 2, the batch, and unit 3, the reading.
+
+**The order, recorded** (`/challenge-pr` on #240, finding 3): `c2eb9a7` committed 13:36:35 −05:00
+(18:36:35Z), first on GitHub 18:38:17Z (pushed as the parent of `c337961`, GitHub's branch
+events), first Hugging Face fetch for a seed 18:38:34Z (seed 1's step-0 smoke, cached weights;
+the batch's first intermediate download began 18:39:57Z), first record 18:39:17Z. The record
+carries the registration commit, its time and the first record's (`order`, `registered_first:
+true`), each step's revision hash (`revisions`, from the cache's refs) and the `core/` modules'
+hashes (`core_sha256`; `code_sha` covers only `a5_seeds.py`, `a3.py`, `a1a.py`; `core/` last
+changed 2026-09-30). Merged as a merge commit, `c2eb9a7` keeps its timestamp in `main`'s history.
 
 **Input set:** `EleutherAI/pythia-410m-seed{1..9}`, the 18 steps (`a1a.STEPS`; 16 downloaded per
 seed to `HDD_1TB/mets_data/hf`, step 0 and 143000 copied from the main tree's cache), the 7 v1
@@ -139,7 +149,9 @@ show"); anything about mechanism; any order inside the 512–1000 gap beyond D10
 **Not yet done:** the adjudication. The p is not written to `claims/adjudications/` and the
 registry's `real_run_record` is still null. Both are the user's: the first ledger record in the
 project, and a registry edit (STATE Blocked 78). `core.adjudication.adjudicate(..., dry_run=True)`
-on this record accepts it (E 1587, no refusal).
+on this record accepts it (no refusal). With it, H-RESIST's e-process would read `reject_null` on
+this one factor (E above 1/α = 20; relevance does not weight E), on a check against a null nobody
+holds (`/challenge-pr` on #240, finding 1).
 
 **Re-run:** the batch is `python -m trackA_force.a5_seeds run --seed N --allow-download --out
 <main>/data/trackA/a5/2026-10-20-u2/seedN` for N = 1–9 (`HF_HOME` on `HDD_1TB`; about 8 min per

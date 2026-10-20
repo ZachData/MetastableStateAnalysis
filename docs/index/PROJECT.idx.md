@@ -68,7 +68,7 @@ Indent marks depth: none = `##`, `·` = `###`, `··` = `####`; a bold **A.** ro
 | 2691 | 24 | 358 | · 3.14.3 Defects found this session, not yet fixed |
 | 2715 | 100 | 1.5k | 3.15 The ablation mode is not a detail (2026-09-11) |
 | 2815 | 83 | 1.2k | 3.16 The verified literature scan, and the phase-8 reframe (2026-09-12) |
-| 2898 | 17 | 236 | 3.62 The first registered prediction scored on held-out runs: `P-A5`, K = 9 of 9 (2026-10-20) |
+| 2898 | 17 | 252 | 3.62 The first registered prediction scored on held-out runs: `P-A5`, K = 9 of 9 (2026-10-20) |
 | 2915 | 21 | 361 | 3.61 Track A's A3 closed: on one timeline the energy break comes with the OV turn and after the n-gram minima, all inside the warmup (2026-… |
 | 2936 | 22 | 383 | 3.60 Track B's B3 closed: a nudge reaches the induction partner from step 1000, and the response is built across depth (2026-10-19) |
 | 2958 | 21 | 377 | 3.59 Track B's B2 closed: in the weights `L5H2` writes into three induction heads' keys; no OV column was shown to differ (2026-10-18) |

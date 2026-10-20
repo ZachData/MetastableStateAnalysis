@@ -219,6 +219,14 @@ def _evidence_index() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
             for pid, gate_mod in gate_of.items():
                 if gate_mod in mods:
                     sink.setdefault(pid, set()).add(f.name)
+    # The entry's own `calibration_record` is declared evidence (check_registry
+    # keeps it tracked), so it counts whatever its prose says: a gate record
+    # written as plain data carries neither a marker nor a `.py` path.
+    for p in reg.get("predictions", []):
+        rec = p.get("calibration_record")
+        if rec and (ROOT / rec).exists():
+            sink = dry if Path(rec).parent == AUDITS.relative_to(ROOT) else calib
+            sink.setdefault(p["id"], set()).add(Path(rec).name)
     return dry, calib
 
 

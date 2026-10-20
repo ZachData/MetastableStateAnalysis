@@ -139,7 +139,7 @@ behaviour of the construction (`claims/calibration/`).
 | `P-AB1` | `7` · 7-patching | `H-BRIDGE` | **none** | patching_exponent.json | — | — | not adjudicated |
 | `P-I1` | `7` · 7-A | `H-BRIDGE` | claim_b_p_i1_dry_run.json | — | — | — | not adjudicated |
 | `P-I3` | `7` · 7-C | `H-BRIDGE` | **none** | cross_head_association.json | — | — | not adjudicated |
-| `P-A5` | `A` · A5 | `H-RESIST` | **none** | — | — | — | not adjudicated |
+| `P-A5` | `A` · A5 | `H-RESIST` | p_a5_dry_run.json | — | — | — | not adjudicated |
 
 ## Per claim
 
@@ -192,7 +192,6 @@ carries no Type-I guarantee whatever its control distribution looks like.
 
 - **`P-AB1`** (`7` · 7-patching, gate `p7_motifs.patching_gate:p_value_p_ab1`) — patching_exponent.json.
 - **`P-I3`** (`7` · 7-C, gate `p7_motifs.cross_head_gate:p_value_p_i3`) — cross_head_association.json.
-- **`P-A5`** (`A` · A5, gate `trackA_force.a5_seeds:p_value_p_a5`) — no calibration either.
 
 `POPPER_PLAN.md` §6p records the base rate on the nine rows that had one:
 *"Nine for nine, every one of them changed something. … not one converted row
