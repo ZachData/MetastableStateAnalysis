@@ -53,22 +53,29 @@ counts, or if A3, which runs first, dates the break with another energy or stati
 
 ### Proposed 2026-10-20 at A3's close: D10, yours before any seed is read
 
-A3 closed with the break and induction one grid step apart on seed 0, and the half-point rule
-cannot order steps inside one grid step. At step 512, though, the share of each move already done
-does order them (`trackA_force/status-A.md` "A3 on one page", reading 4). That was seen after
-A3's readings, so on 410m it is description. The seeds are unread, so A5 is the first place it
-can be fixed before output (`design-A3.md` §5; Blocked 75 (c)). D1–D9 stand as decided; the entry
-below changes only if (b) is taken.
+On seed 0, A3's half-point rule put previous-token and induction on the same step (1000). At the
+grid step before it (512), the share of each move already done does order them
+(`trackA_force/status-A.md` "A3 on one page", reading 4). That was seen after A3's readings, so on
+410m it is description. The seeds are unread, so A5 is the first place a tie-breaker can be fixed
+before output (`design-A3.md` §5; Blocked 75 (c)). D1–D9 stand as decided; the entry below
+changes only if (b) is taken.
+
+**Carried from A3, needed whatever D10 says:** the notes' "per-seed induction onset (7d's score)"
+reads 7d's score at the same-token key (offset 0). On seed 0 that row reads "no change" under
+A3's locator, which is why A3 re-defined induction at the successor (+1) (`status-A.md` "A3 unit
+2c", "A3 unit 3"; `p7d_redundancy/status-7d.md` 2026-10-18). A5's induction row is therefore
+read at +1 (`/challenge-pr` on #238, finding 1).
 
 | # | choice | options | recommended, and why |
 |---|---|---|---|
-| D10 | ordering the break and induction inside one grid step | (a) descriptive, beside K, fixed now: per seed, the share of each move done at step 512. For the break, V(512) over D4's plateau median; for induction, Δ(512)/ref with A3's locator (Δ from step 0, ref the largest Δ over steps ≤ 4000), on the induction row the notes already report. Reported per seed, with the count of seeds whose break share exceeds their induction share; a seed whose induction reference is at 4000 is marked censored, as in A3; no p, no E; (b) as (a), but scored as a second entry; (c) leave it out | **(a).** D1 (b) was rejected because the grid has nothing between 512 and 1000. The share reads inside that gap without a new checkpoint, and it is the one statistic that orders C2's sequence there. (b) rests on a statistic seen on seed 0 after the readings, needs its own null and calibration gate, and puts a second entry under one claim (D2 (c)'s objection). (c) keeps A5 simpler, but then C2 can quote the order on seed 0 only |
+| D10 | a tie-breaker inside one grid step | (a) descriptive, beside K, fixed now. For a pair of rows whose half-point steps are equal on a seed, report each row's share done at the grid step before. Each share is taken against the reference that dates that row: V over D4's plateau median for the break, Δ / ref by A3's locator for the others. Pairs: break–induction and previous-token–induction. Per seed, which row is further along, with the LR schedule's share at that step beside (0.36 at 512); a seed whose reference is at 4000 is marked censored; no p, no E; (b) as (a), but scored as a second entry; (c) leave it out | **(a).** It is used only where the half-point rule ties. Where the dates differ, the shares repeat them: a break in (128, 512] has a share of at least 0.5 at 512, and induction's share is below 0.5 when its date is after 512 (`/challenge-pr` on #238, finding 2). (b) rests on a statistic seen on seed 0 after the readings, needs its own null and calibration gate, and puts a second entry under one claim (D2 (c)'s objection). (c) keeps A5 simpler, but leaves a tie on any seed unordered |
 
-If (a) is taken: the notes gain one line. The calibration gate's known-answer arm also states
-both shares on seed 0 before any seed is read. The break's is 56 / 57 = 0.98, which follows
-from the panel counts it already checks. The induction share depends on how the notes' per-seed
-induction row picks its head, since seeds do not share `L8H6` and `L11H14`. That choice is fixed
-in A5's unit 1, before the gate.
+If (a) is taken: the notes gain one line, and A5's unit 1 picks each seed's previous-token and +1
+induction heads before the gate. The proposed rule is the head with the top score of each kind
+at 143000 on that seed. The rule matters because seeds do not share `L5H2`, `L8H6` and `L11H14`.
+The calibration gate's known-answer arm states seed 0's ties and shares before any seed is read.
+The shares are compared only within a pair. Each is against its own row's dating reference, so
+the two are not one scale.
 
 **Not a choice, fixed with the entry:** the 18-step grid (`trackA_force/a1a.py` `STEPS`; the
 statistic reads steps up to the half-rise and 143000, the rest are descriptive); one-sided; the

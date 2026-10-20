@@ -21,7 +21,7 @@
   - A3 unit 3 (Blocked 72, the user's: 6 units, E3 re-defined at +1 on `L8H6` and `L11H14`, every floor max(4, own)): E3 reads 1000 (a peak, then a fall), E7 weight change 2000 (censored), E8 ESD α 1000 (a rise to 256, then a fall); E11 refused as a constant row: the simulator's final count is 1 in every cell, as Theorem 4.1 of 2411.04990 makes it for V = Id at any long horizon (beside: at t = 5–10 late checkpoints stay split from 8000 on, as A1a's t* already showed); E8's 1000 may be its fit's (512 from its peak) — `trackA_force/status-A.md` "A3 unit 3, E3 at +1 and the weights-only and simulator rows (Blocked 72, 2026-10-19)"
   - A3 unit 4 (Blocked 73, the user's, all (a): E11 stays refused, censored rows' pairs unread, E8 read only where its two dates agree): the KL of a unigram predictor to the model is least at 128 and of a bigram at 256 (inside Belrose's 64–256 band, a different observable), both inside the warmup; the match with where the model's loss passes each predictor's own held for the 2M tables only (corrected by unit 5) — `trackA_force/status-A.md` "A3 unit 4, the n-gram rows (2026-10-20)"
   - A3 unit 5, the reading (Blocked 74 (a), the user's): the bigram counted on 340M tokens still reads 256; of the 11 pairs 7 are aligned, all inside the warmup (E1 with E2, E3, E4, E6b, E8; E4–E3; E3–E2), 2 misaligned (the rank collapse at 8 and the unigram minimum at 128 come before the energy break at 512), 2 unread (E7 censored, E11 refused); the order is E5 < E6u < E6b < E1 = E2 < E8 < E3 = E4 = E10, and the half-point rule does not order previous-token and induction (at 512 the shares of their moves done are 0.35 and 0.03, beside the break's 0.98 and the OV fall's 0.81, seen after the readings) — `trackA_force/status-A.md` "A3 unit 5, the reading (2026-10-20)"
-  - A3 closed 2026-10-20 at its exit (Blocked 75 (c)): the order on one table, every aligned pair inside the LR warmup; C2's sequence holds for the OV bottom, not its fall, which comes with the break; a share-done statistic for ordering inside one grid step is proposed for A5's text, not used on 410m — `trackA_force/status-A.md` "A3 on one page (closed 2026-10-20)"
+  - A3 closed 2026-10-20 at its exit (Blocked 75 (c)): the order on one table, every aligned pair inside the LR warmup; C2's "break, then induction, then the OV phase" is shown in neither reading (the OV fall starts with the break, its bottom ties induction); a tie-breaker inside one grid step is proposed for A5's text, not used on 410m — `trackA_force/status-A.md` "A3 on one page (closed 2026-10-20)"
 - **Superseded / wrong:** none
 - **Registry:** none, because 410m is an exploration rung and A1 gives `P-gamma2` a number, not an adjudication; `P-A5`'s text is decided (Blocked 68), not in the registry until the calibration gate and the user's registration — `trackA_force/design-A.md` "Fences"; `trackA_force/design-A5.md`
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
@@ -35,7 +35,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-20 · body `43c325dcb0`
+- **Reviewed:** 2026-10-20 · body `407de51238`
 <!-- /phase-card -->
 
 ## Units
@@ -60,7 +60,7 @@
 | A3 3. E3 at +1, the weights-only rows, the simulator row (Blocked 72, the user's) | **done 2026-10-19: every arm passes but E11's; E3 (+1, `L8H6`, `L11H14`) 1000, E7 2000 (censored), E8 1000; E11 refused (count 1 in all 126 cells at t = 200); E2, E4, E5 unchanged at floor 4** (Blocked 73) | "A3 unit 3" below; `a3.py`, `a3_weights.py`, `a3_sim.py` |
 | A3 4. the n-gram rows (Blocked 73, the user's: all (a)) | **done 2026-10-20: both arms pass (planted dip); E6u (KL to a unigram) 128, E6b (to a Witten–Bell bigram) 256, then a rise to 143000; corpus the Pile's validation split** | "A3 unit 4" below; `a3_ngram.py`, `a3.py` |
 | A3 5. the reading (Blocked 74, the user's: (a)) | **done 2026-10-20: E6b′ (the bigram on 340M tokens) 256, as E6b; 7 pairs aligned (all inside warmup), 2 misaligned (E5 and E6u before E1), 2 unread (E7 censored, E11 refused); order E5 < E6u < E6b < E1 = E2 < E8 < E3 = E4 = E10; E4–E3 not ordered by the half-point rule (shares at 512 do order them, beside); unit 4's loss-milestone wording corrected** | "A3 unit 5" below; `a3.py`, `a3_ngram.py` |
-| A3 close-out | **done 2026-10-20** (Blocked 75 (c); writing only): A3 closed at its exit; a share-done statistic proposed as `design-A5.md` D10 | "A3 on one page" below |
+| A3 close-out | **done 2026-10-20** (Blocked 75 (c); writing only): A3 closed at its exit; a tie-breaker proposed as `design-A5.md` D10 | "A3 on one page" below |
 
 Budget: 5 units on the record since Blocked 48 (a) (`design-A.md` "Exit condition and budget";
 first 3, then 4 by Blocked 46 (b)). All 5 spent; A1 closed 2026-10-15 at its exit condition.
@@ -97,17 +97,19 @@ Writing only; no run.
 4. **The order:** E5 < E6u < E6b < E1 = E2 < E8 < E3 = E4 = E10. The half-point rule does not
    order previous-token and induction (both 1000). The share of each move done at 512 does order
    them: E1 0.98, E2 0.81, E4 0.35, E3 0.03. It was seen after the readings, so it is description
-   (reading 7).
-5. **C2's sequence holds for the OV bottom, not its fall.** E2's half-point (512) dates the fall's
-   onset, with the break; the attractive fraction is 0 from 1000 to 4000, with induction. So
-   "break, then induction, then the OV phase" (ROADMAP §1) holds only if "the OV phase" means
-   its bottom.
+   (reading 7). The LR schedule is 0.36 done at 512, beside previous-token's 0.35.
+5. **C2's sequence, "break, then induction, then the OV phase"** (ROADMAP's C2 row), **is not
+   shown on 410m in either reading of "the OV phase".** E2's half-point (512) dates the fall's
+   onset, with the break. Its bottom, the first step at 0, is 1000, the same step as induction, so
+   the two are tied, not ordered. (`/challenge-pr` on #238, finding 3, corrected the first
+   wording, "holds for the OV bottom".)
 6. **1e's one-well question cannot be read by this simulator.** With V = Id the final count is 1
    in all 126 cells at long horizons, as Theorem 4.1 of 2411.04990 forces; the late split at
    t = 5–10 is already A1a's t* (unit 3; Blocked 73 (a): nothing carried).
-7. **A share-done statistic is proposed for A5's text, not used here** (Blocked 75 (c)):
-   `design-A5.md` D10, for ordering the break and induction inside one grid step on the seeds,
-   which A3 has not read.
+7. **A tie-breaker is proposed for A5's text, not used here** (Blocked 75 (c)): `design-A5.md`
+   D10, the share done at the grid step before a tie, for break–induction and
+   previous-token–induction on the seeds, which A3 has not read. A5's induction row is read at
+   +1, as A3's E3 (carried).
 
 **Not established:**
 
@@ -258,7 +260,9 @@ band, the window's end, E7 and E8's 32-step curves, and the quoted rows as bands
 - E2's half-point (512) dates the OV fall's onset. The attractive fraction is 0.094 at 512 and
   0.000 from 1000 to 4000. ROADMAP's "fully repulsive phase (1000–2000)" (§1, C2) names that bottom,
   which coincides with induction (1000). So C2's sequence as written (break, then induction, then
-  the OV phase) holds for the OV bottom, not for its fall, which comes with the break.
+  the OV phase) holds for the OV bottom, not for its fall, which comes with the break. *(Corrected
+  at A3's close, `/challenge-pr` on #238, finding 3: the bottom ties induction at 1000 and is
+  not after it, so the sequence is shown in neither reading: "A3 on one page", reading 5.)*
 - **Correction to unit 4's "What it says"** (#236 finding 1's re-wording). E6 is not simply
   "when the model's loss passes each predictor's own". That held for both 2M predictors (48 and 55
   of 64 blocks), but the bigram′ is 1.24 nats sharper, and its minimum stays at 256 while the
@@ -1342,9 +1346,12 @@ to X* or *dropped (why)*.
   simulator's long-horizon count is 1 by theorem at V = Id; nothing carried (Blocked 73 (a)).
 - *Ordering inside one grid step* (`/challenge-pr` on #237, finding 1; Blocked 75): **carried to
   A5** as `design-A5.md` D10, a proposal for the user before any seed is read.
-- *C2's sequence* (unit 5, reading 5): the OV fall comes with the break, its bottom with
-  induction. **Carried to C2** (ROADMAP's C2 row), which has to say which of the two "the OV
-  repulsive phase" means.
+- *Induction at +1* (unit 2c, unit 3): 7d's score at offset 0 reads "no change" on seed 0.
+  **Carried to A5**, whose notes' induction row is read at +1 (`design-A5.md` D10's preamble;
+  `/challenge-pr` on #238, finding 1).
+- *C2's sequence* (unit 5, reading 5): the OV fall starts with the break, its bottom ties
+  induction. **Carried to C2** (ROADMAP's C2 row), whose "break, then induction, then the OV
+  phase" is not shown on 410m in either reading.
 - *E7 censored*: the weight change still rises at 4000. **Dropped**: locating it needs a reference
   past 4000, which the frozen window excludes, and no pair waits on it; reopen if C2 needs a
   weight-change date.
