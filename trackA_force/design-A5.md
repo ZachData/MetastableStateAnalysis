@@ -2,9 +2,9 @@
 # Track A, A5 — generality on the PolyPythias seeds: registration text (drafted 2026-10-18, decided 2026-10-19)
 
 **Status: text decided 2026-10-19 (Blocked 68, the user's: D1–D9 all as recommended, listed
-below); D10 proposed 2026-10-20 at A3's close, yours (STATE Blocked 76). Not registered; no
-seed's intermediate step downloaded or read.** Next before registering:
-the calibration gate on seed 0 ("Before it can be registered" 2), which is A5's unit 1.
+below); D10 decided (a) 2026-10-20 (Blocked 76, the user's). The calibration gate on seed 0 passes
+(A5's unit 1, 2026-10-20: `status-A.md` "A5 unit 1"). Not registered; no seed's intermediate step
+downloaded or read.** Next: the user registers ("Before it can be registered" 3; STATE Blocked 77).
 Registering is the user's (`CLAUDE.md` "Literature scans and the registry"); this file proposes
 the text and lists the choices in it. ROADMAP §6 A5, §10.7 and §10.9. Scan: `lit-C2.md`.
 Numbers: `tools/math_checks/a5_seed_location.py` (3 checks pass), which owns every p and E below.
@@ -53,6 +53,10 @@ counts, or if A3, which runs first, dates the break with another energy or stati
 
 ### Proposed 2026-10-20 at A3's close: D10, yours before any seed is read
 
+**Decided (a), 2026-10-20 (Blocked 76, the user's), before any seed was read.** The rule as written
+below; unit 1 built it into `a5_seeds.py` and stated seed 0's ties and shares in the gate
+(`status-A.md` "A5 unit 1").
+
 On seed 0, A3's half-point rule put previous-token and induction on the same step (1000). At the
 grid step before it (512), the share of each move already done does order them
 (`trackA_force/status-A.md` "A3 on one page", reading 4). That was seen after A3's readings, so on
@@ -92,16 +96,17 @@ forward passes.
 | falsifier (leads) | K ≤ 3 of 9 (E ≤ 1.2): the step is seed-specific, and C2 dates the break for seed 0 only. K = 4–6: insufficient, reported as such. Any E is quoted as "against a uniform-location null". |
 | h0 | The break's step is the run's: across seeds it falls anywhere among the 12 non-zero grid steps up to 4000, each with probability 1/12, independently. |
 | h1 | The break's step is the recipe's: most seeds' fall in (128, 512], as seed 0's does. |
-| instrument | a new producer `trackA_force/a5_seeds.py`: forward passes on the 18 steps per seed, E_1 per layer, `energy_violation_severity`, the half-rise step; gate `p_value_p_a5` = P(Bin(9, 1/6) ≥ K) |
+| instrument | `trackA_force/a5_seeds.py` (code `7ae0bff62ada` at the gate; a seed "fails to load" only if its revision is absent from the repo or its weights are non-finite, any other error refuses): forward passes on the 18 steps per seed, E_1 per layer, `energy_violation_severity`, the half-rise step; gate `trackA_force.a5_seeds:p_value_p_a5` = P(Bin(9, 1/6) ≥ K), exact |
 | null_construction | Exact binomial over seeds, independent by construction (separate runs). Not a test of mechanism: all seeds share the LR schedule (warmup to about step 1430), so a high K cannot separate a training event from the schedule. A seed that fails to load or has a zero plateau median counts as outside. |
-| calibration_record | the calibration gate's record (below), before registration |
-| notes | Descriptive, not scored: per-seed induction onset (7d's score) and its order against the break; violations at step 0 in every seed; the β = 3.5 LN1 reading. Input set at run time: prompts hash, code hash, seed list, revisions. |
+| calibration_record | `claims/audits/p_a5_dry_run.json` (tracked; sha256 `bbc4b679ca2f`): every arm passes, `trackA_force/status-A.md` "A5 unit 1"; phase `A` |
+| notes | Descriptive, not scored: per-seed induction onset (7d's score at +1, carried from A3) and its order against the break; violations at step 0 in every seed; the β = 3.5 LN1 reading. D10 (a): where a seed's half-point steps tie break–induction or previous-token–induction, each row's share done at the grid step before, against its own dating reference, the LR schedule's share beside, censored rows marked; the heads are each seed's top previous-token and +1 induction scores at 143000. Input set at run time: prompts hash, code hash, seed list, revisions. |
 
 ## Before it can be registered, in order
 
 1. Your calls on D1–D9: **done 2026-10-19**, all as recommended (Blocked 68).
 2. **The calibration gate** (`CLAUDE.md` "Calibration gate"; free, seed 0 is the development
-   set), every arm before registering:
+   set), every arm before registering. **Done 2026-10-20: every arm passes** (`status-A.md`
+   "A5 unit 1"):
    - *known answer:* the new producer on `pythia-410m` reproduces the panel's counts (0 through
      128, 19 at 256, 56 at 512, 57 as the plateau median) and half-rise 512;
    - *planted effect:* seed 0's series moved one grid step later reads 1000, outside;

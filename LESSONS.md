@@ -294,6 +294,13 @@ world moves, nobody updates the line, and the next session acts on it.
   sat at #211 while `origin/main` had #212–#225; caught at Start step 1, read from `origin/main`.
   Sixth instance. The main tree was not fast-forwarded, because B3 unit 2's batch was running
   from `../Mets-work` with data in the main tree. The hook fix is now a `docs/ROADMAP.md` §5 row.
+- **2026-10-20, the start hook's `STATE.md` 27 merges old** (A5 unit 1): the main tree sat at
+  #211 while `origin/main` had #212–#238; caught at Start step 1, read from `origin/main`, and
+  the main tree fast-forwarded at the unit's end (`git pull --ff-only`; only untracked `data/`).
+  Again. The same opening prompt said "Blocked 76 decided (<a/b/c>)", an unfilled
+  placeholder: Claude asked rather than take the recommendation (the user chose (a)). Also a
+  wasted call: the gate run from `../Mets-work` read `data/` under the worktree (empty) until
+  `METS_DATA` pointed at the main tree's; `a1a.DATA` defaults to the code's own tree.
 - **2026-10-18, a "blocked" that was a setting** (the same check-in): `docs/ROADMAP.md` §6 said
   Hugging Face downloads are blocked from this machine, so A5 on seeds needed steps "fetched
   elsewhere". One `curl` on the refs API answered (all 154 steps per seed); `HF_HUB_OFFLINE=1`

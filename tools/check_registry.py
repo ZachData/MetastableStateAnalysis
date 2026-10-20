@@ -84,7 +84,7 @@ EVALUABLE_VALUES = ("e-value", "measurement", "needs-null")
 STATUS_VALUES = ("active", "dormant")
 #: INDEX.md's phase table, live and archived. A new phase extends this list.
 PHASE_VALUES = ("1", "1b", "1c", "2", "2b", "2d", "3", "4", "5", "5b", "5c",
-                "6", "7", "7d", "7e", "8")
+                "6", "7", "7d", "7e", "8", "A")
 
 #: Each is a git-tracked repo-relative path or null. A path can be checked
 #: for existence and tracking; a boolean saying "built" or "run" cannot be
