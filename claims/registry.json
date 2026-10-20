@@ -1000,6 +1000,31 @@
       "notes": "THE DIFFERENTIAL, and why both accounts are non-silent. The particle account's own framing of induction is 'a matching-kernel coupling rather than a feature-copying circuit' (POPPER_PLAN.md C2); a symmetric bilinear form IS a similarity kernel, so that account predicts content matchers become symmetric. The standard reading of QK as a query-key COMPATIBILITY score gives no reason for symmetry, and the published population result for autoregressive models runs the other way (directionality). So the prediction can lose.\n\nWHY POSITIONAL MATCHERS ARE THE LOAD-BEARING ARM. Without them the claim reduces to 'heads that matter are unusual', which is nearly unfalsifiable. L5H2 is an overwhelming matcher -- 0.895 attention at offset -1, about 49x the head median -- and on 410m its symmetry never leaves the random baseline across the entire 19-step axis. That contrast is what makes this a claim about CONTENT matching specifically, and it is the arm to check first on any new model.\n\nNOT ADJUDICATED, AND NOT ADJUDICABLE YET: evaluable is needs-null, the null is unbuilt, and the only permitted test site is a model whose weights are not on disk (PROJECT.md 5.3). claims/adjudications/ remains empty.\n\nSCOPE LIMIT, stated so it is not read wider than it is. This entry claims symmetry marks CONTENT MATCHING. PROJECT.md 3.12-J already measured on 410m that it does NOT imply induction -- high-symmetry non-induction heads exist (L1H4, L8H13, L7H4 at induction ranks 40, 47, 91; and at step 4000 L10H3 at rank 382 of 384). Nothing here predicts that symmetry identifies induction heads, and an adjudication that tested that would be testing a claim this entry does not make.",
       "superseded_by": null,
       "status": "active"
+    },
+    {
+      "id": "P-A5",
+      "claim": "H-RESIST",
+      "statement": "In each of the 9 PolyPythias pythia-410m-seed{1..9} runs, the energy break (the first of the 18 grid steps at which the layer-monotonicity violations of E_1, summed over the 7 v1 prompts, reach half their median over steps 1000, 2000 and 4000) is step 256 or 512. Seeds 3 and 4, PolyPythias's named outliers, count and are flagged.",
+      "h0": "The break's step is the run's: across seeds it falls anywhere among the 12 non-zero grid steps up to 4000, each with probability 1/12, independently.",
+      "h1": "The break's step is the recipe's: most seeds' fall in (128, 512], as seed 0's does.",
+      "falsifier": "K <= 3 of 9 (E <= 1.2): the step is seed-specific, and C2 dates the break for seed 0 only. K = 4-6: insufficient, reported as such. Any E is quoted as 'against a uniform-location null'.",
+      "instrument": "trackA_force/a5_seeds.py (code 7ae0bff62ada at the gate; a seed 'fails to load' only if its revision is absent from the repo or its weights are non-finite, any other error refuses): forward passes on the 18 steps per seed (GPU, float32, TF32 off), E_1 per layer on the unit sphere (core.metrics.interaction_energy), a violation where (E_prev - E_curr)/|E_prev| > 1e-3 (energy_violation_severity), summed over layers and the 7 prompts; the half-rise step; K = the number of seeds whose step is 256 or 512",
+      "phase": "A",
+      "experiment": "A5",
+      "gate": "trackA_force.a5_seeds:p_value_p_a5",
+      "cost": "F",
+      "evaluable": "e-value",
+      "null_construction": "Exact binomial over seeds: K ~ Bin(9, 1/6) under H0 (D6 (b): the step uniform over the 12 non-zero grid steps up to 4000, of which 2 are inside), p = P(Bin(9, 1/6) >= K) in rationals, one-sided; E by core.evalues.calibrate at the registry's kappa. Seeds are independent by construction (separate training runs). Not a test of mechanism: all seeds share Pythia's LR schedule (warmup to about step 1430), so a high K cannot separate a training event from the schedule. A seed that fails to load or has a zero plateau median counts as outside. Fixed before any seed's intermediate step was downloaded or read (design-A5.md D1-D10, decided 2026-10-19 and 2026-10-20).",
+      "calibration_record": "claims/audits/p_a5_dry_run.json",
+      "real_run_record": null,
+      "relevance": 0.6,
+      "source": "trackA_force/design-A5.md \"The draft entry\" (decided 2026-10-19, Blocked 68; D10 2026-10-20, Blocked 76)",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "A reproducibility check, not a test of mechanism (D9 (a)): K says whether seed 0's dated break is the run's or the recipe's, nothing about why. Calibration gate on seed 0 (the development set), every arm passes: known answer (the panel's counts and half-rise 512 reproduced), planted effect (one step later reads 1000), planted null (inside exactly at 256 and 512), sensitivity (512 at rel_tol 1e-4 / 1e-2 and leaving any prompt out); trackA_force/status-A.md \"A5 unit 1\". Known caveat: a layer transition sits 6e-6 from rel_tol 1e-3, so float noise can move a seed's count by one. Descriptive, not scored: per-seed induction onset (7d's score at +1, carried from A3) and its order against the break; violations at step 0 in every seed; the beta = 3.5 LN1 reading. D10 (a): where a seed's half-point steps tie break-induction or previous-token-induction, each row's share done at the grid step before, against its own dating reference, the LR schedule's share beside, censored rows marked; the heads are each seed's top previous-token and +1 induction scores at 143000. Input set at run time: prompts hash, code hash, seed list, revisions.",
+      "superseded_by": null,
+      "status": "active"
     }
   ]
 }
