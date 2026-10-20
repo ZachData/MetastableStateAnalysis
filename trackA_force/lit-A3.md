@@ -35,3 +35,5 @@ Pythia's checkpoints.
    (`design-A3.md` "Worth challenging" 5).
 2. **2602.15997's per-checkpoint RankMe on 410m** (why: would give a measured 410m row instead of
    a quoted window; cost: their code or tables, if released; could change: the row's location).
+   **Dropped at A3's close** (2026-10-20): E5 is a measured rank row on the same checkpoints, and
+   a quoted RankMe date changes no A3 reading; reopen if C2's draft compares to that paper.
