@@ -328,8 +328,8 @@ def rows_weights(wdir: Path) -> dict:
         raise A3Refused(f"weights rows: records from {len(codes)} codes {codes}")
     out = {"code": codes.pop(), "dense": {}}
     for rid, key in (("E7", "rel_change"), ("E8", "alpha")):
-        out[rid] = np.array([[recs[s][key][t] for s in STEPS] for t in TYPES]).transpose(1, 2, 0)
-        dense = np.array([[recs[s][key][t] for s in ALL_STEPS] for t in TYPES]).transpose(1, 2, 0)
+        out[rid] = np.array([[recs[s][key][t] for s in STEPS] for t in TYPES]).transpose(2, 1, 0)
+        dense = np.array([[recs[s][key][t] for s in ALL_STEPS] for t in TYPES]).transpose(2, 1, 0)
         out["dense"][rid] = {"steps": list(ALL_STEPS),
                              "per_type": {t: np.median(dense[..., i], 0).tolist()
                                           for i, t in enumerate(TYPES)},
