@@ -259,3 +259,32 @@ def test_witten_bell_rows_and_cross_terms_match_dense_kl():
         assert abs((ng.neg_entropy(t["q_u"]) - float(cu[k])) - want_u) < 1e-10
         assert abs((ng.neg_entropy(qb) - float(cb[k])) - want_b) < 1e-10
         assert want_b >= 0 and want_u >= 0
+
+
+def _ngram_dir(tmp_path, loss_end=2.2, step0_off=0.0, bad_hash=False):
+    """A fake a3_ngram record set: 18 steps, a small table, its manifest."""
+    import hashlib, json, math
+    from trackA_force import a3_ngram as ng
+    rng = np.random.default_rng(13)
+    blocks = rng.integers(0, 100, size=(4, 8)); table = rng.integers(0, 100, size=500)
+    np.savez(tmp_path / "corpus.npz", blocks=blocks, table=table)
+    sha = lambda a: hashlib.sha256(a.tobytes()).hexdigest()[:12]
+    (tmp_path / "corpus.json").write_text(json.dumps(
+        {"blocks_sha": "0" * 12 if bad_hash else sha(blocks), "table_sha": sha(table)}))
+    flat = ng.neg_entropy(ng.tables(table)["q_u"]) + math.log(ng.VOCAB)
+    for s in STEPS:
+        ku = flat * (1 + step0_off) if s == 0 else 1.0
+        (tmp_path / f"step{s}.json").write_text(json.dumps(
+            {"step": s, "code": "c", "device": "cpu", "kl_u": [ku] * 4, "kl_b": [2.0] * 4,
+             "loss": [loss_end if s == 143000 else 5.0] * 4}))
+    return tmp_path
+
+
+def test_rows_ngram_reads_and_refuses(tmp_path):
+    """The checks placed before output (design-A3 §4, unit 4) refuse; #236 finding 4."""
+    r = a3.rows_ngram(_ngram_dir(tmp_path))
+    assert r["E6u"].shape == (4, len(STEPS), 1)
+    for kw in ({"loss_end": 5.0}, {"step0_off": 0.2}, {"bad_hash": True}):
+        d = tmp_path / str(len(kw) + hash(str(kw)) % 1000); d.mkdir()
+        with pytest.raises(a3.A3Refused):
+            a3.rows_ngram(_ngram_dir(d, **kw))

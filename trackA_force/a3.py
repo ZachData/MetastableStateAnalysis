@@ -382,8 +382,13 @@ def rows_ngram(ndir: Path) -> dict:
         raise A3Refused(f"E6: the loss at 143000 is {l_end:.3f}, outside {LOSS_143000}")
     try:
         z = np.load(ndir / "corpus.npz")
+        man = json.loads((ndir / "corpus.json").read_text())
+        for key in ("blocks", "table"):                    # the arrays the records were made on
+            got = hashlib.sha256(z[key].tobytes()).hexdigest()[:12]
+            if got != man[f"{key}_sha"]:
+                raise A3Refused(f"E6: corpus.npz {key} is {got}, corpus.json has {man[f'{key}_sha']}")
         q_u = tables(z["table"])["q_u"]
-    except (OSError, NgramRefused) as e:
+    except (OSError, KeyError, NgramRefused) as e:
         raise A3Refused(f"E6: corpus tables: {e}")
     flat = neg_entropy(q_u) + math.log(VOCAB)                          # KL(q_u ‖ uniform)
     e6u0 = float(u["E6u"][:, 0, 0].mean())
