@@ -193,3 +193,98 @@ def test_strict_pairs_key_follows_an_earlier_copy_of_the_query():
     assert all(ids[k - 1] == ids[q] for q, k in strict)
     off0 = set(induction_candidates(ids))
     assert (5, 1) in off0 and all(ids[k - 1] == ids[q - 1] for q, k in off0)
+
+
+def test_dip_has_its_minimum_one_step_past_the_gap():
+    for i in a3.WIN[1:-1]:
+        d = a3._dip(i)
+        assert int(np.argmin(d[list(a3.WIN)][1:])) + 1 == i + 1
+        x = 10 * d
+        r = a3.place(x, "turn", sigma=0.1, kind="turn")
+        assert r["index"] == i + 1 and r["reading"] == "located"
+
+
+def test_turn_row_gates_on_its_dip(monkeypatch):
+    """E6's gate (design-A3 §4, unit 4): the null and the planted dip at the row's own noise."""
+    monkeypatch.setattr(a3, "N_GATE", 300)
+    monkeypatch.setattr(a3, "N_BOOT", 100)
+    rng = np.random.default_rng(11)
+    g = a3.gate_row("E6u", rng.standard_normal((64, len(STEPS), 1)), rng)
+    assert g["floor"] >= 4 and g["null_no_change"] >= 0.93
+    assert min(e["placed_right"] for e in g["effect"]) >= 0.85
+
+
+def test_turn_ratio_is_the_fall_into_the_minimum():
+    x = np.zeros(len(STEPS)); x[STEPS.index(64)] = -3.0; x[STEPS.index(128):] = -1.0
+    sig = np.ones(len(a3.WIN))
+    assert a3._ratio(x, sig, "turn", "turn") == 3.0
+    assert a3._ratio(-x, sig, "turn", "turn") == -np.inf      # no fall: always "no change"
+
+
+def test_pack_blocks_starts_at_documents_and_shares_none():
+    from trackA_force.a3_ngram import pack_blocks
+    docs = [(i, [i + 1] * n + [0]) for i, n in enumerate([3, 9, 2, 2, 5, 1, 7, 4, 4, 4])]
+    c = pack_blocks(iter(docs), n_blocks=3, block=4, n_table=6)
+    assert c["block_docs"] == [[0], [1], [2, 3]]
+    assert c["blocks"].tolist() == [[1, 1, 1, 0], [2] * 4, [3, 3, 0, 4]]
+    assert c["table_docs"] == [4] and c["table"].tolist() == [5, 5, 5, 5, 5, 0]
+
+
+def test_ngram_overlap_runs():
+    from trackA_force.a3_ngram import ngrams
+    assert ngrams([1, 2, 3, 4], n=3) == {(1, 2, 3), (2, 3, 4)}
+    assert ngrams([1, 2], n=3) == set()
+
+
+def test_witten_bell_rows_and_cross_terms_match_dense_kl():
+    """The sparse cross term gives KL(q ‖ p) as computed densely, for both predictors."""
+    import torch
+    from trackA_force import a3_ngram as ng
+    rng = np.random.default_rng(12)
+    V = 40
+    table = rng.integers(0, 30, size=3000)            # ids 30..39 unseen: q_u = 0 there
+    t = ng.tables(table, V=V)
+    assert abs(t["q_u"].sum() - 1) < 1e-12
+    for v in range(V):
+        assert abs(ng.q_b_row(t, v).sum() - 1) < 1e-12
+    assert np.array_equal(ng.q_b_row(t, 35), t["q_u"])     # unseen context: q_u
+    ctx = np.array([0, 5, 35, 5, 29])
+    logp = torch.log_softmax(torch.from_numpy(rng.standard_normal((len(ctx), V))), dim=-1)
+    cu, cb = ng.cross_terms(logp, ctx, t, torch.from_numpy(t["q_u"]))
+    P = logp.numpy()
+    for k, v in enumerate(ctx):
+        qb = ng.q_b_row(t, int(v))
+        want_u = ng.neg_entropy(t["q_u"]) - t["q_u"] @ P[k]
+        want_b = ng.neg_entropy(qb) - qb @ P[k]
+        assert abs((ng.neg_entropy(t["q_u"]) - float(cu[k])) - want_u) < 1e-10
+        assert abs((ng.neg_entropy(qb) - float(cb[k])) - want_b) < 1e-10
+        assert want_b >= 0 and want_u >= 0
+
+
+def _ngram_dir(tmp_path, loss_end=2.2, step0_off=0.0, bad_hash=False):
+    """A fake a3_ngram record set: 18 steps, a small table, its manifest."""
+    import hashlib, json, math
+    from trackA_force import a3_ngram as ng
+    rng = np.random.default_rng(13)
+    blocks = rng.integers(0, 100, size=(4, 8)); table = rng.integers(0, 100, size=500)
+    np.savez(tmp_path / "corpus.npz", blocks=blocks, table=table)
+    sha = lambda a: hashlib.sha256(a.tobytes()).hexdigest()[:12]
+    (tmp_path / "corpus.json").write_text(json.dumps(
+        {"blocks_sha": "0" * 12 if bad_hash else sha(blocks), "table_sha": sha(table)}))
+    flat = ng.neg_entropy(ng.tables(table)["q_u"]) + math.log(ng.VOCAB)
+    for s in STEPS:
+        ku = flat * (1 + step0_off) if s == 0 else 1.0
+        (tmp_path / f"step{s}.json").write_text(json.dumps(
+            {"step": s, "code": "c", "device": "cpu", "kl_u": [ku] * 4, "kl_b": [2.0] * 4,
+             "loss": [loss_end if s == 143000 else 5.0] * 4}))
+    return tmp_path
+
+
+def test_rows_ngram_reads_and_refuses(tmp_path):
+    """The checks placed before output (design-A3 §4, unit 4) refuse; #236 finding 4."""
+    r = a3.rows_ngram(_ngram_dir(tmp_path))
+    assert r["E6u"].shape == (4, len(STEPS), 1)
+    for kw in ({"loss_end": 5.0}, {"step0_off": 0.2}, {"bad_hash": True}):
+        d = tmp_path / str(len(kw) + hash(str(kw)) % 1000); d.mkdir()
+        with pytest.raises(a3.A3Refused):
+            a3.rows_ngram(_ngram_dir(d, **kw))
