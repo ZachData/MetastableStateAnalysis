@@ -650,12 +650,13 @@ def read_pair(rows: dict, a: str, b: str) -> dict:
 
 
 def order(rows: dict) -> List[dict]:
-    """The located, uncensored rows by step; equal date lists are ties (one entry)."""
+    """The located, uncensored rows by step; equal sets of dates are ties (one entry), so 256 / 256
+    ties with 256 (#237 finding 4)."""
     ents = {}
     for rid in ORDERED:
         d, _ = dates(rows, rid)
         if d:
-            ents.setdefault(tuple(d), []).append(rid)
+            ents.setdefault(tuple(sorted(set(d))), []).append(rid)
     return [{"steps": [STEPS[i] for i in k], "rows": v}
             for k, v in sorted(ents.items(), key=lambda kv: (min(kv[0]), max(kv[0])))]
 
@@ -739,8 +740,12 @@ def check_full(nf: dict, ndir: Path, fdir: Path) -> None:
     if mf.get("first_n_table_sha") != m4["table_sha"] or mf["blocks_sha"] != m4["blocks_sha"]:
         raise A3Refused(f"E6b′: table set′ starts {mf.get('first_n_table_sha')}, blocks "
                         f"{mf['blocks_sha']}; unit 4 {m4['table_sha']}, {m4['blocks_sha']}")
-    if set(sum(mf["block_docs"], [])) != set(sum(m4["block_docs"], [])):
-        raise A3Refused("E6b′: the scored documents differ from unit 4's")
+    n4 = len({d for ds in m4["block_docs"] for d in ds})       # #237 finding 3: an accounting
+    if mf["scored_docs_excluded"] != n4 or mf["docs_in_split"] != (     # check, not a copy compared
+            mf["table_docs"] + n4 + len(mf["dropped_overlap"])):        # with itself
+        raise A3Refused(f"E6b′: {mf['docs_in_split']} documents in the split are not "
+                        f"{mf['table_docs']} in table set′ + {n4} scored + "
+                        f"{len(mf['dropped_overlap'])} dropped")
     l4 = json.loads((ndir / "predictor_losses.json").read_text())["bigram"]["loss"]
     lf = json.loads((fdir / "predictor_losses.json").read_text())["bigram"]["loss"]
     if not lf < l4:

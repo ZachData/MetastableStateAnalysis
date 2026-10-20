@@ -368,6 +368,8 @@ def test_order_groups_ties_and_skips_censored():
     o = a3.order(_rows(E1=9, E2=9, E5=3, E7="c", E6b=8, E6b_full=9))
     assert [e["rows"] for e in o] == [["E5"], ["E6b"], ["E1", "E2"]]
     assert o[1]["steps"] == [STEPS[8], STEPS[9]]
+    tie = a3.order(_rows(E6u=8, E6b=8, E6b_full=8))           # one date ties with two equal ones
+    assert [e["rows"] for e in tie] == [["E6u", "E6b"]] and tie[0]["steps"] == [STEPS[8]]
 
 
 def test_from_peak_dates_the_fall_after_a_rise():
