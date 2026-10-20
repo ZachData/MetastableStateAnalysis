@@ -313,3 +313,66 @@ def test_tables_chunked_counts_every_pair_once():
     one, many = ng.tables(table, V=40), ng.tables(table, V=40, chunk=7)
     assert (one["B"] != many["B"]).nnz == 0 and one["B"].sum() == len(table) - 1
     assert np.array_equal(one["c"], many["c"]) and np.array_equal(one["T"], many["T"])
+
+
+def _rows(**idx):
+    """Synthetic located rows by grid index; a value None is "no change", "c" censored."""
+    rows = {}
+    for k, i in idx.items():
+        if i is None:
+            rows[k] = {"reading": "no change", "index": None}
+        elif i == "c":
+            rows[k] = {"reading": "located", "index": 11, "censored": True}
+        else:
+            rows[k] = {"reading": "located", "index": i, "censored": False}
+    return rows
+
+
+def test_pairs_aligned_misaligned_unread():
+    """design-A3 §3 and §4 "Placed before any unit 5 output"."""
+    rows = _rows(E1=9, E2=9, E3=10, E5=3, E7="c", E11=None)
+    assert a3.read_pair(rows, "E1", "E3")["verdict"] == "aligned"
+    p = a3.read_pair(rows, "E1", "E5")
+    assert p["verdict"] == "misaligned" and p["first"] == "E5"
+    assert a3.read_pair(rows, "E1", "E7")["verdict"] == "unread"        # censored, 73 (ii)
+    assert a3.read_pair(rows, "E1", "E11")["verdict"] == "unread"
+    assert "a reproduction" in " ".join(a3.read_pair(rows, "E1", "E2")["notes"])
+    assert "inside warmup (E10)" in a3.read_pair(rows, "E1", "E3")["notes"]
+
+
+def test_two_dates_read_only_where_both_agree():
+    """Blocked 74 (a) for E6b, 73 (iii) for E8: one verdict from both dates, else unread."""
+    agree = _rows(E1=9, E6b=8, E6b_full=9)
+    assert a3.read_pair(agree, "E1", "E6b")["verdict"] == "aligned"
+    split = _rows(E1=9, E6b=8, E6b_full=11)                 # aligned at 256, misaligned at 2000
+    assert a3.read_pair(split, "E1", "E6b")["verdict"] == "unread (table)"
+    both_mis = _rows(E1=9, E6b=5, E6b_full=6)
+    p = a3.read_pair(both_mis, "E1", "E6b")
+    assert p["verdict"] == "misaligned" and p["first"] == "E6b"
+    flips = _rows(E1=9, E6b=7, E6b_full=11)                 # misaligned in opposite orders
+    assert a3.read_pair(flips, "E1", "E6b")["verdict"] == "unread (table)"
+    assert a3.read_pair(_rows(E1=9, E6b=8, E6b_full=None), "E1", "E6b")["verdict"] == "unread"
+    e8 = _rows(E1=9, E8=10, E8_peak=9)
+    assert a3.read_pair(e8, "E1", "E8")["verdict"] == "aligned"
+    assert a3.read_pair(_rows(E1=8, E8=10, E8_peak=9), "E1", "E8")["verdict"] == \
+        "unread (two dates)"
+
+
+def test_unigram_first_needs_both_dates():
+    assert a3.unigram_first(_rows(E6u=7, E6b=8, E6b_full=9)) is True
+    assert a3.unigram_first(_rows(E6u=7, E6b=8, E6b_full=7)) is False
+    assert a3.unigram_first(_rows(E6u=7, E6b=8, E6b_full=None)) is None
+
+
+def test_order_groups_ties_and_skips_censored():
+    o = a3.order(_rows(E1=9, E2=9, E5=3, E7="c", E6b=8, E6b_full=9))
+    assert [e["rows"] for e in o] == [["E5"], ["E6b"], ["E1", "E2"]]
+    assert o[1]["steps"] == [STEPS[8], STEPS[9]]
+
+
+def test_from_peak_dates_the_fall_after_a_rise():
+    x = np.zeros(len(STEPS)); x[:] = 10.0
+    x[8] = 17.0                                              # a peak at 256
+    x[9:13] = [10.0, 5.5, 3.0, 4.0]                         # least at 2000: not censored
+    r = a3.from_peak(x, "down")
+    assert r["peak_step"] == 256 and r["step"] == 512 and not r["censored"]
