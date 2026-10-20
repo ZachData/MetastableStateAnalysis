@@ -1267,14 +1267,16 @@ of a design before running it, and print it on every record
   reading changed. Rule: **G2 calls the read's own pool builder on each fake (one function for
   both), and a false-pass rate near its cap is quoted from enough fakes to separate the two (200
   cannot tell 0.5 % from 1.5 %).**
-- 2026-10-19 (A3 unit 3): E11's horizon t = 200 was placed before output as A1a's `T_MAX`
-  (Claude's choice). That is the simulator's give-up time, not the dynamics' time scale. A1a's t*
-  at 143000 was already on record at 2.5–6.4, so t = 200 was 30–80× past it, and the count is 1
-  in every one of 126 cells. The row was refused by degeneracy after 95 GPU minutes, and the
-  signal sits at t = 5–10, where it can no longer be chosen blind. Rule: **a placed read-out time
-  (or threshold) is checked against the quantity's known scale before output, and a row that
-  could be constant across every cell gets a populated-and-varying check on its quick slice
-  (the `--quick` cell at 143000 already read 1 cluster from t = 20).**
+- 2026-10-19 (A3 unit 3, #235): E11, "the simulator's final cluster count", was constant by
+  theorem. With V = Id the causal dynamics end in one cluster from almost every start (Theorem
+  4.1 of 2411.04990, read into `docs/readings/2411.04990.md` long before), so a final count is 1
+  at any long horizon. Claude placed t = 200 (A1a's `T_MAX`, 30–80× A1a's t*) and blamed the
+  horizon at first; `/challenge-pr` found the theorem. The count was 1 in all 126 cells, and 95
+  GPU minutes went on a row that could not move. Its one signal (clouds stay split longer
+  from 8000) was already in A1a's t* records. Rule: **before a row freezes, ask what the
+  repo's own theorems say its value is in the limit; a statistic fixed by a theorem is not a
+  row. Also, a quick slice that already shows the final value (the `--quick` cell read 1 from
+  t = 20) stops the batch.**
 
 ## 7. Literature found after the construction was built
 

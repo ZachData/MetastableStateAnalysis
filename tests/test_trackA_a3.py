@@ -174,3 +174,22 @@ def test_n_clusters():
     e = np.eye(4)
     U = np.stack([e[0], e[0], e[1], (e[1] + 0.01 * e[2]) / np.linalg.norm(e[1] + 0.01 * e[2]), e[3]])
     assert n_clusters(U) == 3
+
+
+def test_constant_row_is_refused_by_name():
+    u = np.ones((7, len(STEPS), 1))
+    assert a3.constant_row(u, "mean") is True
+    u[0, 3, 0] = 2.0
+    assert a3.constant_row(u, "mean") is False
+
+
+def test_strict_pairs_key_follows_an_earlier_copy_of_the_query():
+    """E3 at +1 (Blocked 72 (ii) (a)): key − 1 holds the query's token; the frozen E3's key is
+    aligned with the query (key − 1 holds the query's predecessor)."""
+    from core.battery_structure import induction_candidates
+    ids = [10, 11, 12, 13, 10, 11, 12, 13]
+    strict = set(induction_candidates(ids, strict=True))
+    assert (4, 1) in strict and (5, 2) in strict          # query 10 at 4 -> key 11 at 1
+    assert all(ids[k - 1] == ids[q] for q, k in strict)
+    off0 = set(induction_candidates(ids))
+    assert (5, 1) in off0 and all(ids[k - 1] == ids[q - 1] for q, k in off0)

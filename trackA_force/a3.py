@@ -485,6 +485,13 @@ def gate_row(rid: str, units: np.ndarray, rng) -> dict:
             "pass": p_null >= GATE_NULL and all(g["pass"] for g in gaps)}
 
 
+def constant_row(units: np.ndarray, stat_name: str) -> bool:
+    """Every unit equal to its step-0 value at every step (#235 finding 4): the gate cannot plant
+    a move against zero noise, so the row is refused by name, not by a degenerate arm."""
+    real = unit_scores(units, stat_name)
+    return bool(np.all(real == real[:, :1]))
+
+
 def low_power(r: dict, gate: dict) -> Optional[bool]:
     """Re-derived mark: ref / σ̄_ref (the gap's own unit, in which its power is stated) below the
     row's power at the gap it was located in; None where that gap was not gated (located at
@@ -534,6 +541,11 @@ def run(out: Path, wdir: Path, sdir: Path) -> dict:
     # gate first: nothing real is located before every arm is recorded
     rec["gate"] = {}
     for rid in ROWS:
+        if constant_row(units[rid], ROWS[rid][2]):
+            rec["gate"][rid] = {"pass": False, "refused": "constant: no spread at any step",
+                                "floor": None, "null_no_change": None, "effect": []}
+            print(f"gate {rid}: refused, constant row", flush=True)
+            continue
         rec["gate"][rid] = gate_row(rid, units[rid], rng)
         g = rec["gate"][rid]
         print(f"gate {rid}: floor {g['floor']:.2f}, null {g['null_no_change']:.3f}, effect min "
@@ -553,7 +565,8 @@ def run(out: Path, wdir: Path, sdir: Path) -> dict:
         r = {"row": name, "dir": direction, "sigma_over": over, "n_units": int(units[rid].shape[0]),
              "series": x.tolist()}
         if not rec["gate"][rid]["pass"]:
-            r.update(reading="refused", step=None, index=None)
+            r.update(reading="refused", step=None, index=None,
+                     why=rec["gate"][rid].get("refused", "a gate arm failed"))
         else:
             g = rec["gate"][rid]
             r.update(locate_units(units[rid], STATS[sname], direction, rng, floor=g["floor"]))
