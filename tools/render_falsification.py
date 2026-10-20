@@ -99,6 +99,10 @@ def render() -> str:
         proc = procs[claim]
         n = len(proc.adjudications)
         decision = proc.decision() if n else "not adjudicated"
+        # A decision is quoted with the notes its records carry (STATE Blocked 78 (a)):
+        # the first one rests on a null nobody holds, and the table alone would not say so.
+        if any(records.get(a.prediction_id, {}).get("notes") for a in proc.adjudications):
+            decision += f" (read with its notes, `{claim}` below)"
         W(f"| `{claim}` | {n} | {_fmt(proc.log_E)} | {_fmt(proc.E)} | {decision} |")
     W("")
 
@@ -125,8 +129,20 @@ def render() -> str:
                   f"{_fmt(a.e_value)} | {_fmt(E)} | "
                   f"{rec.get('claim_decision_after', '—')} |")
             W("")
-            W(f"Next experiment on this claim must return "
-              f"**p < {_fmt(proc.next_p_needed())}** to cross the threshold.")
+            for a in proc.adjudications:
+                note = records.get(a.prediction_id, {}).get("notes")
+                if note:
+                    W(f"- **`{a.prediction_id}`, notes on record:** {note}")
+            W("")
+            if proc.decision() == "reject_null":
+                # How hard the crossing is to undo: a factor at p = 1 multiplies E by kappa.
+                kappa = float(reg.get("kappa", 0.5))
+                n_back = math.floor((proc.log_E - math.log(1.0 / alpha)) / -math.log(kappa)) + 1
+                W(f"The threshold is crossed (E ≥ {1.0 / alpha:.0f}). Falling back below it "
+                  f"would take {n_back} further factors at p = 1 (each multiplies E by κ = {kappa}).")
+            else:
+                W(f"Next experiment on this claim must return "
+                  f"**p < {_fmt(proc.next_p_needed())}** to cross the threshold.")
             W("")
         else:
             W("*No adjudications.*")

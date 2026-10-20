@@ -302,7 +302,12 @@ world moves, nobody updates the line, and the next session acts on it.
   wasted call: the gate run from `../Mets-work` read `data/` under the worktree (empty) until
   `METS_DATA` pointed at the main tree's; `a1a.DATA` defaults to the code's own tree.
 - **2026-10-20, the start hook's `STATE.md` one merge old** (A5 units 2–3): the main tree at
-  #238, `origin/main` at #239; caught at Start step 1, read from `origin/main`.
+  #238, `origin/main` at #239; caught at Start step 1, read from `origin/main`. **Again the same
+  day** (A5 close): main tree at #238, `origin/main` at #240, two merges; caught at Start step 1,
+  and the main tree was fast-forwarded. A second stale kind in the same session: three tests
+  asserted that the real ledger directory is empty or absent, the right guard only while it was;
+  the first real record failed all three. Rule: a guard states its invariant (no record for *this*
+  prediction), not the state of the world when it was written.
 - **2026-10-18, a "blocked" that was a setting** (the same check-in): `docs/ROADMAP.md` §6 said
   Hugging Face downloads are blocked from this machine, so A5 on seeds needed steps "fetched
   elsewhere". One `curl` on the refs API answered (all 154 steps per seed); `HF_HUB_OFFLINE=1`

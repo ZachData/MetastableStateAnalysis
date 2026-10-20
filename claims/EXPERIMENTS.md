@@ -17,7 +17,7 @@ gate → what that gate is worth. It is the file to read when the question is
 - **40** registered predictions across **7** phases and **5** claims.
 - **12** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
 - **19** are dormant — pre-registered, falsifier intact, instrument archived.
-- **0 have been adjudicated.** Every E below is 1 and every decision is "not adjudicated". The apparatus is built; no p-value against a real artifact exists yet.
+- **1** has been adjudicated; see `claims/FALSIFICATION.md` for the running E.
 
 ## Per phase
 
@@ -26,7 +26,7 @@ gate → what that gate is worth. It is the file to read when the question is
 | `1` | 3 | 2 | 2 | 0 | `H-EMERGE`, `H-RESIST`, `H-TRANSFER` |
 | `6` | 12 | 4 | 2 | 0 | `H-OPERATOR` |
 | `7` | 9 | 4 | 4 | 0 | `H-BRIDGE` |
-| `A` | 1 | 1 | 1 | 0 | `H-RESIST` |
+| `A` | 1 | 1 | 1 | 1 | `H-RESIST` |
 | `1c` | 4 | 1 | 1 | 0 | `H-RESIST` |
 | `2d` | 2 | 2 | 2 | 0 | `H-OPERATOR` |
 | `5b` | 9 | 2 | 0 | 0 | `H-BRIDGE` |
@@ -139,7 +139,7 @@ behaviour of the construction (`claims/calibration/`).
 | `P-AB1` | `7` · 7-patching | `H-BRIDGE` | **none** | patching_exponent.json | — | — | not adjudicated |
 | `P-I1` | `7` · 7-A | `H-BRIDGE` | claim_b_p_i1_dry_run.json | — | — | — | not adjudicated |
 | `P-I3` | `7` · 7-C | `H-BRIDGE` | **none** | cross_head_association.json | — | — | not adjudicated |
-| `P-A5` | `A` · A5 | `H-RESIST` | p_a5_dry_run.json | — | — | — | not adjudicated |
+| `P-A5` | `A` · A5 | `H-RESIST` | p_a5_dry_run.json | — | 9.923e-08 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
 
 ## Per claim
 
@@ -149,7 +149,7 @@ behaviour of the construction (`claims/calibration/`).
 | `H-BUDGET` | **none** | 0 | 0 | 1 | not adjudicated |
 | `H-EMERGE` | `1` | 1 | 1 | 1 | not adjudicated |
 | `H-OPERATOR` | `6`, `2d` | 14 | 4 | 1 | not adjudicated |
-| `H-RESIST` | `1`, `A`, `1c` | 6 | 2 | 1 | not adjudicated |
+| `H-RESIST` | `1`, `A`, `1c` | 6 | 2 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
 | `H-TRANSFER` | `1` | 1 | 1 | 1 | not adjudicated |
 
 ## Gaps

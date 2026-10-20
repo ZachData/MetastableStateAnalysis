@@ -5,8 +5,9 @@
 below); D10 decided (a) 2026-10-20 (Blocked 76, the user's). The calibration gate on seed 0 passes
 (A5's unit 1, 2026-10-20: `status-A.md` "A5 unit 1"). Registered 2026-10-20 by the user
 (`c2eb9a7`, relevance 0.6; Blocked 77 (a)) before any seed's intermediate step was downloaded;
-then scored: K = 9 of 9 (`status-A.md` "A5 units 2 and 3").** Next: the adjudication (STATE
-Blocked 78), then the close-out.
+then scored: K = 9 of 9 (`status-A.md` "A5 units 2 and 3"); adjudicated 2026-10-20 (Blocked 78
+(a), the user's; `claims/adjudications/P-A5.json`), and A5 closed (`status-A.md` "A5 on one
+page").**
 Registering is the user's (`CLAUDE.md` "Literature scans and the registry"); this file proposes
 the text and lists the choices in it. ROADMAP §6 A5, §10.7 and §10.9. Scan: `lit-C2.md`.
 Numbers: `tools/math_checks/a5_seed_location.py` (3 checks pass), which owns every p and E below.

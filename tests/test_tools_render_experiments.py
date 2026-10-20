@@ -220,6 +220,27 @@ class TestCommittedFile:
         assert rx.main(["--check"]) == 0
 
 
+class TestDecisionsCarryTheirNotes:
+    """
+    A ledger decision is quoted with its record's notes (STATE Blocked 78 (a)):
+    H-RESIST's first `reject_null` rests on one reproducibility check against a
+    null nobody holds, and a cell reading `reject_null` alone would hide that.
+    """
+
+    def test_every_decision_with_notes_points_at_them(self):
+        from core.adjudication import load_adjudications
+        from tools import render_falsification as rf
+        exp, fal = rx.render(), rf.render()
+        noted = [r for r in load_adjudications() if r.get("notes")]
+        assert noted, "the ledger has held a noted record since P-A5; none read means a wrong path"
+        for r in noted:
+            row = next(l for l in exp.splitlines() if l.startswith(f"| `{r['prediction_id']}` |"))
+            assert "(notes: `claims/FALSIFICATION.md`)" in row
+            assert f"- **`{r['prediction_id']}`, notes on record:** {r['notes']}" in fal
+            claim_row = next(l for l in fal.splitlines() if l.startswith(f"| `{r['claim']}` |"))
+            assert "read with its notes" in claim_row
+
+
 # ---------------------------------------------------------------------------
 # The registry fields the map is built on
 # ---------------------------------------------------------------------------

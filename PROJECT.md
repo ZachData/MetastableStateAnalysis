@@ -2895,6 +2895,28 @@ cheap and would resolve it.**
 
 ---
 
+## 3.63 The first ledger record: `P-A5` adjudicated, H-RESIST over 1/α on one cheap factor; A5 closed (2026-10-20)
+
+**`trackA_force/status-A.md` "A5 on one page (closed 2026-10-20)"** holds the detail; this
+section says why it is project-wide.
+
+- `claims/adjudications/P-A5.json` is the first record in the falsification ledger (STATE Blocked
+  78 (a), the user's). The p (9.9e-8) was re-scored from the 9 seeds' records before writing.
+  `P-A5`'s statement, h0, h1, falsifier and null are now frozen by the registry gate.
+- **H-RESIST's e-process reads `reject_null` on this one factor (E 1587).** The crossing rests on
+  a reproducibility check against a null nobody holds, at the relevance floor, on seeds that
+  share the LR warmup. It is not evidence that trained weights resist the collapse dynamics.
+  The record's notes say this, and the generated tables (`claims/FALSIFICATION.md`,
+  `claims/EXPERIMENTS.md`) now print every decision with its record's notes, so no quote drops them.
+- Open (`/challenge-pr` on #241): nothing argues that H-RESIST's null implies `P-A5`'s, so the
+  factor's validity for the claim's product is not shown (`claims/CLAIMS.md` H-RESIST (i)); and
+  the crossing would take 7 factors at p = 1 to undo.
+- Taking it into the ledger, rather than holding it out after seeing K, was chosen because
+  reclassifying an `e-value` entry after its data is the selective record the gate exists to stop.
+- The registry's `real_run_record` for `P-A5` is still null; setting it is the user's (STATE Blocked 79).
+
+---
+
 ## 3.62 The first registered prediction scored on held-out runs: `P-A5`, K = 9 of 9 (2026-10-20)
 
 **`trackA_force/status-A.md` "A5 units 2 and 3, the batch and the reading (2026-10-20)"** holds
@@ -2908,7 +2930,8 @@ the numbers; this section says why it is project-wide.
   recipe and not just one run. All seeds share the LR warmup, so it does not say training rather
   than the schedule sets it.
 - Not yet in the falsification ledger: writing the first adjudication record is the user's
-  (STATE Blocked 78). Written, it would put H-RESIST over 1/α on this one factor.
+  (STATE Blocked 78). Written, it would put H-RESIST over 1/α on this one factor. *(Written
+  2026-10-20: §3.63.)*
 
 ---
 
