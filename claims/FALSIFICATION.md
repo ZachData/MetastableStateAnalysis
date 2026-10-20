@@ -86,7 +86,7 @@ has yet produced a p-value against real artifacts.
 
 ### H-RESIST
 
-5 registered · 1 adjudicable now · 0 dormant
+6 registered · 2 adjudicable now · 0 dormant
 
 *No adjudications.*
 
