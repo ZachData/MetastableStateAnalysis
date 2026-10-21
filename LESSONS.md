@@ -1624,6 +1624,13 @@ a wrong premise, the check inherits it.
   expected to outlive the user's attention runs under
   `systemd-inhibit --what=sleep:idle` (here attached afterwards to the
   chain's PID with `tail --pid=<pid> -f /dev/null`, so it ends with the chain).
+- 2026-10-21, S1 unit 2's re-gate: briefed to the `runner`, whose detached-run template had no
+  inhibit, so the rule above never reached it; the box suspended 21:13–05:14. The runner read
+  8.5 h of wall clock as a slow GPU and escalated; the author killed a healthy job (~30 min of
+  compute lost) before checking `journalctl`. The same run also broke the per-unit-write rule
+  above: `regate` writes nothing until every band is drawn (left running under the inhibit;
+  `r1` was made to write and resume per step before its launch). Rule addition: the inhibit is
+  in `.claude/agents/runner.md`'s template, and an overrun is checked against a suspend first.
 - 2026-10-17, A2 unit 5: a "quick" synthetic dry check run on the GPU without the inhibit
   reported 40,283 s; the box had suspended mid-check. The rule above was read as "batches";
   it applies to **every** GPU call that can outlive a glance, dry runs included.

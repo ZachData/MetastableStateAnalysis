@@ -822,7 +822,15 @@ def r1(out: Path, gate_dir: Path) -> None:
     t0 = time.time()
     res = {"code_sha": code_sha(), "gate_dir": str(gate_dir), "spectrum_only": sorted(spectrum_only),
            "cells": {}}
+    path = out / "r1.json"
+    if path.exists():                          # resume: written after every step (`LESSONS.md` 11)
+        prev = json.loads(path.read_text())
+        if prev["code_sha"] != res["code_sha"]:
+            raise S1Error(f"{path} was written by code {prev['code_sha']}; not resuming")
+        res = prev
     for s in SCORED_STEPS:
+        if all(f"{s}|{f}" in res["cells"] for f in FAMILIES):
+            continue
         Ws = step_weights(s)
         frames = {"r16": [head_bases(W) for W in Ws]}
         frames.update({f"r{r}": [head_bases(W, r) for W in Ws] for r in R_BESIDE})
@@ -845,8 +853,8 @@ def r1(out: Path, gate_dir: Path) -> None:
                 cell["beside_rho"] = {fr: pr_of([x[f] for x in frames[fr]])["rho"]
                                       for fr in ("r8", "r32", "folded")}
             res["cells"][f"{s}|{f}"] = cell
+        path.write_text(json.dumps(res, indent=1, default=float))
         print(f"step {s} ({time.time() - t0:.0f}s)", flush=True)
-    (out / "r1.json").write_text(json.dumps(res, indent=1, default=float))
     print(f"r1 done {time.time() - t0:.0f}s", flush=True)
 
 
