@@ -9,7 +9,7 @@ reports cited by sha below. Tier 1 throughout: exploratory, unregistered; 410m i
 rung, so nothing here scores a registered row. **Frozen 2026-10-20 as written (Blocked 81 (a), the
 user's): 3 units + close-out, raw frame, r = 16, counts not verdicts; unit 1's record is
 `status-S.md` "S1 unit 1".** **Unit 1's gate: G0–G2 pass; G3 fails on step 8000's real pool in all 7
-families (the trained spectrum is a continuum through the null's edge), so N is refused by the
+families (the trained spectrum is dense at the null's edge), so N is refused by the
 fallback below; R1's statistic is Blocked 82, the user's.**
 
 ## What S1 asks

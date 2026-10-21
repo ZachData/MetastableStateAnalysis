@@ -232,8 +232,8 @@ heads' own dimensions; `tools/math_checks/s1_projector_null.py` fact 4); the pre
 refused per-unit verdicts against it (every trained layer shares), so S1 reads counts calibrated
 by planting into step 8000's real pool, and within-layer sharing (a layer-shuffle null) is
 description only. Unit 1's gate (2026-10-20): the instrument and the null pass; the count fails its
-planted effect on the real pool in all 7 families, since a trained step's spectrum is a continuum
-through the null's edge, so N is refused and R1's statistic is the user's (STATE Blocked 82).
+planted effect on the real pool in all 7 families, since a trained step's spectrum is dense at the
+null's edge, so N is refused and R1's statistic is the user's (STATE Blocked 82).
 Units: `trackS_subspace/status-S.md`.
 
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);

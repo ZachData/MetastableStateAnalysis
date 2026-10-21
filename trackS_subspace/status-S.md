@@ -8,16 +8,16 @@
 - **Inputs:** `pythia-410m` weights at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 (and 8000 off the grid for the preflight and the gate), no tokens; code `trackS_subspace/s1.py`; records `data/trackS/s1/` (main tree) — `trackS_subspace/design-S1.md` "Objects, fixed here"
 - **Results:**
   - Opened 2026-10-20 with a scan, a `sympy` check and a design frozen as written (3 units + close-out); the rotation null, the norm-matched random draw and step 0 are one law for the mean projector, and the preflight refused per-unit verdicts against it, so S1 was designed to read counts — `trackS_subspace/design-S1.md` "Preflight (`tools/design_preflight.py`, step 8000, off the grid)"
-  - Unit 1's gate: the instrument and its null pass (G0, G1, G1iii, G2: the three nulls are one law, step 0 reads no shared direction, the rotation null reads none at any step); the count fails its planted effect on the real pool in all 7 families, because at a trained step the mean projector's spectrum is a continuum through the null's edge, so a count above the edge is not a number of shared directions; N refused by the frozen fallback (Blocked 82) — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
+  - Unit 1's gate: the instrument and its null pass (G0, G1, G1iii, G2: the three nulls are one law, step 0 reads no shared direction, the rotation null reads none at any step); the count fails its planted effect on the real pool in all 7 families, because at a trained step the mean projector's spectrum is dense at the null's edge, where each planted direction raises the count only about half the time; N refused by the frozen fallback (Blocked 82); the heads use nearly every dimension but unevenly (participation ratio 344–729 against 880), which alone explains a count near the edge, not the top eigenvalues — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track S is tier 1 on an exploration rung (`trackS_subspace/design-S1.md` "Fences")
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - Which statistic says "how much is shared" on a trained pool, now that the count is refused: the spectrum only, a continuous excess over the null's edge, or S1 closed at the gate (Blocked 82) — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
+  - Which statistic says "how much is shared" on a trained pool, now that the count is refused: the spectrum only, the participation ratio with the top eigenvalues against a dimension-matched null, or S1 closed at the gate (Blocked 82) — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-20 · body `caba301948`
+- **Reviewed:** 2026-10-20 · body `97f7fe7f12`
 <!-- /phase-card -->
 
 ## Units
@@ -45,6 +45,14 @@ first five families had already printed k* None. G0's first, standalone run read
 1e-8: its metric √(1 − σ²) floors at √eps; replaced by ‖(I − UUᵀ)W‖₂ before the full gate
 (`LESSONS.md` 6, 2026-10-20).
 
+**Code per record** (`s1.py`'s sha256, first 12; the arm files of this run carry none, which
+`_save` now adds, `/challenge-pr` on #243 finding 4): the exploration
+`data/trackS/s1/2026-10-20-explore/explore.json` (file sha `124ed4de88cb`) `b1ec7b5ddcb9`; the
+preflight `8a5b46bfc7b7`; the gate's nulls, G0, G1, G1iii, G2 `c2591b5e01de` (`nulls.json`);
+G3 and G3l (resumed) `dfed5443a46c`, reconstructed: the committed file minus one later comment
+label (`placed (design G0)`), so its hash is derived, not recorded. The committed `s1.py` at
+#243's first commit is `e9606a4dc844`; none of the edits after the runs changes a computed value.
+
 | arm | result | pass |
 |---|---|---|
 | G0 wiring | low-rank bases against dense SVD / eig, 20 random + 4 real heads: ≤ 6.5e-13 (singular), ≤ 4.7e-14 (invariant); Gram against dense P̄ 1.1e-15; GPU against numpy Haar λ₁ law KS p 0.65 (layer), 0.38 (all) | yes |
@@ -67,33 +75,50 @@ G3 on the real pool (median ΔN, range over 50 draws; the planted 4 directions a
 | `ov_pos` | 15 | 0.0065 | −1 [−2, 0] | −2 [−3, −1] | −5 [−6, −3] | −8 [−8, −7] | not plantable (33 heads eligible) | — |
 | `ov_cplx` | 67 | 0.0271 | +1 [0, 3] | +1 [0, 1] | 0 [−1, 1] | −1 [−3, −1] | −4 [−5, −3] | −6 [−8, −6] |
 
-**Why it fails (diagnosed on 8000 after the arm, off the grid).** At a trained step P̄'s
-eigenvalues run continuously through the threshold (`ov_write`: 0.0317, 0.0316, … 0.0312 | 0.0311,
-0.0310, …; spacing ≈ 1e-4). The plant replaces each chosen head's 16th direction, which moves
-eigenvalues near the edge by more than their spacing, so several fall below T while the 4 planted
-rise above it. A plant that only adds a dimension (Loewner-monotone, so nothing can fall) still
-raises N by 2–4, not 4: a random direction partly overlaps the existing shared space and is
-absorbed. Above 1.5 × T the spectrum thins (`ov_write` 26, `ov_read` 15, `qk_query` 43, `qk_key`
-33 eigenvalues; above 3 × T: 0, 0, 13, 10), but stays a sequence, not separated groups. The mass
-above T (m) moves the right way under the frozen plant, by about half the planted mass (+0.010
-to +0.013 against 0.021; 10 draws, k = 32, singular families).
+**Why it fails (diagnosed on 8000 after the arm, off the grid; mechanism corrected by
+`/challenge-pr` on #243, finding 1).** At a trained step P̄'s eigenvalues are dense at the
+threshold (`ov_write`: 0.0317, 0.0316, … 0.0312 | 0.0311, 0.0310, …; spacing ≈ 1e-4). A
+strong planted direction takes one slot at λ ≈ k/n, and the rest of the spectrum is then, to
+first order, P̄ compressed to u's complement, which interlaces P̄'s: it keeps N or N − 1
+eigenvalues above T. In a dense edge which one is close to a coin flip, so each plant raises N by
+1 only about half the time, **whatever the dose**: G3's larger doses could not have rescued it,
+and the dense edge was visible before the freeze ("Seen before": 79–89 eigenvalues above T at
+8000; `LESSONS.md` 6, 2026-10-20). A plant that only adds a dimension (nothing falls) gives ΔN
+2–4 per 4 plants, as interlacing predicts; the frozen plant also removes each head's 16th
+direction, so it loses more (and its planted mass is partly cancelled: m rose by +0.010 to
++0.013 against 0.021 planted, 10 draws, k = 32). Above 1.5 × T the spectrum thins (`ov_write`
+26, `ov_read` 15, `qk_query` 43, `qk_key` 33 eigenvalues; above 3 × T: 0, 0, 13, 10).
+
+**How much of the space the heads use (for Blocked 82; `/challenge-pr` on #243, finding 2 and
+question 1).** No family at 8000 has a null space (≤ 1 eigenvalue below 1e-3; 99 % of the
+mass in 978–989 of 1024 dimensions), but the use is uneven: the participation ratio
+(Σλ)² / Σλ², the inverse of the mean pairwise kernel (math check fact 2), is 661, 729, 344, 412
+(`ov_write`, `ov_read`, `qk_query`, `qk_key`) against 879–880 at step 0. Haar subspaces drawn
+inside P̄'s top-PR eigenspace (20 draws) put **more** eigenvalues above T than the real pool
+(145, 104, 321, 301 against 88, 80, 87, 79), so a count or excess near T is explained by uneven
+dimension use alone; their λ₁ (0.042, 0.039, 0.070, 0.061) is 2–5× below the real one (0.084,
+0.083, 0.347, 0.294), so the top of the spectrum is not. Inside the 99 %-mass span the same draws
+give N = 2–3.
 
 **What unit 1 establishes.** The instrument is exact and its null is right: Haar, the rotation
-null, a norm-matched Gaussian draw and Pythia's step 0 are one law (G1, G1iii, G2). **At a
-trained step the heads' shared space is a continuum through the null's edge, not a countable
-set of subspaces,** so "how many shared subspaces" has no answer by this count. The frozen
-fallback refuses N in all 7 families and leaves R1 as spectra only.
+null, a norm-matched Gaussian draw and Pythia's step 0 are one law (G1, G1iii, G2). **A count of
+eigenvalues above the null's edge is unstable at a trained step, because the spectrum is dense
+there**; it does not show that no separated groups exist above the edge. N is refused in all 7
+families by the frozen fallback.
 
 **Not established.** Anything at the scored trained steps (no trained scored cell was read);
-whether a continuous excess is calibratable (only m's 10-draw diagnostic); R3.
+whether any statistic other than N is calibratable; whether the top eigenvalues form separated
+groups; R3.
 
-**Blocked 82 (yours).** (a) Go on under the frozen fallback: unit 2 draws each cell's spectrum
-against the Haar band and step 0's, with m beside, no count; R3's S is the eigenvectors above T,
-labelled a threshold crossing. (b) Revise R1 to a continuous statistic and re-gate in unit 2: the
-excess over the null's edge, X = Σ_i (λ_i − T)₊, its planted recovery (ΔX against the planted
-excess Σ(k/n − T)) gated on both carriers at a recovery fraction fixed before the re-gate, the
-spectrum drawn, the count above 2 × T beside as description. (c) Close S1 at the gate (writing
-only): the continuum is the finding, and S2 takes each family's top directions descriptively.
-**Recommended: (b)**, within the 3-unit budget (unit 2 = re-gate + R1): it keeps S1's question
-(how much is shared, and when) on a scale the gate can calibrate, and (a) has no calibrated
-statistic at all.
+**Blocked 82 (yours; revised after `/challenge-pr` on #243).** (a) Go on under the frozen
+fallback: unit 2 draws each cell's spectrum against the Haar band and step 0's, no statistic.
+(b) Revise R1 and re-gate in unit 2: **R1 = the participation ratio** (threshold-free, the mean
+pairwise kernel's inverse; null Haar 880, step 0 beside), per family per step, with the
+invariant families' read per head dimension; **beside, the top eigenvalues against Haar drawn
+inside the top-PR eigenspace** (does the top exceed what uneven dimension use gives), described,
+not counted; the gate re-planted with the additive plant (nothing displaced), its recovery bar
+fixed before the re-gate. (c) Close S1 at the gate (writing only); S2 takes each family's top
+directions descriptively. **Recommended: (b)**, within the 3-unit budget (unit 2 = re-gate +
+R1): it asks "how concentrated is the heads' use of the space, and when", which the data can
+answer, and separates the top of the spectrum from dimension use; the excess over T (this
+unit's first proposal) is dropped, since near T it measures dimension use.

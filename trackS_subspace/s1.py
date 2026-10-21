@@ -405,6 +405,8 @@ def haar_max(dims: Sequence[int], tag) -> Tuple[float, np.ndarray]:
 
 
 def _save(out: Path, name: str, rec: Dict) -> None:
+    """Every arm's record names the code that wrote it (`/challenge-pr` on #243, finding 4)."""
+    rec = {"code_sha": code_sha(), **rec}
     (out / f"{name}.json").write_text(json.dumps(rec, indent=1, default=float))
     print(f"{name}: {'PASS' if rec.get('pass') else 'recorded' if rec.get('pass') is None else 'FAIL'}",
           flush=True)
