@@ -86,6 +86,7 @@ packages = [
     "p8_scale_ladder",
     "trackA_force",
     "trackB_circuit",
+    "trackS_subspace",
 ]
 
 # ---------------------------------------------------------------------------
