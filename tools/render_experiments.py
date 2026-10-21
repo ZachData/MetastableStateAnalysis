@@ -100,6 +100,9 @@ PHASES_WITHOUT_PREDICTIONS = {
     "B": "Track B, the circuit side; tier 1 on 410m, an exploration rung, and "
          "deliberately unregistered: B0–B3 closed with readings, no `P-*` id "
          "(`trackB_circuit/status-B.md`).",
+    "S": "Track S, shared subspaces; tier 1 on 410m, an exploration rung, weights only, and "
+         "deliberately unregistered: S1 opened 2026-10-20, no `P-*` id "
+         "(`trackS_subspace/status-S.md`).",
 }
 
 #: Which `claims/audits/*.json` is a known-answer dry run, as opposed to a

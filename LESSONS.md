@@ -789,6 +789,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-20, S1 unit 1 (a tolerance below its own metric's floor): G0 compared subspaces by
+  sin θ_max = √(1 − σ_min²), which cannot resolve below √eps ≈ 1.5e-8, against a placed
+  tolerance of 1e-8; a correct instrument read 5e-8 and failed. Replaced by ‖(I − UUᵀ)W‖₂ (1e-13),
+  tolerance unchanged, before the full gate ran. Rule: **a tolerance is placed against the
+  metric's own floor, checked on an exact case first** (`trackS_subspace/status-S.md` "S1 unit 1").
+  Beside: the preflight tool's first design use (S1, same day) refused per-unit verdicts before
+  the freeze, and the design changed to counts; the shape it was built for, caught in time.
 - 2026-10-19, A3 unit 2c (a check that a correct answer fails half the time): the re-derived
   floor was the bare 95th percentile of the null's ref / σ, then checked at ≥ 95 % on fresh
   draws. A correct floor passes that about half the time; E2 failed it (0.936) and was refused,

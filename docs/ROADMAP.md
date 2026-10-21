@@ -225,6 +225,17 @@ unit of the mechanism. Each S unit opens under §3 (scan, exit condition, unit b
 | S4 | a toy induction model (est. 3–4 units) | a 2-layer attention-only transformer (and one with MLPs) on an induction task, tied and untied, with and without repeated tokens in the data, every step saved, several seeds on the RTX 3080: a known circuit for S1–S3 and S5, and an energy curve across its training (does the break move when induction cannot form? the causal arm C2 lacks) | S1's atlas and the energy curve on it, with the circuit known |
 | S5 | the carve (est. 3 units) | on S4, then on 410m's induction set: ablate S1's subspaces across heads (not whole heads), keeping what the induction score needs, until a minimal set is left (parameter decomposition in spirit, on subspaces) | a minimal subspace set that keeps the induction score, or a recorded reason none is found |
 
+**S1 opened 2026-10-20** (`trackS_subspace/design-S1.md`, frozen as written, Blocked 81 (a); 3 units +
+close-out). What the design changed from the row above: P̄ sees a head only through its subspace,
+so the rotation null, the norm-matched random draw and step 0 are one law (Haar subspaces of the
+heads' own dimensions; `tools/math_checks/s1_projector_null.py` fact 4); the preflight (step 8000)
+refused per-unit verdicts against it (every trained layer shares), so S1 reads counts calibrated
+by planting into step 8000's real pool, and within-layer sharing (a layer-shuffle null) is
+description only. Unit 1's gate (2026-10-20): the instrument and the null pass; the count fails its
+planted effect on the real pool in all 7 families, since a trained step's spectrum is a continuum
+through the null's edge, so N is refused and R1's statistic is the user's (STATE Blocked 82).
+Units: `trackS_subspace/status-S.md`.
+
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
 
