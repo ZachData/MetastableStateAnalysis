@@ -14,7 +14,8 @@ fallback below. Blocked 82 decided (b), the user's: R1′ = the participation ra
 an additive plant ("Blocked 82 decided (b)" below). Unit 2: G0′–G2′ pass; G4 passes in the 5
 OV families and fails in QK, both by dilution, and cannot see the pool (`/challenge-pr` on #244),
 so R1′ is read as description (`status-S.md` "S1 unit 2"). Blocked 83–85 decided (a), (a), (a),
-the user's: unit 3 fixed in "Blocked 83–85 decided" below.**
+the user's: unit 3 fixed in "Blocked 83–85 decided" below; it ran, and S1 closed 2026-10-21
+(`status-S.md` "S1 on one page").**
 
 ## What S1 asks
 

@@ -543,6 +543,19 @@ well-formed but empty/zero result. It looks exactly like a real result.
   redirect failed and G2 never ran, unreported until the log was opened. Same session: STATE.md
   was edited by a Python script, against CLAUDE.md's Edit-tool rule. Rule: **create the output
   directory in its own command before launching parallel arms, and wait on each arm's exit.**
+- 2026-10-21 (S1 unit 3), both again: `cd … && mkdir -p A B && … nohup … &` then the second arm's
+  launch on the next line; the first `&` backgrounded the `mkdir` with it, and the second arm's log
+  redirect failed. Caught at once (the shell printed the error), relaunched, nothing lost. The
+  first edits to `status-S.md` were again a Python string replace. The rule lived only here, so a
+  session that did not open this section repeated it. Rule unchanged; the `runner` template's
+  launch line is the one to copy, with the `mkdir` as its own call.
+- 2026-10-21 (S1 unit 3), a comparison against the wrong null: `r3` scored step 0's compressions
+  (the trained S on step 0's V_l) against the *trained* step's Haar draws, so its "outside" counts
+  read 19–24 of 24 at every step from 512 and looked like a finding. Found reading the output
+  (the trained step's own Haar range was [0, 0] there). Not re-run: the design used step 0 for its
+  medians only, and those are right; the counts are marked "not read" (`status-S.md` "S1 unit 3").
+  Rule: a summary that takes a null as an argument names whose null it is, and a test feeds it a
+  mismatched pair.
 - 2026-10-14 (B0, `/challenge-pr` on #198): `core.nudge.Stack` called GPT-NeoX layers the
   4.44.2 way (the conda `mets` env, where the gate and the smoke test ran); the nightly installs
   4.57.6, where the call crashes and the obvious fix silently drops the causal mask. Rule: **code
