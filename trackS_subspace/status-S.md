@@ -12,15 +12,16 @@
   - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
   - Unit 3 (Blocked 83–85 (a), the user's): QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000, and are the most concentrated of the 7 from 2000 on (`ov_write` is at 512–1000); inside each family's 10 most shared directions the radial sign reads S at no step from 512 (inside random subspaces' range at 512, and at 1000–4000 random subspaces hold no attractive part in 18–20 of 24 layers, so only "less repulsive" can show); the OV families' S is drawn from the heads it compresses, a bias of unknown size, so QK's readings are the clean ones; collapsible negative pairs are rarer than random in QK's S at 1000–4000; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
   - S1 closed 2026-10-21 at its revised exit (3 units + close-out): the shared spaces are described against an exact null, never counted or calibrated on the effect side — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - S2 opened 2026-10-21, proposed, not frozen (Blocked 86): every head's OV edited at once, (a) to its symmetric part and (b) with its rotation removed (recommended: in an orthonormal basis of each invariant plane, since λ → Re λ in the eigenbasis edits a head by 1.6× its size at 512), each against 40 random edits matched in size and in the edited head's norm, and read only beyond the gain change alone; reading the energy break, in-context copying and S1's shared rotation; no theorem predicts "monotone" for (a) — `trackS_subspace/design-S2.md`
 - **Superseded / wrong:** none
 - **Registry:** none, because Track S is tier 1 on an exploration rung (`trackS_subspace/design-S1.md` "Fences")
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - R1b, R2 and a leave-the-layer-out S for OV's R3 (carried to S2), the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - R1b, R2 and a leave-the-layer-out S for OV's R3 (carried to S2; homed in `design-S2.md` "Carried in from S1"), the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `329c6d3155`
+- **Reviewed:** 2026-10-21 · body `f96ae40b6b`
 <!-- /phase-card -->
 
 ## Units
@@ -32,6 +33,11 @@
 | 2. re-gate + R1′ over the 8 steps (Blocked 82 (b)) | **done 2026-10-21: G0′, G1iii′, G2′ pass; G4 passes in the 5 OV families, fails in QK, and cannot see the pool (`/challenge-pr` on #244); R1′ read as description; QK Blocked 83** | "S1 unit 2" below; `s1.py regate`, `s1.py r1` |
 | 3. QK's ρ, R3 on S, the residual check (Blocked 83–85 (a)); R1b, R2 carried to S2 | **done 2026-10-21: QK concentrates most of the 7 (ρ 0.51–0.53 at the end); R3's radial sign at 512–2000 reads the layer, not S; no S is the residual stream's top variance; at 143000 the write, negative and complex S are partly the massive-activation coordinates** | "S1 unit 3" below; `s1.py r1qk`, `s1.py r3`, `s1.py massive` |
 | close-out | **done 2026-10-21** (writing only; 85 (a)) | "S1 on one page" below |
+| S2 0. scan, design, `sympy` check | **done 2026-10-21; proposed, not frozen (Blocked 86)**; the preflight is unit 1's first step | `lit-S2.md`, `design-S2.md`, `tools/math_checks/s2_ov_arms.py` (24 of 24 after `/challenge-pr` on #246) |
+| S2 1. code, G0, the preflight at 8000; R1b, R2 beside; then the freeze | not started | `design-S2.md` "The gate" |
+| S2 2. G1–G3 at the design points; R1, R2 | not started | `design-S2.md` "The gate", "Readings" |
+| S2 3. R3 on S₋ₗ; S1's R3 on S₋ₗ beside | not started | `design-S2.md` "The arms" |
+| S2 close-out | not started | — |
 
 ## Corrections received
 
