@@ -33,6 +33,7 @@ def tiny_model(torch, seed=0):
                         use_parallel_residual=True)
     cfg._attn_implementation = "eager"
     m = GPTNeoXForCausalLM(cfg).double().eval()
+    assert len(m.gpt_neox.layers) == 2, "not a real model (a stub?)"      # `LESSONS.md` 4
     with torch.no_grad():
         for p in m.parameters():
             p.add_(0.3 * torch.randn_like(p))
