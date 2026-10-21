@@ -1380,6 +1380,17 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   Rule: **an explanation of where a statistic lands is checked against a variant that moves the
   proposed cause (here the table's quality) before it goes into the card; a check on the inputs it
   was built from is a description.**
+- 2026-10-21 (S2's design, before any code): the controls were matched to each arm in edit size
+  ‖K′ − K‖ only. A projection arm (K → sym K) shrinks the head to ≈ 0.71 ‖K‖, while an added random
+  edit of the same size grows it to ≈ 1.2 ‖K‖, so arm and controls differed in output gain on all
+  384 heads, in one direction. The planted null was a 41st control draw, exchangeable with the 40
+  by construction, so it could not catch that. Also, λ → Re λ "keeps the radial part" only in a
+  non-orthogonal eigenbasis, and on 410m at 512 it edits a head by 1.6× its own size. `/challenge-pr`
+  on #246 found all three by loading 15 real heads. Cost: a design revision before the freeze; no
+  run. Rule: **match a control to the arm on every norm the readout can feel (here the edit and
+  the edited head), and make the planted null an arm-shaped edit that removes nothing specific
+  (here the gain change alone). A null drawn from the control distribution only tests the
+  labeller. Before a design names an edit's size, measure it on a few real units.**
 
 ## 7. Literature found after the construction was built
 

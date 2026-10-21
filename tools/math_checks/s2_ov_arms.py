@@ -25,8 +25,18 @@ C6  NOT a theorem about Pythia, a numerical fact about the reading: the energy E
     with a symmetric V and an untied Q^T K in some draws, and is monotone in every draw with
     Q^T K = V = I (Euler steps, n = 12, d = 6, 200 draws). The gradient-flow results S2 leans on
     tie V to Q^T K; a symmetric V alone is not in them, so S2's Q1 has no theorem predicting
-    "monotone" (design "What a reading can mean"). The check does NOT model MLPs, LayerNorm,
-    multiple heads or causal masking.
+    "monotone" (design "What a reading can mean"). Beside, the baseline: the same draws with V
+    unsymmetrised (59 of 200 against 53, added after `/challenge-pr` on #246, finding 7). The
+    check does NOT model MLPs, LayerNorm, multiple heads or causal masking.
+C7  Arm (b-schur), rotation removed in the residual's metric: B = U R, T = R C U, real Schur
+    T = V S V^T, each 2x2 block of S replaced by its symmetric part, K' = U V S' V^T U^T + U N.
+    Numerical (200 Gaussian heads, d = 48, k = 8): every nonzero eigenvalue real, write space
+    col(B) kept, ||K' - K|| = ||S' - S||, K' inside the head's span Z (so one hook core). The
+    medians of ||K' - K|| / ||K|| it prints (Schur-plane against eigenbasis Re lam) are on Gaussian
+    heads, NOT Pythia's.
+C8  Doubly matched controls: alpha K + N_perp (N_perp random in the span, orthogonal to K, of the
+    arm's remaining size) has the arm's edit size and the arm's edited-head norm, through the Gram
+    (numerical, 100 draws).
 
 Run: python3 tools/math_checks/s2_ov_arms.py
 """
@@ -196,7 +206,7 @@ def violations(e, rel_tol=1e-3):
 
 
 n, dm = 12, 6
-viol_sym, viol_id = 0, 0
+viol_sym, viol_gen, viol_id = 0, 0, 0
 for t in range(200):
     x0 = rng.standard_normal((n, dm))
     x0 /= np.linalg.norm(x0, axis=1, keepdims=True)
@@ -204,11 +214,76 @@ for t in range(200):
     Vs = (M + M.T) / 2
     Q, Kq = rng.standard_normal((dm, dm)), rng.standard_normal((dm, dm))
     viol_sym += violations(flow_energy(Q, Kq, Vs, x0)) > 0
+    viol_gen += violations(flow_energy(Q, Kq, M, x0)) > 0     # the baseline: the same draw, V = M
     I = np.eye(dm)
     viol_id += violations(flow_energy(I, I, I, x0)) > 0
-print(f"      C6: symmetric V, untied QK: E_1 non-monotone in {viol_sym} of 200; Q = K = V = I: {viol_id} of 200")
+print(f"      C6: untied QK, E_1 non-monotone with V = sym(M) in {viol_sym} of 200, with V = M "
+      f"(not symmetric) in {viol_gen}; Q = K = V = I: {viol_id} of 200")
 record("C6 a symmetric V alone does not make E_1 monotone (some draw violates)", viol_sym > 0)
 record("C6 Q = K = V = I: E_1 monotone in every draw", viol_id == 0)
+
+# C7 ------------------------------------------------------------------------------------------
+# Arm (b) in the residual's metric (design "Arm (b): two definitions"): B = U R (QR), the restriction
+# T = R C U of K to col(B), K = U T U^T + U N with N = R C (I - U U^T); real Schur T = V S V^T;
+# each 2x2 diagonal block of S replaced by its symmetric part (S'); K' = U V S' V^T U^T + U N.
+import scipy.linalg as sla
+
+ok_real = ok_col = ok_size = ok_span = True
+ratio_schur, ratio_eig = [], []
+for t in range(200):
+    Bn = rng.standard_normal((dd, kk))
+    Cn = rng.standard_normal((kk, dd))
+    U, Rr = np.linalg.qr(Bn)
+    T = Rr @ Cn @ U
+    N = Rr @ Cn @ (np.eye(dd) - U @ U.T)
+    S_, Vv = sla.schur(T, output="real")
+    S2 = S_.copy()
+    i = 0
+    while i < kk:
+        if i + 1 < kk and abs(S_[i + 1, i]) > 1e-12:
+            blk = S_[i:i + 2, i:i + 2]
+            S2[i:i + 2, i:i + 2] = (blk + blk.T) / 2
+            i += 2
+        else:
+            i += 1
+    Kn = Bn @ Cn
+    Ks = U @ Vv @ S2 @ Vv.T @ U.T + U @ N
+    ev = nz_eigs(Ks)
+    ok_real &= np.abs(ev.imag).max() < 1e-7 * np.abs(ev).max()
+    ok_col &= np.abs(U @ U.T @ Ks - Ks).max() < 1e-8 * np.abs(Ks).max()
+    ok_size &= abs(np.linalg.norm(Ks - Kn) - np.linalg.norm(S2 - S_)) < 1e-8 * np.linalg.norm(Kn)
+    Zn = np.hstack([Bn, Cn.T])                       # K' lies in the head's span: Z M Z^T for some M
+    Pz = Zn @ np.linalg.pinv(Zn)
+    ok_span &= np.abs(Pz @ Ks @ Pz - Ks).max() < 1e-8 * np.abs(Ks).max()
+    ratio_schur.append(np.linalg.norm(Ks - Kn) / np.linalg.norm(Kn))
+    g, _ = g_of(Cn @ Bn)
+    ratio_eig.append(np.linalg.norm(Bn @ g.real @ Cn - Kn) / np.linalg.norm(Kn))
+print(f"      C7: ||K' - K|| / ||K|| on Gaussian heads, median: Schur-plane {np.median(ratio_schur):.2f}, "
+      f"eigenbasis Re lam {np.median(ratio_eig):.2f} (random heads, not Pythia's)")
+record("C7 Schur-plane de-rotation: every nonzero eigenvalue real", ok_real)
+record("C7 Schur-plane de-rotation keeps the write space col(B)", ok_col)
+record("C7 its edit size is ||S' - S|| (the blocks' skew parts only)", ok_size)
+record("C7 it lies in the head's span Z (one hook core M)", ok_span)
+
+# C8 ------------------------------------------------------------------------------------------
+# Doubly matched controls (design "Controls"): for an arm's edit D, alpha = <D, K> / ||K||^2 and a
+# random N_perp in the span, orthogonal to K, of norm ||D - alpha K||: the control alpha K + N_perp
+# has ||control|| = ||D|| and ||K + control|| = ||K + D|| exactly, both through the Gram.
+ok = True
+for t in range(100):
+    Zn = rng.standard_normal((dd, 2 * kk))
+    Gn = Zn.T @ Zn
+    ip = lambda M1, M2: float(np.trace(Gn @ M1 @ Gn @ M2.T))   # <Z M1 Z^T, Z M2 Z^T>_F
+    Ec = np.zeros((2 * kk, 2 * kk)); Ec[:kk, kk:] = np.eye(kk)
+    Dm = rng.standard_normal((2 * kk, 2 * kk))
+    alpha = ip(Dm, Ec) / ip(Ec, Ec)
+    Rn = rng.standard_normal((2 * kk, 2 * kk))
+    Rn = Rn - ip(Rn, Ec) / ip(Ec, Ec) * Ec
+    Rn *= np.sqrt(ip(Dm - alpha * Ec, Dm - alpha * Ec) / ip(Rn, Rn))
+    ctl = alpha * Ec + Rn
+    ok &= abs(ip(ctl, ctl) - ip(Dm, Dm)) < 1e-8 * ip(Dm, Dm)
+    ok &= abs(ip(Ec + ctl, Ec + ctl) - ip(Ec + Dm, Ec + Dm)) < 1e-8 * ip(Ec + Dm, Ec + Dm)
+record("C8 doubly matched control: same edit size and same edited-head norm (100 draws)", ok)
 
 print(f"\n{sum(results)}/{len(results)} passed")
 raise SystemExit(0 if all(results) else 1)
