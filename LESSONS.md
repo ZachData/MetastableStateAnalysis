@@ -266,6 +266,14 @@ world moves, nobody updates the line, and the next session acts on it.
   reopening `r1.json`. The headline then reached the card, PROJECT, ROADMAP and STATE. Rule: an
   ordering claim between two records is checked against both records, not against one record
   and the other's prose.
+- 2026-10-21 (S2 unit 1, the session's start): the user's prompt read "Blocked 86: <your
+  letters>" with the placeholder unfilled. Looking for 86's options, `grep "^8[0-6]\. "` on
+  `STATE.md` found nothing, and the session told the user that Blocked 86 "has no entry in STATE"
+  and asked only arm (b)'s question. STATE packs decided entries onto one line with " · ", so
+  80–87 begin mid-line; 86 was there, with a second part (scope) not asked. Corrected to the
+  user within the hour, and the scope asked. Rule: **an absence claimed from a search is checked
+  with a search that cannot miss the layout (`grep -o "86\. .\{0,200\}"`, or open the
+  section) before it is said to the user.**
 - **2026-10-07, the start hook again printed an old `STATE.md`** (#156's, which
   still said "Blocked 28 open, U2's rule unfixed"): the main tree was 8 merges
   behind `origin/main`, and the hook prints the main tree's file. Caught at
@@ -562,6 +570,20 @@ well-formed but empty/zero result. It looks exactly like a real result.
   medians only, and those are right; the counts are marked "not read" (`status-S.md` "S1 unit 3").
   Rule: a summary that takes a null as an argument names whose null it is, and a test feeds it a
   mismatched pair.
+- 2026-10-21 (S2 unit 1), three GPU out-of-memory stops in one unit, each the 2026-10-16 rule
+  again: `wiring` held 8 feeds' logits and hidden states on the GPU (the probe's alone 0.6 GB);
+  in `g0` the name `hook` kept the previous step's model alive into the next load; the preflight's
+  G3 held step 128's weights and a copy of 8000's on the GPU beside the model. Each cost a run
+  (the first two a runner round trip). Also: `write_b_eig` read `W_V` through
+  `.double().cpu().numpy()`, which on a float64 tensor is the tensor itself, so writing `g W_V`
+  changed the `W_V` the bias was then computed from; the float64 smoke test caught it, float32
+  could not have. Rule: **a reference kept for a comparison goes to the CPU; a loop over steps
+  `del`s every name that holds the model (hooks included); a numpy view of a weight that is about
+  to be written is copied.**
+- 2026-10-21 (S2 unit 1): S2's hook took the attention weights as `out[2]` (4.44's
+  `(out, present, weights)`); 4.57 returns `(out, weights)`, and the smoke test failed there,
+  found by running it under 4.57 before the PR as the rule below says (`PYTHONPATH` the
+  `tf457` scratch). Fixed by taking the weights by shape. The records (4.44) are unchanged.
 - 2026-10-14 (B0, `/challenge-pr` on #198): `core.nudge.Stack` called GPT-NeoX layers the
   4.44.2 way (the conda `mets` env, where the gate and the smoke test ran); the nightly installs
   4.57.6, where the call crashes and the obvious fix silently drops the causal mask. Rule: **code
@@ -770,6 +792,17 @@ not fixed).
   CI's transformers" is now cheap on the box: `pip install --no-deps --target <scratch>/tf457
   transformers==4.57.6 tokenizers==0.22.1 huggingface_hub==0.36.0 safetensors`, then run the
   `mets` python with `PYTHONPATH=<scratch>/tf457 SMOKE_REAL_DEPS=1`.
+- 2026-10-21 (S2 unit 1, G0): the design gated "the read-back K′ has the arm's eigenvalues" at
+  1e-6 ‖K‖ on the float32 core the hook holds. (b-schur) leaves near-repeated eigenvalues (gaps to
+  7.5e-7 ‖K‖), which float32 rounding moves by √eps: 3.1e-4, while the map was exact to 3e-8 and
+  the float64 core's eigenvalues to 2e-10. The gate asserted float32's eigen-sensitivity, not the
+  code; one G0 run spent, diagnosed before any change. Revised before the freeze (Blocked 87): the
+  map and the exact core gated, the float32 eigenvalues beside. Rule: **a gate on eigenvalues of
+  a stored (rounded) non-normal matrix first checks the eigenvalue gaps; near-repeated ones are
+  gated in float64 or through the map.**
+- 2026-10-21 (S2 unit 1): the smoke bars for the hook were 1e-10 in float64, and under 4.57 the
+  constant moved into the bias is off by `(1 − rowsum P)·c` (the float32 softmax, the 2026-10-11
+  instance above). The bars now add 10× the measured row-sum gap, which is 0 under 4.44.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
@@ -1391,6 +1424,15 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   the edited head), and make the planted null an arm-shaped edit that removes nothing specific
   (here the gain change alone). A null drawn from the control distribution only tests the
   labeller. Before a design names an edit's size, measure it on a few real units.**
+- 2026-10-21 (S2 unit 1, the preflight): the first input gave `tools/design_preflight.py` the base
+  model's 7 per-prompt violation counts (7–10) as `trained`, against a null of 7-prompt sums
+  (30–60), so its band check refused arm b on a scale mismatch. Caught reading the refusal's band
+  before writing it up; re-run offline on the records (`s2.py preflight-tool`). Arm a's refusal
+  survived on the right scale and is real (base 59 outside its controls' [31, 39]). The same run
+  showed both arms move the stream further than all 40 controls at 8000: as frozen, the
+  displacement guard would have left R1 and R2 unread at every cell, found here before any scored
+  step, which is the preflight's job (Blocked 87). Rule: **every population given to the
+  preflight is on the statistic's own scale (the same sum, the same units) as its null.**
 
 ## 7. Literature found after the construction was built
 
@@ -1802,6 +1844,15 @@ a wrong premise, the check inherits it.
   recommendation already in `STATE.md`. Rule: a sentence supporting a recommendation states
   its interval, and the strongest number against it (here the pooled window) goes beside
   the verdict before the PR opens.
+- 2026-10-21, S2 unit 1 (#247, `/challenge-pr`): Blocked 87's recommended option drew arm a's
+  controls at 1.5–3× its size "as the fallback says", without checking that a control can be
+  built there with both norms matched; for arm a it cannot (‖control‖ ≤ 1.73 ‖K‖ against 2.04),
+  its feasible rungs flip or shrink the head, the interpolated label had no null, and the option
+  was the one that could turn 8000's arm-a V into a reading. The reason given against the
+  alternative ("it changes the controls after seeing 8000") applied to it too. Withdrawn before
+  the user decided. Rule: **an option offered to the user is checked to be constructible with
+  the design's own definitions (one draw, one head), and the argument against each alternative
+  is tried against the recommended one.**
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user

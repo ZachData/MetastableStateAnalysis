@@ -12,16 +12,17 @@
   - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
   - Unit 3 (Blocked 83–85 (a), the user's): QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000, and are the most concentrated of the 7 from 2000 on (`ov_write` is at 512–1000); inside each family's 10 most shared directions the radial sign reads S at no step from 512 (inside random subspaces' range at 512, and at 1000–4000 random subspaces hold no attractive part in 18–20 of 24 layers, so only "less repulsive" can show); the OV families' S is drawn from the heads it compresses, a bias of unknown size, so QK's readings are the clean ones; collapsible negative pairs are rarer than random in QK's S at 1000–4000; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
   - S1 closed 2026-10-21 at its revised exit (3 units + close-out): the shared spaces are described against an exact null, never counted or calibrated on the effect side — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
-  - S2 opened 2026-10-21, proposed, not frozen (Blocked 86): every head's OV edited at once, (a) to its symmetric part and (b) with its rotation removed (recommended: in an orthonormal basis of each invariant plane, since λ → Re λ in the eigenbasis edits a head by 1.6× its size at 512), each against 40 random edits matched in size and in the edited head's norm, and read only beyond the gain change alone; reading the energy break, in-context copying and S1's shared rotation; no theorem predicts "monotone" for (a) — `trackS_subspace/design-S2.md`
+  - S2 unit 1 (Blocked 86 (a) and (i), the user's: arm b in Schur planes, 3 units): the hook is the model at its base core and every arm's read-back is exact; at 8000, off the grid, both arms move the residual stream further than all 40 of their size-matched random edits, so the frozen displacement guard would leave their cells unread; arm a's random edits alone break most in-context copying; removing rotation in the Schur planes changes about a tenth of each head's map; the shared write space meets the shared read and key spaces from 512; the freeze is Blocked 87 — `trackS_subspace/status-S.md` "S2 unit 1"
+  - S2 opened 2026-10-21 (Blocked 86 since decided (a) and (i)): every head's OV edited at once, (a) to its symmetric part and (b) with its rotation removed (recommended: in an orthonormal basis of each invariant plane, since λ → Re λ in the eigenbasis edits a head by 1.6× its size at 512), each against 40 random edits matched in size and in the edited head's norm, and read only beyond the gain change alone; reading the energy break, in-context copying and S1's shared rotation; no theorem predicts "monotone" for (a) — `trackS_subspace/design-S2.md`
 - **Superseded / wrong:** none
 - **Registry:** none, because Track S is tier 1 on an exploration rung (`trackS_subspace/design-S1.md` "Fences")
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - R1b, R2 and a leave-the-layer-out S for OV's R3 (carried to S2; homed in `design-S2.md` "Carried in from S1"), the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); S2's freeze (Blocked 87); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `f96ae40b6b`
+- **Reviewed:** 2026-10-21 · body `e2cc49f7a3`
 <!-- /phase-card -->
 
 ## Units
@@ -33,8 +34,8 @@
 | 2. re-gate + R1′ over the 8 steps (Blocked 82 (b)) | **done 2026-10-21: G0′, G1iii′, G2′ pass; G4 passes in the 5 OV families, fails in QK, and cannot see the pool (`/challenge-pr` on #244); R1′ read as description; QK Blocked 83** | "S1 unit 2" below; `s1.py regate`, `s1.py r1` |
 | 3. QK's ρ, R3 on S, the residual check (Blocked 83–85 (a)); R1b, R2 carried to S2 | **done 2026-10-21: QK concentrates most of the 7 (ρ 0.51–0.53 at the end); R3's radial sign at 512–2000 reads the layer, not S; no S is the residual stream's top variance; at 143000 the write, negative and complex S are partly the massive-activation coordinates** | "S1 unit 3" below; `s1.py r1qk`, `s1.py r3`, `s1.py massive` |
 | close-out | **done 2026-10-21** (writing only; 85 (a)) | "S1 on one page" below |
-| S2 0. scan, design, `sympy` check | **done 2026-10-21; proposed, not frozen (Blocked 86)**; the preflight is unit 1's first step | `lit-S2.md`, `design-S2.md`, `tools/math_checks/s2_ov_arms.py` (24 of 24 after `/challenge-pr` on #246) |
-| S2 1. code, G0, the preflight at 8000; R1b, R2 beside; then the freeze | not started | `design-S2.md` "The gate" |
+| S2 0. scan, design, `sympy` check | **done 2026-10-21; Blocked 86 decided (a) and (i), the user's** | `lit-S2.md`, `design-S2.md`, `tools/math_checks/s2_ov_arms.py` (24 of 24 after `/challenge-pr` on #246) |
+| S2 1. code, G0, the preflight at 8000; R1b, R2 beside; then the freeze | **done 2026-10-21: G0 passes (its (b) read-back revised); the preflight's refusals argued; both arms move the stream further than every control at 8000; the freeze is Blocked 87** | "S2 unit 1" below; `s2.py g0`, `preflight`, `beside` |
 | S2 2. G1–G3 at the design points; R1, R2 | not started | `design-S2.md` "The gate", "Readings" |
 | S2 3. R3 on S₋ₗ; S1's R3 on S₋ₗ beside | not started | `design-S2.md` "The arms" |
 | S2 close-out | not started | — |
@@ -469,3 +470,127 @@ from the LR warmup (to ≈ 1430); whether the end state's massive-coordinate sha
 the OV families' R3 readings free of selection (a leave-the-layer-out S, carried to S2); the
 residual check for the read-side spaces in the frame the heads read (LN1's centring and gain;
 raw against raw here, as the design's frame; `/challenge-pr` on #245, finding 5).
+
+## S2 unit 1, the code, G0, the preflight at 8000, R1b and R2 (2026-10-21)
+
+Blocked 86 decided (a) and (i), the user's: arm (b) is (b-schur), (b-eig) beside with no label;
+3 units + close-out. Code `trackS_subspace/s2.py` (choices fixed in code: `design-S2.md` "Unit 1:
+fixed in code"); tests `tests/test_trackS_s2.py` (11, pure), `tests/test_trackS_s2_smoke.py` (4,
+tiny GPT-NeoX in float64). No scored step's arm, control, V or G was computed.
+
+**Run.** From `../Mets-work`, `HF_HOME` the main tree's `data/hf`, under `systemd-inhibit`; RTX 3080,
+float32, TF32 off for the passes; frames and arms float64 on the CPU. Records in the main tree's
+`data/trackS/s2/`:
+
+| job | code (file sha256) | record | time |
+|---|---|---|---|
+| `s2.py g0` | `16b25495163b` (`077b31c`) | `2026-10-21-u1-g0b/g0.json` `95522987245d` | 87 s |
+| `s2.py preflight` (the GPU part) | `98bffaa38aca` (`dfb9f70`'s file without the `preflight-tool` split, which moves no number) | `2026-10-21-u1-preflight/preflight_runs.json` `5ed46da5f616` | 129 s |
+| `s2.py preflight-tool` (the reports) | `2fac8f6c646a` (`dfb9f70`) | `preflight_report_a.json` sha256 `2156db3ca9dc0474…`, `_b.json` `769d0f66f778e3f5…` | — |
+| `s2.py beside` | `b672917e92f9` (between `955763b` and `077b31c`; `beside` is the same in both) | `2026-10-21-u1-beside/beside.json` `f9cb4925e444` | 1,124 s |
+
+All ran under the `mets` env's transformers 4.44.2. After them, `77ef95a` takes the attention
+weights by shape (4.57 returns them in another place); under 4.44 it selects the same tensor, so no
+record moves; the smoke tests pass under both (`LESSONS.md` 2).
+
+Set aside, not read: two OOM runs of `g0` (8 feeds' logits held on the GPU; the hook kept the
+previous step's model alive), one of the preflight (G3's two weight copies on the GPU), the first
+preflight-tool input (per-prompt counts against a summed null) — `data/trackS/s2/oom-attempts/`,
+`2026-10-21-u1-preflight/first-tool-input/`. The first G0 (`077b31c`'s parent) failed its (b)
+read-back; it is the reason for the revision below.
+
+**G0 passes.**
+
+| check | worst | bar |
+|---|---|---|
+| hook at the base core against the model, logits and raw hidden states (7 v1 prompts, the probe) | 2.0e-6 at 0, 3.4e-6 at 8000 | 1e-4 |
+| (b-eig) by the hook against (b-eig) written in W_V (logits, centred hidden states) | 2.3e-6, 6.8e-6 | 1e-4 |
+| read-back, 20 heads at 8000: (a) against sym K; (b), (b-eig) maps against the exact K′ | 3.6e-8; 4.6e-8, 1.2e-7 of ‖K‖ | 1e-6 |
+| the exact core's eigenvalues against the arm's: (b) (and their imaginary parts), (b-eig) | 1.9e-10 (0.0), 1.0e-15 | 1e-6 |
+| a doubly matched control's two norms, every head, both arms | 3.7e-16 | 1e-6 |
+| base V against the panel at 0, 256, 512, 1000, 2000, 4000, 143000 | 0, 19, 56, 56, 61, 57, 70: equal | equal |
+
+**G0's (b) read-back, revised before the freeze (Blocked 87).** As written it gated the
+eigenvalues of the float32 core the hook holds. For (b-schur) they missed by 3.1e-4 ‖K‖ (imaginary
+parts 2.4e-4) while the float32 map equals the exact K′ to 2.9e-8 and the exact core has the arm's
+eigenvalues to 1.9e-10: (b-schur) leaves near-repeated eigenvalues (gaps 7.5e-7–2.4e-5 ‖K‖ on the
+20 heads), which float32 rounding moves by about √eps. The gate now checks the map and the exact
+core; the float32 core's eigenvalues are recorded beside.
+
+**Sizes (every arm, every head; median [min, max] of ‖K′ − K‖ / ‖K‖; ‖K′‖ / ‖K‖ median).**
+
+| step | a | b (b-schur) | b-eig (beside) | g_a | g_b |
+|---|---|---|---|---|---|
+| 0 | 0.71 [0.71, 0.71]; 0.71 | 0.12 [0.11, 0.13]; 0.99 | 1.74 [1.31, 7.31]; 1.75 | 0.29 | 0.01 |
+| 256 | 0.71; 0.71 | 0.12 [0.11, 0.13]; 0.99 | 1.72; 1.74 | 0.29 | 0.01 |
+| 512 | 0.70; 0.71 | 0.12 [0.10, 0.13]; 0.99 | 1.60 [1.16, 5.47]; 1.65 | 0.29 | 0.01 |
+| 1000 | 0.67; 0.74 | 0.09 [0.08, 0.13]; 1.00 | 0.66; 1.09 | 0.26 | 0.00 |
+| 2000 | 0.66; 0.75 | 0.08 [0.05, 0.12]; 1.00 | 0.48; 1.03 | 0.25 | 0.00 |
+| 4000 | 0.68; 0.74 | 0.09 [0.04, 0.16]; 1.00 | 0.78; 1.11 | 0.26 | 0.00 |
+| 8000 | 0.68 [0.38, 0.71]; 0.73 | 0.09 [0.02, 0.18]; 1.00 | 0.98; 1.21 | 0.27 | 0.00 |
+| 143000 | 0.69 [0.37, 0.71]; 0.72 | 0.10 [0.02, 0.23]; 0.99 | 1.23 [0.05, 4.48]; 1.38 | 0.28 | 0.01 |
+
+(b-schur) removes about 10 % of a head's norm and keeps its gain (g_b ≤ 0.03): 10,368–10,968 of the
+12,288 eigenvalue pairs are complex at every step, but at 8000 (all 384 heads, medians of ‖K‖²'s
+shares) 0.88 of a head's map reads from outside its write space (N, which (b-schur) keeps), 0.04 is
+the restriction's coupling between planes and 0.08 its diagonal blocks, of which the skew part
+(what (b-schur) removes) is 0.008. Rotation inside the write space is a small part of these maps.
+(b-eig) edits by 0.48–1.74 ‖K‖ (no head refused for its condition number).
+
+**The preflight at 8000 (off the grid; not a reading).** V per configuration (sum over the 7
+prompts, at most 168), G and D:
+
+| | V | G | D |
+|---|---|---|---|
+| base | 59 | 12.32 | — |
+| arm a / gain g_a / G1's 41st draw | 21 / 50 / 37 | 1.36 / 10.50 / 2.61 | 0.949 / 0.306 / 0.709 |
+| a's 40 controls (min, median, max) | 30, 36, 39 | 2.09, 2.75, 3.22 | 0.693, 0.713, 0.735 |
+| arm b / gain g_b / G1's draw | 57 / 59 / 60 | 12.30 / 12.31 / 12.29 | 0.110 / 0.005 / 0.102 |
+| b's 40 controls | 56, 59, 61 | 12.21, 12.26, 12.33 | 0.100, 0.102, 0.106 |
+| b-eig (beside) | 42 | 1.59 | 0.829 |
+| G3, t = 0.25 / 0.5 / 1 (toward step 128) | 34 / 18 / 0 | 3.83 / 0.12 / 0.00 | 0.553 / 0.840 / 0.981 |
+
+The tool (`tools/design_preflight.py`; V, "less", null the arm's 40 controls, dose 0 the gain arm
+and G1's draw, doses G3's t, `decision_p` 1/41, bounds [0, 168]): no size, headroom, dose-side or
+power refusal for either arm (G3 at t = 1 and 0.5 below every control of both; 0.25 below b's, not
+a's). It refuses, for both arms, `trained` (one value: V is one number per model, as the design
+foresaw) and `floor` (1/41 calibrates to E 3.2), and for arm a `band:controls` (base's 59 lies
+outside a's controls' [31, 39]). Argued in `design-S2.md` "The preflight's refusals".
+
+**What the preflight shows for the freeze.**
+- **Both arms move the stream further than every control** (a: D 0.949 against 0.693–0.735; b: 0.110
+  against 0.100–0.106). Under the frozen displacement guard such a cell is "moved further" and not
+  read; if the scored steps look like 8000, R1 and R2 read nothing. Blocked 87 (after
+  `/challenge-pr` on #247) makes the guard one-sided: it withholds only the labels displacement
+  can produce (R1 *lower*, R2 *lost* / *weakened*).
+- Arm a's controls alone move V from 59 to 30–39 and G from 12.3 to 2.1–3.2: a random edit of arm
+  a's size in the head's span already breaks most in-context copying, so R2 under a compares
+  damaged models (87: R2 under a is description).
+- Arm b at its size moves nothing measurable beyond its controls (V 57 in 56–61, G inside).
+
+The records above carry the code sha but not the transformers version or the checkpoints' commits
+(`/challenge-pr` on #247, finding 6): `meta_backfill.json` in each record directory holds both,
+taken after the run from the same HF cache (4.44.2; step 8000 at `8e89b393da98…`); new runs write
+them (`s2.run_meta`).
+
+**R1b and R2 (beside, weights only, description; S1's raw frame, r 16, S = P̄'s top 10).**
+
+| step | write–read | write–key | neg–pos | R2 layers above the shuffle max: write, read, query, key, neg, pos, cplx |
+|---|---|---|---|---|
+| 0 | 0.009 | 0.008 | 0.012 | 0, 0, 0, 0, 0, 0, 0 |
+| 128 | 0.009 | 0.008 | 0.010 | 1, 0, 0, 0, 0, 0, 0 |
+| 256 | 0.017 | 0.032 | 0.012 | 10, 0, 8, 6, 0, 0, 3 |
+| 512 | 0.213 | 0.238 | 0.024 | 5, 5, 11, 11, 0, 1, 10 |
+| 1000 | 0.114 | 0.203 | 0.030 | 15, 5, 19, 22, 3, 1, 15 |
+| 2000 | 0.179 | 0.098 | 0.037 | 21, 8, 22, 17, 6, 0, 21 |
+| 4000 | 0.100 | 0.154 | 0.073 | 14, 4, 19, 18, 1, 0, 15 |
+| 143000 | 0.208 | 0.090 | 0.288 | 7, 8, 5, 5, 0, 0, 6 |
+
+R1b is tr(P_S P_S′) / 10; two Haar 10-dim spaces give 0.0098 (2000 draws; 99.9th percentile 0.015),
+which steps 0 and 128 match. The shared write space meets the shared read and key spaces from 512
+(about 20 times Haar at 512), and at 143000 the negative and positive spaces overlap (0.29). R2
+counts, per layer pool of 16, P̄'s eigenvalues above the largest λ₁ of 2000 random 16-head sets of
+the step's 384: step 0 reads none, sharing within layers beyond the step's global sharing rises
+from 256 to 2000–4000 (up to 22 of 24 layers in QK and `ov_cplx`) and falls back by 143000 (5–8).
+Not established: anything these overlaps do (S2's arms, S5); R2 is description only (S1's preflight
+refused it as a verdict for QK).
