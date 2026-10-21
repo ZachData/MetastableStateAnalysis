@@ -207,3 +207,10 @@ def test_shared_space_finds_a_planted_direction():
     bases = s1.plant([np.linalg.qr(g.standard_normal((D, R)))[0] for _ in range(40)], u, range(30))
     U = s1.shared_space(bases, 3)
     assert U.shape == (D, 3) and abs(U[:, 0] @ u) > 0.99
+
+
+def test_r3_summary_without_its_own_haar_gives_medians_only():
+    rd = {"share": 0.5, "top_weight": 0.1, "pair": True, "cplx": 0.2, "arg": 1.0}
+    out = s1.r3_summary([rd, rd])
+    assert out["share_median"] == 0.5 and out["pair_layers"] == 2
+    assert not any(k.endswith(("_outside", "_haar_mean")) for k in out)

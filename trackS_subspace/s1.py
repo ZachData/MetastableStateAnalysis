@@ -921,14 +921,19 @@ def r3_reading(C: np.ndarray) -> Dict:
             "arg": float(np.mean(np.abs(np.angle(cx)))) if cx.size else None}
 
 
-def r3_summary(obs: Sequence[Dict], haar: Sequence[Sequence[Dict]]) -> Dict:
+def r3_summary(obs: Sequence[Dict], haar: Optional[Sequence[Sequence[Dict]]] = None) -> Dict:
     """Per family × step (design, "Summary (fixed now)"): each reading's median over the layers;
     for `share`, `cplx`, `arg` the layers outside Haar's [min, max] at that layer; the flag's layer
-    count beside Haar's mean count. `obs[l]`, `haar[l][j]` are `r3_reading`s."""
+    count beside Haar's mean count. `obs[l]`, `haar[l][j]` are `r3_reading`s, and `haar` must be
+    drawn on the same V_l as `obs`; without it, medians only (step 0's comparison: the trained
+    step's draws are the wrong null for it, `/challenge-pr` on #245)."""
     out = {}
     for k in ("share", "top_weight", "cplx", "arg"):
         v = [o[k] for o in obs if o[k] is not None]
         out[f"{k}_median"] = float(np.median(v)) if v else None
+    out["pair_layers"] = int(sum(o["pair"] for o in obs))
+    if haar is None:
+        return out
     for k in R3_READS:
         n = 0
         for o, hs in zip(obs, haar):
@@ -936,7 +941,6 @@ def r3_summary(obs: Sequence[Dict], haar: Sequence[Sequence[Dict]]) -> Dict:
             if o[k] is not None and hv and not min(hv) <= o[k] <= max(hv):
                 n += 1
         out[f"{k}_outside"] = n
-    out["pair_layers"] = int(sum(o["pair"] for o in obs))
     out["pair_layers_haar_mean"] = float(np.mean([sum(hs[j]["pair"] for hs in haar)
                                                   for j in range(len(haar[0]))]))
     return out
@@ -1016,7 +1020,7 @@ def r3(out: Path) -> None:
                      for k in R3_READS} for hs in haar]
             step0 = [r3_reading(U.T @ V @ U) for V in V0]
             cell = {"r3": {"layers": obs, "step0": step0, "haar_range": rng_,
-                           "summary": r3_summary(obs, haar), "summary_step0": r3_summary(step0, haar)},
+                           "summary": r3_summary(obs, haar), "summary_step0": r3_summary(step0)},
                     "top_coords": [np.argsort(-np.abs(U[:, i]))[:3].tolist() for i in range(S_WIDTH)],
                     "resid": {}}
             for m, Ss in mom.items():

@@ -9,18 +9,18 @@
 - **Results:**
   - Opened 2026-10-20 with a scan, a `sympy` check and a design frozen as written (3 units + close-out); the rotation null, the norm-matched random draw and step 0 are one law for the mean projector, and the preflight refused per-unit verdicts against it, so S1 was designed to read counts — `trackS_subspace/design-S1.md` "Preflight (`tools/design_preflight.py`, step 8000, off the grid)"
   - Unit 1's gate: the instrument and its null pass (G0, G1, G1iii, G2: the three nulls are one law, step 0 reads no shared direction, the rotation null reads none at any step); the count fails its planted effect on the real pool in all 7 families, because at a trained step the mean projector's spectrum is dense at the null's edge, where each planted direction raises the count only about half the time; N refused by the frozen fallback (Blocked 82); the heads use nearly every dimension but unevenly (participation ratio 344–729 against 880), which alone explains a count near the edge, not the top eigenvalues — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
-  - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families read the null's value through step 256, concentrate from 512, most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
-  - Unit 3 (Blocked 83–85 (a), the user's): QK's heads concentrate more than OV's, from 256 through 4000, and most of the 7 at the end; inside each family's 10 most shared directions the layers' summed OV is repulsive everywhere at 512–2000 (so the sign there is the layer's), from 1000 less repulsive than random in the QK spaces, and less often a collapsible negative pair in all; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
+  - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
+  - Unit 3 (Blocked 83–85 (a), the user's): QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000, and are the most concentrated of the 7 from 2000 on (`ov_write` is at 512–1000); inside each family's 10 most shared directions the radial sign reads S at no step from 512 (inside random subspaces' range at 512, and at 1000–4000 random subspaces hold no attractive part in 18–20 of 24 layers, so only "less repulsive" can show); the OV families' S is drawn from the heads it compresses, a bias of unknown size, so QK's readings are the clean ones; collapsible negative pairs are rarer than random in QK's S at 1000–4000; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
   - S1 closed 2026-10-21 at its revised exit (3 units + close-out): the shared spaces are described against an exact null, never counted or calibrated on the effect side — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track S is tier 1 on an exploration rung (`trackS_subspace/design-S1.md` "Fences")
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - R1b and R2 (carried to S2), the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - R1b, R2 and a leave-the-layer-out S for OV's R3 (carried to S2), the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `8f6b7cd8e1`
+- **Reviewed:** 2026-10-21 · body `329c6d3155`
 <!-- /phase-card -->
 
 ## Units
@@ -55,14 +55,18 @@ description, R3's table, the residual check (85 (a): the budget kept, 3 units + 
    dimensions only measures its own dilution (unit 2's G4, `/challenge-pr` on #244). So S1 reads ρ
    as an exact description and no count.
 3. **Concentration over training** (ρ, 1 at the null): every family reads the null through 128;
-   QK leaves it at 256, OV at 512. The OV write, negative and complex families are most
+   `qk_query`, `qk_key`, `ov_write` and `ov_cplx` leave it at 256, the rest at 512. `ov_write` is
+   the most concentrated at 512–1000; its write, negative and complex families are most
    concentrated at 2000 and partly relax by 4000; read and positive concentrate steadily; QK falls
-   through 4000 and ends most concentrated of the 7 (0.51–0.53 against OV's 0.65–0.83). LN1's gain
-   changes none of it. The spectrum is uneven; whether that is a few directions is not readable.
-4. **Inside the 10 most shared directions:** at 512–2000 every layer's summed OV is repulsive in
-   any subspace, so the radial sign is the layer's; at 256 the write / negative / complex spaces
-   turn repulsive before random ones; from 1000 the QK spaces are less repulsive than random, and
-   in all families a collapsible negative pair is rarer than in a random subspace.
+   through 4000 and is the most concentrated of the 7 from 2000 on (0.51–0.53 at the end against
+   OV's 0.65–0.83). LN1's gain changes none of it. The spectrum is uneven; whether that is a few
+   directions is not readable.
+4. **Inside the 10 most shared directions** the radial sign reads S at no step from 512: at 512
+   S sits inside random subspaces' range, and at 1000–4000 random subspaces hold no attractive
+   part in 18–20 of 24 layers, so only "less repulsive than random" can show (in QK's S it does,
+   often by a share under 0.05). The OV families' S is built from the heads it compresses, a bias
+   of unknown size (their 256 "turn repulsive first" may be built in); QK's S is not, and there a
+   collapsible negative pair is rarer than in a random subspace at 1000–4000.
 5. **Not the residual stream's top variance** at any step (S holds 9–17× a random subspace's share
    at 512, never half the top-10's); **at 143000 the write, negative and complex shared spaces are
    partly 410m's massive-activation coordinates** (357, 130, 966; 278, 335, 914 early), which they
@@ -89,6 +93,7 @@ and 143000; R1b, R2; weighted projectors; R3 with attention weights; any other r
 | `lit-S1.md` Parked 1 (2603.13314's full text) | carried to C2's draft (ROADMAP §8): how S1's key and value rows are stated against OLMo-2 |
 | `lit-S1.md` Parked 2 (410m's massive dims) | done, unit 3 |
 | R1b (overlap between families' S), R2 (within-layer sharing, description) | carried to S2 (ROADMAP §7a row) |
+| R3 on a leave-the-layer-out S for the OV families (the selection bias, `/challenge-pr` on #245, finding 3) | carried to S2 (ROADMAP §7a row): S2 intervenes on OV, so it needs OV's readings free of it |
 | the massive coordinates in the end-state S | carried to S3 (ROADMAP §7a row): S3 projects tokens into S, so it states them or projects them out |
 | a dims-kept gate for ρ (Blocked 83 (c), not taken) | dropped: no planted effect is known that S2 or S5 would need sized in ρ; S2's ablations read their own controls |
 | the LR-warmup confound | carried to C2 (as A5's) |
@@ -281,7 +286,9 @@ case plus its edge; a smoothly graded spectrum with no special directions also e
 "above the m-dim null" means the spectrum is uneven, not that a few directions stand apart.
 
 **What unit 2 establishes (tier 1, one rung, weights only).** In the five OV families the heads'
-subspaces read as an independent random arrangement through step 256, as at init; from 512 they
+subspaces read as an independent random arrangement through step 256, as at init (*corrected
+2026-10-21, `/challenge-pr` on #245: `ov_write` and `ov_cplx` are already below their bands at 256,
+ρ 0.9935 and 0.9975; the other three through 256*); from 512 they
 concentrate on fewer directions of the residual stream (ρ falls), most at step 2000 in the write,
 negative and complex families in ρ's units, partly relaxing by 4000; the read and positive
 families concentrate steadily to 143000. The null side is calibrated (G0′–G2′); the effect side
@@ -340,9 +347,12 @@ every family.**
 | `qk_query` | 1.000 | 1.000 | 0.996 | 0.938 | 0.722 | 0.498 | **0.403** | 0.525 |
 | `qk_key` | 1.000 | 1.000 | 0.997 | 0.973 | 0.858 | 0.660 | 0.521 | **0.513** |
 
-QK leaves the band at 256 (PR 875.8 and 877.0 against [878.9, 880.6]), a step before the OV
-families, and falls through 4000 with no dip at 2000; at 143000 it is the most concentrated of the
-7 (OV 0.65–0.83, unit 2). Beside: r = 8 more concentrated (`qk_query` 0.249 at 4000), r = 32 less
+QK leaves the band at 256 (PR 875.8 and 877.0 against [878.9, 880.6]), with `ov_write` (0.9935)
+and `ov_cplx` (0.9975), and falls through 4000 with no dip at 2000. `ov_write` is the more
+concentrated at 512 and 1000 (0.889, 0.662); `qk_query` from 2000 (0.498 against 0.586), and at
+143000 QK is the most concentrated of the 7 (OV 0.65–0.83, unit 2). *(First written "a step before
+the OV families", from unit 2's "OV reads the null through 256"; both corrected by `/challenge-pr`
+on #245, finding 1.)* Beside: r = 8 more concentrated (`qk_query` 0.249 at 4000), r = 32 less
 (0.613); LN1's gain folded in equals raw within 0.004. The top: λ₁ above the m-dim null from 256
 (1.39, 1.23), λ₁₀ from 1000 (1.41, 1.35); as in unit 2, that says "uneven", not "a few".
 G4r's dims-kept plant (unit 2, step 8000) was hardest to see in QK's pool (`qk_query` 0.03–0.84,
@@ -379,24 +389,35 @@ Negative-pair flag, layers flagged (Haar's mean count): `ov_write` 3 (1.5), 6 (2
 than Haar's mean at 512–4000 in all 7 (`r3.json`). The complex share sits at 0.4–0.8 with 0–6
 layers outside Haar in every cell.
 
-- **The floor.** S is built from the same heads whose summed OV it compresses, so it is not a
-  random subspace for V_l even at init: steps 0–128 read 0–7 layers outside on `share` (`ov_neg`
-  5–7, `ov_pos` 3–4), 0–3 on |arg|; Haar's [min, max] alone puts about 0.5 of 24 outside. Counts
-  at trained steps are read against that.
-- **At 512–2000 the radial sign reads the layer, not S.** Every layer's summed OV has a negative
-  symmetric part in almost every 10-dim subspace there (Haar's own range is [0, 0] at 1000 and 4000),
-  A3's E2 seen in compressions. So `share` 0.00 inside S says nothing about S.
-- **Where it does read S:** at 256 the write, negative and complex S are more repulsive than
-  random (below Haar in 11–20 layers), the first place the negative turn shows; from 1000 the QK
-  S are less repulsive than random (above in 10–22 layers), and at 4000 every family is (7–19).
-  At 256–512 the write, read, negative and complex S hold eigenvalues nearer π than random
-  (12–19 layers); from 2000 the QK S hold smaller angles (12–16 layers below).
+- **The selection bias.** In the OV families S is built from the same heads whose summed OV it
+  compresses, so it is not a random subspace for V_l even at init: steps 0–128 read 0–7 layers
+  outside on `share` (`ov_neg` 5–7, `ov_pos` 3–4), 0–3 on |arg|; Haar's [min, max] alone puts
+  about 0.5 of 24 outside. That floor does not bound it at trained steps, where V_l's structure
+  grows (`/challenge-pr` on #245, finding 3), so **the OV families' R3 readings carry a bias of
+  unknown size, and QK's (S from W_Q, W_K) are the clean ones.** A leave-the-layer-out S, which
+  removes it, is carried to S2.
+- **The radial sign cannot read S from 512.** At 512 S sits inside random subspaces' range (0–4
+  layers outside). At 1000–4000 random subspaces hold no attractive part at all in 18–20 of 24
+  layers (Haar's range [0, 0]: A3's E2 seen in compressions), and the share cannot go below 0,
+  so there only "less repulsive than random" can show, and any attractive part counts. *(First
+  written "at 512–2000", and the QK reading below as "less repulsive than random" without this;
+  corrected by `/challenge-pr` on #245, finding 2.)*
+- **What it shows.** At 256 the write, negative and complex S are more repulsive than random
+  (below Haar in 11–20 layers; OV, so possibly built in). From 1000 the QK S hold a small
+  attractive part in 10–22 layers where random subspaces hold none, often a share under 0.05
+  (`qk_query` at 2000: 22 layers, 13 of them below 0.05). At 256–512 the write, read, negative and
+  complex S hold eigenvalues nearer π than random (12–19 layers); from 2000 the QK S hold smaller
+  angles (12–16 layers below).
 - **Collapsibility.** Inside S the two most negative directions are a near-equal pair in fewer
-  layers than in a random subspace at 512–4000 (e.g. `ov_write` 3 against 19.8 at 4000).
+  layers than in a random subspace at 512–4000 in every family; in QK's S (no selection),
+  `qk_query` 10, 9, 6 against Haar's 21.9, 21.8, 19.9 at 1000, 2000, 4000.
 - **Step 0's comparison** (the trained S on step 0's V_l): `share` medians 0.35–0.61 at every
   step and family, so the trained readings' fall to 0 is V_l's training, not S's choice. **Its
   "outside" counts are not read:** `summary_step0` scores step 0's compressions against the trained
   step's Haar draws, the wrong null (found reading the output; `LESSONS.md` 2, 2026-10-21).
+  `r3.json` (code `1ab2936d1e67`) still holds them; since `/challenge-pr` on #245 (finding 4)
+  `r3_summary` writes no "outside" count without a Haar set, `summary_step0` is medians only, and
+  a test pins it (no value read here changes).
 
 **The residual check.** No family × step has a layer-median q ≥ 0.5, so **no S is reported as
 the residual stream's top variance.** q median (max over layers); a Haar S's q beside:
@@ -428,14 +449,17 @@ fill 22 of `ov_write`'s 30 slots at 143000 and 0–2 at every step through 4000 
 is. The preflight's "≤ 1.8 %" (`lit-S1.md` §4) was step 8000's top direction only.
 
 **What unit 3 establishes (tier 1, one rung, weights; the residual check on v1's 7 prompts).**
-QK's heads concentrate on shared directions more than OV's, from 256, through 4000, and most at
-the end. Inside the 10 most shared directions the layers' summed OV is, from 1000, less repulsive
-in the QK spaces than in random ones, and less often a collapsible negative pair in all; at
-512–2000 it is repulsive everywhere, so the radial sign there is the layer's. No shared space is
-the residual stream's top variance; at 143000 the write, negative and complex ones are partly the
-massive-activation coordinates.
+QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000,
+and are the most concentrated family from 2000 on. Inside the 10 most shared directions the
+radial sign reads S at no step from 512 (random subspaces are as repulsive or more); in QK's S,
+which carries no selection bias, a collapsible negative pair is rarer than in a random subspace
+at 1000–4000. No shared space is the residual stream's top variance; at 143000 the write,
+negative and complex ones are partly the massive-activation coordinates.
 
 **Not established.** That any of this is used (S2, S5); QK's ρ against a calibrated effect; R3 on
 attention-weighted OVs (fenced); anything between grid steps, or separating the 256–4000 changes
 from the LR warmup (to ≈ 1430); whether the end state's massive-coordinate share holds at
-8000–54000 (only 143000 and the grid read); S at another width than 10; R1b and R2 (carried to S2).
+8000–54000 (only 143000 and the grid read); S at another width than 10; R1b and R2 (carried to S2);
+the OV families' R3 readings free of selection (a leave-the-layer-out S, carried to S2); the
+residual check for the read-side spaces in the frame the heads read (LN1's centring and gain;
+raw against raw here, as the design's frame; `/challenge-pr` on #245, finding 5).

@@ -260,6 +260,12 @@ world moves, nobody updates the line, and the next session acts on it.
   opening the run script and a record's `kept_from` before the first pass. No
   run was wasted. Rule: a claim about which input a number was computed on
   names the file and hash it read.
+- 2026-10-21 (S1 unit 3, `/challenge-pr` on #245): unit 2's merged sentence "the OV families
+  read the null through 256" was false for `ov_write` and `ov_cplx` (ρ 0.9935, 0.9975, both
+  below their bands), and unit 3 built "QK leaves the null a step before OV" on it without
+  reopening `r1.json`. The headline then reached the card, PROJECT, ROADMAP and STATE. Rule: an
+  ordering claim between two records is checked against both records, not against one record
+  and the other's prose.
 - **2026-10-07, the start hook again printed an old `STATE.md`** (#156's, which
   still said "Blocked 28 open, U2's rule unfixed"): the main tree was 8 merges
   behind `origin/main`, and the hook prints the main tree's file. Caught at
@@ -802,6 +808,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-21, S1 unit 3 (a reading pinned at its bound; `/challenge-pr` on #245): R3's attractive
+  share is ≥ 0, and at 1000–4000 every Haar subspace read exactly 0 in 18–20 of 24 layers, so
+  "more repulsive than random" could not show and any attractive part counted as "less
+  repulsive". Read first as a finding for QK. And S, drawn from the heads it compresses, made
+  the OV families' Haar comparison biased by construction, which steps 0–128 cannot bound. Rule:
+  before reading "outside the null's range", check the range is not at the statistic's bound,
+  and that the object being compared was not selected from the data it is compared on.
 - 2026-10-21, S1 unit 2 (a plant that changes what the data hold fixed): G4's additive plant
   raises each planted head's dimension, so tr P̄ rises and χ = (tr P̄² − E₀)/(tr P̄)² falls by
   2εχ₀ on that alone; on QK's concentrated pools (χ₀ 1.3–1.8e-3) that outweighs the plant at
