@@ -9,17 +9,17 @@
 - **Results:**
   - Opened 2026-10-20 with a scan, a `sympy` check and a design frozen as written (3 units + close-out); the rotation null, the norm-matched random draw and step 0 are one law for the mean projector, and the preflight refused per-unit verdicts against it, so S1 was designed to read counts — `trackS_subspace/design-S1.md` "Preflight (`tools/design_preflight.py`, step 8000, off the grid)"
   - Unit 1's gate: the instrument and its null pass (G0, G1, G1iii, G2: the three nulls are one law, step 0 reads no shared direction, the rotation null reads none at any step); the count fails its planted effect on the real pool in all 7 families, because at a trained step the mean projector's spectrum is dense at the null's edge, where each planted direction raises the count only about half the time; N refused by the frozen fallback (Blocked 82); the heads use nearly every dimension but unevenly (participation ratio 344–729 against 880), which alone explains a count near the edge, not the top eigenvalues — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
-  - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; re-gated with an additive plant, it passes in the 5 OV families (resolution 12–24 of 384 heads) and fails in both QK families, where the added dimensions dilute the pool's own concentration (math check fact 6), so QK is spectrum only by the frozen fallback (Blocked 83). Over training the OV families read the null's value through step 256, concentrate from 512, most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000, and end at ρ 0.65–0.83 at 143000; LN1's gain changes nothing; the top eigenvalue rises above a dimension-matched null from 512 (`ov_write` 3.3× at 143000) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
+  - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families read the null's value through step 256, concentrate from 512, most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track S is tier 1 on an exploration rung (`trackS_subspace/design-S1.md` "Fences")
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - Whether the QK families get R1′: spectrum only as the fallback has it, a QK re-gate scored on the excess kernel at fixed dimensions, or QK left to S2 (Blocked 83) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
+  - Whether the QK families get ρ as description, stay spectrum only, or every family gets a dims-kept gate (Blocked 83); unit 3's budget (Blocked 85) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
   - What a family's shared space S is for R1b and R3, now that N is refused (Blocked 84) — `trackS_subspace/design-S1.md` "Blocked 82 decided (b)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `4d5a4d3ef8`
+- **Reviewed:** 2026-10-21 · body `b962a8e9cd`
 <!-- /phase-card -->
 
 ## Units
@@ -28,8 +28,8 @@
 |---|---|---|
 | 0. scan, design, `sympy` check, preflight | **done 2026-10-20**; frozen as written (Blocked 81 (a), the user's) | `lit-S1.md`, `design-S1.md`, `tools/math_checks/s1_projector_null.py`, `data/trackS/s1/2026-10-20-preflight/` |
 | 1. the instrument and its gate | **done 2026-10-20: G0–G2 pass, G3 fails in all 7 families; N refused** (Blocked 82) | "S1 unit 1" below; `s1.py gate` |
-| 2. re-gate + R1′ over the 8 steps (Blocked 82 (b)) | **done 2026-10-21: G0′, G1iii′, G2′ pass; G4 passes in the 5 OV families, fails in QK (spectrum only, Blocked 83); R1′ read** | "S1 unit 2" below; `s1.py regate`, `s1.py r1` |
-| 3. R1b, R2, R3 and the residual check; close-out | waits on Blocked 83, 84 | — |
+| 2. re-gate + R1′ over the 8 steps (Blocked 82 (b)) | **done 2026-10-21: G0′, G1iii′, G2′ pass; G4 passes in the 5 OV families, fails in QK, and cannot see the pool (`/challenge-pr` on #244); R1′ read as description; QK Blocked 83** | "S1 unit 2" below; `s1.py regate`, `s1.py r1` |
+| 3. R1b, R2, R3 and the residual check; close-out | waits on Blocked 83, 84, 85 | — |
 
 ## Corrections received
 
@@ -132,11 +132,14 @@ gate uses a plant that only adds"). Bars fixed in `design-S1.md` "Blocked 82 dec
 committed (`c9c8ecd`) before the code was written.
 
 **Run.** `python -m trackS_subspace.s1 regate --out data/trackS/s1/2026-10-20-u2-regate`
-(main tree's `data/`, `HF_HOME` its `data/hf`; run from `../Mets-work`), code `e0b82943e83e`
+(main tree's `data/`, `HF_HOME` its `data/hf`; run from `../Mets-work`; the directory is named
+for the first launch, 2026-10-20, and its files were written 2026-10-21), code `e0b82943e83e`
 (commit `9de8523`), 7,441 s under `systemd-inhibit`; a first launch was killed after an 8 h suspend
 (`log_killed_after_suspend.txt`; `LESSONS.md` 11, 2026-10-21). Then `s1.py r1 --gate <that dir>`
 → `data/trackS/s1/2026-10-21-u2-r1/r1.json` (sha256 `c54df0db84f8`), code `55c4859e42e9` (commit
-`bd85227`: the per-step write and resume only), 2,849 s. RTX 3080 float64 for the Haar bands and
+`bd85227`: the per-step write and resume only), 2,849 s. After the runs, `pr_of` takes d from
+the basis instead of 1024 (found by fact 6's test on d = 96); every run had d = 1024, so no
+computed value changes. RTX 3080 float64 for the Haar bands and
 the top's null; CPU float64 for bases and Grams. Re-gate files (sha256, first 12): `bands.json`
 `c947528c5218`, `G0p` `87ea22c44c1a`, `G1iii_p` `44e5d797d509`, `G2p` `8d952843df8a`, `G4`
 `33669c326203`, `G4t` `461a841eb7ca`.
@@ -146,7 +149,7 @@ the top's null; CPU float64 for bases and Grams. Re-gate files (sha256, first 12
 | G0′ | PR by Frobenius against eigenvalues ≤ 4.4e-16 relative; the 28 distinct bands' mean tr P̄² against the closed form: max \|z\| 2.96 | yes |
 | G1iii′ | step 0's PR inside its band in all 7 (`ov_write` 879.5 in [878.9, 880.6]; `ov_neg` 204.9 in [204.0, 206.0]) | yes |
 | G2′ | the rotation null inside the band in 56 of 56 | yes |
-| G4 | additive plant: detected on Haar in 100 % at every dose, every family; on the real pool the size bar holds at k = 32 in the 5 OV families (k* `ov_write` 24, `ov_read` 16, `ov_neg`, `ov_pos`, `ov_cplx` 12) and **fails in `qk_query` and `qk_key` at every dose to 64** | **no** (QK) |
+| G4 | additive plant: detected on Haar in 100 % at every dose, every family; on the real pool the size bar holds at k = 32 in the 5 OV families and **fails in `qk_query` and `qk_key` at every dose to 64**; both by dilution, not by the pool (below) | **no** (QK), and uninformative |
 | G4r | the displacing plant (recorded): on Haar the same Δχ as the additive one (±5 % in the singular families); on the real pool (dimensions kept, so no dilution) 0.66 (`qk_query`) to 0.99 (`ov_pos`) of its Haar response at k = 32 | — |
 | G4t | the top (recorded): an added direction is recovered above the m-dim null in every draw from k = 32 (`ov_write`, `ov_read`), 24 (`ov_cplx`), 12 (`ov_neg`, `ov_pos`); QK at most 0.16 (`qk_query`) and 0.66 (`qk_key`, at 48) to k = 64, the planted direction mixing with the pool's own top (median \|cos\| 0.71–0.92 from k = 32) | — |
 
@@ -169,21 +172,39 @@ under a plant" was wrong on a concentrated pool**, and the dilution was derivabl
 from unit 1's PR (344, 412). The singular families keep k_h = 16 at every step, so in the data
 tr P̄ never moves and PR and tr P̄² are one-to-one; the dilution exists only in the plant.
 
+**The additive plant does not see the pool (`/challenge-pr` on #244, finding 1; reproduced).**
+Re-scored from the saved draws on κ = tr P̄² − E₀ tr P̄² (the dilution removed), the real pool
+responds at 0.97–1.00 of the Haar carrier's at every dose in `ov_write`, `ov_read`, `qk_query`
+and `qk_key` (every draw past 0.75 from k = 12): a random direction added to k heads overlaps any
+pool about equally, so dilution was the only pool-dependent part of G4. **G4's pass and fail
+therefore say nothing about the trained pool, and k* is not a resolution** (it is where the
+plant outruns the dilution at 8000's concentration). The only plant that reads the pool is the
+dims-kept one (G4r): on the real pool `qk_query` 0.03, 0.31, 0.56, 0.66, 0.78, 0.84 of its Haar
+response at k = 12–64, `qk_key` 0.32–0.88, `ov_write` 0.68–0.89, `ov_read` 0.80–0.93 (k ≤ 32).
+So what unit 2 calibrates is the null side (G0′, G1iii′, G2′); ρ is an exact description of the
+weights against an exact null, and its effect side is uncalibrated.
+
 **R1′ (pool `all`, r = 16, raw frame). ρ = PR / PR₀** (1 at the null; QK spectrum only):
 
-| family | 0 | 128 | 256 | 512 | 1000 | 2000 | 4000 | 143000 | k* |
-|---|---|---|---|---|---|---|---|---|---|
-| `ov_write` | 1.000 | 0.999 | 0.994 | 0.889 | 0.662 | **0.586** | 0.735 | 0.653 | 24 |
-| `ov_read` | 1.000 | 1.000 | 1.000 | 0.994 | 0.982 | 0.951 | 0.896 | 0.814 | 16 |
-| `ov_neg` | 0.999 | 1.000 | 1.000 | 0.925 | 0.779 | **0.686** | 0.845 | 0.825 | 12 |
-| `ov_pos` | 1.001 | 0.999 | 1.000 | 0.985 | 0.967 | 0.910 | 0.865 | 0.810 | 12 |
-| `ov_cplx` | 1.000 | 1.000 | 0.997 | 0.935 | 0.761 | **0.675** | 0.822 | 0.793 | 12 |
+| family | 0 | 128 | 256 | 512 | 1000 | 2000 | 4000 | 143000 |
+|---|---|---|---|---|---|---|---|---|
+| `ov_write` | 1.000 | 0.999 | 0.994 | 0.889 | 0.662 | **0.586** | 0.735 | 0.653 |
+| `ov_read` | 1.000 | 1.000 | 1.000 | 0.994 | 0.982 | 0.951 | 0.896 | 0.814 |
+| `ov_neg` | 0.999 | 1.000 | 1.000 | 0.925 | 0.779 | **0.686** | 0.845 | 0.825 |
+| `ov_pos` | 1.001 | 0.999 | 1.000 | 0.985 | 0.967 | 0.910 | 0.865 | 0.810 |
+| `ov_cplx` | 1.000 | 1.000 | 0.997 | 0.935 | 0.761 | **0.675** | 0.822 | 0.793 |
+
+(`r1.json` carries a `k_star` per cell from G4; by the paragraph above it is not a resolution and
+is not read.) ρ is a ratio, so equal moves in the excess kernel shrink as ρ falls; "most at 2000"
+is a statement in ρ's units. The invariant families' pools are small at some steps: `ov_pos`
+holds 26 and 23.5 effective dimensions (PR₀) at 512 and 1000 across all 384 heads, so its ρ
+there compares a pool of ~25 dimensions with one of ~380 at 143000.
 
 PR itself (`ov_write` 879.5 → 515.5 at 2000 → 574.6) and the invariant families' PR₀ (which
 moves with the heads' type mix: `ov_pos` 209.5 → 23.5 at 1000 → 383.6) are in `r1.json`. The
 band's half-width in ρ is ≤ 0.0011 (singular, `ov_cplx`) and ≤ 0.0063 (`ov_neg`, `ov_pos`), so every move from 512 on
 is far outside the null; ρ is exact on the weights (no sampling), so a step-to-step difference
-has no noise to clear, only k*'s resolution as the size a plant must have to move it.
+has no noise to clear, and no calibrated size says how large a difference matters.
 
 **Beside (ρ).** r = 8 and 32: the same shape, r = 8 more concentrated (`ov_write` 0.534 at 2000),
 r = 32 less (0.669). LN1's gain folded in: equal to raw within 0.003 everywhere except at 143000 in `ov_neg`
@@ -195,31 +216,45 @@ into fewer). λ₁ crosses it from 512 in `ov_write` (2.14; 3.06 at 2000, 3.26 a
 (1.61; 2.45, 2.01), `ov_read` (1.13 → 2.05 at 143000) and `ov_neg` (1.04; 1.59, 1.33); `ov_pos`
 only at 143000 (1.16). λ₁₀ is above it in `ov_write` and `ov_cplx` from 512 (1.16–1.54) and in `ov_read`
 from 2000 (1.05–1.34). QK's λ₁ (spectrum only): `qk_query` 0.031 (Haar) → 0.347 at 4000 → 0.187 at 143000;
-`qk_key` → 0.259 → 0.230.
+`qk_key` → 0.259 → 0.230. **What this null can say (`/challenge-pr` on #244, finding 2):** for
+any spectrum λ₁ ≥ tr P̄ / PR, with equality only when it is flat, and the m-dim null is that flat
+case plus its edge; a smoothly graded spectrum with no special directions also exceeds it. So
+"above the m-dim null" means the spectrum is uneven, not that a few directions stand apart.
 
 **What unit 2 establishes (tier 1, one rung, weights only).** In the five OV families the heads'
-subspaces are an independent random arrangement through step 256, as at init; from 512 they
-concentrate on fewer directions of the residual stream, most at step 2000 in the write,
-negative and complex families, partly relaxing by 4000; the read and positive families
-concentrate steadily to 143000. The concentration is not only uneven dimension use: the top
-eigenvalues exceed what Haar in the pool's effective dimension gives, from 512 on.
+subspaces read as an independent random arrangement through step 256, as at init; from 512 they
+concentrate on fewer directions of the residual stream (ρ falls), most at step 2000 in the write,
+negative and complex families in ρ's units, partly relaxing by 4000; the read and positive
+families concentrate steadily to 143000. The null side is calibrated (G0′–G2′); the effect side
+is not (G4 cannot see the pool), so these are descriptions against an exact null.
 
-**Not established.** QK's ρ (refused by G4; its λ₁ is descriptive); that the 2000 dip is more than
-one checkpoint's reading (no step between 1000 and 4000 but 2000); which directions are shared or
-whether they are the residual stream's top variance (unit 3's beside check); any other rung.
+**Not established.** QK's ρ (Blocked 83; its λ₁ is descriptive); that the concentration is a few
+directions rather than a graded spectrum (the top's null cannot tell them apart); that the 2000
+dip is more than one checkpoint's reading (no step between 1000 and 4000 but 2000), **and the
+dip and partial relaxation sit just after Pythia's learning-rate warmup ends (1 % of 143000 ≈
+step 1430)**, which this design cannot separate from anything the heads do (cf. A5's warmup
+confound); how large a change in ρ matters (no calibrated effect size); which directions are
+shared or whether they are the residual stream's top variance (unit 3's beside check); any other rung.
 
-**Blocked 83 (yours): QK's R1′.** (a) Keep QK at spectrum only, as the frozen fallback says.
-(b) A QK re-gate scored on the excess kernel κ = tr P̄² − E₀ tr P̄², whose response to an added
-direction has no dilution term (fact 6's −2εχ₀ comes from dividing by (tr P̄)²), same plant,
-same 0.75 bar, fixed before it runs; if it passes, read QK's ρ (equivalent to κ at k_h = 16).
-~20 min of GPU plus QK's 16 R1′ cells; from unit 3's budget. (c) Close QK in S1 at its spectrum;
-S2 takes its top directions. **Recommended: (b)**: QK is the most concentrated family (PR 344,
-412 at 8000), the failure is the plant's added dimensions, which the data never have, and the
-score is fixed before the run. Against it: it changes the scored quantity after a failure,
-which is what the gate exists to stop; the rule's text and the failing numbers stay on record.
+**Blocked 83 (yours): QK's ρ, now that G4 is known not to see the pool** (rewritten after
+`/challenge-pr` on #244; the first version's (b), a κ-scored re-gate, cannot fail: the saved
+draws already pass it). (a) Read ρ in all 7 families as a description against the exact null,
+QK included, with the effect side stated as uncalibrated and G4r's dims-kept response beside;
+QK's 16 cells need only tr P̄² (CPU, minutes). (b) Keep QK at spectrum only, the frozen
+fallback's letter, though the failure that triggered it is the plant's, not the pool's.
+(c) A dims-kept gate (G4r's plant) with a bar fixed before it runs, for every family. **Recommended:
+(a)**: G4 gives no evidence for or against any family, so passing OV and refusing QK on it is
+arbitrary; against it, the fallback was frozen, and (a) sets it aside after seeing the failure.
 
 **Blocked 84 (yours, before unit 3): S for R1b and R3** (N defined it; refused). (a) S = each
-family's top 10 eigenvectors at each step (the described top's width), R3's Haar subspace of the
-same dimension as its comparison, as designed. (b) S = the eigenvectors above the m-dim null's
-largest λ₁ (a count, which (b) of Blocked 82 kept out). (c) Drop R1b; R3 reads only the top 1.
+family's top 10 eigenvectors at each step, R3's Haar subspace of the same dimension as its
+comparison, as designed. (b) S = the eigenvectors above the m-dim null's largest λ₁ (a count;
+and that null only says "uneven", finding 2 above). (c) Drop R1b; R3 reads only the top 1.
 **Recommended: (a)**: fixed width, no count, and R3 keeps its designed null.
+
+**Blocked 85 (yours): the budget** (`/challenge-pr` on #244, question 4). Unit 3 would hold R1b,
+R2, R3, the residual check, QK's ρ (83 (a)) and the close-out. (a) Keep 3 units: unit 3 = QK's
+ρ, R3 on S, the residual check and the close-out; R1b and R2 carried to S2 (R2 is description
+only since the preflight). (b) Extend to 4 on the record: unit 3 = QK, R1b, R2; unit 4 = R3,
+the residual check, the close-out. **Recommended: (a)**: the budget rule, and S2 reads the
+shared directions next anyway.

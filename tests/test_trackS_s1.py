@@ -138,7 +138,28 @@ def test_plant_add_keeps_every_column_and_holds_u():
         assert abs(np.linalg.norm(out[h].T @ u) - 1) < 1e-12
     tr2 = lambda b: (sum(x.shape[1] for x in b) / len(b)) ** 2 / s1.pr_of(b)["PR"]   # noqa: E731
     assert tr2(out) > tr2(bs)                                   # fact 5: tr P̄² cannot fall
-    assert s1.pr_of(out)["chi"] > s1.pr_of(bs)["chi"]
+
+
+def test_additive_plant_dilutes_chi_on_a_concentrated_pool():
+    """Math check fact 6 (G4's QK failure): on a pool that already shares, an added direction
+    raises the excess kernel κ = tr P̄² − E₀ but lowers χ = κ / (tr P̄)², by about 2εχ₀."""
+    rng = np.random.default_rng(9)
+    core = np.linalg.qr(rng.standard_normal((D, 12)))[0]       # every head draws from one 12-dim space
+    bs = [np.linalg.qr(core @ rng.standard_normal((12, 4)) + 0.05 * rng.standard_normal((D, 4)))[0]
+          for _ in range(40)]
+    u = rng.standard_normal(D)
+    out = s1.plant_add(bs, u / np.linalg.norm(u), range(10))
+
+    def tr_kappa(b):
+        r, t = s1.pr_of(b), sum(x.shape[1] for x in b) / len(b)
+        return t, t ** 2 / r["PR"] - t ** 2 / s1.pr0([x.shape[1] for x in b], d=D), r["chi"]
+    t0, k0, c0 = tr_kappa(bs)
+    t1, k1, c1 = tr_kappa(out)
+    eps = t1 / t0 - 1
+    assert k1 > k0 and c1 < c0                                  # κ rises, χ falls
+    assert abs(c1 - k1 / t1 ** 2) < 1e-12                       # χ = κ / (tr P̄)²
+    # first order (fact 6) at ε = 6 %: within 35 % (the ε² terms are ~3ε²χ₀ + 2εΔκ/tr²)
+    assert abs((c1 - c0) - ((k1 - k0) / t0 ** 2 - 2 * eps * c0)) < 0.35 * abs(c1 - c0)
 
 
 def test_fold_ln1_scales_the_read_side_only():

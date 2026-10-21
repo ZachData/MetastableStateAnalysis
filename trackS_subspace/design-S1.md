@@ -11,9 +11,9 @@ user's): 3 units + close-out, raw frame, r = 16, counts not verdicts; unit 1's r
 `status-S.md` "S1 unit 1".** **Unit 1's gate: G0–G2 pass; G3 fails on step 8000's real pool in all 7
 families (the trained spectrum is dense at the null's edge), so N is refused by the
 fallback below. Blocked 82 decided (b), the user's: R1′ = the participation ratio, re-gated with
-an additive plant ("Blocked 82 decided (b)" below). Unit 2: the re-gate passes in the 5 OV
-families and fails in QK (spectrum only by the fallback; Blocked 83); R1′ read (`status-S.md`
-"S1 unit 2").**
+an additive plant ("Blocked 82 decided (b)" below). Unit 2: G0′–G2′ pass; G4 passes in the 5
+OV families and fails in QK, both by dilution, and cannot see the pool (`/challenge-pr` on #244),
+so R1′ is read as description (`status-S.md` "S1 unit 2"; QK, S and the budget Blocked 83–85).**
 
 ## What S1 asks
 

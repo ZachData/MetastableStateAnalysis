@@ -610,7 +610,7 @@ def pr_of(bases: Sequence[np.ndarray]) -> Dict:
     n = len(bases)
     G = B.T @ B if B.shape[1] <= B.shape[0] else B @ B.T
     tr, tr2 = B.shape[1] / n, float(np.sum(G * G)) / n ** 2
-    p, p0 = tr ** 2 / tr2, pr0([b.shape[1] for b in bases])
+    p, p0 = tr ** 2 / tr2, pr0([b.shape[1] for b in bases], d=B.shape[0])
     return {"PR": p, "PR0": p0, "rho": p / p0, "chi": 1 / p - 1 / p0}
 
 
