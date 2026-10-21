@@ -491,29 +491,32 @@ def wiring(model, inp: Inputs, heads: Heads) -> Dict:
     import torch
     rec = {"base": {}, "b_eig_written": {}}
     feeds = dict(inp.v1, probe=inp.probe)
-    ref = {}
+
+    def fwd(ids, centre=False):                     # held on the CPU: 8 feeds' logits fill the GPU
+        o = model(ids, output_hidden_states=True, output_attentions=True)
+        out = (o.logits.float().cpu(), [(centred(h) if centre else h).cpu() for h in o.hidden_states])
+        del o
+        return out
+
     with torch.no_grad():
-        for p, ids in feeds.items():
-            o = model(ids, output_hidden_states=True, output_attentions=True)
-            ref[p] = (o.logits.float(), [h.clone() for h in o.hidden_states])
+        ref = {p: fwd(ids) for p, ids in feeds.items()}
         hook = Hook(model, heads)
         for p, ids in feeds.items():
-            o = model(ids, output_hidden_states=True, output_attentions=True)
-            rec["base"][p] = {"logits": rel_err(o.logits.float(), ref[p][0]),
-                              "hidden": max(rel_err(a, b) for a, b in zip(o.hidden_states, ref[p][1]))}
+            lg, hs = fwd(ids)
+            rec["base"][p] = {"logits": rel_err(lg, ref[p][0]),
+                              "hidden": max(rel_err(a, b) for a, b in zip(hs, ref[p][1]))}
+        del ref
         cores, _ = heads.cores("b_eig")
         hook.set(cores)
-        via_hook = {}
-        for p, ids in feeds.items():
-            o = model(ids, output_hidden_states=True, output_attentions=True)
-            via_hook[p] = (o.logits.float(), [centred(h).clone() for h in o.hidden_states])
+        via_hook = {p: fwd(ids, centre=True) for p, ids in feeds.items()}
         hook.close()
+        del hook
         written = write_b_eig(model, heads)
         for p, ids in feeds.items():
-            o = model(ids, output_hidden_states=True, output_attentions=True)
-            rec["b_eig_written"][p] = {
-                "logits": rel_err(via_hook[p][0], o.logits.float()),
-                "hidden_centred": max(rel_err(a, centred(b)) for a, b in zip(via_hook[p][1], o.hidden_states))}
+            lg, hs = fwd(ids, centre=True)
+            rec["b_eig_written"][p] = {"logits": rel_err(via_hook[p][0], lg),
+                                       "hidden_centred": max(rel_err(a, b) for a, b in zip(via_hook[p][1], hs))}
+        del via_hook
         restore_v(model, heads, written)
     worst = {k: max(max(v.values()) for v in rec[k].values()) for k in rec}
     rec["worst"] = worst
@@ -574,14 +577,17 @@ def match_eigs(x: np.ndarray, y: np.ndarray) -> float:
 
 
 def readbacks(model, heads: Heads, step: int) -> Dict:
-    """G0 (iii)–(iv) on ``N_READBACK_HEADS`` heads: the read-back K′ (as the hook holds it, float32)
-    equals sym K (a) and has the arm's eigenvalues (b, b-eig), within ``READBACK_TOL`` of ‖K‖; and
-    every head's first control has the arm's two norms."""
+    """G0 (iii)–(iv) on ``N_READBACK_HEADS`` heads, within ``READBACK_TOL`` of ‖K‖: the read-back K′
+    (as the hook holds it, float32) equals sym K (a) and the exact K′ (b, b-eig); the exact core has
+    the arm's eigenvalues, real for b; every head's first control has the arm's two norms. Beside,
+    not gated: the float32 core's own eigenvalues. (b-schur) leaves near-repeated eigenvalues (gaps
+    to 1e-6 ‖K‖ at 8000), which float32 rounding moves by about √eps ≈ 3e-4 ‖K‖ while the map
+    itself is exact to 3e-8 (unit 1, `status-S.md` "S2 unit 1")."""
     rng = np.random.default_rng(seed_for("s2-g0-heads", step))
     picks = sorted(rng.choice(N_LAYERS * N_HEADS, N_READBACK_HEADS, replace=False).tolist())
     hook = Hook(model, heads)
     out = {"heads": [[p // N_HEADS, p % N_HEADS] for p in picks], "a": [], "b": [], "b_eig": [],
-           "b_real": []}
+           "b_real": [], "b_map": [], "b_eig_map": [], "beside_f32": {"b": [], "b_eig": [], "b_real": []}}
     try:
         for arm in ("a", "b", "b_eig"):
             cores, _ = heads.cores(arm)
@@ -594,16 +600,19 @@ def readbacks(model, heads: Heads, step: int) -> Dict:
                 if arm == "a":
                     out["a"].append(float(np.linalg.norm(Kr - sym(dense_K(heads, l, h))) / Kn))
                     continue
-                _, info = arm_core(f, arm)
+                M, info = arm_core(f, arm)
                 if info.get("kept"):
                     out[arm].append(None)
                     continue
-                ev = np.linalg.eigvals(hook.M[l][h].double().cpu().numpy())
+                out[f"{arm}_map"].append(float(np.linalg.norm(Kr - f["Q"] @ M @ f["Q"].T) / Kn))
                 want = info["eig"][np.abs(info["eig"]) > 1e-9 * Kn]
-                got = ev[np.argsort(-np.abs(ev))][:want.size]
-                out[arm].append(float(match_eigs(got, want) / Kn))
-                if arm == "b":
-                    out["b_real"].append(float(np.abs(got.imag).max() / Kn))
+                for core, key in ((M, None), (hook.M[l][h].double().cpu().numpy(), "beside_f32")):
+                    ev = np.linalg.eigvals(core)
+                    got = ev[np.argsort(-np.abs(ev))][:want.size]
+                    dst = out if key is None else out[key]
+                    dst[arm].append(float(match_eigs(got, want) / Kn))
+                    if arm == "b":
+                        dst["b_real"].append(float(np.abs(got.imag).max() / Kn))
     finally:
         hook.close()
     ctl = []
@@ -615,8 +624,10 @@ def readbacks(model, heads: Heads, step: int) -> Dict:
             Kn = np.linalg.norm(f["K"])
             ctl.append(max(abs(np.linalg.norm(C - f["K"]) - np.linalg.norm(Kp - f["K"])),
                            abs(np.linalg.norm(C) - np.linalg.norm(Kp))) / Kn)
-    worst = {k: max([x for x in out[k] if x is not None], default=0.0) for k in ("a", "b", "b_eig", "b_real")}
+    worst = {k: max([x for x in out[k] if x is not None], default=0.0)
+             for k in ("a", "b", "b_eig", "b_real", "b_map", "b_eig_map")}
     worst["controls"] = float(max(ctl))
+    out["beside_f32_worst"] = {k: max(v, default=0.0) for k, v in out["beside_f32"].items()}
     out["worst"] = worst
     out["pass"] = bool(max(worst.values()) <= READBACK_TOL)
     return out
@@ -666,6 +677,7 @@ def g0(out: Path) -> None:
             hook = Hook(model, heads)
             r = run_config(model, inp)
             hook.close()
+            del hook
             check_populated(r, f"step {step} base")
             res["base_v"][step] = {"V": r["V"], "panel": panel[step], "viol": r["viol"], "G": r["G"]}
             print(f"step {step}: base V {r['V']} (panel {panel[step]}), G {r['G']:.3f}", flush=True)

@@ -7,9 +7,11 @@ Opened 2026-10-21 by `docs/ROADMAP.md` §9 row 6 (… → S1 → **S2** → C2's
 (`tools/run/p10_ov1_cut.py`: LN1 folded, centred frame; the head's constant moved to the dense
 bias; read-back) and A5's pass (`trackA_force/a5_seeds.py` `one_pass`: E₁, V). Tier 1 throughout:
 exploratory, unregistered; 410m is an exploration rung, so nothing here scores a registered row.
-**Proposed, not frozen: arm (b)'s definition and the freeze are Blocked 86, the user's.** No code
-is written and nothing has run under S2's name. Revised after `/challenge-pr` on #246 (accept
-with changes, findings 1–7 taken; "Revised after review" at the end).
+**Blocked 86 decided (a) and (i), the user's, 2026-10-21: arm (b) is (b-schur), (b-eig) beside
+with no label; scope 3 units + close-out, with Q3.** Not frozen: the freeze follows unit 1's
+preflight and is the user's (Blocked 87). Code `trackS_subspace/s2.py`; unit 1's choices made in
+code, before any scored-step output, are in "Unit 1: fixed in code" below. Revised after
+`/challenge-pr` on #246 (accept with changes, findings 1–7 taken; "Revised after review" at the end).
 
 ## What S2 asks
 
@@ -187,6 +189,19 @@ sequences: about 2,000 forward passes; 7 steps, about 14,000 (unit 2), plus G2, 
 3 × 41 configurations per scored step) and the preflight at 8000 (unit 1). RTX 3080, float32,
 eager, TF32 off (A5's settings); the hook adds 16 × (n·d·2k) per layer. Estimated under an hour
 per unit on the GPU; the `runner` agent watches.
+
+## Unit 1: fixed in code (2026-10-21, before any scored-step output)
+
+| item | fixed as | why |
+|---|---|---|
+| coordinates | Z = [B, Cᵀ] = Q R, Q orthonormal (d × 2k); every arm is a 2k × 2k core in Q's basis (`s2.head_frame`) | norms, symmetric parts and eigenvalues are the core's; no ill-conditioned Z in the hook |
+| the write along 1 | each head's (1/d) 1 1ᵀ W_O W_V diag(γ) P x̂ is kept as the model's own in every arm | the centred frame leaves it out; no LayerNorm reads it, but V does (A5's E₁ normalises the raw state, `core.models.layernorm_to_sphere` is plain L2), so an arm that dropped it would move V by a term no arm defines. It is the same in every arm and control |
+| G0's comparisons | base hook against the model: logits and raw hidden states; (b-eig) by hook against written: logits and *centred* hidden states | writing g(A) W_V changes the write along 1 too, which the hook keeps |
+| controls' span | (a): all of Z; (b-schur): col(B) both sides (its edit is U V (S′ − S) Vᵀ Uᵀ); (b-eig): col(B), row(C). The random part is made orthogonal to K's projection on the span, so it stays inside and ⟂ K | `lit-S2.md`: "the edit's own read and write spaces"; C8's double match holds exactly (`tests/test_trackS_s2.py`) |
+| draws | per head, `seed_for("s2-ctl", step, arm, draw, layer, head)`; draw 40 is G1's 41st | — |
+| the preflight's input | V per arm at 8000: null the arm's 40 controls; dose 0 its gain arm and G1's draw; doses G3's t (one model each, no G3 controls in unit 1); `trained` the base's 7 per-prompt counts (V is one number per model: no per-unit population of 20 exists, so the tool refuses `trained`, as foreseen); `decision_p` 1/41 | "The gate" |
+| R1b | S1's raw frame, r 16, S = P̄'s top 10 (84 (a)); tr(P_S P_S′) / 10 for write–read, write–key, negative–positive; Haar reference 2000 draws (mean 10/1024) | `design-S1.md` R1b |
+| R2 | per layer pool: λ₁, the count of P̄'s eigenvalues above the step's layer-shuffle maximum λ₁ (2000 random 16-head sets of the 384, same family), λ₁'s rank p | `design-S1.md` R2; description only |
 
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
