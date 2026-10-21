@@ -841,6 +841,17 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-21, S2 unit 2 (a frozen gate that could not be built, and a guard that refused its own
+  positive controls): G2's planted effect zeroes 10 heads, and its frozen controls were "doubly
+  matched": the only edit with ‖D‖ = ‖K‖ and ‖K + D‖ = 0 is −K, so all 40 controls were the arm
+  and G2 would have failed by construction. Found writing the code, before any run; the user
+  chose a layer-matched head null. Then the gates showed the one-sided displacement guard
+  withholding both planted effects (G2 at 3 of 4 steps, G3 at 3 of 5), because a structured
+  edit moves the stream further than random edits of its weight norm; the guard became
+  description (Blocked 88 (a)) before any arm ran. Rule: **before freezing, build each
+  control for each planted effect on one real unit and check the matching constraints leave
+  it any freedom; and a guard against a confound must be run on the planted effects too,
+  since a guard that also fires on known effects reads nothing.**
 - 2026-10-21, S1 unit 3 (a reading pinned at its bound; `/challenge-pr` on #245): R3's attractive
   share is ≥ 0, and at 1000–4000 every Haar subspace read exactly 0 in 18–20 of 24 layers, so
   "more repulsive than random" could not show and any attractive part counted as "less
