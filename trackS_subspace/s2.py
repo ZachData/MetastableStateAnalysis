@@ -700,25 +700,28 @@ def g0(out: Path) -> None:
 # ---------------------------------------------------------------- the preflight at 8000 (unit 1)
 
 def interpolate(model, target: Dict[str, object], orig: Dict[str, object], t: float) -> None:
-    """Every parameter W := W_s + t (W_128 − W_s) (G3)."""
+    """Every parameter W := W_s + t (W_128 − W_s) (G3); ``target`` and ``orig`` on the CPU, one
+    tensor moved at a time (both on the GPU ran out of memory at 8000)."""
     import torch
     with torch.no_grad():
         for n, p in model.named_parameters():
-            p.copy_(orig[n] + t * (target[n] - orig[n]))
+            p.copy_((orig[n] + t * (target[n] - orig[n])).to(p.device))
 
 
 def preflight_inputs(rec: Dict, arm: str) -> Dict:
     """`tools/design_preflight.py`'s input for V under ``arm`` at 8000 (design "The gate"): the
     arm's 40 controls as the null, its gain arm and G1's 41st draw at dose 0, G3's t as doses,
-    ``decision_p`` = 1/41. ``trained`` is the base's per-prompt V: V is one number per model, so
-    no per-unit population of 20 exists (the tool refuses it, as the design foresaw)."""
+    ``decision_p`` = 1/41. ``trained`` is the base's V, on the statistic's own scale: V is one
+    number per model, so no per-unit population of 20 exists (the tool refuses it, as the design
+    foresaw). The first run gave the per-prompt counts (7–10 against a summed null of 30–60), so
+    its band check compared two scales; `preflight-tool` re-reads the records with this one."""
     c = rec["configs"]
     return {"statistic": f"S2: V (E₁'s violations, 7 v1 prompts summed) under arm {arm} at "
                          f"{PREFLIGHT_STEP}, against {N_CTL} doubly matched controls",
             "direction": "less",
             "nulls": {"controls": [c[f"ctl_{arm}_{i}"]["V"] for i in range(N_CTL)]},
             "moved_marks": [],
-            "trained": [c["base"]["viol"][p] for p in sorted(c["base"]["viol"])],
+            "trained": [c["base"]["V"]],
             "trained_step": str(PREFLIGHT_STEP),
             "scored_steps": [str(s) for s in SCORED_STEPS + BESIDE_STEPS],
             "planted": {"0": [c[f"g_{arm}"]["V"], c[f"ctl_{arm}_{N_CTL}"]["V"]],
@@ -733,7 +736,6 @@ def preflight(out: Path) -> None:
     three doses, each read on V, G and D; then the preflight tool per arm."""
     import gc
     import torch
-    from tools import design_preflight as dp
     from transformers import AutoModelForCausalLM
     from core.lm_loading import resolve_lm_entry
     from core.models import from_pretrained_eager
@@ -777,10 +779,10 @@ def preflight(out: Path) -> None:
     if not all(f"g3_{t}" in rec["configs"] for t in G3_T):
         e = resolve_lm_entry(f"pythia-410m-step{G3_STEP}")
         m128 = from_pretrained_eager(AutoModelForCausalLM, e["repo_id"], revision=e["revision"],
-                                     torch_dtype=torch.float32).to("cuda").eval()
+                                     torch_dtype=torch.float32).eval()
         target = {n: p.detach().clone() for n, p in m128.named_parameters()}
         del m128
-        orig = {n: p.detach().clone() for n, p in model.named_parameters()}
+        orig = {n: p.detach().cpu().clone() for n, p in model.named_parameters()}
         for t in G3_T:
             interpolate(model, target, orig, t)
             r = run_config(model, inp, base_hs=base_hs)
@@ -790,6 +792,17 @@ def preflight(out: Path) -> None:
         interpolate(model, target, orig, 0.0)
         del target, orig
     _save(path, rec)
+    preflight_tool(out)
+    del model, heads, inp, base_hs
+    gc.collect()
+    torch.cuda.empty_cache()
+    print(f"preflight done ({time.time() - t0:.0f}s)", flush=True)
+
+
+def preflight_tool(out: Path) -> None:
+    """`tools/design_preflight.py` per arm on the records in ``preflight_runs.json`` (no GPU)."""
+    from tools import design_preflight as dp
+    rec = json.loads((out / "preflight_runs.json").read_text())
     reports = {}
     for arm in ARMS:
         vals = preflight_inputs(rec, arm)
@@ -800,12 +813,8 @@ def preflight(out: Path) -> None:
         reports[arm] = {"sha256": hashlib.sha256(body.encode()).hexdigest(),
                         "refusals": [r["code"] for r in rep["refusals"]]}
         print(f"preflight {arm}: refusals {reports[arm]['refusals']}", flush=True)
-    _save(out / "preflight_summary.json", {"code": rec["code"], "reports": reports,
+    _save(out / "preflight_summary.json", {"code": rec["code"], "tool_code": code_sha(), "reports": reports,
                                            "summary": summarise(rec)})
-    del model, heads, inp, base_hs
-    gc.collect()
-    torch.cuda.empty_cache()
-    print(f"preflight done ({time.time() - t0:.0f}s)", flush=True)
 
 
 def summarise(rec: Dict) -> Dict:
@@ -917,10 +926,10 @@ def beside(out: Path) -> None:
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=("g0", "preflight", "beside"))
+    ap.add_argument("cmd", choices=("g0", "preflight", "preflight-tool", "beside"))
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
-    {"g0": g0, "preflight": preflight, "beside": beside}[a.cmd](a.out)
+    {"g0": g0, "preflight": preflight, "preflight-tool": preflight_tool, "beside": beside}[a.cmd](a.out)
 
 
 if __name__ == "__main__":
