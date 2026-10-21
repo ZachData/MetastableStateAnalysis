@@ -203,6 +203,41 @@ per unit on the GPU; the `runner` agent watches.
 | R1b | S1's raw frame, r 16, S = P̄'s top 10 (84 (a)); tr(P_S P_S′) / 10 for write–read, write–key, negative–positive; Haar reference 2000 draws (mean 10/1024) | `design-S1.md` R1b |
 | R2 | per layer pool: λ₁, the count of P̄'s eigenvalues above the step's layer-shuffle maximum λ₁ (2000 random 16-head sets of the 384, same family), λ₁'s rank p | `design-S1.md` R2; description only |
 
+## The preflight's refusals (unit 1, 2026-10-21; numbers `status-S.md` "S2 unit 1")
+
+Reports: `data/trackS/s2/2026-10-21-u1-preflight/preflight_report_a.json` sha256
+`2156db3ca9dc0474fddbc90d981a983d70f5479cf569c2757164ce2f35c38dbd`, `preflight_report_b.json`
+`769d0f66f778e3f5c807256e08d5adc9c689c147c699c4018cfd91e0149a58c6`. No size, headroom, dose-side or
+power refusal for either arm.
+
+| refusal | arm | argued |
+|---|---|---|
+| `trained` (1 value < 20) | both | V is one number per model; no per-unit population exists. Foreseen ("The gate"); G1–G3 stand in |
+| `floor` (1/41 → E 3.2 < 20) | both | S2 computes no E: tier 1, unregistered, a cell's label has false rate 2/41 by exchangeability and R1 is a count of cells. Nothing here is scored as a factor |
+| `band:controls` (base 59 outside [31, 39]) | a | the controls are the null for "an edit of this size here", not for "no edit": a random edit of arm a's size moves V by about 24 by itself. That is what R1 reads against, and the gain arm states it beside. It is a moved mark by construction, declared here |
+
+**G0's (b) read-back, revised (proposed in the freeze, Blocked 87).** "The read-back K′ has the
+arm's eigenvalues (b)" becomes: the float32 read-back map equals the exact K′ (1e-6 of ‖K‖) and the
+exact core has the arm's eigenvalues, real (1e-6); the float32 core's eigenvalues are recorded
+beside. Why: (b-schur) leaves near-repeated eigenvalues, which float32 rounding moves by about √eps
+(3.1e-4 ‖K‖ at 8000) while the map is exact to 3e-8. The revised check passes.
+
+**Blocked 87, the freeze (the user's).** At 8000 both arms move the stream further than all 40
+controls (a: D 0.949 against 0.693–0.735; b: 0.110 against 0.100–0.106), so the displacement guard
+as frozen would write every such cell "moved further" and read nothing.
+(a) Freeze as revised, with the matched-distance fallback moved from unit 3 ("if the budget
+allows") into unit 2 for both arms at every scored step: each arm's controls also drawn at 1.5, 2
+and 3 times its size (40 each), and a cell the arm moves further than its controls is labelled at
+matched D by linear interpolation of the controls' V (or G) against D (OV1d's method), a cell the
+arm moves less than its 1× controls read as now. About 240 more configurations per step (≈ 5 min
+per step on the GPU at unit 1's 1.3 s per configuration, ≈ 25 min over the 5); units unchanged.
+(b) Freeze as written (with the G0 revision): "moved further" cells are not read; the fallback
+stays in unit 3 if the budget allows.
+(c) Hold the freeze and change the controls instead (e.g. match D rather than norm at 1×).
+**Recommended: (a)**: the guard exists so that "moved more" is not read as "this structure"
+(OV1's lesson), and matched D keeps that while giving the reading a chance; (c) reopens the
+controls' definition after seeing 8000.
+
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
 | finding | change |

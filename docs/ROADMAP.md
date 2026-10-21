@@ -242,8 +242,9 @@ could calibrate its effect side); QK, OV write and OV complex concentrate from 2
 512 (random subspaces are as repulsive); no shared space is the
 residual stream's top variance; at 143000 three are partly the massive-activation coordinates.
 Units: `trackS_subspace/status-S.md`.
-**S2 opened 2026-10-21, proposed, not frozen** (`trackS_subspace/design-S2.md`, Blocked 86; 3 units
-+ close-out, the third for S1's carried items and Q3). What the design changed from the row above:
+**S2 opened 2026-10-21; Blocked 86 decided (a) and (i), the user's (arm b in Schur planes; 3 units
++ close-out, the third for S1's carried items and Q3); unit 1 done 2026-10-21, the freeze is
+Blocked 87** (`trackS_subspace/design-S2.md`, `status-S.md` "S2 unit 1"). What the design changed from the row above:
 "angle set to 0" and "λ → Re λ" differ: λ → Re λ in A's eigenbasis edits a 410m head by 1.6× its
 own size at 512 (`/challenge-pr` on #246), so the recommended arm (b) removes the rotation in an
 orthonormal basis of each invariant plane (the real Schur blocks made symmetric; Blocked 86 is the
