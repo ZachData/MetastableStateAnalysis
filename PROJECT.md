@@ -2895,6 +2895,29 @@ cheap and would resolve it.**
 
 ---
 
+## 3.64 Track S's S1 closed: the heads' subspaces concentrate from 256, described against an exact null, never counted (2026-10-21)
+
+**`trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"** holds the detail; this
+section says why it is project-wide.
+
+- The first Track S result, and the first that treats a head as where routing lives rather than as
+  the unit: on 410m the 384 heads' subspaces sit like independent random ones through step 128,
+  then concentrate on fewer residual directions, QK, OV write and OV complex from 256, the rest
+  from 512, every first change inside the LR warmup (to ≈ 1430). OV write is the most
+  concentrated at 512–1000, QK from 2000 on.
+- **Inside those shared spaces the radial sign reads nothing of its own from 512:** random
+  subspaces are as repulsive (the OV repulsive phase of §3.12 A, seen in compressions), and at
+  1000–4000 hold no attractive part at all in most layers. The OV families' shared spaces carry a
+  selection bias (built from the heads they compress); a leave-the-layer-out version goes to S2.
+- **A count of shared directions could not be calibrated** on a trained pool (unit 1), nor could a
+  plant size ρ's effect side (unit 2, `/challenge-pr` on #244): S1 is description against an exact
+  null (`LESSONS.md` 6, the unit 1 and unit 2 instances).
+- At 143000 the write, negative and complex shared spaces are partly 410m's massive-activation
+  coordinates (357, 130, 966), which S3 must state or project out; through 4000 they are not.
+- Feeds S2 (R1b, R2, the leave-the-layer-out S carried) and C2's draft (the warmup, the key and value rows against 2603.13314).
+
+---
+
 ## 3.63 The first ledger record: `P-A5` adjudicated, H-RESIST over 1/α on one cheap factor; A5 closed (2026-10-20)
 
 **`trackA_force/status-A.md` "A5 on one page (closed 2026-10-20)"** holds the detail; this

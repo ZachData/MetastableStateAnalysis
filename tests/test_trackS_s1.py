@@ -168,3 +168,49 @@ def test_fold_ln1_scales_the_read_side_only():
     W["g"] = rng.standard_normal(D)
     F = s1.fold_ln1(W)
     assert np.allclose(F["Wv"], W["Wv"] @ np.diag(W["g"])) and F["Wo"] is W["Wo"]
+
+
+def test_r3_reading_on_known_compressions():
+    th = 0.3
+    rot = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])
+    C = np.kron(np.eye(5), rot)
+    r = s1.r3_reading(C)
+    assert r["cplx"] == 1.0 and abs(r["arg"] - th) < 1e-12 and r["share"] == 1.0
+    r = s1.r3_reading(-np.diag(np.arange(1.0, 11.0)[::-1]))
+    assert r["share"] == 0.0 and r["cplx"] == 0.0 and r["arg"] is None and r["pair"]
+    assert not s1.r3_reading(np.diag([-10.0, -1.0] + [0.1] * 8))["pair"]
+
+
+def test_r3_summary_counts_layers_outside_haar():
+    rd = lambda sh, cx, pair=False: {"share": sh, "top_weight": 0.0, "pair": pair, "cplx": cx, "arg": None}  # noqa: E731
+    haar = [[rd(0.4, 0.2), rd(0.6, 0.4, True)] for _ in range(3)]
+    out = s1.r3_summary([rd(0.5, 0.3), rd(0.9, 0.3, True), rd(0.1, 0.0)], haar)
+    assert out["share_outside"] == 2 and out["cplx_outside"] == 1 and out["arg_outside"] == 0
+    assert out["pair_layers"] == 1 and out["pair_layers_haar_mean"] == 1.5 and out["arg_median"] is None
+
+
+def test_variance_share_is_one_on_the_top_space_and_haar_on_average():
+    lam = np.r_[np.linspace(10, 5, 10), np.ones(D - 10)]
+    Q = np.linalg.qr(np.random.default_rng(3).standard_normal((D, D)))[0]
+    S = Q @ np.diag(lam) @ Q.T
+    v = s1.variance_share(Q[:, :10], S)
+    assert abs(v["q"] - 1) < 1e-10 and abs(v["o"] - 1) < 1e-10
+    g = np.random.default_rng(4)
+    qs = [s1.variance_share(np.linalg.qr(g.standard_normal((D, 10)))[0], S)["q"] for _ in range(400)]
+    assert abs(np.mean(qs) - v["q_haar"]) < 4 * np.std(qs) / np.sqrt(len(qs))
+
+
+def test_shared_space_finds_a_planted_direction():
+    g = np.random.default_rng(5)
+    u = g.standard_normal(D)
+    u /= np.linalg.norm(u)
+    bases = s1.plant([np.linalg.qr(g.standard_normal((D, R)))[0] for _ in range(40)], u, range(30))
+    U = s1.shared_space(bases, 3)
+    assert U.shape == (D, 3) and abs(U[:, 0] @ u) > 0.99
+
+
+def test_r3_summary_without_its_own_haar_gives_medians_only():
+    rd = {"share": 0.5, "top_weight": 0.1, "pair": True, "cplx": 0.2, "arg": 1.0}
+    out = s1.r3_summary([rd, rd])
+    assert out["share_median"] == 0.5 and out["pair_layers"] == 2
+    assert not any(k.endswith(("_outside", "_haar_mean")) for k in out)

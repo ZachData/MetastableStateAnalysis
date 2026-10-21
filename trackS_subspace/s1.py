@@ -29,6 +29,8 @@ normal init all give the same law: independent Haar subspaces of the heads' own 
 Tier 1: exploratory, unregistered.
     python -m trackS_subspace.s1 explore --steps 0 8000 --out <dir>
     python -m trackS_subspace.s1 preflight --out <dir>
+    python -m trackS_subspace.s1 r1qk --out <dir> --gate <regate dir>
+    python -m trackS_subspace.s1 r3 --out <dir>
 """
 
 from __future__ import annotations
@@ -841,21 +843,245 @@ def r1(out: Path, gate_dir: Path) -> None:
             ev = mean_projector_eigs(bs)
             cell = {"eig": ev[:200].tolist(), "k_star": rec["G4"]["families"][f]["k_star"]}
             if f not in spectrum_only:
-                key = bands["cells"].get(f"{s}|{f}")
-                dims = [b.shape[1] for b in bs]
-                if key != dims_key(dims):
-                    raise S1Error(f"{s}|{f}: the gate's band was drawn for other dims")
-                cell.update(pr_of(bs))
-                cell["band"] = bands["bands"][key]
-                m = int(round(cell["PR"]))
-                T = top_null(dims, m, ("r1", s, f))
-                cell["top"] = {"m": m, "null_max_l1": T, "l_over_null": (ev[:10] / T).tolist()}
-                cell["beside_rho"] = {fr: pr_of([x[f] for x in frames[fr]])["rho"]
-                                      for fr in ("r8", "r32", "folded")}
+                cell.update(rho_cell(s, f, frames, bands, ev))
             res["cells"][f"{s}|{f}"] = cell
         path.write_text(json.dumps(res, indent=1, default=float))
         print(f"step {s} ({time.time() - t0:.0f}s)", flush=True)
     print(f"r1 done {time.time() - t0:.0f}s", flush=True)
+
+
+def rho_cell(s: int, f: str, frames: Dict[str, List[Dict]], bands: Dict, ev: np.ndarray) -> Dict:
+    """One R1′ cell: PR, PR₀, ρ, χ, the gate's band, the top against the m-dim null, ρ beside."""
+    bs = [x[f] for x in frames["r16"]]
+    key = bands["cells"].get(f"{s}|{f}")
+    dims = [b.shape[1] for b in bs]
+    if key != dims_key(dims):
+        raise S1Error(f"{s}|{f}: the gate's band was drawn for other dims")
+    cell = {**pr_of(bs), "band": bands["bands"][key]}
+    m = int(round(cell["PR"]))
+    T = top_null(dims, m, ("r1", s, f))
+    cell["top"] = {"m": m, "null_max_l1": T, "l_over_null": (ev[:10] / T).tolist()}
+    cell["beside_rho"] = {fr: pr_of([x[f] for x in frames[fr]])["rho"] for fr in ("r8", "r32", "folded")}
+    return cell
+
+
+# ---------------------------------------------------------------- unit 3 (design "Blocked 83–85 decided")
+
+QK = ("qk_query", "qk_key")
+S_WIDTH = 10                               # 84 (a): S = P̄'s top 10 eigenvectors
+R3_HAAR = 100
+R3_READS = ("share", "cplx", "arg")        # summarised against Haar's [min, max]
+N_PC = 10
+
+
+def r1_qk(out: Path, gate_dir: Path) -> None:
+    """83 (a): QK's 16 R1′ cells, as the OV cells (`rho_cell`), to `r1_qk.json`."""
+    rec = {a: json.loads((gate_dir / f"{a}.json").read_text()) for a in ("G0p", "G1iii_p", "G2p")}
+    failed = [a for a, v in rec.items() if not v["pass"]]
+    if failed:
+        raise S1Error(f"re-gate arms failed: {failed}; R1′ refused (design fallbacks)")
+    bands = json.loads((gate_dir / "bands.json").read_text())
+    out.mkdir(parents=True, exist_ok=True)
+    t0 = time.time()
+    res = {"code_sha": code_sha(), "gate_dir": str(gate_dir), "cells": {}}
+    for s in SCORED_STEPS:
+        Ws = step_weights(s)
+        frames = {"r16": [head_bases(W) for W in Ws]}
+        frames.update({f"r{r}": [head_bases(W, r) for W in Ws] for r in R_BESIDE})
+        frames["folded"] = [head_bases(fold_ln1(W)) for W in Ws]
+        del Ws
+        for f in QK:
+            ev = mean_projector_eigs([x[f] for x in frames["r16"]])
+            res["cells"][f"{s}|{f}"] = {"eig": ev[:200].tolist(), **rho_cell(s, f, frames, bands, ev)}
+        (out / "r1_qk.json").write_text(json.dumps(res, indent=1, default=float))
+        print(f"step {s} ({time.time() - t0:.0f}s)", flush=True)
+    print(f"r1_qk done {time.time() - t0:.0f}s", flush=True)
+
+
+def shared_space(bases: Sequence[np.ndarray], width: int = S_WIDTH) -> np.ndarray:
+    """84 (a): U_S, P̄'s top `width` eigenvectors (d × width)."""
+    return mean_projector(bases)[1][:, :width]
+
+
+def layer_ov(Ws: Sequence[Dict], l: int) -> np.ndarray:
+    """V_l = Σ_h W_O W_V over layer l's heads (raw frame)."""
+    return sum(W["Wo"] @ W["Wv"] for W in Ws[l * N_HEADS:(l + 1) * N_HEADS])
+
+
+def r3_reading(C: np.ndarray) -> Dict:
+    """R3 on one compression C = U_Sᵀ V_l U_S: B2's `share`, `top_weight` and negative-pair flag on
+    the symmetric part; the complex share of C's eigenvalues and their mean |arg λ| (None if none;
+    LAPACK gives a real eigenvalue of a real matrix an exactly zero imaginary part)."""
+    from trackB_circuit.b2 import share, top_weight
+    ev = np.linalg.eigvalsh((C + C.T) / 2)
+    tw, pair = top_weight(ev)
+    lam = np.linalg.eigvals(C)
+    cx = lam[lam.imag != 0]
+    return {"share": share(ev), "top_weight": tw, "pair": pair, "cplx": cx.size / lam.size,
+            "arg": float(np.mean(np.abs(np.angle(cx)))) if cx.size else None}
+
+
+def r3_summary(obs: Sequence[Dict], haar: Optional[Sequence[Sequence[Dict]]] = None) -> Dict:
+    """Per family × step (design, "Summary (fixed now)"): each reading's median over the layers;
+    for `share`, `cplx`, `arg` the layers outside Haar's [min, max] at that layer; the flag's layer
+    count beside Haar's mean count. `obs[l]`, `haar[l][j]` are `r3_reading`s, and `haar` must be
+    drawn on the same V_l as `obs`; without it, medians only (step 0's comparison: the trained
+    step's draws are the wrong null for it, `/challenge-pr` on #245)."""
+    out = {}
+    for k in ("share", "top_weight", "cplx", "arg"):
+        v = [o[k] for o in obs if o[k] is not None]
+        out[f"{k}_median"] = float(np.median(v)) if v else None
+    out["pair_layers"] = int(sum(o["pair"] for o in obs))
+    if haar is None:
+        return out
+    for k in R3_READS:
+        n = 0
+        for o, hs in zip(obs, haar):
+            hv = [h[k] for h in hs if h[k] is not None]
+            if o[k] is not None and hv and not min(hv) <= o[k] <= max(hv):
+                n += 1
+        out[f"{k}_outside"] = n
+    out["pair_layers_haar_mean"] = float(np.mean([sum(hs[j]["pair"] for hs in haar)
+                                                  for j in range(len(haar[0]))]))
+    return out
+
+
+def variance_share(U: np.ndarray, S: np.ndarray, n_pc: int = N_PC) -> Dict:
+    """The residual check for one covariance S: q = tr(Uᵀ S U) / (S's top n_pc eigenvalues summed),
+    the overlap o = ‖Uᵀ U_pc‖²_F / width, and a Haar U's expected q, (width / d) tr S / top sum."""
+    lam, E = np.linalg.eigh(S)
+    top = lam[::-1][:n_pc].sum()
+    w, d = U.shape[1], U.shape[0]
+    return {"q": float(np.trace(U.T @ S @ U) / top),
+            "o": float(np.sum((U.T @ E[:, ::-1][:, :n_pc]) ** 2) / w),
+            "q_haar": float(w / d * np.trace(S) / top)}
+
+
+def residual_moments(model, tok) -> Dict[str, List[np.ndarray]]:
+    """Block inputs l = 0 … 23 on the 7 scored v1 prompts, pooled: centred covariance with position 0
+    dropped (primary) and kept, and the uncentred second moment (position 0 dropped)."""
+    import torch
+    from core.holdout import HELD_OUT_PROMPT_KEYS
+    from trackB_circuit.b0_gate import V1_SCORED, token_ids
+    if set(V1_SCORED) & HELD_OUT_PROMPT_KEYS:
+        raise S1Error("a held-out prompt in V1_SCORED")
+    dev = next(model.parameters()).device
+    xs = {"drop0": [[] for _ in range(N_LAYERS)], "keep0": [[] for _ in range(N_LAYERS)]}
+    with torch.no_grad():
+        for key in V1_SCORED:
+            ids = torch.tensor([token_ids(tok, key)], device=dev)
+            hs = model(ids, output_hidden_states=True).hidden_states
+            for l in range(N_LAYERS):
+                x = hs[l][0].double().cpu().numpy()
+                xs["keep0"][l].append(x)
+                xs["drop0"][l].append(x[1:])
+    out = {"cov": [], "cov_keep0": [], "second": []}
+    for l in range(N_LAYERS):
+        X, Xk = np.concatenate(xs["drop0"][l]), np.concatenate(xs["keep0"][l])
+        out["cov"].append(np.cov(X, rowvar=False))
+        out["cov_keep0"].append(np.cov(Xk, rowvar=False))
+        out["second"].append(X.T @ X / len(X))
+    return out
+
+
+def r3(out: Path) -> None:
+    """Unit 3: R3 on S and the residual check at the 8 scored steps, written after every step."""
+    import torch
+    from trackB_circuit.b0_gate import load
+    from trackB_circuit.b2 import layer_weights
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "r3.json"
+    res = {"code_sha": code_sha(), "s_width": S_WIDTH, "n_haar": R3_HAAR, "cells": {}}
+    if path.exists():                          # resume (`LESSONS.md` 11)
+        prev = json.loads(path.read_text())
+        if prev["code_sha"] != res["code_sha"]:
+            raise S1Error(f"{path} was written by code {prev['code_sha']}; not resuming")
+        res = prev
+    t0 = time.time()
+    V0 = [layer_ov(step_weights(0), l) for l in range(N_LAYERS)]
+    for s in SCORED_STEPS:
+        if all(f"{s}|{f}" in res["cells"] for f in FAMILIES):
+            continue
+        model, tok = load(s, "cpu", torch.float32)
+        Ws = [W for l in range(N_LAYERS) for W in layer_weights(model, l)]
+        model = model.to("cuda")
+        mom = residual_moments(model, tok)
+        del model
+        hb = [head_bases(W) for W in Ws]
+        Vl = [layer_ov(Ws, l) for l in range(N_LAYERS)]
+        del Ws
+        for f in FAMILIES:
+            U = shared_space([x[f] for x in hb])
+            rng = np.random.default_rng(seed_for("s1-r3-haar", s, f))
+            H = [np.linalg.qr(rng.standard_normal((D_MODEL, S_WIDTH)))[0] for _ in range(R3_HAAR)]
+            obs = [r3_reading(U.T @ V @ U) for V in Vl]
+            haar = [[r3_reading(h.T @ V @ h) for h in H] for V in Vl]
+            rng_ = [{k: [min(v), max(v)] if (v := [h[k] for h in hs if h[k] is not None]) else None
+                     for k in R3_READS} for hs in haar]
+            step0 = [r3_reading(U.T @ V @ U) for V in V0]
+            cell = {"r3": {"layers": obs, "step0": step0, "haar_range": rng_,
+                           "summary": r3_summary(obs, haar), "summary_step0": r3_summary(step0)},
+                    "top_coords": [np.argsort(-np.abs(U[:, i]))[:3].tolist() for i in range(S_WIDTH)],
+                    "resid": {}}
+            for m, Ss in mom.items():
+                rows = [variance_share(U, S) for S in Ss]
+                cell["resid"][m] = {"layers": rows,
+                                    **{f"{k}_{a}": float(fn([r[k] for r in rows]))
+                                       for k in ("q", "o", "q_haar")
+                                       for a, fn in (("median", np.median), ("max", np.max))}}
+            cell["resid"]["top_variance"] = bool(cell["resid"]["cov"]["q_median"] >= 0.5)
+            res["cells"][f"{s}|{f}"] = cell
+        path.write_text(json.dumps(res, indent=1, default=float))
+        print(f"step {s} ({time.time() - t0:.0f}s)", flush=True)
+    print(f"r3 done {time.time() - t0:.0f}s", flush=True)
+
+
+MASSIVE_STEP = 143000
+
+
+def massive(out: Path) -> None:
+    """`lit-S1.md` Parked 2, beside the residual check (description): 410m's massive-activation
+    coordinates at 143000. Per block input l, the 3 coordinates with the largest max |x| over the
+    7 v1 prompts' tokens (position 0 dropped, and position 0 alone), each with that max over the
+    coordinates' median max; then each family's S-weight ‖U_Sᵀ e_i‖² on the coordinates found at
+    l ≥ 1 (a Haar S: 10/1024 each)."""
+    import torch
+    from core.holdout import HELD_OUT_PROMPT_KEYS
+    from trackB_circuit.b0_gate import V1_SCORED, load, token_ids
+    from trackB_circuit.b2 import layer_weights
+    if set(V1_SCORED) & HELD_OUT_PROMPT_KEYS:
+        raise S1Error("a held-out prompt in V1_SCORED")
+    out.mkdir(parents=True, exist_ok=True)
+    model, tok = load(MASSIVE_STEP, "cpu", torch.float32)
+    Ws = [W for l in range(N_LAYERS) for W in layer_weights(model, l)]
+    model = model.to("cuda")
+    rest, first = [[] for _ in range(N_LAYERS)], [[] for _ in range(N_LAYERS)]
+    with torch.no_grad():
+        for key in V1_SCORED:
+            ids = torch.tensor([token_ids(tok, key)], device="cuda")
+            hs = model(ids, output_hidden_states=True).hidden_states
+            for l in range(N_LAYERS):
+                a = hs[l][0].abs().double().cpu().numpy()
+                rest[l].append(a[1:].max(0))
+                first[l].append(a[0])
+    del model
+
+    def top3(a: np.ndarray) -> List[Dict]:
+        med = float(np.median(a))
+        return [{"coord": int(i), "max_abs": float(a[i]), "over_median": float(a[i] / med)}
+                for i in np.argsort(-a)[:3]]
+
+    layers = [{"rest": top3(np.max(rest[l], 0)), "pos0": top3(np.max(first[l], 0))} for l in range(N_LAYERS)]
+    coords = sorted({c["coord"] for L in layers[1:] for c in L["rest"] + L["pos0"]})
+    hb = [head_bases(W) for W in Ws]
+    weight = {}
+    for f in FAMILIES:
+        U = shared_space([x[f] for x in hb])
+        weight[f] = {str(i): float(U[i] @ U[i]) for i in coords}
+    rec = {"code_sha": code_sha(), "step": MASSIVE_STEP, "layers": layers, "coords": coords,
+           "s_weight": weight, "haar_s_weight": S_WIDTH / D_MODEL}
+    (out / "massive.json").write_text(json.dumps(rec, indent=1, default=float))
+    print(f"massive: coords {coords}", flush=True)
 
 
 def main(argv=None) -> None:
@@ -875,11 +1101,24 @@ def main(argv=None) -> None:
     rr = sub.add_parser("r1")
     rr.add_argument("--out", type=Path, required=True)
     rr.add_argument("--gate", type=Path, required=True)
+    rq = sub.add_parser("r1qk")
+    rq.add_argument("--out", type=Path, required=True)
+    rq.add_argument("--gate", type=Path, required=True)
+    r3p = sub.add_parser("r3")
+    r3p.add_argument("--out", type=Path, required=True)
+    ms = sub.add_parser("massive")
+    ms.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.cmd == "regate":
         regate(a.out)
     elif a.cmd == "r1":
         r1(a.out, a.gate)
+    elif a.cmd == "r1qk":
+        r1_qk(a.out, a.gate)
+    elif a.cmd == "r3":
+        r3(a.out)
+    elif a.cmd == "massive":
+        massive(a.out)
     elif a.cmd == "explore":
         explore(a.steps, a.out, a.n_draw)
     elif a.cmd == "preflight":

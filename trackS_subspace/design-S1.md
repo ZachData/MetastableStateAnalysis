@@ -13,7 +13,9 @@ families (the trained spectrum is dense at the null's edge), so N is refused by 
 fallback below. Blocked 82 decided (b), the user's: R1′ = the participation ratio, re-gated with
 an additive plant ("Blocked 82 decided (b)" below). Unit 2: G0′–G2′ pass; G4 passes in the 5
 OV families and fails in QK, both by dilution, and cannot see the pool (`/challenge-pr` on #244),
-so R1′ is read as description (`status-S.md` "S1 unit 2"; QK, S and the budget Blocked 83–85).**
+so R1′ is read as description (`status-S.md` "S1 unit 2"). Blocked 83–85 decided (a), (a), (a),
+the user's: unit 3 fixed in "Blocked 83–85 decided" below; it ran, and S1 closed 2026-10-21
+(`status-S.md` "S1 on one page").**
 
 ## What S1 asks
 
@@ -161,6 +163,43 @@ include step 0, stated beside.
 
 **Moved.** R1b and R3 read a family's shared space S, which N defined; N is refused, so S is
 undefined. R1b and R2 move to unit 3, and S is decided before unit 3 opens (Blocked, then).
+
+## Blocked 83–85 decided (a), (a), (a), 2026-10-21 (the user's): unit 3, fixed here
+
+Fixed before any run of unit 3's code. **Unit 3 = QK's ρ, R3 on S, the residual check and the
+close-out (85 (a), the budget kept); R1b and R2 carried to S2.** The exit is read as: R1′'s 56
+cells as description (ρ, the effect side uncalibrated in every family), R3's table, the residual
+check.
+
+**QK's ρ (83 (a)).** The 16 QK cells read exactly as R1′'s OV cells (`s1.r1`'s per-cell code):
+PR, PR₀, ρ, unit 2's band (`bands.json` was drawn for every family), the top against the m-dim
+null, ρ at r = 8, 32 and folded beside; G4r's dims-kept response at 8000 quoted beside (recorded
+in unit 2). Written to a new `r1_qk.json`; unit 2's `r1.json` is not rewritten.
+
+**S (84 (a)).** Per family × step: the top 10 eigenvectors of P̄ (pool `all`, r = 16, raw frame),
+U_S (1024 × 10). Where the spectrum's top is flat (step 0 to 256), S is ten directions of a flat
+top, and its Haar comparison says so.
+
+**R3 on S** (as designed above). Per family × step × layer, C = U_Sᵀ V_l U_S, V_l = Σ_h W_O W_V
+(raw). From the eigenvalues of C's symmetric part: B2's `share` (Σλ₊ / Σ|λ|), `top_weight` and the
+negative-pair flag (|λ₂|/|λ₁| ≥ 0.8, both negative). From C's eigenvalues: the complex share
+(complex eigenvalues / 10) and the mean |arg λ| over the complex ones (none: not defined).
+Comparisons: (i) step 0, the same U_S on step 0's V_l; (ii) 100 Haar 10-dim U per family × step,
+the same draws for every layer. **Summary (fixed now):** each reading's median over the 24 layers;
+for `share`, complex share and mean |arg λ|, the number of layers (of 24) outside the Haar draws'
+[min, max]; the flag's layer count beside Haar's mean count. Description, no verdict.
+
+**The residual check.** The 7 scored v1 prompts (`trackB_circuit/b0_gate.py` `V1_SCORED`, ≤ 512
+tokens; none held out by `core/holdout.py`), each step's model in float32 on the GPU,
+X_l = block l's input (`hidden_states[l]`, l = 0 … 23), tokens pooled over the 7 prompts, position 0
+dropped (primary: the first token's norm dominates any variance; kept, beside), Σ_l their centred
+covariance in float64. Per family × step × layer: **q = tr(U_Sᵀ Σ_l U_S) / (Σ_l's top 10
+eigenvalues summed)**, S's variance against the best 10-dim subspace's (1 = S is the top-10
+variance space; a Haar S's expected q, (10/1024) tr Σ_l / top-10 sum, beside), and the overlap
+o = ‖U_Sᵀ U_pc‖²_F / 10 with Σ_l's top 10 eigenvectors (Haar: 10/1024). Summary: q and o, median
+and max over the 24 layers. **Rule, fixed now:** a family × step whose layer-median q ≥ 0.5 is
+reported as "the residual stream's top variance", not as sharing. The uncentred second moment
+beside.
 
 ## Preflight (`tools/design_preflight.py`, step 8000, off the grid)
 
