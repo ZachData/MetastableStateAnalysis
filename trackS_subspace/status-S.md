@@ -23,7 +23,7 @@
   - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); arm a's displacement at 143000 (11.9 against 1.0–1.1, S2 unit 2, Parked); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `e2cc49f7a3`
+- **Reviewed:** 2026-10-21 · body `a37d24bac9`
 <!-- /phase-card -->
 
 ## Units
