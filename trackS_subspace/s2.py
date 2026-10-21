@@ -329,10 +329,12 @@ class Hook:
         torch = self.torch
 
         def f(mod, args, out):
-            if len(out) < 3 or out[2] is None:
+            # The weights' place differs by version: (out, present, weights) in transformers 4.44,
+            # (out, weights) in 4.57 (`LESSONS.md` 3, B0). Taken by shape, (b, H, n, n).
+            P = next((o for o in out[1:] if torch.is_tensor(o) and o.dim() == 4), None)
+            if P is None:
                 raise S2Error("the hook needs the attention weights: call with output_attentions=True "
                               "on an eager model")
-            P = out[2]                                             # (b, H, n, n)
             x = self._x.pop(l)
             mu = x.mean(-1, keepdim=True)
             var = ((x - mu) ** 2).mean(-1, keepdim=True)
