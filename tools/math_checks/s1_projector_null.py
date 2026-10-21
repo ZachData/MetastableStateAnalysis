@@ -37,6 +37,11 @@ WHAT IT SHOWS
    orthogonal to its subspace (P_h → P_h + Q_h, Q_h PSD) cannot lower any tr P_h P_h', since each
    added term tr(Q P'), tr(P Q'), tr(Q Q') is a trace of a product of PSD matrices (= a sum of
    squared norms), so it cannot lower tr P̄².
+6. **The additive plant dilutes the carrier's excess** (found by G4, 2026-10-21). With
+   χ = tr P̄²/(tr P̄)² − 1/PR₀, adding dimensions raises tr P̄ by a share ε, so to first order
+   Δχ = (Δ tr P̄² − Δ E₀ tr P̄²)/(tr P̄)² − 2ε χ₀: the plant's own excess minus 2ε times the
+   carrier's excess χ₀. On a Haar carrier χ₀ ≈ 0; on a concentrated one the second term can
+   outweigh the first. Singular families keep k_h = 16 at every step, so the data never move ε.
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -49,6 +54,8 @@ WHAT IT DOES NOT PROVE
 - That PR falls under an additive plant: tr P̄ rises with the added dimensions as well, so PR's
   move is the excess over the null's own rise (≈ (k² − k)/n² per direction on a Haar carrier, an
   expectation, not a bound). G4 measures it.
+- That fact 6's first-order dilution is the whole deficit on a real carrier (G4 reads it: it
+  predicts −1.08 against −1.08 observed, `qk_query` at k = 12, and 0.24 against 0.26 at k = 32).
 - That E₀ PR equals PR₀ (PR₀ is the ratio at the expected kernel; the gap is O(var), G0′ reads it).
 - That the max-based threshold is tight: it controls the false count at every rank at once and
   so undercounts a bulk that is shifted but below the null's top edge.
@@ -137,4 +144,12 @@ v = sp.Matrix(sp.symbols("v0:3", real=True))
 w = sp.Matrix(sp.symbols("w0:3", real=True))
 assert sp.expand((v * v.T * w * w.T).trace() - (v.T * w)[0] ** 2) == 0
 
-print("s1_projector_null: facts 1-3 and 5 exact, fact 4 and 5's E tr PP' sanity (numeric) passed")
+# --- 6. first-order dilution of χ under an additive plant ------------------------------------------
+T2, T, D2, eps, E0, DE0 = sp.symbols("T2 T D2 epsilon E0 DE0", positive=True)
+chi_ = lambda a, t, e: a / t ** 2 - e / t ** 2                     # noqa: E731  χ = (tr2 − E₀)/tr²
+dchi = chi_(T2 + D2, T * (1 + eps), E0 + DE0) - chi_(T2, T, E0)
+first = sp.series(dchi, eps, 0, 2).removeO()
+claim = (D2 - DE0) / T ** 2 - 2 * eps * chi_(T2, T, E0) - 2 * eps * (D2 - DE0) / T ** 2
+assert sp.simplify(sp.expand(first - claim)) == 0                  # the last term is second order in the plant
+
+print("s1_projector_null: facts 1-3, 5 and 6 exact, fact 4 and 5's E tr PP' sanity (numeric) passed")

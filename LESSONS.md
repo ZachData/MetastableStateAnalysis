@@ -789,6 +789,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-21, S1 unit 2 (a plant that changes what the data hold fixed): G4's additive plant
+  raises each planted head's dimension, so tr P̄ rises and χ = (tr P̄² − E₀)/(tr P̄)² falls by
+  2εχ₀ on that alone; on QK's concentrated pools (χ₀ 1.3–1.8e-3) that outweighs the plant at
+  every dose to 64, and G4 failed there. Derivable before the freeze from unit 1's PR (344, 412);
+  the design called χ "additive under a plant" without the first-order check. The singular
+  families' data never change a head's dimension. Rule: **a planted control changes only what
+  the statistic is meant to see; list what else the plant moves (dimension, trace, norm) and
+  expand the statistic to first order in it before fixing the bar** (`trackS_subspace/status-S.md`
+  "S1 unit 2"; math check fact 6).
 - 2026-10-20, S1 unit 1 (a count at a threshold the spectrum is dense at; `/challenge-pr` on
   #243, finding 1): S1 counted P̄'s eigenvalues above the null's maximum, and G3 asked that 4
   planted directions raise the count by 4. At a trained step the eigenvalues sit about 1e-4

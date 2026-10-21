@@ -11,7 +11,9 @@ user's): 3 units + close-out, raw frame, r = 16, counts not verdicts; unit 1's r
 `status-S.md` "S1 unit 1".** **Unit 1's gate: G0–G2 pass; G3 fails on step 8000's real pool in all 7
 families (the trained spectrum is dense at the null's edge), so N is refused by the
 fallback below. Blocked 82 decided (b), the user's: R1′ = the participation ratio, re-gated with
-an additive plant ("Blocked 82 decided (b)" below).**
+an additive plant ("Blocked 82 decided (b)" below). Unit 2: the re-gate passes in the 5 OV
+families and fails in QK (spectrum only by the fallback; Blocked 83); R1′ read (`status-S.md`
+"S1 unit 2").**
 
 ## What S1 asks
 
@@ -123,7 +125,9 @@ independent Haar subspaces of the cell's own dims k_h (math check fact 5):
 E₀ tr P̄² = (1/n²)(Σk + ((Σk)² − Σk²)/d), PR₀ = (tr P̄)² / E₀ tr P̄² (879.67 at k_h = 16), so
 the invariant families, whose dims vary by head and step, are read against their own PR₀. Read
 per cell: PR, PR₀, **ρ = PR / PR₀** (1 at the null; lower = heads concentrate on fewer
-directions), χ = 1/PR − 1/PR₀ (the excess kernel, additive under a plant), and the Haar band
+directions), χ = 1/PR − 1/PR₀ (the excess kernel, additive under a plant; *wrong on a
+concentrated pool, found by G4: a plant that adds dimensions dilutes χ₀ by 2εχ₀, math check
+fact 6; `status-S.md` "S1 unit 2"*), and the Haar band
 (min, max of PR over 2000 draws of the cell's dims). Beside, ρ only: r = 8 and 32, and the LN1
 gain folded into the read side (W_Q, W_K, W_V right-multiplied by diag(g); all 7 families).
 
