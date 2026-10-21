@@ -225,18 +225,33 @@ beside. Why: (b-schur) leaves near-repeated eigenvalues, which float32 rounding 
 **Blocked 87, the freeze (the user's).** At 8000 both arms move the stream further than all 40
 controls (a: D 0.949 against 0.693–0.735; b: 0.110 against 0.100–0.106), so the displacement guard
 as frozen would write every such cell "moved further" and read nothing.
-(a) Freeze as revised, with the matched-distance fallback moved from unit 3 ("if the budget
-allows") into unit 2 for both arms at every scored step: each arm's controls also drawn at 1.5, 2
-and 3 times its size (40 each), and a cell the arm moves further than its controls is labelled at
-matched D by linear interpolation of the controls' V (or G) against D (OV1d's method), a cell the
-arm moves less than its 1× controls read as now. About 240 more configurations per step (≈ 5 min
-per step on the GPU at unit 1's 1.3 s per configuration, ≈ 25 min over the 5); units unchanged.
-(b) Freeze as written (with the G0 revision): "moved further" cells are not read; the fallback
-stays in unit 3 if the budget allows.
-(c) Hold the freeze and change the controls instead (e.g. match D rather than norm at 1×).
-**Recommended: (a)**: the guard exists so that "moved more" is not read as "this structure"
-(OV1's lesson), and matched D keeps that while giving the reading a chance; (c) reopens the
-controls' definition after seeing 8000.
+
+*Withdrawn after `/challenge-pr` on #247 (findings 1, 2, 4):* the first option (a) put the
+matched-distance fallback into unit 2 with controls at 1.5, 2 and 3 times the arm's size. With
+both norms matched that is impossible for arm a (‖control‖ ≤ ‖K‖ + ‖K′‖ = 1.73 ‖K‖ against
+3 × 0.68), its feasible rungs are degenerate (≈ 0.2 K + noise at 1.5×, ≈ −0.22 K at 2×), the
+interpolated label had no stated null, and it was the one option that could turn 8000's
+arm-a V (below every control) into a reading. Not offered.
+
+Both options below also take, fixed now before any scored output (findings 3, 5):
+- **The guard is one-sided.** Moving the stream further can produce V *lower* or copying *lost*
+  or *weakened*, not "as its controls", V *higher* or G "survives". So "moved further" withholds
+  only R1's *lower* and R2's *lost* / *weakened*; the other labels are read with D beside.
+  Moving less than every control withholds nothing new (read through the gain arm, as now).
+- **R2 under arm a is description.** Arm a's controls alone take G from 12.3 to 2.1–3.2 at 8000:
+  every R2 cell under a compares damaged models. Its G, controls and gain arm are reported, no
+  label read. R2 is read under arm b only.
+
+(a) Freeze as revised (the G0 read-back, the refusals argued, the two items above); the
+matched-distance fallback stays in unit 3 "if the budget allows", and if run it first names its
+null and passes a planted null at matched D before any reading.
+(b) As (a), and arm a's R1 is description too: at its size every edit in its span moves the
+stream far (D 0.69–0.95) and V by itself (59 → 30–39), so R1 under a may read nothing however the
+guard is set.
+**Recommended: (a)**: the one-sided guard removes the over-blocking without adding a reading path
+for the cells the guard exists for; (b) gives up arm a's R1 before seeing a scored step, which the
+data at 8000 do not force (arm a's V is below its controls there, so R1 under a can still answer
+"not shown" or, if D falls below the controls at a scored step, a read *lower*).
 
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 

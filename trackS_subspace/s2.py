@@ -450,6 +450,26 @@ def run_config(model, inp: Inputs, base_hs: Optional[Dict] = None, keep_hs: bool
     return out
 
 
+def run_meta() -> Dict:
+    """What a record ran on: code, versions, device, the steps' revisions (`/challenge-pr` on #247)."""
+    import torch
+    import transformers
+    from core.lm_loading import resolve_lm_entry
+    return {"design": "trackS_subspace/design-S2.md", "code": code_sha(), "dtype": "float32",
+            "tf32": False, "device": torch.cuda.get_device_name(0), "torch": torch.__version__,
+            "transformers": transformers.__version__,
+            "revisions": {s: snapshot(resolve_lm_entry(f"pythia-410m-step{s}"))
+                          for s in sorted(set(G0_STEPS) | {PREFLIGHT_STEP, G3_STEP})}}
+
+
+def snapshot(entry: Dict) -> str:
+    """``branch@commit`` of the cached checkpoint (the HF cache's refs file), or the branch alone."""
+    import os
+    hub = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"
+    ref = hub / f"models--{entry['repo_id'].replace('/', '--')}" / "refs" / entry["revision"]
+    return f"{entry['revision']}@{ref.read_text().strip()}" if ref.exists() else entry["revision"]
+
+
 def load(step: int):
     import torch
     from trackB_circuit.b0_gate import load as b0_load
@@ -631,6 +651,8 @@ def readbacks(model, heads: Heads, step: int) -> Dict:
     worst["controls"] = float(max(ctl))
     out["beside_f32_worst"] = {k: max(v, default=0.0) for k, v in out["beside_f32"].items()}
     out["worst"] = worst
+    if any(not [x for x in out[k] if x is not None] for k in ("a", "b", "b_eig")):
+        raise S2Error("read-back: an arm has no head checked (all kept or none picked)")
     out["pass"] = bool(max(worst.values()) <= READBACK_TOL)
     return out
 
@@ -659,8 +681,7 @@ def g0(out: Path) -> None:
     import gc
     import torch
     out.mkdir(parents=True, exist_ok=True)
-    meta = {"design": "trackS_subspace/design-S2.md", "code": code_sha(), "dtype": "float32",
-            "tf32": False, "device": torch.cuda.get_device_name(0), "torch": torch.__version__}
+    meta = run_meta()
     _save(out / "plan.json", meta)
     t0 = time.time()
     res = {"code": meta["code"], "wiring": {}, "readback": None, "base_v": {}, "sizes": {}}
@@ -743,7 +764,7 @@ def preflight(out: Path) -> None:
     from core.models import from_pretrained_eager
     out.mkdir(parents=True, exist_ok=True)
     path = out / "preflight_runs.json"
-    rec = {"code": code_sha(), "step": PREFLIGHT_STEP, "configs": {}, "sizes": {}}
+    rec = {"code": code_sha(), "step": PREFLIGHT_STEP, "meta": run_meta(), "configs": {}, "sizes": {}}
     if path.exists():                          # resume (`LESSONS.md` 11)
         prev = json.loads(path.read_text())
         if prev["code"] != rec["code"]:
@@ -815,7 +836,9 @@ def preflight_tool(out: Path) -> None:
         reports[arm] = {"sha256": hashlib.sha256(body.encode()).hexdigest(),
                         "refusals": [r["code"] for r in rep["refusals"]]}
         print(f"preflight {arm}: refusals {reports[arm]['refusals']}", flush=True)
-    _save(out / "preflight_summary.json", {"code": rec["code"], "tool_code": code_sha(), "reports": reports,
+    tool = json.loads((out / f"preflight_report_{ARMS[0]}.json").read_text())["tool_sha256"]
+    _save(out / "preflight_summary.json", {"code": rec["code"], "s2_code": code_sha(), "tool_sha256": tool,
+                                           "reports": reports,
                                            "summary": summarise(rec)})
 
 

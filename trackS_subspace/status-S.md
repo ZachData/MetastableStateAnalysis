@@ -22,7 +22,7 @@
   - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); S2's freeze (Blocked 87); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `6efd2554d7`
+- **Reviewed:** 2026-10-21 · body `e2cc49f7a3`
 <!-- /phase-card -->
 
 ## Units
@@ -560,12 +560,18 @@ outside a's controls' [31, 39]). Argued in `design-S2.md` "The preflight's refus
 **What the preflight shows for the freeze.**
 - **Both arms move the stream further than every control** (a: D 0.949 against 0.693–0.735; b: 0.110
   against 0.100–0.106). Under the frozen displacement guard such a cell is "moved further" and not
-  read; if the scored steps look like 8000, R1 and R2 read nothing without the matched-distance
-  fallback, which the design runs only in unit 3 "if the budget allows" (Blocked 87).
+  read; if the scored steps look like 8000, R1 and R2 read nothing. Blocked 87 (after
+  `/challenge-pr` on #247) makes the guard one-sided: it withholds only the labels displacement
+  can produce (R1 *lower*, R2 *lost* / *weakened*).
 - Arm a's controls alone move V from 59 to 30–39 and G from 12.3 to 2.1–3.2: a random edit of arm
   a's size in the head's span already breaks most in-context copying, so R2 under a compares
-  damaged models.
+  damaged models (87: R2 under a is description).
 - Arm b at its size moves nothing measurable beyond its controls (V 57 in 56–61, G inside).
+
+The records above carry the code sha but not the transformers version or the checkpoints' commits
+(`/challenge-pr` on #247, finding 6): `meta_backfill.json` in each record directory holds both,
+taken after the run from the same HF cache (4.44.2; step 8000 at `8e89b393da98…`); new runs write
+them (`s2.run_meta`).
 
 **R1b and R2 (beside, weights only, description; S1's raw frame, r 16, S = P̄'s top 10).**
 

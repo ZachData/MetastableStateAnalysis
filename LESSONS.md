@@ -1844,6 +1844,15 @@ a wrong premise, the check inherits it.
   recommendation already in `STATE.md`. Rule: a sentence supporting a recommendation states
   its interval, and the strongest number against it (here the pooled window) goes beside
   the verdict before the PR opens.
+- 2026-10-21, S2 unit 1 (#247, `/challenge-pr`): Blocked 87's recommended option drew arm a's
+  controls at 1.5–3× its size "as the fallback says", without checking that a control can be
+  built there with both norms matched; for arm a it cannot (‖control‖ ≤ 1.73 ‖K‖ against 2.04),
+  its feasible rungs flip or shrink the head, the interpolated label had no null, and the option
+  was the one that could turn 8000's arm-a V into a reading. The reason given against the
+  alternative ("it changes the controls after seeing 8000") applied to it too. Withdrawn before
+  the user decided. Rule: **an option offered to the user is checked to be constructible with
+  the design's own definitions (one draw, one head), and the argument against each alternative
+  is tried against the recommended one.**
 
 **The rule now.** Every PR gets `/challenge-pr` (fresh context, intent and
 design, not lines) and the author answers each finding on the PR; the user
