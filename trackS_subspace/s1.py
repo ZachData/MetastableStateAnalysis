@@ -1032,6 +1032,54 @@ def r3(out: Path) -> None:
     print(f"r3 done {time.time() - t0:.0f}s", flush=True)
 
 
+MASSIVE_STEP = 143000
+
+
+def massive(out: Path) -> None:
+    """`lit-S1.md` Parked 2, beside the residual check (description): 410m's massive-activation
+    coordinates at 143000. Per block input l, the 3 coordinates with the largest max |x| over the
+    7 v1 prompts' tokens (position 0 dropped, and position 0 alone), each with that max over the
+    coordinates' median max; then each family's S-weight ‖U_Sᵀ e_i‖² on the coordinates found at
+    l ≥ 1 (a Haar S: 10/1024 each)."""
+    import torch
+    from core.holdout import HELD_OUT_PROMPT_KEYS
+    from trackB_circuit.b0_gate import V1_SCORED, load, token_ids
+    from trackB_circuit.b2 import layer_weights
+    if set(V1_SCORED) & HELD_OUT_PROMPT_KEYS:
+        raise S1Error("a held-out prompt in V1_SCORED")
+    out.mkdir(parents=True, exist_ok=True)
+    model, tok = load(MASSIVE_STEP, "cpu", torch.float32)
+    Ws = [W for l in range(N_LAYERS) for W in layer_weights(model, l)]
+    model = model.to("cuda")
+    rest, first = [[] for _ in range(N_LAYERS)], [[] for _ in range(N_LAYERS)]
+    with torch.no_grad():
+        for key in V1_SCORED:
+            ids = torch.tensor([token_ids(tok, key)], device="cuda")
+            hs = model(ids, output_hidden_states=True).hidden_states
+            for l in range(N_LAYERS):
+                a = hs[l][0].abs().double().cpu().numpy()
+                rest[l].append(a[1:].max(0))
+                first[l].append(a[0])
+    del model
+
+    def top3(a: np.ndarray) -> List[Dict]:
+        med = float(np.median(a))
+        return [{"coord": int(i), "max_abs": float(a[i]), "over_median": float(a[i] / med)}
+                for i in np.argsort(-a)[:3]]
+
+    layers = [{"rest": top3(np.max(rest[l], 0)), "pos0": top3(np.max(first[l], 0))} for l in range(N_LAYERS)]
+    coords = sorted({c["coord"] for L in layers[1:] for c in L["rest"] + L["pos0"]})
+    hb = [head_bases(W) for W in Ws]
+    weight = {}
+    for f in FAMILIES:
+        U = shared_space([x[f] for x in hb])
+        weight[f] = {str(i): float(U[i] @ U[i]) for i in coords}
+    rec = {"code_sha": code_sha(), "step": MASSIVE_STEP, "layers": layers, "coords": coords,
+           "s_weight": weight, "haar_s_weight": S_WIDTH / D_MODEL}
+    (out / "massive.json").write_text(json.dumps(rec, indent=1, default=float))
+    print(f"massive: coords {coords}", flush=True)
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1054,6 +1102,8 @@ def main(argv=None) -> None:
     rq.add_argument("--gate", type=Path, required=True)
     r3p = sub.add_parser("r3")
     r3p.add_argument("--out", type=Path, required=True)
+    ms = sub.add_parser("massive")
+    ms.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.cmd == "regate":
         regate(a.out)
@@ -1063,6 +1113,8 @@ def main(argv=None) -> None:
         r1_qk(a.out, a.gate)
     elif a.cmd == "r3":
         r3(a.out)
+    elif a.cmd == "massive":
+        massive(a.out)
     elif a.cmd == "explore":
         explore(a.steps, a.out, a.n_draw)
     elif a.cmd == "preflight":
