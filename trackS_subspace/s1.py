@@ -585,6 +585,279 @@ def gate(out: Path, arms: Sequence[str]) -> None:
     print(f"gate done {time.time() - t0:.0f}s", flush=True)
 
 
+# ---------------------------------------------------------------- unit 2: R1′ and its re-gate
+
+# placed (design "Blocked 82 decided (b)"): the additive plant's doses, draws and bars
+G4_DOSES, G4_MORE = G3_DOSES, G3_MORE
+G4_DIRS, G4_DRAWS, G4_RATE, G4_SIZE = 4, 50, 0.8, 0.75
+G4T_DOSES, G4T_COS = (12, 16, 24, 32, 48, 64), 0.9
+G2P_MIN_CELLS = 55
+N_TOP_NULL = 500
+G0P_FAMILIES = ("ov_write", "qk_query", "ov_neg", "ov_cplx")
+
+
+def pr0(dims: Sequence[int], d: int = D_MODEL) -> float:
+    """PR₀ = (tr P̄)² / E₀ tr P̄² for independent Haar subspaces of these dims (math check fact 5)."""
+    k = np.asarray(dims, float)
+    S = k.sum()
+    return float(S ** 2 / (S + (S ** 2 - (k ** 2).sum()) / d))
+
+
+def pr_of(bases: Sequence[np.ndarray]) -> Dict:
+    """R1′'s cell: PR = (tr P̄)² / tr P̄² (tr P̄² by the Gram's Frobenius norm, fact 2), PR₀ at the
+    pool's own dims, ρ = PR / PR₀ and the excess kernel χ = 1/PR − 1/PR₀."""
+    B = np.concatenate([b for b in bases if b.shape[1]], 1)
+    n = len(bases)
+    G = B.T @ B if B.shape[1] <= B.shape[0] else B @ B.T
+    tr, tr2 = B.shape[1] / n, float(np.sum(G * G)) / n ** 2
+    p, p0 = tr ** 2 / tr2, pr0([b.shape[1] for b in bases], d=B.shape[0])
+    return {"PR": p, "PR0": p0, "rho": p / p0, "chi": 1 / p - 1 / p0}
+
+
+def haar_tr2(dims: Sequence[int], n_draw: int, seed: int, d: int = D_MODEL, l1: bool = False,
+             device: str = "cuda") -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    """tr P̄² (and λ₁ if asked) per draw for independent Haar subspaces of these dims in R^d (GPU,
+    float64; the draws as `haar_eigs`)."""
+    import torch
+    g = torch.Generator(device=device).manual_seed(seed % (2 ** 63))
+    n, K = len(dims), int(sum(dims))
+    groups = {k: sum(1 for x in dims if x == k) for k in sorted(set(dims)) if k}
+    tr2, top = np.zeros(n_draw), np.zeros(n_draw)
+    batch = max(1, int(3e8 // (d * max(K, 1) * 8)))
+    for s in range(0, n_draw, batch):
+        b = min(batch, n_draw - s)
+        Bs = []
+        for k, c in groups.items():
+            Z = torch.randn(b * c, d, k, generator=g, device=device, dtype=torch.float64)
+            Bs.append(torch.linalg.qr(Z)[0].reshape(b, c, d, k).permute(0, 2, 1, 3).reshape(b, d, c * k))
+        B = torch.cat(Bs, 2)
+        G = B.transpose(1, 2) @ B if K <= d else B @ B.transpose(1, 2)
+        tr2[s:s + b] = ((G * G).sum((1, 2)) / n ** 2).cpu().numpy()
+        if l1:
+            top[s:s + b] = (torch.linalg.eigvalsh(G)[:, -1] / n).cpu().numpy()
+    return tr2, (top if l1 else None)
+
+
+def dims_key(dims: Sequence[int]) -> str:
+    return hashlib.sha256(json.dumps(sorted(int(x) for x in dims)).encode()).hexdigest()[:12]
+
+
+def pr_band(dims: Sequence[int]) -> Dict:
+    """The cell's Haar band (N_NULL draws of its dims): PR's min / max / mean, χ's width, and the
+    draws' mean tr P̄² against E₀'s closed form (G0′)."""
+    tr2, _ = haar_tr2(list(dims), N_NULL, seed_for("s1-pr-band", dims_key(dims)))
+    n, K = len(dims), float(sum(dims))
+    p = (K / n) ** 2 / tr2
+    p0 = pr0(dims)
+    e2 = (K / n) ** 2 / p0
+    return {"PR_min": float(p.min()), "PR_max": float(p.max()), "PR_mean": float(p.mean()), "PR0": p0,
+            "chi_width": float((1 / p).max() - (1 / p).min()),
+            "tr2_z": float((tr2.mean() - e2) / (tr2.std(ddof=1) / np.sqrt(len(tr2))))}
+
+
+def top_null(dims: Sequence[int], m: int, tag) -> float:
+    """The top's null: the largest λ₁ over N_TOP_NULL draws of Haar subspaces of these dims in R^m
+    (Haar inside any fixed m-dim subspace), m = round(PR)."""
+    return float(haar_tr2([k for k in dims], N_TOP_NULL, seed_for("s1-top", *tag), d=m, l1=True)[1].max())
+
+
+def plant_add(bases: Sequence[np.ndarray], u: np.ndarray, heads: Sequence[int]) -> List[np.ndarray]:
+    """G4's plant: each listed head's basis gains u's part orthogonal to it, normalised (u exactly
+    inside, nothing removed, the head's dimension + 1)."""
+    out = list(bases)
+    for h in heads:
+        q = u - out[h] @ (out[h].T @ u)
+        out[h] = np.concatenate([out[h], (q / np.linalg.norm(q))[:, None]], 1)
+    return out
+
+
+def plant_add_many(bases: Sequence[np.ndarray], n_dir: int, k: int, rng: np.random.Generator
+                   ) -> List[np.ndarray]:
+    out = list(bases)
+    for _ in range(n_dir):
+        u = rng.standard_normal(bases[0].shape[0])
+        out = plant_add(out, u / np.linalg.norm(u), rng.choice(len(bases), k, replace=False))
+    return out
+
+
+def g4(hb8000: Sequence[Dict], bands: Dict[str, Dict]) -> Dict:
+    """G4 (additive plant, the pass) and G4r (unit 1's displacing plant, recorded) on one draw
+    stream: both carriers, Δχ against the unplanted carrier."""
+    rng = np.random.default_rng(seed_for("s1-g4"))
+    rec = {"families": {}}
+    for f in FAMILIES:
+        real = [h[f] for h in hb8000]
+        dims = [b.shape[1] for b in real]
+        band = bands[f]
+        chi_real = pr_of(real)["chi"]
+        rows, doses = {}, list(G4_DOSES)
+        while doses:
+            k = doses.pop(0)
+            r = {"dchi_haar": [], "below_band": [], "dchi_real": [], "r_dchi_haar": [], "r_dchi_real": []}
+            for _ in range(G4_DRAWS):
+                carrier = haar_bases(dims, rng)
+                c0 = pr_of(carrier)
+                pl = pr_of(plant_add_many(carrier, G4_DIRS, k, rng))
+                r["dchi_haar"].append(pl["chi"] - c0["chi"])
+                r["below_band"].append(pl["PR"] < band["PR_min"])
+                r["dchi_real"].append(pr_of(plant_add_many(real, G4_DIRS, k, rng))["chi"] - chi_real)
+                for name, car, base in (("r_dchi_haar", carrier, c0["chi"]), ("r_dchi_real", real, chi_real)):
+                    disp = plant_many(car, G4_DIRS, k, rng)
+                    if disp is not None:
+                        r[name].append(pr_of(disp)["chi"] - base)
+            med = float(np.median(r["dchi_haar"]))
+            dr = np.array(r["dchi_real"])
+            rows[k] = {"rate_detect_haar": float(np.mean(r["below_band"])), "dchi_haar_median": med,
+                       "rate_size_real": float(np.mean(dr >= G4_SIZE * med)),
+                       "rate_resolved_real": float(np.mean(dr > band["chi_width"])),
+                       "ratio_real_median": float(np.median(dr) / med),
+                       "G4r_dchi_haar_median": float(np.median(r["r_dchi_haar"])) if r["r_dchi_haar"] else None,
+                       "G4r_dchi_real_median": float(np.median(r["r_dchi_real"])) if r["r_dchi_real"] else None,
+                       **{key: [float(x) for x in v] for key, v in r.items() if key != "below_band"}}
+            rows[k]["pass"] = rows[k]["rate_detect_haar"] >= G4_RATE and rows[k]["rate_size_real"] >= G4_RATE
+            if k == G4_DOSES[-1] and not rows[k]["pass"] and not doses:
+                doses = list(G4_MORE)                  # pre-authorised fallback (design)
+        ok = [k for k, v in rows.items() if v["pass"]]
+        rec["families"][f] = {"chi_unplanted": chi_real, "band": band, "doses": rows,
+                              "usable": bool(ok),
+                              "k_star": min((k for k, v in rows.items()
+                                             if v["pass"] and v["rate_resolved_real"] >= G4_RATE), default=None)}
+        print(f"  G4 {f}: pass at 32 {rows[G4_DOSES[-1]]['pass']}, k* {rec['families'][f]['k_star']}", flush=True)
+    rec["pass"] = bool(all(v["doses"][G4_DOSES[-1]]["pass"] for v in rec["families"].values()))
+    rec["spectrum_only"] = [f for f, v in rec["families"].items() if not v["usable"]]
+    return rec
+
+
+def g4t(hb8000: Sequence[Dict]) -> Dict:
+    """The top's planted control (recorded): one direction added to k of 8000's heads; recovered if
+    an eigenvector of P̄ has |cos| ≥ G4T_COS with it, above the m-dim null's largest λ₁."""
+    rng = np.random.default_rng(seed_for("s1-g4t"))
+    rec = {}
+    for f in FAMILIES:
+        real = [h[f] for h in hb8000]
+        dims = [b.shape[1] for b in real]
+        m = int(round(pr_of(real)["PR"]))
+        T = top_null(dims, m, ("g4t", f))
+        rows = {}
+        for k in G4T_DOSES:
+            hit, cos, ratio = [], [], []
+            for _ in range(G4_DRAWS):
+                u = rng.standard_normal(D_MODEL)
+                u /= np.linalg.norm(u)
+                lam, V = mean_projector(plant_add(real, u, rng.choice(len(real), k, replace=False)))
+                c = np.abs(V.T @ u)
+                j = int(np.argmax(c))
+                hit.append(bool(c[j] >= G4T_COS and lam[j] > T))
+                cos.append(float(c[j]))
+                ratio.append(float(lam[j] / T))
+            rows[k] = {"rate": float(np.mean(hit)), "cos_median": float(np.median(cos)),
+                       "lam_over_null_median": float(np.median(ratio))}
+        rec[f] = {"m": m, "null_max_l1": T, "doses": rows}
+        print(f"  G4t {f}: m {m}, " + ", ".join(f"{k}:{v['rate']:.2f}" for k, v in rows.items()), flush=True)
+    return {"families": rec, "pass": None}
+
+
+def regate(out: Path) -> None:
+    """Unit 2's re-gate (design "Blocked 82 decided (b)"): G0′, G1iii′, G2′, G4 (+ G4r), G4t. Reads
+    no scored-step R1′ value except step 0's (G1iii′) and the rotation null's."""
+    out.mkdir(parents=True, exist_ok=True)
+    t0 = time.time()
+    hb = {s: step_bases(s) for s in SCORED_STEPS + (PREFLIGHT_STEP,)}
+    print(f"bases ready {time.time() - t0:.0f}s", flush=True)
+    bands, cell_key = {}, {}
+    for s, h in hb.items():
+        for f in FAMILIES:
+            dims = [x[f].shape[1] for x in h]
+            key = dims_key(dims)
+            if key not in bands:
+                bands[key] = pr_band(dims)
+            cell_key[f"{s}|{f}"] = key
+        print(f"  bands step {s} ({time.time() - t0:.0f}s, {len(bands)} distinct)", flush=True)
+    (out / "bands.json").write_text(json.dumps({"code_sha": code_sha(), "n_null": N_NULL, "bands": bands,
+                                                "cells": cell_key}, indent=1))
+    band = lambda s, f: bands[cell_key[f"{s}|{f}"]]   # noqa: E731
+    inside = lambda p, b: b["PR_min"] <= p <= b["PR_max"]   # noqa: E731
+    h8 = hb[PREFLIGHT_STEP]
+    errs = {}
+    for f in G0P_FAMILIES:
+        ev = mean_projector_eigs([x[f] for x in h8])
+        errs[f] = abs(ev.sum() ** 2 / np.sum(ev ** 2) / pr_of([x[f] for x in h8])["PR"] - 1)
+    z = {k: b["tr2_z"] for k, b in bands.items()}
+    _save(out, "G0p", {"pr_rel_err": errs, "tr2_z": z,
+                       "pass": bool(max(errs.values()) < 1e-10 and max(abs(v) for v in z.values()) < 4)})
+    rec = {"cells": {f: {**pr_of([x[f] for x in hb[0]]), "band": band(0, f)} for f in FAMILIES}}
+    rec["pass"] = all(inside(v["PR"], v["band"]) for v in rec["cells"].values())
+    _save(out, "G1iii_p", rec)
+    rec = {"cells": {}}
+    for s in SCORED_STEPS:
+        rot = rotate_heads(hb[s], seed_for("s1-g2", s))
+        for f in FAMILIES:
+            p = pr_of([x[f] for x in rot])["PR"]
+            rec["cells"][f"{s}|{f}"] = {"PR": p, "inside": inside(p, band(s, f))}
+    rec["n_inside"] = int(sum(v["inside"] for v in rec["cells"].values()))
+    rec["pass"] = rec["n_inside"] >= G2P_MIN_CELLS
+    _save(out, "G2p", rec)
+    for s in SCORED_STEPS[1:]:
+        del hb[s]
+    _save(out, "G4", g4(h8, {f: band(PREFLIGHT_STEP, f) for f in FAMILIES}))
+    _save(out, "G4t", g4t(h8))
+    print(f"regate done {time.time() - t0:.0f}s", flush=True)
+
+
+def fold_ln1(W: Dict) -> Dict:
+    """LN1's gain folded into the read side: W_Q, W_K, W_V right-multiplied by diag(g)."""
+    return {**W, "Wq": W["Wq"] * W["g"], "Wk": W["Wk"] * W["g"], "Wv": W["Wv"] * W["g"]}
+
+
+def r1(out: Path, gate_dir: Path) -> None:
+    """R1′ at the 8 scored steps, after the re-gate (refuses unless G0′, G1iii′ and G2′ pass; a
+    family G4 left unusable is read as its spectrum only)."""
+    rec = {a: json.loads((gate_dir / f"{a}.json").read_text()) for a in ("G0p", "G1iii_p", "G2p", "G4")}
+    failed = [a for a in ("G0p", "G1iii_p", "G2p") if not rec[a]["pass"]]
+    if failed:
+        raise S1Error(f"re-gate arms failed: {failed}; R1′ refused (design fallbacks)")
+    bands = json.loads((gate_dir / "bands.json").read_text())
+    spectrum_only = set(rec["G4"]["spectrum_only"])
+    out.mkdir(parents=True, exist_ok=True)
+    t0 = time.time()
+    res = {"code_sha": code_sha(), "gate_dir": str(gate_dir), "spectrum_only": sorted(spectrum_only),
+           "cells": {}}
+    path = out / "r1.json"
+    if path.exists():                          # resume: written after every step (`LESSONS.md` 11)
+        prev = json.loads(path.read_text())
+        if prev["code_sha"] != res["code_sha"]:
+            raise S1Error(f"{path} was written by code {prev['code_sha']}; not resuming")
+        res = prev
+    for s in SCORED_STEPS:
+        if all(f"{s}|{f}" in res["cells"] for f in FAMILIES):
+            continue
+        Ws = step_weights(s)
+        frames = {"r16": [head_bases(W) for W in Ws]}
+        frames.update({f"r{r}": [head_bases(W, r) for W in Ws] for r in R_BESIDE})
+        frames["folded"] = [head_bases(fold_ln1(W)) for W in Ws]
+        del Ws
+        for f in FAMILIES:
+            bs = [x[f] for x in frames["r16"]]
+            ev = mean_projector_eigs(bs)
+            cell = {"eig": ev[:200].tolist(), "k_star": rec["G4"]["families"][f]["k_star"]}
+            if f not in spectrum_only:
+                key = bands["cells"].get(f"{s}|{f}")
+                dims = [b.shape[1] for b in bs]
+                if key != dims_key(dims):
+                    raise S1Error(f"{s}|{f}: the gate's band was drawn for other dims")
+                cell.update(pr_of(bs))
+                cell["band"] = bands["bands"][key]
+                m = int(round(cell["PR"]))
+                T = top_null(dims, m, ("r1", s, f))
+                cell["top"] = {"m": m, "null_max_l1": T, "l_over_null": (ev[:10] / T).tolist()}
+                cell["beside_rho"] = {fr: pr_of([x[f] for x in frames[fr]])["rho"]
+                                      for fr in ("r8", "r32", "folded")}
+            res["cells"][f"{s}|{f}"] = cell
+        path.write_text(json.dumps(res, indent=1, default=float))
+        print(f"step {s} ({time.time() - t0:.0f}s)", flush=True)
+    print(f"r1 done {time.time() - t0:.0f}s", flush=True)
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -597,8 +870,17 @@ def main(argv=None) -> None:
     gt = sub.add_parser("gate")
     gt.add_argument("--out", type=Path, required=True)
     gt.add_argument("--arms", nargs="+", default=["G0", "G2", "G1iii", "G1", "G3", "G3l"])
+    rg = sub.add_parser("regate")
+    rg.add_argument("--out", type=Path, required=True)
+    rr = sub.add_parser("r1")
+    rr.add_argument("--out", type=Path, required=True)
+    rr.add_argument("--gate", type=Path, required=True)
     a = ap.parse_args(argv)
-    if a.cmd == "explore":
+    if a.cmd == "regate":
+        regate(a.out)
+    elif a.cmd == "r1":
+        r1(a.out, a.gate)
+    elif a.cmd == "explore":
         explore(a.steps, a.out, a.n_draw)
     elif a.cmd == "preflight":
         preflight(a.out)

@@ -789,6 +789,20 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-21, S1 unit 2 (a plant that changes what the data hold fixed): G4's additive plant
+  raises each planted head's dimension, so tr P̄ rises and χ = (tr P̄² − E₀)/(tr P̄)² falls by
+  2εχ₀ on that alone; on QK's concentrated pools (χ₀ 1.3–1.8e-3) that outweighs the plant at
+  every dose to 64, and G4 failed there. Derivable before the freeze from unit 1's PR (344, 412);
+  the design called χ "additive under a plant" without the first-order check. The singular
+  families' data never change a head's dimension. Worse, `/challenge-pr` on #244 re-scored the
+  saved draws without the dilution: 0.97–1.00 of the Haar response everywhere, so a random
+  direction added to k heads overlaps any pool alike and the gate could not see the pool at all;
+  only the dims-kept plant (G4r) depends on it. Rule: **a planted control changes only what
+  the statistic is meant to see; list what else the plant moves (dimension, trace, norm) and
+  expand the statistic to first order in it before fixing the bar; and check, on the stored
+  draws of a dry run, that the plant's response differs between a null carrier and the real
+  one, or the gate measures the plant, not the instrument on the data**
+  (`trackS_subspace/status-S.md` "S1 unit 2"; math check fact 6).
 - 2026-10-20, S1 unit 1 (a count at a threshold the spectrum is dense at; `/challenge-pr` on
   #243, finding 1): S1 counted P̄'s eigenvalues above the null's maximum, and G3 asked that 4
   planted directions raise the count by 4. At a trained step the eigenvalues sit about 1e-4
@@ -1624,6 +1638,13 @@ a wrong premise, the check inherits it.
   expected to outlive the user's attention runs under
   `systemd-inhibit --what=sleep:idle` (here attached afterwards to the
   chain's PID with `tail --pid=<pid> -f /dev/null`, so it ends with the chain).
+- 2026-10-21, S1 unit 2's re-gate: briefed to the `runner`, whose detached-run template had no
+  inhibit, so the rule above never reached it; the box suspended 21:13–05:14. The runner read
+  8.5 h of wall clock as a slow GPU and escalated; the author killed a healthy job (~30 min of
+  compute lost) before checking `journalctl`. The same run also broke the per-unit-write rule
+  above: `regate` writes nothing until every band is drawn (left running under the inhibit;
+  `r1` was made to write and resume per step before its launch). Rule addition: the inhibit is
+  in `.claude/agents/runner.md`'s template, and an overrun is checked against a suspend first.
 - 2026-10-17, A2 unit 5: a "quick" synthetic dry check run on the GPU without the inhibit
   reported 40,283 s; the box had suspended mid-check. The rule above was read as "batches";
   it applies to **every** GPU call that can outlive a glance, dry runs included.

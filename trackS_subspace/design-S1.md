@@ -10,7 +10,10 @@ rung, so nothing here scores a registered row. **Frozen 2026-10-20 as written (B
 user's): 3 units + close-out, raw frame, r = 16, counts not verdicts; unit 1's record is
 `status-S.md` "S1 unit 1".** **Unit 1's gate: G0–G2 pass; G3 fails on step 8000's real pool in all 7
 families (the trained spectrum is dense at the null's edge), so N is refused by the
-fallback below; R1's statistic is Blocked 82, the user's.**
+fallback below. Blocked 82 decided (b), the user's: R1′ = the participation ratio, re-gated with
+an additive plant ("Blocked 82 decided (b)" below). Unit 2: G0′–G2′ pass; G4 passes in the 5
+OV families and fails in QK, both by dilution, and cannot see the pool (`/challenge-pr` on #244),
+so R1′ is read as description (`status-S.md` "S1 unit 2"; QK, S and the budget Blocked 83–85).**
 
 ## What S1 asks
 
@@ -109,6 +112,55 @@ read as a check of the null, not as a reading).
   refused and reports its spectrum only.
 - Step 0 reads N > 0 in a family: that family's threshold is the larger of Haar's and step 0's
   λ₁, stated beside; re-gate.
+
+## Blocked 82 decided (b), 2026-10-20 (the user's): R1 revised, the re-gate
+
+The user's reading of G3: the frozen plant removed weight as it added it (each head's 16th
+direction displaced), and the next gate uses a plant that only adds. Fixed here, before any run
+of the code below; unit 2 = this re-gate + R1′ (the 3-unit budget stands). N is not read.
+
+**R1′ (the family: 7 families × 8 steps = 56 cells, pool `all`).** The participation ratio
+PR = (tr P̄)² / tr P̄² (fact 2: tr P̄² is the mean pairwise kernel). Its null value is exact for
+independent Haar subspaces of the cell's own dims k_h (math check fact 5):
+E₀ tr P̄² = (1/n²)(Σk + ((Σk)² − Σk²)/d), PR₀ = (tr P̄)² / E₀ tr P̄² (879.67 at k_h = 16), so
+the invariant families, whose dims vary by head and step, are read against their own PR₀. Read
+per cell: PR, PR₀, **ρ = PR / PR₀** (1 at the null; lower = heads concentrate on fewer
+directions), χ = 1/PR − 1/PR₀ (the excess kernel, additive under a plant; *wrong on a
+concentrated pool, found by G4: a plant that adds dimensions dilutes χ₀ by 2εχ₀, math check
+fact 6; `status-S.md` "S1 unit 2"*), and the Haar band
+(min, max of PR over 2000 draws of the cell's dims). Beside, ρ only: r = 8 and 32, and the LN1
+gain folded into the read side (W_Q, W_K, W_V right-multiplied by diag(g); all 7 families).
+
+**Beside, described, not counted: the top of the spectrum against dimension use.** Per cell,
+m = round(PR); the null is 500 draws of Haar subspaces of the cell's dims inside an m-dimensional
+space (Haar inside any fixed m-dim subspace is Haar in R^m, so the subspace need not be chosen).
+Read λ₁ … λ₁₀ of P̄ and each one's ratio to that null's largest λ₁. No count is formed from it.
+
+**The re-gate (step 8000, off the grid; before any scored-step R1′ value is read).**
+
+| arm | what | pass |
+|---|---|---|
+| G0′ | PR from the Gram's Frobenius norm equals PR from the eigenvalues (relative 1e-10, 4 pools); PR₀'s closed form against the Haar draws' mean tr P̄², every cell's dims (within 4 standard errors) | all |
+| G1iii′ | step 0: PR inside its Haar band, every family | 7 of 7 |
+| G2′ | the rotation null (unit 1's G2 seeds) at every scored step × family: PR inside the band | ≥ 55 of 56 |
+| G4 | **planted effect, additive:** 4 random unit directions, each added to k random heads (head h's basis gains (I − P_h)u, normalised; nothing removed; a head may take several), k ∈ {12, 16, 24, 32}, 50 draws, carriers (a) Haar of 8000's dims and (b) step 8000's real pool, every family. Read Δχ = χ(planted) − χ(unplanted), PR₀ at the planted dims | at k = 32, every family: (i) on (a), the planted PR below the band's min in ≥ 80 % of draws; (ii) on (b), Δχ ≥ 0.75 × (a)'s median Δχ at the same k in ≥ 80 % of draws. Resolution k* = the smallest k passing (ii) with Δχ > the band's width in χ |
+| G4r | the frozen displacing plant (unit 1's `plant`), same doses, both carriers: Δχ | recorded |
+| G4t | on (b), one direction added to k heads, k ∈ {12, 16, 24, 32, 48, 64}, 50 draws: recovered at the top if an eigenvector of P̄ has \|cos\| ≥ 0.9 with u and its λ is above the m-dim null's largest λ₁ | recorded (the top is described) |
+
+Why (ii) is a lower bound only: G3's failure was a plant absorbed by the carrier; a carrier that
+amplifies a plant is not a calibration failure of PR. An additive plant cannot lower tr P̄² (each
+added term is a trace of PSD products, fact 5); against the null's own rise from the added
+dimensions it adds ≈ (k² − k)/n² per direction on a Haar carrier (the k heads' copies overlapping),
+so (i) and (ii)'s sign are near-certain by construction. What can fail is the size on the real
+carrier, and the resolution against the band.
+
+**Pre-authorised fallbacks.** G4 fails at k = 32 in a family: add k = 48, 64; failing at 64,
+that family's R1′ is its spectrum only (the frozen fallback (a)). G2′ fails: the band becomes the
+maximum over 4000 draws; re-gate once. G1iii′ fails in a family: that family's band is widened to
+include step 0, stated beside.
+
+**Moved.** R1b and R3 read a family's shared space S, which N defined; N is refused, so S is
+undefined. R1b and R2 move to unit 3, and S is decided before unit 3 opens (Blocked, then).
 
 ## Preflight (`tools/design_preflight.py`, step 8000, off the grid)
 

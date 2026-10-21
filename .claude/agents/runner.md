@@ -54,13 +54,15 @@ If RUN or EXPECT is missing, stop at once with `STATUS: ESCALATE`,
 3. A longer job: start it detached, with its exit status written to a file,
    and wait on its exit, never on progress lines (`LESSONS.md` lesson 9):
    ```
-   nohup bash -c '<command>; echo $? > <log>.exit' > <log> 2>&1 & echo $!
+   nohup systemd-inhibit --what=sleep:idle --who=runner --why=batch bash -c '<command>; echo $? > <log>.exit' > <log> 2>&1 & echo $!
    timeout 110 tail --pid=<pid> -f /dev/null; kill -0 <pid> 2>/dev/null && echo running || echo exited
    ```
    Every waiting call sets the Bash tool's `timeout` parameter to 600000.
    Use the 110 s wait until the first output exists and passes step 4, then
    raise it to `timeout 580`. Repeat until it prints `exited`. Do not use
-   `sleep` loops or a monitor that fires on every item.
+   `sleep` loops or a monitor that fires on every item. The box suspends
+   when idle (`LESSONS.md` 11, 2026-09-30 onward): an overrun is first checked against
+   `journalctl | grep "suspend entry"`, and is reported as such, not as slowness.
 4. **Refuse rather than degrade.** As soon as the first output file exists,
    open it and check it is *populated* by EXPECT's standard, not just
    present. If it is empty, all-NaN or all-zero, stop the job and escalate.

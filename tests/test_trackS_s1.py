@@ -105,3 +105,66 @@ def test_sin_max_resolves_below_sqrt_eps():
     W = np.linalg.qr(U + 1e-12 * g.standard_normal((D, 4)))[0]
     assert 0 < s1.sin_max(U, W) < 1e-9                        # √(1 − σ²) floors near 1e-8
     assert s1.sin_max(U, U[:, :3]) == float("inf")
+
+
+# ---------------------------------------------------------------- unit 2: R1′ (Blocked 82 (b))
+
+def test_pr0_closed_form_and_pr_of_against_eigenvalues():
+    assert abs(s1.pr0([16] * 384) - 879.67) < 0.01
+    rng = np.random.default_rng(5)
+    bs = s1.haar_bases([4, 0, 6, 3, 5], rng, d=D)
+    ev = s1.mean_projector_eigs(bs)
+    assert abs(s1.pr_of(bs)["PR"] - ev.sum() ** 2 / np.sum(ev ** 2)) < 1e-10
+
+
+def test_pr0_is_the_haar_mean_kernel():
+    rng = np.random.default_rng(6)
+    dims = [3, 5, 0, 4]
+    k = np.array(dims, float)
+    e2 = (k.sum() + (k.sum() ** 2 - (k ** 2).sum()) / 24) / len(dims) ** 2
+    tr2 = [(k.sum() / len(dims)) ** 2 / s1.pr_of(s1.haar_bases(dims, rng, d=24))["PR"] for _ in range(4000)]
+    assert abs(np.mean(tr2) - e2) < 4 * np.std(tr2) / np.sqrt(len(tr2))
+
+
+def test_plant_add_keeps_every_column_and_holds_u():
+    rng = np.random.default_rng(7)
+    bs = s1.haar_bases([5] * 12, rng, d=D)
+    u = rng.standard_normal(D)
+    u /= np.linalg.norm(u)
+    out = s1.plant_add(bs, u, [0, 3, 4])
+    for h in (0, 3, 4):
+        assert out[h].shape[1] == 6 and np.allclose(out[h][:, :5], bs[h])
+        assert np.allclose(out[h].T @ out[h], np.eye(6), atol=1e-12)
+        assert abs(np.linalg.norm(out[h].T @ u) - 1) < 1e-12
+    tr2 = lambda b: (sum(x.shape[1] for x in b) / len(b)) ** 2 / s1.pr_of(b)["PR"]   # noqa: E731
+    assert tr2(out) > tr2(bs)                                   # fact 5: tr P̄² cannot fall
+
+
+def test_additive_plant_dilutes_chi_on_a_concentrated_pool():
+    """Math check fact 6 (G4's QK failure): on a pool that already shares, an added direction
+    raises the excess kernel κ = tr P̄² − E₀ but lowers χ = κ / (tr P̄)², by about 2εχ₀."""
+    rng = np.random.default_rng(9)
+    core = np.linalg.qr(rng.standard_normal((D, 12)))[0]       # every head draws from one 12-dim space
+    bs = [np.linalg.qr(core @ rng.standard_normal((12, 4)) + 0.05 * rng.standard_normal((D, 4)))[0]
+          for _ in range(40)]
+    u = rng.standard_normal(D)
+    out = s1.plant_add(bs, u / np.linalg.norm(u), range(10))
+
+    def tr_kappa(b):
+        r, t = s1.pr_of(b), sum(x.shape[1] for x in b) / len(b)
+        return t, t ** 2 / r["PR"] - t ** 2 / s1.pr0([x.shape[1] for x in b], d=D), r["chi"]
+    t0, k0, c0 = tr_kappa(bs)
+    t1, k1, c1 = tr_kappa(out)
+    eps = t1 / t0 - 1
+    assert k1 > k0 and c1 < c0                                  # κ rises, χ falls
+    assert abs(c1 - k1 / t1 ** 2) < 1e-12                       # χ = κ / (tr P̄)²
+    # first order (fact 6) at ε = 6 %: within 35 % (the ε² terms are ~3ε²χ₀ + 2εΔκ/tr²)
+    assert abs((c1 - c0) - ((k1 - k0) / t0 ** 2 - 2 * eps * c0)) < 0.35 * abs(c1 - c0)
+
+
+def test_fold_ln1_scales_the_read_side_only():
+    rng = np.random.default_rng(8)
+    W = {k: rng.standard_normal(s) for k, s in (("Wq", (4, D)), ("Wk", (4, D)), ("Wv", (4, D)), ("Wo", (D, 4)))}
+    W["g"] = rng.standard_normal(D)
+    F = s1.fold_ln1(W)
+    assert np.allclose(F["Wv"], W["Wv"] @ np.diag(W["g"])) and F["Wo"] is W["Wo"]

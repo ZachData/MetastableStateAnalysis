@@ -30,6 +30,18 @@ WHAT IT SHOWS
    dimension) is rotation invariant: Haar. Pythia's init draws Q, K, V and O i.i.d. normal, so
    step 0 is one draw of that law. Checked numerically below on small d (a sanity check of the
    argument, not the proof, which is the invariance itself).
+5. **The participation ratio's null and the additive plant** (R1′, Blocked 82 (b)). For P' Haar
+   of dim k', E P' commutes with every orthogonal map, so E P' = (k'/d) I, and for independent
+   heads E tr P_h P_h' = k_h k_h'/d. Hence E₀ tr P̄² = (1/n²)(Σk + ((Σk)² − Σk²)/d) exactly, and
+   PR₀ = (tr P̄)² / E₀ tr P̄² = 879.67 at n = 384, k_h = 16, d = 1024. Adding to head h a direction
+   orthogonal to its subspace (P_h → P_h + Q_h, Q_h PSD) cannot lower any tr P_h P_h', since each
+   added term tr(Q P'), tr(P Q'), tr(Q Q') is a trace of a product of PSD matrices (= a sum of
+   squared norms), so it cannot lower tr P̄².
+6. **The additive plant dilutes the carrier's excess** (found by G4, 2026-10-21). With
+   χ = tr P̄²/(tr P̄)² − 1/PR₀, adding dimensions raises tr P̄ by a share ε, so to first order
+   Δχ = (Δ tr P̄² − Δ E₀ tr P̄²)/(tr P̄)² − 2ε χ₀: the plant's own excess minus 2ε times the
+   carrier's excess χ₀. On a Haar carrier χ₀ ≈ 0; on a concentrated one the second term can
+   outweigh the first. Singular families keep k_h = 16 at every step, so the data never move ε.
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -39,6 +51,12 @@ WHAT IT DOES NOT PROVE
   it mixes with the directions already shared. The gate (G3) measures the count's increment.
 - Anything about weighted projectors (Σ σ² u uᵀ), for which the rotation null keeps each head's
   spectrum and differs from Haar with a Gaussian spectrum. S1 does not read them.
+- That PR falls under an additive plant: tr P̄ rises with the added dimensions as well, so PR's
+  move is the excess over the null's own rise (≈ (k² − k)/n² per direction on a Haar carrier, an
+  expectation, not a bound). G4 measures it.
+- That fact 6's first-order dilution is the whole deficit on a real carrier (G4 reads it: it
+  predicts −1.08 against −1.08 observed, `qk_query` at k = 12, and 0.24 against 0.26 at k = 32).
+- That E₀ PR equals PR₀ (PR₀ is the ratio at the expected kernel; the gap is O(var), G0′ reads it).
 - That the max-based threshold is tight: it controls the false count at every rank at once and
   so undercounts a bulk that is shifted but below the null's top edge.
 """
@@ -108,4 +126,30 @@ assert ks_2samp(x_haar, x_rot).pvalue > 1e-3
 assert ks_2samp(x_haar, x_gau).pvalue > 1e-3
 assert l1(fixed) > np.quantile(x_haar, 0.99)    # the fixed pool shares; rotating it removes that
 
-print("s1_projector_null: facts 1-3 exact, fact 4 sanity (KS) passed")
+# --- 5. PR's null value and the additive plant -------------------------------------------------------
+nn_, dd_ = sp.symbols("n d", positive=True)
+ks_ = sp.symbols("k0:3", positive=True)                 # three heads' dims, symbolic
+pair = sum(ks_[a] * ks_[b] / dd_ for a in range(3) for b in range(3) if a != b)
+closed = (sum(ks_) + (sum(ks_) ** 2 - sum(x ** 2 for x in ks_)) / dd_)
+assert sp.simplify(sum(ks_) + pair - closed) == 0       # diagonal tr P_h² = k_h, plus the pairs
+S, S2 = 384 * 16, 384 * 16 ** 2
+PR0 = sp.Rational(S) ** 2 / (S + sp.Rational(S ** 2 - S2, 1024))
+assert abs(float(PR0) - 879.67) < 0.01
+# E tr P P' = k k'/d, numerically (d = 24, k = 3, k' = 5)
+proj = lambda U: U @ U.T  # noqa: E731
+x = np.mean([np.trace(proj(haar(3)) @ proj(haar(5))) for _ in range(4000)])
+assert abs(x - 3 * 5 / d) < 0.02
+# additive plant: tr(Q P') = Σ_i ‖P' q_i‖² ≥ 0 and tr(Q Q') = Σ (q_iᵀ q'_j)² ≥ 0, symbolically for rank 1
+v = sp.Matrix(sp.symbols("v0:3", real=True))
+w = sp.Matrix(sp.symbols("w0:3", real=True))
+assert sp.expand((v * v.T * w * w.T).trace() - (v.T * w)[0] ** 2) == 0
+
+# --- 6. first-order dilution of χ under an additive plant ------------------------------------------
+T2, T, D2, eps, E0, DE0 = sp.symbols("T2 T D2 epsilon E0 DE0", positive=True)
+chi_ = lambda a, t, e: a / t ** 2 - e / t ** 2                     # noqa: E731  χ = (tr2 − E₀)/tr²
+dchi = chi_(T2 + D2, T * (1 + eps), E0 + DE0) - chi_(T2, T, E0)
+first = sp.series(dchi, eps, 0, 2).removeO()
+claim = (D2 - DE0) / T ** 2 - 2 * eps * chi_(T2, T, E0) - 2 * eps * (D2 - DE0) / T ** 2
+assert sp.simplify(sp.expand(first - claim)) == 0                  # the last term is second order in the plant
+
+print("s1_projector_null: facts 1-3, 5 and 6 exact, fact 4 and 5's E tr PP' sanity (numeric) passed")
