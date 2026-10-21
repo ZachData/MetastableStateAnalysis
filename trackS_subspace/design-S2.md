@@ -8,9 +8,11 @@ Opened 2026-10-21 by `docs/ROADMAP.md` §9 row 6 (… → S1 → **S2** → C2's
 bias; read-back) and A5's pass (`trackA_force/a5_seeds.py` `one_pass`: E₁, V). Tier 1 throughout:
 exploratory, unregistered; 410m is an exploration rung, so nothing here scores a registered row.
 **Blocked 86 decided (a) and (i), the user's, 2026-10-21: arm (b) is (b-schur), (b-eig) beside
-with no label; scope 3 units + close-out, with Q3.** Not frozen: the freeze follows unit 1's
-preflight and is the user's (Blocked 87). Code `trackS_subspace/s2.py`; unit 1's choices made in
-code, before any scored-step output, are in "Unit 1: fixed in code" below. Revised after
+with no label; scope 3 units + close-out, with Q3.** **Frozen 2026-10-21, Blocked 87 decided (a),
+the user's:** as revised in "The preflight's refusals" (G0's (b) read-back, the refusals argued,
+the one-sided guard, R2 under arm a as description); G2's null replaced the same day before any
+scored output (the user's (a); "Unit 2: fixed in code"). Code `trackS_subspace/s2.py`; unit 1's
+choices made in code, before any scored-step output, are in "Unit 1: fixed in code" below. Revised after
 `/challenge-pr` on #246 (accept with changes, findings 1–7 taken; "Revised after review" at the end).
 
 ## What S2 asks
@@ -252,6 +254,18 @@ guard is set.
 for the cells the guard exists for; (b) gives up arm a's R1 before seeing a scored step, which the
 data at 8000 do not force (arm a's V is below its controls there, so R1 under a can still answer
 "not shown" or, if D falls below the controls at a scored step, a read *lower*).
+
+## Unit 2: fixed in code (2026-10-21, after the freeze, before any scored-step output)
+
+| item | fixed as | why |
+|---|---|---|
+| order | `s2.py gates` (base, gain arms, 41 controls per arm at all 7 steps; G2, G3′, G3 at the scored steps) → `gate-read` → `arms` (a, b, b-eig; refuses without `gate_read.json`) → `read` | "G1–G3 at the design points, then R1 and R2": no arm's V or G exists when the gates are read |
+| **G2's null** (the user's (a), 2026-10-21) | 40 draws: the 10 members' OV zeroed is the arm; each draw zeroes 10 non-members, each from the same layer as the member it stands in for, without replacement in the draw, the same draws at every step (`s2.g2_draws`) | as frozen it was infeasible: zeroing gives K′ = 0, and the only D with ‖D‖ = ‖K‖ and ‖K + D‖ = 0 is −K, so all 40 controls were the arm and G2 failed by construction. The new null matches the edit's form, gain and depth, not the heads |
+| zeroing | K := 0; the head's constant (in the dense bias) and its write along 1 kept | as in every arm ("Unit 1": the write along 1) |
+| gates' pipeline | G2 read by R2's rule, G3 and G3′ by R1's, with the one-sided guard (no gain arm for G2, G3); G1 reads the raw label (the labeller only) | CLAUDE.md "Calibration gate": the full pipeline |
+| G3's controls | per tensor W_s + N, N Gaussian of norm t ‖W₁₂₈ − W_s‖, every parameter, no hook; `torch` generator `seed_for("s2-g3", step, t, draw)` | the design's "same per-tensor norm" |
+| G3′'s frame | per head Q4 = orth[B_s, C_sᵀ, B₁₂₈, C₁₂₈ᵀ] (d × 4k), K_s and K₁₂₈ both cores in it; controls doubly matched in col(B_s, B₁₂₈) × col(C_s, C₁₂₈); step 128's K applied to step s's x̂ (its γ folded in), the head's constant and write along 1 kept at s; its gain arm (c K_s) beside, and the R1 reading uses it | K₁₂₈ does not lie in step s's 2k frame. The frame at K_s must reproduce the base (D ≤ 1e-4) or the pass refuses |
+| beside | 0 and 256: base, gain arms, controls, arms (no gates); G2 at 512 | design "Steps and readouts" |
 
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
