@@ -242,6 +242,14 @@ could calibrate its effect side); QK, OV write and OV complex concentrate from 2
 512 (random subspaces are as repulsive); no shared space is the
 residual stream's top variance; at 143000 three are partly the massive-activation coordinates.
 Units: `trackS_subspace/status-S.md`.
+**S2 opened 2026-10-21, proposed, not frozen** (`trackS_subspace/design-S2.md`, Blocked 86; 3 units
++ close-out, the third for S1's carried items and Q3). What the design changed from the row above:
+"angle set to 0" and "λ → Re λ" differ, and S2 takes λ → Re λ (the rotation generator removed in each
+invariant plane, the radial part kept); both arms and their controls are one hook with a per-head
+core (`tools/math_checks/s2_ov_arms.py`), since arm (a) has rank 128 and cannot be written into a
+64-wide head; the controls are random edits of the same per-head size in the arm's own span (40
+each); every cell carries its displacement and is not read where the arm moved the stream further
+than every control (OV1's lesson); no theorem predicts "monotone" for (a) (math check C6).
 
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
