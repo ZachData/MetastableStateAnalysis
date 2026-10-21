@@ -267,6 +267,19 @@ data at 8000 do not force (arm a's V is below its controls there, so R1 under a 
 | G3′'s frame | per head Q4 = orth[B_s, C_sᵀ, B₁₂₈, C₁₂₈ᵀ] (d × 4k), K_s and K₁₂₈ both cores in it; controls doubly matched in col(B_s, B₁₂₈) × col(C_s, C₁₂₈); step 128's K applied to step s's x̂ (its γ folded in), the head's constant and write along 1 kept at s; its gain arm (c K_s) beside, and the R1 reading uses it | K₁₂₈ does not lie in step s's 2k frame. The frame at K_s must reproduce the base (D ≤ 1e-4) or the pass refuses |
 | beside | 0 and 256: base, gain arms, controls, arms (no gates); G2 at 512 | design "Steps and readouts" |
 
+**Blocked 88, decided (a), the user's, 2026-10-21, after the gates and before any arm was run.**
+Under the frozen one-sided guard G1 passed (0 of 18 cells labelled) and G2 and G3 failed for the
+guard alone: zeroing the 10 members takes G to 1.1–2.6 against controls at 7.7–12.6, but moves the
+stream further than zeroing other heads at 1000–4000 ("lost" read at 1 of 4); the step-128 model
+itself (V 0 against 47–59) moves it further than Gaussian edits of its per-tensor norm at 512–2000
+(1 of 5). A structured edit moves the stream further than a random one of the same weight norm,
+so the guard refused known effects. **The guard is now description:** "moved further" / "moved
+less" is written beside every label with D, and withholds nothing; a read *lower* or *lost* so
+marked cannot be told from moving further (OV1's hazard), and says so. Re-read on the same
+records: G2 4 of 4, G3 4 of 5 at t = 1 (143000 as its controls, whose median is 0); both pass.
+The frozen guard's reading is kept beside in `gate_read.json`. G3′ never reaches V ≤ 7 (29–61), so
+R1's positive answer is out of reach of an OV-only edit, stated before R1 is read.
+
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
 | finding | change |

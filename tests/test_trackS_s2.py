@@ -149,12 +149,15 @@ def test_gain_rule_reads_a_label_only_beyond_the_gain_arm():
     assert not s2.cell(35, ctl, gain=10)["as_its_gain"]               # unlabelled: nothing to withhold
 
 
-def test_r1_guard_is_one_sided():
+def test_r1_moved_further_is_beside_and_the_frozen_guard_one_sided():
     ctl, dc = list(range(30, 40)), [0.5, 0.6]
     low_far = s2.r1_read(s2.cell(5, ctl, gain=50, d=0.9, d_ctl=dc))
-    assert low_far == {"label": "lower, moved further", "read": False, "counts": False}
+    assert low_far == {"label": "lower, moved further", "read": True, "counts": True}
+    frozen = s2.r1_read(s2.cell(5, ctl, gain=50, d=0.9, d_ctl=dc), guard=True)
+    assert frozen == {"label": "lower, moved further", "read": False, "counts": False}
+    assert s2.r1_read(s2.cell(60, ctl, gain=50, d=0.9, d_ctl=dc), guard=True)["read"]
     high_far = s2.r1_read(s2.cell(60, ctl, gain=50, d=0.9, d_ctl=dc))
-    assert high_far["read"] and high_far["label"] == "higher"
+    assert high_far["read"] and high_far["label"] == "higher, moved further"
     assert s2.r1_read(s2.cell(5, ctl, gain=50, d=0.55, d_ctl=dc))["counts"]
     assert not s2.r1_read(s2.cell(8, ctl, gain=50, d=0.55, d_ctl=dc))["counts"]        # V > 7
     less = s2.r1_read(s2.cell(5, ctl, gain=50, d=0.1, d_ctl=dc))
@@ -168,8 +171,9 @@ def test_r2_outcomes_and_withholding():
     assert s2.r2_read(s2.cell(9.0, ctl, gain=11, d=0.55, d_ctl=dc), gb)["label"] == "survives"
     assert s2.r2_read(s2.cell(5.0, [1.0, 2.0], gain=1.5, d=0.55, d_ctl=dc), gb)["label"] == "weakened"
     far = s2.r2_read(s2.cell(4.0, ctl, gain=11, d=0.9, d_ctl=dc), gb)
-    assert far == {"label": "lost, moved further", "read": False, "outcome": "lost"}
-    assert s2.r2_read(s2.cell(9.0, ctl, gain=11, d=0.9, d_ctl=dc), gb)["read"]               # survives is read
+    assert far == {"label": "lost, moved further", "read": True, "outcome": "lost"}
+    assert not s2.r2_read(s2.cell(4.0, ctl, gain=11, d=0.9, d_ctl=dc), gb, guard=True)["read"]
+    assert s2.r2_read(s2.cell(9.0, ctl, gain=11, d=0.9, d_ctl=dc), gb, guard=True)["read"]   # survives is read
     g = s2.r2_read(s2.cell(4.0, ctl, gain=3, d=0.55, d_ctl=dc), gb)
     assert not g["read"] and g["label"] == "weakened, as its gain"
 

@@ -910,33 +910,33 @@ def cell(x: float, ctl: Sequence[float], gain: Optional[float] = None, d: Option
     return out
 
 
-def r1_read(c: Dict) -> Dict:
-    """R1's reading of a V cell. A label is read only beyond its gain arm; "moved further" withholds
-    *lower* alone (the one-sided guard, Blocked 87 (a)). ``counts``: read *lower* with V ≤ 7."""
+def r1_read(c: Dict, guard: bool = False) -> Dict:
+    """R1's reading of a V cell. A label is read only beyond its gain arm. "Moved further" is
+    written beside, read (Blocked 88 (a), the user's: G2 and G3 showed the guard withholds planted
+    effects); ``guard=True`` is the frozen one-sided guard (Blocked 87 (a)), which withheld *lower*.
+    ``counts``: read *lower* with V ≤ 7."""
     lab, read = c["raw"], True
     if c["as_its_gain"]:
         lab, read = f"{lab}, as its gain", False
-    elif lab == "lower" and c["displacement"] == "further":
-        lab, read = "lower, moved further", False
-    elif c["displacement"] == "less":
-        lab = f"{lab}, moved less"
+    elif c["displacement"] in ("further", "less"):
+        lab = f"{lab}, moved {c['displacement']}"
+        read = not (guard and c["raw"] == "lower" and c["displacement"] == "further")
     return {"label": lab, "read": read, "counts": bool(read and c["raw"] == "lower" and c["value"] <= V_PLACED)}
 
 
-def r2_read(c: Dict, g_base: float) -> Dict:
+def r2_read(c: Dict, g_base: float, guard: bool = False) -> Dict:
     """R2's reading of a G cell: *survives* (G ≥ 0.5 G_base, not read *lower*), *lost* (read
-    *lower*, G < 0.5 G_base), else *weakened*. "As its gain" is not read; "moved further" withholds
-    *lost* and *weakened* alone (Blocked 87 (a))."""
+    *lower*, G < 0.5 G_base), else *weakened*. "As its gain" is not read; "moved further" is written
+    beside, read (Blocked 88 (a)); ``guard=True``, the frozen guard, withheld *lost* and *weakened*."""
     lower = c["raw"] == "lower" and not c["as_its_gain"]
     half = c["value"] >= G_HALF * g_base
     out = "survives" if half and not lower else "lost" if lower and not half else "weakened"
     lab, read = out, True
     if c["as_its_gain"]:
         lab, read = f"{out}, as its gain", False
-    elif out != "survives" and c["displacement"] == "further":
-        lab, read = f"{out}, moved further", False
-    elif c["displacement"] == "less":
-        lab = f"{out}, moved less"
+    elif c["displacement"] in ("further", "less"):
+        lab = f"{out}, moved {c['displacement']}"
+        read = not (guard and out != "survives" and c["displacement"] == "further")
     return {"label": lab, "read": read, "outcome": out}
 
 
@@ -1174,25 +1174,30 @@ def gate_read(out: Path) -> None:
     for s in G2_STEPS:
         c = g[s]["configs"]
         cl = cell(c["g2"]["G"], _ctl(c, "g2_ctl_", "G"), d=c["g2"]["D"], d_ctl=_ctl(c, "g2_ctl_", "D"))
-        g2[str(s)] = {**cl, "G_base": c["base"]["G"], **r2_read(cl, c["base"]["G"])}
+        g2[str(s)] = {**cl, "G_base": c["base"]["G"], **r2_read(cl, c["base"]["G"]),
+                      "frozen_guard": r2_read(cl, c["base"]["G"], guard=True)}
     lost = sum(g2[str(s)]["read"] and g2[str(s)]["outcome"] == "lost" for s in R2_STEPS)
-    res["G2"] = {"cells": g2, "lost": lost, "pass": lost >= 3}
+    lost0 = sum(g2[str(s)]["frozen_guard"]["read"] and g2[str(s)]["outcome"] == "lost" for s in R2_STEPS)
+    res["G2"] = {"cells": g2, "lost": lost, "pass": lost >= 3, "frozen_guard": {"lost": lost0, "pass": lost0 >= 3}}
     g3 = {}
     for s in SCORED_STEPS:
         c = g[s]["configs"]
         for t in G3_T:
             pre = f"g3_{t}_ctl_"
             cl = cell(c[f"g3_{t}"]["V"], _ctl(c, pre, "V"), d=c[f"g3_{t}"]["D"], d_ctl=_ctl(c, pre, "D"))
-            g3[f"{t}@{s}"] = {**cl, **r1_read(cl), "G": c[f"g3_{t}"]["G"]}
+            g3[f"{t}@{s}"] = {**cl, **r1_read(cl), "G": c[f"g3_{t}"]["G"], "frozen_guard": r1_read(cl, guard=True)}
     n3 = sum(g3[f"1.0@{s}"]["counts"] for s in SCORED_STEPS)
+    n30 = sum(g3[f"1.0@{s}"]["frozen_guard"]["counts"] for s in SCORED_STEPS)
     mono = {str(s): g3[f"1.0@{s}"]["ctl"]["median"] <= V_PLACED for s in SCORED_STEPS}
-    res["G3"] = {"cells": g3, "counts_at_1": n3, "pass": n3 >= 4, "controls_monotone_at_1": mono}
+    res["G3"] = {"cells": g3, "counts_at_1": n3, "pass": n3 >= 4, "controls_monotone_at_1": mono,
+                 "frozen_guard": {"counts_at_1": n30, "pass": n30 >= 4}}
     g3p = {}
     for s in SCORED_STEPS:
         c = g[s]["configs"]
         cl = cell(c["g3p"]["V"], _ctl(c, "g3p_ctl_", "V"), gain=c["g3p_gain"]["V"], d=c["g3p"]["D"],
                   d_ctl=_ctl(c, "g3p_ctl_", "D"))
-        g3p[str(s)] = {**cl, **r1_read(cl), "G": c["g3p"]["G"], "base_D": c["g3p_base"]["D"],
+        g3p[str(s)] = {**cl, **r1_read(cl), "frozen_guard": r1_read(cl, guard=True), "G": c["g3p"]["G"],
+                       "base_D": c["g3p_base"]["D"],
                        "sizes": g[s]["sizes"].get("g3p")}
     n3p = sum(v["counts"] for v in g3p.values())
     res["G3p"] = {"cells": g3p, "counts": n3p, "in_reach": n3p >= 4}
