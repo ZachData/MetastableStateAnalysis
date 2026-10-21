@@ -206,3 +206,21 @@ def test_g3p_frame_holds_both_steps_maps_and_matches_controls():
     C = s2.control_core(f4, Kt, span, np.random.default_rng(0))
     assert np.isclose(np.linalg.norm(C - f4["K"]), np.linalg.norm(Kt - f4["K"]), rtol=1e-10)
     assert np.isclose(np.linalg.norm(C), np.linalg.norm(Kt), rtol=1e-10)
+
+
+def _gr(g1=True, g2=True, counts=(True,) * 5, mono=(False,) * 5):
+    cells = {f"1.0@{s}": {"counts": c} for s, c in zip(s2.SCORED_STEPS, counts)}
+    return {"G1": {"pass": g1}, "G2": {"pass": g2},
+            "G3": {"pass": sum(counts) >= 4, "cells": cells,
+                   "controls_monotone_at_1": {str(s): m for s, m in zip(s2.SCORED_STEPS, mono)}}}
+
+
+def test_gate_refusals_follow_the_fallbacks():
+    assert s2.gate_refusals(_gr()) == {"R1": None, "R2": None, "g3_mono": False}
+    r = s2.gate_refusals(_gr(g1=False))
+    assert r["R1"] and r["R2"]
+    assert s2.gate_refusals(_gr(g2=False))["R2"] and not s2.gate_refusals(_gr(g2=False))["R1"]
+    fail = (True, True, True, False, False)
+    assert s2.gate_refusals(_gr(counts=fail))["R1"] == "G3 failed"                       # not by monotone controls
+    r = s2.gate_refusals(_gr(counts=fail, mono=(False, False, False, True, True)))
+    assert r["R1"] is None and r["g3_mono"]

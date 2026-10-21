@@ -1248,17 +1248,39 @@ def arms(out: Path) -> None:
     print(f"arms done ({time.time() - t0:.0f}s)", flush=True)
 
 
+def gate_refusals(gr: Dict) -> Dict:
+    """What the gates leave readable (design "Pre-authorised fallbacks"; enforced after `/challenge-pr`
+    on #248): G1 failing refuses R1 and R2 (its fallback is a re-gate with 100 controls); G2 failing
+    refuses R2; G3 failing refuses R1, unless every failing step's controls have median V ≤ 7, when
+    only cells whose controls' median V ≤ 7 are refused (``g3_mono``)."""
+    r1 = r2 = None
+    if not gr["G1"]["pass"]:
+        r1 = r2 = "G1 failed: re-gate with 100 controls first"
+    if r2 is None and not gr["G2"]["pass"]:
+        r2 = "G2 failed"
+    g3_mono = False
+    if r1 is None and not gr["G3"]["pass"]:
+        failing = [s for s in SCORED_STEPS if not gr["G3"]["cells"][f"1.0@{s}"]["counts"]]
+        if all(gr["G3"]["controls_monotone_at_1"][str(s)] for s in failing):
+            g3_mono = True
+        else:
+            r1 = "G3 failed"
+    return {"R1": r1, "R2": r2, "g3_mono": g3_mono}
+
+
 def read(out: Path) -> None:
-    """R1 and R2 (design "Readings", frozen by Blocked 87 (a)): each arm against its 40 controls, its
-    gain arm and the one-sided guard; R2 read under arm b only (a as description); refusals from the
-    gates applied. Steps 0 and 256, 512's R2 and (b-eig) beside."""
+    """R1 and R2 (design "Readings", frozen by Blocked 87 (a); the guard as description, Blocked 88
+    (a)): each arm against its 40 controls and its gain arm, D beside; R2 read under arm b only (a as
+    description); the gates' refusals applied (``gate_refusals``). Steps 0 and 256, 512's R2 and
+    (b-eig) beside."""
     gr = json.loads((out / "gate_read.json").read_text())
     g, gshas = _records(out, "gates")
     ar, ashas = _records(out, "arms")
+    ref = gate_refusals(gr)
     res = {"code": code_sha(), "records": {**gshas, **ashas},
            "gates": {k: gr[k]["pass"] for k in ("G1", "G2", "G3")}, "G3p_in_reach": gr["G3p"]["in_reach"],
-           "R1": {}, "R2": {}, "beside": {}}
-    g3_mono = not gr["G3"]["pass"] and any(gr["G3"]["controls_monotone_at_1"].values())
+           "refusals": ref, "R1": {}, "R2": {}, "beside": {}}
+    g3_mono = ref["g3_mono"]
     for a in ARMS:
         cells = {}
         for s in UNIT2_STEPS:
@@ -1266,12 +1288,15 @@ def read(out: Path) -> None:
             cl = cell(x["V"], _ctl(c, f"ctl_{a}_", "V"), gain=c[f"g_{a}"]["V"], d=x["D"],
                       d_ctl=_ctl(c, f"ctl_{a}_", "D"))
             rr = r1_read(cl)
-            if g3_mono and cl["ctl"]["median"] <= V_PLACED:
+            if ref["R1"]:
+                rr = {"label": f"{rr['label']} (refused: {ref['R1']})", "read": False, "counts": False}
+            elif g3_mono and cl["ctl"]["median"] <= V_PLACED:
                 rr = {"label": f"refused (G3: controls' median V ≤ {V_PLACED})", "read": False, "counts": False}
             cells[str(s)] = {**cl, **rr, "scored": s in SCORED_STEPS}
         n = sum(cells[str(s)]["counts"] for s in SCORED_STEPS)
         res["R1"][a] = {"cells": cells, "counts": n,
-                        "answer": "the break goes with it" if n >= 4 else "not shown"}
+                        "answer": f"refused ({ref['R1']})" if ref["R1"] else
+                        "the break goes with it" if n >= 4 else "not shown"}
     for a in ARMS:
         cells = {}
         for s in UNIT2_STEPS:
@@ -1281,8 +1306,8 @@ def read(out: Path) -> None:
             rr = r2_read(cl, c["base"]["G"])
             if a == "a":
                 rr = {**rr, "read": False, "label": f"{rr['label']} (description: Blocked 87 (a))"}
-            elif not gr["G2"]["pass"]:
-                rr = {**rr, "read": False, "label": f"{rr['label']} (refused: G2 failed)"}
+            elif ref["R2"]:
+                rr = {**rr, "read": False, "label": f"{rr['label']} (refused: {ref['R2']})"}
             cells[str(s)] = {**cl, **rr, "G_base": c["base"]["G"], "scored": s in R2_STEPS}
         res["R2"][a] = {"cells": cells}
     for s in UNIT2_STEPS:

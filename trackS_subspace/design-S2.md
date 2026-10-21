@@ -11,7 +11,9 @@ exploratory, unregistered; 410m is an exploration rung, so nothing here scores a
 with no label; scope 3 units + close-out, with Q3.** **Frozen 2026-10-21, Blocked 87 decided (a),
 the user's:** as revised in "The preflight's refusals" (G0's (b) read-back, the refusals argued,
 the one-sided guard, R2 under arm a as description); G2's null replaced the same day before any
-scored output (the user's (a); "Unit 2: fixed in code"). Code `trackS_subspace/s2.py`; unit 1's
+scored output (the user's (a)), and after the gates, before any arm, the guard made description
+for R1, R2 and the gates (Blocked 88 (a), the user's; R3's guard is Blocked 89); "Unit 2: fixed
+in code". Code `trackS_subspace/s2.py`; unit 1's
 choices made in code, before any scored-step output, are in "Unit 1: fixed in code" below. Revised after
 `/challenge-pr` on #246 (accept with changes, findings 1–7 taken; "Revised after review" at the end).
 
@@ -119,10 +121,12 @@ direction (V_arm < V_gain for *lower*; G likewise). Otherwise it is written "…
 not read as being about skew or rotation. A gain arm that is itself *lower* or *higher* is stated
 beside: random structure at that size moves V by itself.
 
-**The displacement guard (every cell).** If the arm's D is above every control's D, the label is
-written "… , moved further" and **not read** (OV1's lesson, `lit-S2.md` §1). If it is below every
-control's, it is written "… , moved less" and read only through the gain arm above, whose D is
-recorded beside.
+**The displacement guard (every cell).** *In force for R1, R2 and the gates (Blocked 88 (a), unit
+2):* D is written beside every label, "… , moved further" above every control's D, "… , moved
+less" below every one, and withholds nothing; such a label cannot be told from moving further and
+says so. *For R3: Blocked 89, the user's, before unit 3.* *Superseded:* as first written, "moved
+further" was **not read** (OV1's lesson, `lit-S2.md` §1); Blocked 87 (a) then made it one-sided
+(withholding R1's *lower* and R2's *lost* / *weakened* only).
 
 | reading | cells | statistic | answer, fixed now |
 |---|---|---|---|
@@ -130,7 +134,7 @@ recorded beside.
 | **R2** (Q2) | arms a, b × 1000, 2000, 4000, 143000 = 8 | G | per cell, **"survives"** if G_arm ≥ 0.5 G_base and not read *lower*; **"lost"** if read *lower* and G_arm < 0.5 G_base; else **"weakened"**. 512 beside |
 | **R3** (Q3, unit 3) | bS against bR × 5 steps on V, and × 1000–143000 on G = 9 | V, G | per cell, the label against bR; "S1's shared rotation carries it" if bS is *lower* than bR in V (or G) at ≥ 4 of 5 (3 of 4) |
 
-Not read: any label written "moved further" or "as its gain"; a lean (a cell inside its controls
+Not read: any label written "as its gain" (and, before Blocked 88, "moved further"); a lean (a cell inside its controls
 at an extreme rank); differences between arms a and b (their edits differ in size and span).
 
 ## What a reading can mean
@@ -262,7 +266,7 @@ data at 8000 do not force (arm a's V is below its controls there, so R1 under a 
 | order | `s2.py gates` (base, gain arms, 41 controls per arm at all 7 steps; G2, G3′, G3 at the scored steps) → `gate-read` → `arms` (a, b, b-eig; refuses without `gate_read.json`) → `read` | "G1–G3 at the design points, then R1 and R2": no arm's V or G exists when the gates are read |
 | **G2's null** (the user's (a), 2026-10-21) | 40 draws: the 10 members' OV zeroed is the arm; each draw zeroes 10 non-members, each from the same layer as the member it stands in for, without replacement in the draw, the same draws at every step (`s2.g2_draws`) | as frozen it was infeasible: zeroing gives K′ = 0, and the only D with ‖D‖ = ‖K‖ and ‖K + D‖ = 0 is −K, so all 40 controls were the arm and G2 failed by construction. The new null matches the edit's form, gain and depth, not the heads |
 | zeroing | K := 0; the head's constant (in the dense bias) and its write along 1 kept | as in every arm ("Unit 1": the write along 1) |
-| gates' pipeline | G2 read by R2's rule, G3 and G3′ by R1's, with the one-sided guard (no gain arm for G2, G3); G1 reads the raw label (the labeller only) | CLAUDE.md "Calibration gate": the full pipeline |
+| gates' pipeline | G2 read by R2's rule, G3 and G3′ by R1's, with the guard in force (no gain arm for G2, G3); G1 reads the raw label (the labeller only). `read` applies the gates: G1 failing refuses R1 and R2 (its fallback is a re-gate); G2 failing refuses R2; G3 failing refuses R1, unless every failing step's controls have median V ≤ 7, when only such cells are refused (`s2.gate_refusals`; added after `/challenge-pr` on #248) | CLAUDE.md "Calibration gate": the full pipeline |
 | G3's controls | per tensor W_s + N, N Gaussian of norm t ‖W₁₂₈ − W_s‖, every parameter, no hook; `torch` generator `seed_for("s2-g3", step, t, draw)` | the design's "same per-tensor norm" |
 | G3′'s frame | per head Q4 = orth[B_s, C_sᵀ, B₁₂₈, C₁₂₈ᵀ] (d × 4k), K_s and K₁₂₈ both cores in it; controls doubly matched in col(B_s, B₁₂₈) × col(C_s, C₁₂₈); step 128's K applied to step s's x̂ (its γ folded in), the head's constant and write along 1 kept at s; its gain arm (c K_s) beside, and the R1 reading uses it | K₁₂₈ does not lie in step s's 2k frame. The frame at K_s must reproduce the base (D ≤ 1e-4) or the pass refuses |
 | beside | 0 and 256: base, gain arms, controls, arms (no gates); G2 at 512 | design "Steps and readouts" |
@@ -277,8 +281,11 @@ so the guard refused known effects. **The guard is now description:** "moved fur
 less" is written beside every label with D, and withholds nothing; a read *lower* or *lost* so
 marked cannot be told from moving further (OV1's hazard), and says so. Re-read on the same
 records: G2 4 of 4, G3 4 of 5 at t = 1 (143000 as its controls, whose median is 0); both pass.
-The frozen guard's reading is kept beside in `gate_read.json`. G3′ never reaches V ≤ 7 (29–61), so
-R1's positive answer is out of reach of an OV-only edit, stated before R1 is read.
+The frozen guard's reading is kept beside in `gate_read.json`. G3′ never reaches V ≤ 7 (29–61):
+the one OV-only edit tried with a known destination does not reach R1's positive answer (it halves
+V at 512 and 1000, beyond its controls and gain arm), stated before R1 is read. 88 covers R1, R2
+and the gates, where arms are structured and controls random; R3 compares two structured edits
+(bS against bR), so its guard is Blocked 89.
 
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
