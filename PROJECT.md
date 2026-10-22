@@ -2895,6 +2895,25 @@ cheap and would resolve it.**
 
 ---
 
+## 3.68 Across a 3.3× range of peak LR, the dated events do not wait for an LR level (2026-10-22)
+
+**`trackC_writeup/status-C.md` "C2 unit 3b"** holds the numbers; this section says why it is
+project-wide.
+
+- `pythia-70m` (peak LR 1e-3) and `pythia-160m` (6e-4) share 410m's 1430-step warmup, batch and
+  data order. On both, E₁'s break is at 256 and the token-centred cloud's at 1000 (every arm), as
+  on 410m's seeds (256–512; 1000). Read against three schedules' predictions on Pythia's grid,
+  frozen before the run (`design-C2.md` "Unit 3b"): **consistent with step and cumulative LR**;
+  a break that waits for the LR to reach a level (instantaneous) is excluded by both centred dates.
+- Pythia's grid cannot separate "fixed in steps or tokens" from "a cumulative LR dose": every date
+  one predicts, the other does too (`tools/math_checks/c2_dose_grid.py`). So the warmup confound
+  (F1) stands, narrowed by one schedule; size (6, 12, 24 layers) moves with the LR throughout, one
+  seed per size. Description.
+- §3.67's two events (the centred date later than E₁'s break, and at 1000) hold on 70m and 160m
+  too.
+
+---
+
 ## 3.67 On the 9 PolyPythias seeds, both of §3.66's dated events reproduce (2026-10-22)
 
 **`trackC_writeup/status-C.md` "C2 unit 3s"** holds the numbers; this section says why it is
