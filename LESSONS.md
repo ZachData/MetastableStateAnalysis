@@ -1973,6 +1973,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   its source gives for steps 0–4 (step 0's is 1–6). Both were written from memory of the one-pages,
   not from the definition or the record. Rule: a write-up's statement of the theory's prediction is
   checked against the code that counts its violations; a quoted bound names the steps it covers.
+- 2026-10-22, C2 unit 2 (found by `/challenge-pr` on #254, finding 1): the render step checked
+  that every printed number came from its record, and §5 still said "E8 (1000) < E3 = E4 = E10
+  (1000)". The order was copied from A3's `reading.order`, which had placed E8 by its other date
+  (512, from its peak) without printing it. The number was right and the "<" between two numbers
+  was wrong, and no check looked at the "<". Rule: a rendered draft also checks what its sentences
+  assert (orders, "every", "none", margins) against the same table (`numbers.CLAIMS`), and an
+  order copied from a record is written with the date that placed each row.
 
 ## 12. Deleted, then needed
 
