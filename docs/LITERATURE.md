@@ -65,6 +65,14 @@ for a search summary**, and use a third mark:
 
 §5 item 18 should be read as a general method, not as one route to items 2 and 4.
 
+### 0.2 Amendment 2026-10-22 — `arxiv.org` and `huggingface.co` are reachable from a local session
+
+`WebFetch` of `arxiv.org/abs/…` and `arxiv.org/html/…` worked on 2026-10-18 and 2026-10-22, and
+`huggingface.co` answered both its models API and `git ls-remote` on 2026-10-22, from the local
+machine (`trackC_writeup/lit-C2-unit1.md`). So [A] (abstract) and [H] (HTML full text through a
+fetch summary, 100 000 characters a read) are available marks; an [S] row is upgraded by reading
+the page before a draft cites it. Re-check reachability from a cloud session before trusting this there.
+
 ---
 
 ## 1. The files

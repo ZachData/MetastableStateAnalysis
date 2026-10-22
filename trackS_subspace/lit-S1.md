@@ -73,7 +73,10 @@ heads' own dimensions), which 2601.10266 also uses as a reference.
 1. **2603.13314's full text** (why: which OLMo-2 steps, and whether value subspaces stay near
    orthogonal, which S1's `ov_read` row would contradict at 8000; cost: one read; could change:
    how S1's key and value rows are stated against it). Carry to S1's close. **At S1's close
-   (2026-10-21): carried to C2's draft** (`status-S.md` "S1 on one page").
+   (2026-10-21): carried to C2's draft** (`status-S.md` "S1 on one page"). **Done at C2 unit 1
+   (2026-10-22):** weight subspaces on OLMo-2 7B from step 100; keys rise most, values "largely
+   flat"; appendix A states S1's `ov_read` beside it as a different statistic, not a contradiction
+   (`trackC_writeup/lit-C2-unit1.md` §2).
 2. **The massive-activation dims in 410m specifically** (why: the [S] source names "Pythia" with
    no size; cost: one forward pass, beside S1's residual check; could change: nothing in the
    count, only the beside column). Carry to S1 unit 3. **Done 2026-10-21:** 357, 130, 966 from

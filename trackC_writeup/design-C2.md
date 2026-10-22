@@ -3,7 +3,7 @@
 
 Opened 2026-10-22 by `docs/ROADMAP.md` §9 row 6 (… → S1 → S2 → **C2's draft**). Row:
 `docs/ROADMAP.md` §8 C2. Scan: `trackA_force/lit-C2.md` (2026-10-18; not repeated here, its
-Parked 1 and 3 are unit 1's). **Proposed, not frozen: Blocked 91–94 are the user's.** Revised after `/challenge-pr` on #252 (accept with changes, findings 1–5 taken: the energy's sign, 92's LR-dose and continued-training options, L1's step-0 count, the tracked numbers table, the anisotropy rule). Unit 0
+Parked 1 and 3 are unit 1's). **Frozen 2026-10-22: Blocked 91–94 decided as recommended, left to Claude by the user ("Blocked 91–94: <your picks>"): 91 (a), 92 (i) and (iii) and (ii) if unit 1 finds a suite, 93 (a), 94 (a)** ("Decided 2026-10-22" below). Revised after `/challenge-pr` on #252 (accept with changes, findings 1–5 taken: the energy's sign, 92's LR-dose and continued-training options, L1's step-0 count, the tracked numbers table, the anisotropy rule). Unit 0
 (this) is writing only; nothing ran. Every reading C2 quotes is tier 1 on 410m except `P-A5`,
 the one adjudicated row (`claims/adjudications/P-A5.json`).
 
@@ -41,29 +41,29 @@ Each is written into the draft beside the line it limits, not only in a limits s
 
 | # | fence | why | source |
 |---|---|---|---|
-| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound | `trackA_force/lit-C2.md` §3; A5 "Not established" |
+| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1) | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
 | F2 | "Break, then induction, then the OV phase" is not shown, in either reading of the OV phase (its fall starts with the break; its bottom ties induction at 1000) | A3 reading 5 | A3 on one page |
 | F3 | The break is neither shown OV's nor shown not OV's (one OV-only edit with a known destination; V 29–61 against ≤ 7) | G3′'s reach | S2 on one page, "Parked and open at close" |
 | F4 | 410m only; v1's 7 prompts (the Pile's validation split for the n-gram rows); nothing between grid steps (no checkpoint between 512 and 1000) | the rung policy and the grid | `CLAUDE.md` "Name the family"; A3 "Not established" |
-| F5 | "No theorem predicts monotone" for trained or edited weights is worded from summaries until the gradient-flow results' hypotheses are read in full | unread | `trackS_subspace/lit-S2.md` Parked 1 |
+| F5 | The break departs from the identity-weight picture's prediction; it violates no theorem. Monotone E_β is proved only for constant weights whose score matrices are symmetric and tied to the values (one head, QᵀK = V; many heads, each Mₕ = W_V,h or nearly), on the sphere, with no MLP; Pythia's weights at every step, step 0 included, and S2's edits meet none of these, so L1's monotone steps 0–128 are an empirical fact *(worded from the texts at unit 1, 2026-10-22)* | 2312.10794 §3.2, §3.4.1; 2605.04279 Theorems 11–12, §10 ([H]) | `lit-C2-unit1.md` §1 |
 | F6 | Nothing causal about which components push apart; no energy sentence about components before an energy split per component | A2's ablation calibration failed | `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)" |
 | F7 | H-RESIST's `reject_null` on `P-A5` is not evidence that trained weights resist the collapse dynamics | one cheap factor; its validity for the e-process unargued | A5 on one page, item 3 and "Not established" |
 | F8 | A non-monotone geometric arc along training (2509.23024, 2602.15997) and the stagewise order (the LLC literature) are not new; E_β's monotonicity read along a real training axis, dated and reproduced, is what is | the scan | `trackA_force/lit-C2.md` §1–§2 |
-| F9 | Whether the break is anisotropy's: E_β is a moment of the Gram matrix, and anisotropy along Pythia's training is published (Bernas et al., ICML 2026); not measured here | the scan's one unmeasured objection | `trackA_force/lit-C2.md` §1; Blocked 92 (i) |
+| F9 | Whether the break is anisotropy's: E_β is a moment of the Gram matrix; anisotropy along Pythia's training is published from step 10 000 on (Bernas et al., ICML 2026, App. D; its main measure is the gradients'), not in the break's window, where only an unreviewed 70m project reports it rising by 512; measured here by unit 3 *(narrowed at unit 1, 2026-10-22: the scan's row was abstract-level)* | the scan's one unmeasured objection | `trackA_force/lit-C2.md` §1; `lit-C2-unit1.md` §3–§4; Blocked 92 (i) |
 
 ## The outline
 
 | § | section | lines and fences | state |
 |---|---|---|---|
 | 1 | Introduction: the particle picture's prediction (E_β non-decreasing in depth: the identity-weight dynamics ascend it, and a drop between layers is a violation, `core/metrics.py` `energy_violation_severity`), what trained 410m does at step 143000, and the question "when does it stop?"; contributions L1–L3, L6 with F1 and F2 stated in the first page | L1–L3, L6; F1, F2 | to write (unit 4) |
-| 2 | Background: the energy and its monotonicity (exact hypotheses), the developmental stages (n-grams, previous-token, induction), Pythia's warmup | F5, F8 | after unit 1 |
+| 2 | Background: the energy and its monotonicity (exact hypotheses), the developmental stages (n-grams, previous-token, induction), Pythia's warmup | F5, F8 | drafted (unit 1, `draft-C2.md`) |
 | 3 | Setup: 410m and its 18 steps, the 9 PolyPythias seeds, the prompts, E_β and V, the half-rise statistic, the registration order (`P-A5` before the download) | F4 | to write |
 | 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | to write |
 | 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | to write |
-| 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | to write (Blocked 94) |
-| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | Blocked 92 |
-| 8 | Related work | F8 | after unit 1 |
-| A | Appendix: the shared subspaces (L5) | L5 | Blocked 94 |
+| 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | to write (unit 4; 94 (a)) |
+| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | after units 3, 3b (92 (i), (iii)) |
+| 8 | Related work | F8, F9 | drafted (unit 1, `draft-C2.md`) |
+| A | Appendix: the shared subspaces (L5) | L5 | to write (unit 4; 94 (a)) |
 | B | Appendix: the gates (A3's locator, A5's gate on seed 0, S2's G0–G3) and why each null is the one used | — | to write |
 
 ## Numbers and figures
@@ -86,7 +86,7 @@ the record); every number rendered from a record by one command and every figure
 each fence written beside the line it limits; a fresh-context referee read of the whole draft
 answered point by point (fixed, or a reply saying why not). Or a recorded reason a section
 cannot be written. **Budget: 4 units, plus one unit per run Blocked 92 takes, plus a
-writing-only close-out** (as recommended: 6 units, 7 if unit 1 finds a suite for (ii)).
+writing-only close-out** (as decided: 6 units, 7 if unit 1 finds a suite for (ii)).
 
 | unit | what | done when |
 |---|---|---|
@@ -109,6 +109,22 @@ C2 closes at what it has, unless the user extends it on the record.
 | 92 | new runs inside C2 | (i) **the anisotropy control**: V on the token-centred, re-normalised clouds at the 18 steps on seed 0, with each layer's mean cosine beside (F9); one unit, forward passes on cached checkpoints. *Rule, fixed here:* steps 0–128's centred counts are reported first; if any is ≥ half the centred 1000–4000 plateau median the control is refused as unreadable (a limit, stated); else A5's D4 (a) half-rise on the centred V reads **"survives"** if in (128, 512], **"removed"** if there is none by 4000, else **"moved"** to its step. *What it changes:* "survives", §4 says the break is not the common direction's; "removed", the break is anisotropy's rise, F9 becomes a finding and 91 reopens; "moved", §4 gives both dates. (ii) **the warmup arm**: V on one public training suite with a different warmup and checkpoints inside it, if unit 1 finds one (candidates unverified); one unit. (iii) **the LR-dose arm**: V at the 18 steps on `pythia-70m` and `pythia-160m`, which share 410m's 1430-step warmup at a higher peak LR (1e-3 and 6e-4 against 3e-4, by the Pythia paper's table; 70m's is in `PROJECT.md`, the others unit 1 checks against the released configs); one unit, a download. *Rule:* the same half-rise per size; a break at the same step on all three reads "step-locked" (the warmup's timing or the tokens seen, not told apart), an earlier one on the higher-LR sizes "dose-ordered" (it tracks how far training has moved the weights); size (width, depth) is confounded throughout, so description. 1b shares 410m's LR and cannot help. (iv) **continued training**, two arms from a pre-break checkpoint, warmup against flat LR: the only within-model test, but the 70m harness `PROJECT.md` describes is gone from disk, so ≥ 2 units to rebuild plus GPU hours per arm, and its results are reachability, not development. (v) none: F1 and F9 stated as limits. S4 (91 (b)) would also vary the warmup, with a known circuit, after December | **(i) and (iii), and (ii) if unit 1 finds a suite.** F9 and F1 are the objections a reader raises first. (i) is cheap and could change §4's wording. (iii) is the cheapest run that can move F1 (it separates the warmup's timing from the amount learned, not the schedule from the data). (ii) separates the schedule's timing if a suite exists. (iv) costs more than the rest together, for a reachability answer |
 | 93 | the form | (a) Markdown in the repo (diffable, reviewed by PR), rendered by `numbers.py`, converted to LaTeX at the close-out for an arXiv preprint (cs.LG); a LessWrong post that supersedes Blog 1's "under random weights too" line is a separate decision, after, and so is releasing the quoted records beside the preprint (only the rendered table is tracked); (b) a LessWrong / Alignment Forum post only; (c) a workshop paper, whose page limit shapes the draft from the start | **(a).** It keeps the draft under the same review as the code and leaves the venue open until the draft exists. Where to post stays yours at the close |
 | 94 | what S1 and S2 contribute | (a) S2 in the main text (§6) as a bounded negative with F3 beside it; S1 as appendix A, description only; (b) both in the main text; (c) both left out | **(a).** S2 is the only intervention on the break and its G3′ reading is the one that speaks to the sequence; S1's readings carry no calibrated effect size, so they support, they do not lead |
+
+## Decided 2026-10-22
+
+Left to Claude by the user ("Blocked 91–94: <your picks>"); every pick is the recommendation
+above, for the reason given there. The options stay as written in the table.
+
+| # | taken | what it fixes |
+|---|---|---|
+| 91 | (a) | the headline is the dated, reproduced break on the developmental order; F2 stated on the first page |
+| 92 | (i) and (iii); (ii) if unit 1 finds a suite | units 3 (anisotropy, seed 0) and 3b (LR dose, 70m and 160m), each rule as written above, each with a preflight report before its output; 3c only if (ii) is feasible. (iv) and (v) not taken |
+| 93 | (a) | Markdown under `trackC_writeup/`, rendered by `numbers.py`; LaTeX at the close-out; venue, a LessWrong post and the records' release decided after the draft exists |
+| 94 | (a) | S2 is §6 with F3 beside it; S1 is appendix A, description only |
+
+Budget as decided: units 0–5 (with 3 and 3b) + close-out; 3c adds one. **Unit 1 found no suite
+for (ii)** (`lit-C2-unit1.md` §5: the Mistral GPT-2 checkpoints are gone from the Hub, OLMo's
+start too coarse), so 3c is not run and the budget is 6 units + close-out.
 
 ## Worth challenging (for the PR)
 

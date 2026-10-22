@@ -28,7 +28,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-22 · body `09e0f056cb`
+- **Reviewed:** 2026-10-22 · body `32d74a34a7`
 <!-- /phase-card -->
 
 ## Units
@@ -49,6 +49,10 @@
 
 ## Corrections received
 
+- 2026-10-22, C2 unit 1: `lit-S2.md`'s gradient-flow row said the energy "decreases" along the
+  flow; the texts say non-decreasing (2312.10794 §3.2, 2605.04279 Theorem 11). S2 counted a drop
+  as a violation, the non-decreasing convention, so no S2 reading moves. Row corrected in place;
+  `trackC_writeup/lit-C2-unit1.md` §1.
 - 2026-10-22, S2 unit 3: S1's "the OV families' R3 readings carry a bias of unknown size" is now
   measured: on a leave-the-layer-out S they read as before from 512, so the bias moves none of
   S1's readings there; before 512 `ov_neg`'s and `ov_pos`'s outside-Haar `share` layers (up to 11)

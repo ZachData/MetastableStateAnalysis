@@ -32,7 +32,7 @@ tried and were inconclusive [S]. The nearest:
 | work | statement | bearing |
 |---|---|---|
 | Geshkovski, Letrouit, Polyanskiy, Rigollet, 2305.05465 [A] (NeurIPS 2023) | the limiting object of the self-attention flow depends on the spectrum of V | V's spectrum is the theory's handle; S2's arm (b) changes only that spectrum's imaginary parts |
-| the gradient-flow results (Geshkovski et al. 2023 survey, via [S] summaries; Tomihari, Karakida, 2505.19458 [A]) | the energy decreases along the flow under constraints: single head, states on the sphere, **symmetric weights** (V tied to QᵀK; Q = K = V = I in most statements) | a symmetric V alone, with QK untied, is not in these results. `tools/math_checks/s2_ov_arms.py` C6: E₁ (A5's statistic) is non-monotone in 53 of 200 toy attention-only flows with symmetric V and untied QK, monotone in all 200 at Q = K = V = I. **So no theorem predicts "monotone" for arm (a)**; Q1 is an empirical question |
+| the gradient-flow results (Geshkovski et al. 2023 survey, via [S] summaries; Tomihari, Karakida, 2505.19458 [A]) | the energy is **non-decreasing** along the flow under constraints *(corrected 2026-10-22 from "decreases", read in full at C2 unit 1: `trackC_writeup/lit-C2-unit1.md` §1; no S2 rule moves)*: single head, states on the sphere, **symmetric weights** (V tied to QᵀK; Q = K = V = I in most statements) | a symmetric V alone, with QK untied, is not in these results. `tools/math_checks/s2_ov_arms.py` C6: E₁ (A5's statistic) is non-monotone in 53 of 200 toy attention-only flows with symmetric V and untied QK, monotone in all 200 at Q = K = V = I. **So no theorem predicts "monotone" for arm (a)**; Q1 is an empirical question |
 | Tomihari, Karakida, 2505.19458 [A] | without an energy: Jacobians of recurrent self-attention; normalisation suppresses the Jacobian's complex eigenvalues (oscillation); Lyapunov exponents put normalised dynamics near criticality | the closest statement that complex eigenvalues (of a Jacobian, not V) carry oscillation, and that LN damps them. S2 reads V's, through LN1's folded frame |
 | Pendharkar, 2605.04279 [A] | multi-head: a natural energy is non-decreasing under a sufficient condition on the score matrices; "radial shadow terms" block per-head monotonicity | Pythia has 16 heads per layer; per-head symmetry need not give a monotone multi-head energy either |
 | Bruno, Pasqualotto, Agazzi, 2410.23228 [S] (ICLR 2025) | metastable clustering in the mean-field model as a Wasserstein gradient flow | the gradient-flow setting again; nothing about non-symmetric V found in the abstract |
@@ -63,4 +63,6 @@ tried and were inconclusive [S]. The nearest:
    summaries, and C6 is a toy; cost: one read of the 2023 survey's §3; could change: the wording
    of "no theorem predicts monotone" only, not any rule). Carry to S2's close. **At S2's close
    (2026-10-22): carried to C2's draft** (`status-S.md` "S2 on one page"), where the energy is
-   stated against the theory.
+   stated against the theory. **Done at C2 unit 1 (2026-10-22):** QᵀK symmetric and V = QᵀK for
+   one head, each Mₕ = W_V,h for many, constant weights, sphere, no MLP; the sign is
+   non-decreasing (row above corrected) (`trackC_writeup/lit-C2-unit1.md` §1).

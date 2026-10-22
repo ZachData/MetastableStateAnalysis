@@ -82,7 +82,9 @@ nothing public on Pythia does).
 1. **Full texts are fetchable now** (why: §0's "blocked" was true on 2026-09-16 and 2026-10-16;
    cost: a re-check per paper; could change: any [S] row above, and `lit-1.md`'s open question of
    whether 2509.23024 normalises before RankMe). One line in `docs/LITERATURE.md` §0 when next
-   edited.
+   edited. **Done at C2 unit 1 (2026-10-22):** the rows §2 and §8 cite re-read ([H] or [A]); the
+   Bernas row narrowed (Pythia activations from step 10 000; the main measure is the gradients'),
+   Rigollet's trained-model clause dropped; `docs/LITERATURE.md` §0.2 (`trackC_writeup/lit-C2-unit1.md` §3).
 2. *PolyPythias's outlier runs, by size and seed.* **Done, already in the repo** (#227 finding
    1): `p1d_cluster_ensemble/lit-1d.md` §10 row 1 names 410m seeds 3 and 4 (loss spikes, ≥ 2 SD
    below the mean downstream). A5's D7 is decided from it (`design-A5.md`).
