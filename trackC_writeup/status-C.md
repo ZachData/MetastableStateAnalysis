@@ -10,15 +10,17 @@
   - C2 opened 2026-10-22 and its design froze the same day: seven lines the record supports, nine fences, an outline, a render step so every number comes from a record; Blocked 91–94 decided as recommended (left to Claude by the user): the dated, reproduced break as the headline, the anisotropy control and the LR-dose arm as new runs, Markdown rendered from records, S2 in the main text and S1 an appendix — `trackC_writeup/design-C2.md` "Decided 2026-10-22"
   - Unit 1, the reading: the plain E_β is proved monotone only at identity weights; wider hypotheses (symmetric scores tied to the values) make a weighted energy monotone, not E_β; so the break violates no theorem (F5 worded from the texts); published anisotropy along Pythia starts at step 10 000, not in the break's window (F9 narrowed); Mistral GPT-2 small (4000-step warmup, checkpoints every 50 steps to 2000) makes 92 (ii) feasible, so 3c runs (7 units + close-out); §2 and §8 drafted (revised after `/challenge-pr` on #253, findings 1–5) — `trackC_writeup/status-C.md` "C2 unit 1"
   - Unit 2, the render step: every number in the draft is a key that `numbers.py` reads from its record (A5's seeds and gate, A3's rows, S2's readings, Pythia's released configs; 13 records, each sha256 in the tracked `numbers.json`), and CI checks the draft against that table; §3–§5 drafted and the three figures drawn; no reading moved — `trackC_writeup/status-C.md` "C2 unit 2"
+  - Unit 3, the anisotropy control (tier 1, description): on token-centred clouds the break is **"mostly removed"** by the frozen rule (centred plateau 20 against 57 at D2's 1e-3, ratio 0.35 < ½; Blocked 95 (a)). At 512, the break's step, the centred count is 4 against 56 (11 against 60 at 1e-4), and the centred half-rise falls at 1000 at every tolerance that locates one; the size is tolerance-dependent (ratio 0.90 at 1e-4, 0 at 1e-2). At 512 the layers' mean cosine stops rising with depth (peak 0.40 at state 5, 10 falling transitions; 0 at 128). F9 becomes a finding; 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
-  - Whether the break is the LR schedule's or a training event's, and whether it is anisotropy's (F1, F9); units 3, 3b and 3c read each, 3c on another suite's warmup (description only) — `trackC_writeup/design-C2.md` "What C2 may not go past"
+  - Whether the break is the LR schedule's or a training event's (F1); units 3b and 3c read it, 3c on another suite's warmup (description only) — `trackC_writeup/design-C2.md` "What C2 may not go past"
+  - What the headline says now that the break at 512 is mostly the common direction's (Blocked 96, the user's) — `trackC_writeup/status-C.md` "C2 unit 3"
 - **After Phase 10:**
-  - The anisotropy control: V on token-centred clouds at the 18 steps on seed 0 *(forward pass, cached checkpoints)*
-- **Reviewed:** 2026-10-22 · body `876c36e56b`
+  - none
+- **Reviewed:** 2026-10-22 · body `350f64664c`
 <!-- /phase-card -->
 
 ## Units
@@ -28,8 +30,67 @@
 | C2 0. design (writing only) | **done 2026-10-22: frozen, Blocked 91–94 decided as recommended (left to Claude)** | `design-C2.md` "Decided 2026-10-22" |
 | C2 1. reading (writing only) | **done 2026-10-22: F5 worded, F9 narrowed, 92 (ii) feasible (GPT-2 small), §2 and §8 drafted; revised after `/challenge-pr` on #253** | `lit-C2-unit1.md`, `draft-C2.md`; "C2 unit 1" below |
 | C2 2. `numbers.py`, figures, §3–§5 | **done 2026-10-22: 102 keys from 13 records, 24 sentence claims checked, §3–§5 render, figures 1–3 drawn; revised after `/challenge-pr` on #254** | `numbers.py`, `numbers.json`, `draft-C2.src.md` → `draft-C2.md`, `fig/`; "C2 unit 2" below |
-| C2 3, 3b, 3c. anisotropy control; LR-dose arm (70m, 160m); warmup arm (Mistral GPT-2 small) | next (3 first) | design 92 (i), (iii), (ii); 3c's separations `lit-C2-unit1.md` §5 |
+| C2 3. anisotropy control | **done 2026-10-22: frozen before output (95 (a), the user's), preflight cited; reads "mostly removed", the centred date 1000; Blocked 96** | `c2_aniso.py`, design "Unit 3"; "C2 unit 3" below |
+| C2 3b, 3c. LR-dose arm (70m, 160m); warmup arm (Mistral GPT-2 small) | next, after Blocked 96 | design 92 (iii), (ii); 3c's separations `lit-C2-unit1.md` §5 |
 | C2 4, 5, close-out | after 3c | — |
+
+## C2 unit 3, the anisotropy control (2026-10-22)
+
+92 (i) with Blocked 95 (a)'s size label, frozen in `design-C2.md` "Unit 3" and committed (`7878f5d`)
+before the scored run; the preflight's report and its lean are there.
+
+**Input:** `pythia-410m` (seed 0) at A5's 18 grid steps (HF cache, offline) × the 7 v1 prompts
+(`prompts_hash` `976b62d677bc`), float32, eager, TF32 off, RTX 3080; code `d90bb06b7910`
+(`trackC_writeup/c2_aniso.py`). Records `data/trackC/c2u3/2026-10-22-run/records/` (126, main
+tree); reading `…/reading.json` sha256 `46f7654c96ba…`. Known answer: every record's E₁ equals A5's
+seed-0 record (`trackA/a5/2026-10-20-u1/seed0`) to 0.0 (tolerance 1e-4), tokens identical.
+
+| step | 0–128 | 256 | 512 | 1000 | 2000 | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| V, uncentred (A5's) | 0 | 19 | 56 | 56 | 61 | 57 | 59 | 64 | 76 | 72 | 70 |
+| V_c, centred, 1e-3 (the label's) | 0 | 0 | 4 | 15 | 20 | 24 | 26 | 29 | 32 | 39 | 59 |
+| V_c at 1e-4 | 1, 1, 1, 1, 0, 0, 0, 0 | 1 | 11 | 55 | 56 | 55 | 57 | 56 | 51 | 58 | 75 |
+| V_c at 1e-2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 | 4 | 10 |
+| V, raw-centred, 1e-3 (beside) | 0 except 3 at 128 | 0 | 5 | 15 | 21 | 26 | 29 | 40 | 52 | 58 | 72 |
+| mean cosine, layer mean | 0.42, 0.42, 0.42, 0.51, 0.70, 0.62, 0.39, 0.30 | 0.30 | 0.33 | 0.24 | 0.18 | 0.18 | 0.23 | 0.36 | 0.44 | 0.45 | 0.40 |
+
+**The reading, by the frozen rule:** steps 0–128's centred counts first: all 0. Centred plateau
+median 20 against 57 uncentred, ratio 0.35 < ½: **"mostly removed"**, with the centred half-rise
+at 1000 beside (uncentred 512).
+
+**Beside, not the label:**
+
+| what | reads |
+|---|---|
+| the rule at the other tolerances | 1e-4: plateaus 55 / 61 (0.90), centred date 1000: "moved"; 1e-2: centred plateau 0: "removed". So the size half of the label depends on the tolerance: centring compresses E₁'s range (a centred cloud's mean cosine is near 0), so the same layer-to-layer change is a smaller relative drop |
+| what holds at every tolerance | at 512, the break's step, the centred count is 4 (1e-3) or 11 (1e-4) against the uncentred 56 or 60; the centred half-rise falls at 1000 wherever one is located, and the raw-centred cloud's at 1000 too. Late training (54000–143000) is where the centred count approaches the uncentred one |
+| the common direction, by layer | at 128 the mean cosine rises with depth at all 24 transitions (0.02 → 0.71); at 256, 2 falling; at 512 it peaks at state 5 (0.40) and falls to 0.32 by state 15 (10 falling transitions); 8 at 1000, 10 at 4000. The break's step is the step at which anisotropy stops rising monotonically in depth |
+| the lean (design "Unit 3") | step 7000's 0.43 pointed to "mostly removed" and the re-inits away from "unreadable"; both held |
+
+**What it changes (the design's table):** "mostly removed" reads as "removed". F9 becomes a finding:
+at 512 E₁'s layer-monotonicity breaks mostly because the common direction's strength stops
+rising with depth; the token-centred structure's own violations start one grid step later (1000)
+and keep growing to 143000. L1–L4's dates and `P-A5` stand as facts about E₁ (the energy that was
+registered), but "the break" in the draft's headline is now mostly anisotropy's profile. **91
+reopens: Blocked 96, the user's.** 3b and 3c wait on it, since the headline decides whether they
+record V_c and the cosine profile beside.
+
+**Not established:** that the centred violations from 1000 on are a separate event rather than the
+same change seen more weakly (the grid has no step between 512 and 1000); any cause for the
+cosine profile's turn (no component analysis); anything on the other 9 seeds (no centred records;
+A5's records hold E₁ only).
+
+**Parked:** (1) `numbers.py` keys for `reading.json` (the label, the plateaus, the cosine profile)
+and a figure beside fig 1: unit 4 (cost: one render pass; changes nothing until §4 is rewritten).
+(2) The centred count on the 9 PolyPythias seeds, to say whether the 1000 date reproduces: about
+20 GPU minutes (seed 0's 18 steps took 125 s) after a re-download of about 160 checkpoints (the
+seed checkpoints are no longer in the HF cache); it could change 96's
+wording ("reproduced" or "seed 0 only"); an option in 96.
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c2_aniso run --out <dir>` (about 2 min
+on the GPU, offline), then `read --out <dir>`; preflight `… preflight --out <dir>`, then
+`python -m tools.design_preflight <dir>/preflight_input.json --out <dir>/preflight_report.json`.
+Tests: `tests/test_trackC_aniso.py` (pure, 16).
 
 ## C2 unit 2, the render step, the figures and §3–§5 (2026-10-22)
 

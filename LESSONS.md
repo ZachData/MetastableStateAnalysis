@@ -1462,6 +1462,17 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   rule above stood. What it lacked was a place to bind: S2's design wrote Q3 unconditionally, so
   every re-scope of it was a separate decision. Rule: **a design states, at the freeze, which
   readings are conditional on which earlier ones, and what "not shown" upstream does to them**.
+- 2026-10-22 (C2 unit 3, the anisotropy control): Blocked 95 (a), recommended by Claude and taken
+  before any centred number, labels "mostly removed" when the centred plateau is below half the
+  uncentred one, with both counts taken at D2's relative tolerance 1e-3. But centring compresses
+  E₁'s range (a centred cloud's mean cosine is near 0), so the same change is a smaller relative
+  drop, and the ratio is the tolerance's as much as the data's: 0.90 at 1e-4, 0.35 at 1e-3, 0 at
+  1e-2 (labels "moved", "mostly removed", "removed"). The preflight had the populations to show
+  this (step 7000's per-unit drops), but its table was read at 1e-3 only. The finding that holds
+  at every tolerance (at 512 the centred count is 4–11 against 56–60; its date is 1000) came from
+  the sensitivity rows, which the design kept beside. Rule: **a threshold that compares two
+  statistics on different scales is checked across the tolerance arms in the preflight, before
+  the freeze; a size condition reads a scale-free quantity or states the scale it assumes**.
 
 ## 7. Literature found after the construction was built
 

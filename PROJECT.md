@@ -2895,6 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
+## 3.66 C2's anisotropy control: at 512 the energy break is mostly the common direction's (2026-10-22)
+
+**`trackC_writeup/status-C.md` "C2 unit 3"** holds the numbers; this section says why it is
+project-wide.
+
+- §3.61's break (E₁'s layer-monotonicity, V 0 → 56 between 128 and 512, `P-A5`'s registered
+  quantity) is re-read on token-centred, re-normalised clouds, which removes the common direction
+  (the Gram moment F9 named). By the rule frozen before output it reads **"mostly removed"**:
+  centred plateau 20 against 57.
+- What holds at every tolerance: at 512 the centred count is 4–11 against 56–60, and the centred
+  count's half-rise falls at 1000. The size of what remains depends on the tolerance (`LESSONS.md` 6).
+- At 512 the layers' mean cosine stops rising with depth (it peaks at state 5); at 128 it rises at
+  all 24 transitions. At its own step, the break the project dated and reproduced is mostly that
+  turn in anisotropy's depth profile.
+- `P-A5`'s adjudication stands as a statement about E₁. C2's headline (Blocked 91 (a)) is reopened
+  as Blocked 96. Track A's readings that date "the break" (A3's order, D10) date E₁'s break, not a
+  centred one.
+
+---
+
 ## 3.65 Track S's S2 closed: no OV edit tried undoes the energy break; copying survives the rotation's removal at its size (2026-10-22)
 
 **`trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"** holds the detail; this
