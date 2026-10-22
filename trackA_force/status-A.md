@@ -38,7 +38,7 @@
   - M1 and `fe_full` give opposite β signs mid-depth on the code and LaTeX prompts; which is right is not known (carried to B3) — `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)"
 - **After Phase 10:**
   - The ablation re-calibrated (one synthetic model on 7 starts, headroom on (iii), a depth control for MLPs), then read at 2000, 8000, 143000 *(forward pass, GPU hours)*
-- **Reviewed:** 2026-10-20 · body `414d8c16fb`
+- **Reviewed:** 2026-10-22 · body `708b1e80ee`
 <!-- /phase-card -->
 
 ## Units
@@ -1680,4 +1680,5 @@ for a closed number that unit 2 already re-read; reopen if A5 registers on lengt
 
 ## Corrections received
 
+- 2026-10-22, C2 unit 1 (`/challenge-pr` on #253, finding 4): `lit-C2.md` §1 attributed "under random weights too" to Blog 1; Blog 1's local copy has the norm-matched random-weight energy rising monotonically. A citation only; no A number moves — `trackC_writeup/lit-C2-unit1.md` Parked 3.
 - 2026-10-15: `design-A.md` "Frozen 2026-10-14" cited 2604.01978 for the 2D spike's reduction; the section is 2609.28448 §6.1 (Gao–Yang–Chen). A citation only; no A1 number moves — `trackB_circuit/lit-B.md` "B2a" §1.

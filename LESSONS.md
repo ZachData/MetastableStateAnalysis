@@ -1476,6 +1476,18 @@ already in `docs/readings/`, and it puts the reduction on V's invariant subspace
 which changed B2a's primary object. Found at B2a's scan by fetching the cited paper before
 designing on it. Rule: a design that quotes a section by title names the file it was read from;
 a `grep` of `docs/readings/` for the title is the first step of the scan.
+2026-10-22 (C2 unit 1): two rows written from summaries were wrong on the point a design leaned
+on. `lit-S2.md` said the gradient-flow energy "decreases" (the texts: non-decreasing; no S2 rule
+moved, since S2 counted drops as violations); `lit-C2.md` gave Bernas et al. as "anisotropy of
+embeddings along Pythia ... checkpoints" from the abstract, and C2's F9 leaned on it, but the
+paper's Pythia activations start at step 10 000, past the break's window. Found by reading the
+texts before the draft cites them. The same unit then repeated the pattern one level up:
+`/challenge-pr` on #253 found that the fetch summary of 2312.10794 §3.4.1 had dropped that the
+monotone energy there is V-weighted, not E_β (the LaTeX was in `docs/readings/` all along), and
+that "no suite" came from listing Hub branches when the checkpoints were tags. Rule: a fence or a
+design line that leans on a cited claim names the claim's mark; a draft states an [A] row only
+for what its abstract says and an [S] row never; a paper whose source is in `docs/readings/` is
+read there, not through a fetch; "not available" is checked against every way a host stores it.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).

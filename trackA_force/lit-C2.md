@@ -31,7 +31,7 @@ along training, or has an energy and training but no checkpoints:
 | Diehl Martinez et al., 2410.11451 [A] | per-layer attention / MLP convergence to the final state across Pythia sizes; most layers settle in the first 20 % | beside; says nothing at ≤ 4000 steps |
 | Isobe, Inoue, Imaizumi, 2605.07772 [A] (May 2026) | theory: a noisy mean-field transformer with only an FFN trained; an entropy-regularised interaction energy; tokens cluster, plateau, then escape near the final layers | the closest *theory* (already in `PUBLICATION_IDEAS.md`): training breaks the energy picture near the top. A predicted shape, no checkpoints, FFN-only |
 | Herty, Liu, 2608.25055 [S]; Rigollet et al., 2512.01868 [S] | coupled token / parameter flows (theory); inner products concentrating along depth in trained models | known (`FUTURE_IDEAS.md`, `lit-A.md`); depth axis, not training |
-| the user's LessWrong sequence ("Part 1: Do metastable token clusters exist in trained transformers?", "Transformers resist their own architecture") [S] | energy violations in every model tested (GPT-2 era, endpoints) | the only hit claiming non-monotone energy in trained models is the user's own (Blog 1, tier 0). C2 cites it and supersedes its "under random weights too" line (`math-1.md` §13.2) |
+| the user's LessWrong sequence ("Part 1: Do metastable token clusters exist in trained transformers?", "Transformers resist their own architecture") [S] | energy violations in every model tested (GPT-2 era, endpoints) | the only hit claiming non-monotone energy in trained models is the user's own (Blog 1, tier 0). C2 cites it and supersedes its "under random weights too" line (`math-1.md` §13.2) *(corrected 2026-10-22: Blog 1's local copy says trained models are non-monotone in every model, prompt and β tested, and the norm-matched random-weight energy "rises monotonically"; the phrase is not Blog 1's: `trackC_writeup/lit-C2-unit1.md` Parked 3)* |
 
 **What C2 can claim as new, one line each:** E_β's layer-monotonicity read along Pythia's
 training axis; its break dated at 128–512 (`p1_mstate_tracking/status-1.md` "The developmental
@@ -82,7 +82,9 @@ nothing public on Pythia does).
 1. **Full texts are fetchable now** (why: §0's "blocked" was true on 2026-09-16 and 2026-10-16;
    cost: a re-check per paper; could change: any [S] row above, and `lit-1.md`'s open question of
    whether 2509.23024 normalises before RankMe). One line in `docs/LITERATURE.md` §0 when next
-   edited.
+   edited. **Done at C2 unit 1 (2026-10-22):** the rows §2 and §8 cite re-read ([H] or [A]); the
+   Bernas row narrowed (Pythia activations from step 10 000; the main measure is the gradients'),
+   Rigollet's trained-model clause dropped; `docs/LITERATURE.md` §0.2 (`trackC_writeup/lit-C2-unit1.md` §3).
 2. *PolyPythias's outlier runs, by size and seed.* **Done, already in the repo** (#227 finding
    1): `p1d_cluster_ensemble/lit-1d.md` §10 row 1 names 410m seeds 3 and 4 (loss spikes, ≥ 2 SD
    below the mean downstream). A5's D7 is decided from it (`design-A5.md`).
