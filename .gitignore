@@ -34,6 +34,8 @@
 # C2's numbers table and figures (trackC_writeup/numbers.py): rendered from records, tracked so the draft renders on any checkout.
 !trackC_writeup/numbers.json
 !trackC_writeup/fig/*.svg
+# GPT-2 small's logged LR (C2 unit 3c), read by tools/math_checks/c2_warmup_grid.py W2.
+!trackC_writeup/gpt2_small_lr_log.json
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh
