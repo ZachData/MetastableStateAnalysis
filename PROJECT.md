@@ -2895,20 +2895,21 @@ cheap and would resolve it.**
 
 ---
 
-## 3.66 C2's anisotropy control: at 512 the energy break is mostly the common direction's (2026-10-22)
+## 3.66 C2's anisotropy control: at 512 the energy break is mostly the common direction's; the centred cloud breaks at 1000 (2026-10-22)
 
 **`trackC_writeup/status-C.md` "C2 unit 3"** holds the numbers; this section says why it is
 project-wide.
 
 - §3.61's break (E₁'s layer-monotonicity, V 0 → 56 between 128 and 512, `P-A5`'s registered
   quantity) is re-read on token-centred, re-normalised clouds, which removes the common direction
-  (the Gram moment F9 named). By the rule frozen before output it reads **"mostly removed"**:
-  centred plateau 20 against 57.
-- What holds at every tolerance: at 512 the centred count is 4–11 against 56–60, and the centred
-  count's half-rise falls at 1000. The size of what remains depends on the tolerance (`LESSONS.md` 6).
-- At 512 the layers' mean cosine stops rising with depth (it peaks at state 5); at 128 it rises at
-  all 24 transitions. At its own step, the break the project dated and reproduced is mostly that
-  turn in anisotropy's depth profile.
+  (the Gram moment F9 named). The rule frozen before output reads "mostly removed" (centred
+  plateau 20 against 57). That label's size half is a scale effect: centring makes E₁'s
+  layer-to-layer changes about 30× smaller, and at a matched tolerance the reading is "moved"
+  (`/challenge-pr` on #255; `LESSONS.md` 6).
+- What holds at every tolerance: **at 512 the centred count is 4–13 against 56–60**, so the break
+  the project dated and reproduced is, at its step, mostly the common direction ceasing to grow
+  with depth. **The centred cloud breaks at full size at 1000**, the grid step of induction,
+  previous-token and the LR schedule's half-point (§3.61). Seed 0 only.
 - `P-A5`'s adjudication stands as a statement about E₁. C2's headline (Blocked 91 (a)) is reopened
   as Blocked 96. Track A's readings that date "the break" (A3's order, D10) date E₁'s break, not a
   centred one.

@@ -1470,9 +1470,13 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   1e-2 (labels "moved", "mostly removed", "removed"). The preflight had the populations to show
   this (step 7000's per-unit drops), but its table was read at 1e-3 only. The finding that holds
   at every tolerance (at 512 the centred count is 4–11 against 56–60; its date is 1000) came from
-  the sensitivity rows, which the design kept beside. Rule: **a threshold that compares two
-  statistics on different scales is checked across the tolerance arms in the preflight, before
-  the freeze; a size condition reads a scale-free quantity or states the scale it assumes**.
+  the sensitivity rows, which the design kept beside. `/challenge-pr` on #255 then measured the
+  scale directly (the centred per-transition change is about 30× smaller) and found that the
+  preflight had no positive control for the ratio: plant B was read on the centred count only, so
+  no plant had a known ratio of 1. Rule: **a label that compares two statistics is given, in the
+  preflight, a plant read on both whose true ratio is known (1 for a change both should see), and
+  their per-unit scales are stated before the freeze; a size condition reads a scale-free quantity
+  or a tolerance matched to each statistic's own spread**.
 
 ## 7. Literature found after the construction was built
 

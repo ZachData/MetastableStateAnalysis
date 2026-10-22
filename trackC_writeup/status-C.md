@@ -10,7 +10,7 @@
   - C2 opened 2026-10-22 and its design froze the same day: seven lines the record supports, nine fences, an outline, a render step so every number comes from a record; Blocked 91–94 decided as recommended (left to Claude by the user): the dated, reproduced break as the headline, the anisotropy control and the LR-dose arm as new runs, Markdown rendered from records, S2 in the main text and S1 an appendix — `trackC_writeup/design-C2.md` "Decided 2026-10-22"
   - Unit 1, the reading: the plain E_β is proved monotone only at identity weights; wider hypotheses (symmetric scores tied to the values) make a weighted energy monotone, not E_β; so the break violates no theorem (F5 worded from the texts); published anisotropy along Pythia starts at step 10 000, not in the break's window (F9 narrowed); Mistral GPT-2 small (4000-step warmup, checkpoints every 50 steps to 2000) makes 92 (ii) feasible, so 3c runs (7 units + close-out); §2 and §8 drafted (revised after `/challenge-pr` on #253, findings 1–5) — `trackC_writeup/status-C.md` "C2 unit 1"
   - Unit 2, the render step: every number in the draft is a key that `numbers.py` reads from its record (A5's seeds and gate, A3's rows, S2's readings, Pythia's released configs; 13 records, each sha256 in the tracked `numbers.json`), and CI checks the draft against that table; §3–§5 drafted and the three figures drawn; no reading moved — `trackC_writeup/status-C.md` "C2 unit 2"
-  - Unit 3, the anisotropy control (tier 1, description): on token-centred clouds the break is **"mostly removed"** by the frozen rule (centred plateau 20 against 57 at D2's 1e-3, ratio 0.35 < ½; Blocked 95 (a)). At 512, the break's step, the centred count is 4 against 56 (11 against 60 at 1e-4), and the centred half-rise falls at 1000 at every tolerance that locates one; the size is tolerance-dependent (ratio 0.90 at 1e-4, 0 at 1e-2). At 512 the layers' mean cosine stops rising with depth (peak 0.40 at state 5, 10 falling transitions; 0 at 128). F9 becomes a finding; 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
+  - Unit 3, the anisotropy control (tier 1, description): the frozen rule reads **"mostly removed"** (centred plateau 20 against 57 at D2's 1e-3; Blocked 95 (a)), but that label's size half is a scale effect: centring makes E₁'s layer-to-layer changes about 30× smaller, and at a matched tolerance (1e-4, 1e-5; post hoc, `/challenge-pr` on #255) it reads "moved" (ratio 0.90–1.10, centred date 1000). What holds at every tolerance: at 512, the break's step, the centred count is 4–13 against 56–60, so the break at 512 is mostly the common direction's (F9 a finding), and a full-size centred break appears at 1000, induction's grid step; seed 0 only. 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -20,7 +20,7 @@
   - What the headline says now that the break at 512 is mostly the common direction's (Blocked 96, the user's) — `trackC_writeup/status-C.md` "C2 unit 3"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `350f64664c`
+- **Reviewed:** 2026-10-22 · body `2b2e40a850`
 <!-- /phase-card -->
 
 ## Units
@@ -63,22 +63,23 @@ at 1000 beside (uncentred 512).
 | what | reads |
 |---|---|
 | the rule at the other tolerances | 1e-4: plateaus 55 / 61 (0.90), centred date 1000: "moved"; 1e-2: centred plateau 0: "removed". So the size half of the label depends on the tolerance: centring compresses E₁'s range (a centred cloud's mean cosine is near 0), so the same layer-to-layer change is a smaller relative drop |
-| what holds at every tolerance | at 512, the break's step, the centred count is 4 (1e-3) or 11 (1e-4) against the uncentred 56 or 60; the centred half-rise falls at 1000 wherever one is located, and the raw-centred cloud's at 1000 too. Late training (54000–143000) is where the centred count approaches the uncentred one |
-| the common direction, by layer | at 128 the mean cosine rises with depth at all 24 transitions (0.02 → 0.71); at 256, 2 falling; at 512 it peaks at state 5 (0.40) and falls to 0.32 by state 15 (10 falling transitions); 8 at 1000, 10 at 4000. The break's step is the step at which anisotropy stops rising monotonically in depth |
-| the lean (design "Unit 3") | step 7000's 0.43 pointed to "mostly removed" and the re-inits away from "unreadable"; both held |
+| what holds at every tolerance | at 512, the break's step, the centred count is 4 (1e-3), 11 (1e-4) or 13 (sign level) against the uncentred 56, 60 or 60; the centred half-rise falls at 1000 wherever one is located, and the raw-centred cloud's at 1000 too |
+| **post hoc, the scale (`/challenge-pr` on #255, finding 1)** | the centred E₁ sits about 0.002 above its floor (≈ 0.504 at step 0); its mean per-transition relative change is 3.9e-5 at step 0, 1.2e-3 at 512, 8.1e-4 at 1000 and 8.4e-4 at 4000, against 2.2–2.9e-2 uncentred: about 30× smaller, so one relative tolerance is far stricter on it. Matched more closely, the rule reads "moved": at 1e-4 the plateaus are 55 / 61 (0.90), at 1e-5 67 / 61 (1.10), the centred date 1000 in both; steps 0–128 at 1e-4 are 0–1. At sign level, float noise reads 24–35 at steps 0–8 ("unreadable"). From 1000 to 54000 the centred count at 1e-4 is flat (51–58), then 75 at 143000 |
+| the common direction, by layer | at 128 the mean cosine rises with depth at all 24 transitions (0.02 → 0.71); at 256, 2 falling; at 512 it peaks at state 5 (0.40) and falls to 0.32 by state 15 (10 falling transitions); 8 at 1000, 10 at 4000. The mean cosine is E₁'s first-order term at β = 1, so this decomposes the same break; it is not separate evidence (finding 4) |
+| the lean (design "Unit 3") | step 7000's 0.43 pointed to "mostly removed" and the re-inits away from "unreadable"; both held, and the 0.43 was the same scale effect |
 
-**What it changes (the design's table):** "mostly removed" reads as "removed". F9 becomes a finding:
-at 512 E₁'s layer-monotonicity breaks mostly because the common direction's strength stops
-rising with depth; the token-centred structure's own violations start one grid step later (1000)
-and keep growing to 143000. L1–L4's dates and `P-A5` stand as facts about E₁ (the energy that was
-registered), but "the break" in the draft's headline is now mostly anisotropy's profile. **91
-reopens: Blocked 96, the user's.** 3b and 3c wait on it, since the headline decides whether they
-record V_c and the cosine profile beside.
+**What it changes.** The frozen label stays on the record as "mostly removed". On a matched scale
+the reading is 92 (i)'s "moved". Two parts hold at every tolerance. First, at 512 E₁'s
+layer-monotonicity breaks mostly because the common direction stops growing with depth, so F9
+becomes a finding. Second, the token-centred cloud breaks at full size one grid step later, at
+1000, the step where L3 puts induction, previous-token and the LR schedule's half-point. L1–L4's
+dates and `P-A5` stand as facts about E₁, the energy that was registered. **91 reopens because of
+the count at 512, not the plateau ratio: Blocked 96, the user's.** 3b and 3c wait on it.
 
-**Not established:** that the centred violations from 1000 on are a separate event rather than the
-same change seen more weakly (the grid has no step between 512 and 1000); any cause for the
-cosine profile's turn (no component analysis); anything on the other 9 seeds (no centred records;
-A5's records hold E₁ only).
+**Not established:** that the centred break at 1000 is a separate event rather than the same change
+seen more weakly (the grid has no step between 512 and 1000); any centred-count rule calibrated on
+its own scale (the post-hoc rows are description); any cause for the cosine profile's turn (no
+component analysis); anything on the other 9 seeds (no centred records; A5's records hold E₁ only).
 
 **Parked:** (1) `numbers.py` keys for `reading.json` (the label, the plateaus, the cosine profile)
 and a figure beside fig 1: unit 4 (cost: one render pass; changes nothing until §4 is rewritten).
