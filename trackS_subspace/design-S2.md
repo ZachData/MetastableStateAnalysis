@@ -16,6 +16,8 @@ for R1, R2 and the gates (Blocked 88 (a), the user's; R3's guard is Blocked 89);
 in code". Code `trackS_subspace/s2.py`; unit 1's
 choices made in code, before any scored-step output, are in "Unit 1: fixed in code" below. Revised after
 `/challenge-pr` on #246 (accept with changes, findings 1–7 taken; "Revised after review" at the end).
+**Extended to 4 units (Blocked 90 (b)); all ran, and S2 closed 2026-10-22 (`status-S.md` "S2 on
+one page").**
 
 ## What S2 asks
 

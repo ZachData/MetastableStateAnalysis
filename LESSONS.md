@@ -1455,6 +1455,13 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   the space the selected objects already live in, it is run on the real population before the
   freeze, and its selected fraction is stated in the design; a control that cannot match its arm
   refuses; a reading conditional on an earlier effect is re-scoped when that effect is not shown.**
+- 2026-10-22 (S2's close-out, `/challenge-pr` on #251, finding 3): the close-out dropped three R3
+  variants because "a subset has no effect to carry" (arm b on every pair was as its controls in
+  unit 2). The same reason held before unit 4, and Blocked 90's recommended (a) said so; unit 4
+  ran by the user's (b) and read as predicted (as its controls in all 9 cells): one unit spent. The
+  rule above stood. What it lacked was a place to bind: S2's design wrote Q3 unconditionally, so
+  every re-scope of it was a separate decision. Rule: **a design states, at the freeze, which
+  readings are conditional on which earlier ones, and what "not shown" upstream does to them**.
 
 ## 7. Literature found after the construction was built
 

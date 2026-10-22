@@ -61,4 +61,6 @@ tried and were inconclusive [S]. The nearest:
 
 1. **The gradient-flow statement's exact hypotheses** (why: S2 cites "V tied to QᵀK" from
    summaries, and C6 is a toy; cost: one read of the 2023 survey's §3; could change: the wording
-   of "no theorem predicts monotone" only, not any rule). Carry to S2's close.
+   of "no theorem predicts monotone" only, not any rule). Carry to S2's close. **At S2's close
+   (2026-10-22): carried to C2's draft** (`status-S.md` "S2 on one page"), where the energy is
+   stated against the theory.
