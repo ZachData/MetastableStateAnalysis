@@ -27,6 +27,9 @@ Tier 1: exploratory, unregistered.
     python -m trackS_subspace.s2 gate-read --out <dir>    # G1, G1′, G2, G3, G3′ (no GPU)
     python -m trackS_subspace.s2 arms --out <dir>         # a, b, b-eig; refuses before gate-read
     python -m trackS_subspace.s2 read --out <dir>         # R1, R2 (no GPU)
+    python -m trackS_subspace.s2 r3 --out <dir>           # unit 3: S₋ₗ, the pairs, bS, g_bS, 41 bR
+    python -m trackS_subspace.s2 r3-read --out <dir>      # R3 (no GPU)
+    python -m trackS_subspace.s2 s1-r3-loo --out <dir>    # S1's R3 on S₋ₗ, beside (weights only)
 """
 
 from __future__ import annotations
@@ -1424,14 +1427,297 @@ def beside(out: Path) -> None:
     print(f"beside done ({time.time() - t0:.0f}s)", flush=True)
 
 
+# ---------------------------------------------------------------- unit 3: R3 (design "Unit 3: fixed in code")
+
+R3_V_STEPS = SCORED_STEPS
+R3_G_STEPS = R2_STEPS
+R3_STEPS = SCORED_STEPS                                    # 512's G beside, as R2's
+R3_HAAR_N = 100_000                                        # design "Q3's S and selection": 10⁵ draws
+R3_Q = 0.99                                                # the Haar plane's 99th percentile
+R3_MIN_PAIRS = 100                                         # fewer over the model: R3 refused at the step
+R3_G1_MAX = 2                                              # placed (unit 3): as G1, ≤ 2 of R3's 9 cells
+OV_FAMILIES = ("ov_write", "ov_read", "ov_neg", "ov_pos", "ov_cplx")
+
+
+def schur_pairs(f: Dict[str, np.ndarray]) -> Dict:
+    """(b-schur)'s decomposition (as ``arm_b_schur``): ``UV`` (2k × k, orthonormal columns in the
+    core's coordinates), ``S`` (K's restriction to col(B) in real Schur form) and the 2 × 2 blocks'
+    first indices ``starts``. Block i's plane is UV's columns i, i + 1: the plane its edit writes
+    and reads in."""
+    import scipy.linalg as sla
+    U, R = np.linalg.qr(f["Bq"])
+    T = R @ f["Cq"].T @ U
+    S, V = sla.schur(T, output="real")
+    return {"UV": U @ V, "S": S, "starts": [i for i, m in schur_blocks(S) if m == 2]}
+
+
+def arm_b_pairs(f: Dict[str, np.ndarray], sp: Dict, sel: Sequence[int]) -> np.ndarray:
+    """Arm b on the blocks starting at ``sel`` only (bS, bR): K + UV (S′ − S) UVᵀ, S′ = S with those
+    blocks made symmetric. With every block it is arm b (tested)."""
+    S = sp["S"]
+    dS = np.zeros_like(S)
+    for i in sel:
+        blk = S[i:i + 2, i:i + 2]
+        dS[i:i + 2, i:i + 2] = sym(blk) - blk
+    return f["K"] + sp["UV"] @ dS @ sp["UV"].T
+
+
+def pair_shares(f: Dict[str, np.ndarray], sp: Dict, US: np.ndarray) -> List[float]:
+    """Each block's share in S, ‖P_S U_pair‖²_F / 2, U_pair = Q UV[:, i:i+2] in the residual (d × 2)."""
+    P = US.T @ f["Q"] @ sp["UV"]                             # (width, k)
+    return [float(np.sum(P[:, i:i + 2] ** 2) / 2) for i in sp["starts"]]
+
+
+def haar_plane_share(n_draw: int, seed: int, width: int = 10, d: int = D_MODEL,
+                     batch: int = 10_000) -> np.ndarray:
+    """The share of a Haar 2-plane in a fixed ``width``-dim space of R^d: for a Gaussian d × 2 G,
+    tr(G_Sᵀ G_S (Gᵀ G)⁻¹) / 2 with G_S its first ``width`` rows (the law does not depend on S)."""
+    rng = np.random.default_rng(seed)
+    out = []
+    for s in range(0, n_draw, batch):
+        G = rng.standard_normal((min(batch, n_draw - s), d, 2))
+        Gs = G[:, :width]
+        A = np.linalg.inv(np.einsum("ndi,ndj->nij", G, G))
+        out.append(np.einsum("nij,nji->n", np.einsum("ndi,ndj->nij", Gs, Gs), A) / 2)
+    return np.concatenate(out)
+
+
+def loo_spaces(bases: Sequence[np.ndarray], width: int = 10) -> List[np.ndarray]:
+    """S₋ₗ per layer: P̄'s top ``width`` eigenvectors over the other 23 layers' heads (S1's
+    selection-bias fix, `status-S.md` "S1 on one page")."""
+    from trackS_subspace import s1
+    return [s1.shared_space([b for i, b in enumerate(bases) if i // N_HEADS != l], width)
+            for l in range(N_LAYERS)]
+
+
+def select_pairs(heads: Heads, S_loo: Sequence[np.ndarray], thr: float) -> Dict:
+    """Per head the blocks whose plane's share in S₋ₗ is ≥ ``thr``; the rest are bR's pool."""
+    sel, pool, shares, sps = {}, {}, {}, {}
+    for l, h, f in heads.each():
+        sp = schur_pairs(f)
+        sh = pair_shares(f, sp, S_loo[l])
+        sel[(l, h)] = [i for i, x in zip(sp["starts"], sh) if x >= thr]
+        pool[(l, h)] = [i for i, x in zip(sp["starts"], sh) if x < thr]
+        shares[(l, h)], sps[(l, h)] = sh, sp
+    return {"sel": sel, "pool": pool, "shares": shares, "sp": sps}
+
+
+def r_draw(sel: Dict, pool: Dict, step: int, draw: int) -> Tuple[Dict, int]:
+    """bR's draw: per head as many of its other blocks as it has selected, at random (all of them if
+    it has fewer; the shortfall is counted, the same in every draw, and `r3_cells` refuses a step
+    with any: `/challenge-pr` on #249)."""
+    out, short = {}, 0
+    for (l, h), s in sel.items():
+        p = pool[(l, h)]
+        n = min(len(s), len(p))
+        short += len(s) - n
+        rng = np.random.default_rng(seed_for("s2-r3-bR", step, draw, l, h))
+        out[(l, h)] = sorted(int(i) for i in rng.choice(p, n, replace=False)) if n else []
+    return out, short
+
+
+def pair_cores(heads: Heads, sp: Dict, chosen: Dict) -> Tuple[List[np.ndarray], Dict]:
+    """Per layer (H, 2k, 2k) cores with arm b on each head's ``chosen`` blocks, and the sizes."""
+    out, d_sz, k_sz, info = [], [], [], []
+    for l, row in enumerate(heads.frames):
+        cs = []
+        for h, f in enumerate(row):
+            M = arm_b_pairs(f, sp[(l, h)], chosen[(l, h)])
+            a, b = sizes(f["K"], M)
+            d_sz.append(a)
+            k_sz.append(b)
+            info.append({"pairs": len(chosen[(l, h)])})
+            cs.append(M)
+        out.append(np.stack(cs))
+    return out, {"edit": d_sz, "norm": k_sz, "info": info}
+
+
+def r3_read(c: Dict) -> Dict:
+    """R3's reading of a cell, bS against bR (V or G): read only beyond its gain arm; the one-sided
+    guard (Blocked 89 (a), the user's): *lower* while moved further than every bR is written so and
+    not read. ``counts``: read *lower*."""
+    lab, read = c["raw"], True
+    if c["as_its_gain"]:
+        lab, read = f"{lab}, as its gain", False
+    elif c["displacement"] in ("further", "less"):
+        lab = f"{lab}, moved {c['displacement']}"
+        read = not (c["raw"] == "lower" and c["displacement"] == "further")
+    return {"label": lab, "read": read, "counts": bool(read and c["raw"] == "lower")}
+
+
+def r3(out: Path) -> None:
+    """Unit 3's pass: at the scored steps, S₋ₗ from S1's `ov_cplx` bases, the pairs in it, then the
+    base, bS, its gain arm and 41 bR draws (draw 40 is R3's G1)."""
+    import gc
+    import torch
+    from trackS_subspace import s1
+    out.mkdir(parents=True, exist_ok=True)
+    haar = haar_plane_share(R3_HAAR_N, seed_for("s2-r3-haar"), s1.S_WIDTH)
+    thr = float(np.quantile(haar, R3_Q))
+    _save(out / "plan.json", {**run_meta(), "steps": R3_STEPS, "s1_code": s1.code_sha(), "s_width": s1.S_WIDTH,
+                              "haar": {"n": R3_HAAR_N, "q": R3_Q, "threshold": thr, "mean": float(haar.mean()),
+                                       "exact_mean": s1.S_WIDTH / D_MODEL}})
+    print(f"threshold {thr:.5f} (Haar mean {haar.mean():.5f})", flush=True)
+    t0 = time.time()
+    for step in R3_STEPS:
+        path = out / f"r3_{step}.json"
+        rec = _resume(path, {"code": code_sha(), "step": step, "threshold": thr, "configs": {}, "sizes": {},
+                             "short": {}})
+        if rec.get("done"):
+            continue
+        S_loo = loo_spaces([x["ov_cplx"] for x in s1.step_bases(step)], s1.S_WIDTH)
+        model, tok = load(step)
+        heads = Heads(model)
+        sp = select_pairs(heads, S_loo, thr)
+        n_sel = sum(len(v) for v in sp["sel"].values())
+        rec["selection"] = {
+            "pairs_total": sum(len(v["starts"]) for v in sp["sp"].values()), "pairs_in_S": n_sel,
+            "heads_with_pairs_in_S": sum(bool(v) for v in sp["sel"].values()),
+            "per_layer": [sum(len(sp["sel"][(l, h)]) for h in range(N_HEADS)) for l in range(N_LAYERS)],
+            "share_median": float(np.median([x for v in sp["shares"].values() for x in v])),
+            "sel": {f"L{l}H{h}": v for (l, h), v in sp["sel"].items() if v}}
+        print(f"step {step}: {n_sel} pairs in S of {rec['selection']['pairs_total']}", flush=True)
+        if n_sel < R3_MIN_PAIRS:
+            rec["refused"] = f"{n_sel} pairs in S < {R3_MIN_PAIRS}"
+            rec["done"] = True
+            _save(path, rec)
+            del model, heads, sp
+            continue
+        inp = Inputs(tok, "cuda")
+        hook = Hook(model, heads)
+        ps = _Pass(path, rec, model, inp, hook, t0)
+        cores_s, sz_s = pair_cores(heads, sp["sp"], sp["sel"])
+        if not ps.has("bS"):
+            ps.run("bS", cores_s, sz_s)
+        if not ps.has("g_bS"):
+            ps.run("g_bS", [np.stack([gain_core(f, cores_s[l][h]) for h, f in enumerate(row)])
+                            for l, row in enumerate(heads.frames)])
+        for i in range(N_CTL + 1):
+            if ps.has(f"bR_{i}"):
+                continue
+            ch, short = r_draw(sp["sel"], sp["pool"], step, i)
+            rec["short"][str(i)] = short
+            cores, sz = pair_cores(heads, sp["sp"], ch)
+            ps.run(f"bR_{i}", cores, sz)
+        hook.close()
+        rec["done"] = True
+        _save(path, rec)
+        print(f"step {step}: done ({time.time() - t0:.0f}s)", flush=True)
+        del model, heads, inp, hook, ps, sp
+        gc.collect()
+        torch.cuda.empty_cache()
+    print(f"r3 done ({time.time() - t0:.0f}s)", flush=True)
+
+
+def r3_cells(recs: Dict[int, Dict]) -> Dict:
+    """R3's cells from the pass's records (pure): bS against bR draws 0–39 with its gain arm and D,
+    and R3's G1 (draw 40 read as bS, the raw label)."""
+    cells, g1 = {}, {}
+    for key, steps in (("V", R3_V_STEPS), ("G", (512,) + R3_G_STEPS)):
+        for s in steps:
+            r, name = recs[s], f"{key}@{s}"
+            scored = key == "V" or s in R3_G_STEPS
+            if r.get("refused"):
+                cells[name] = {"label": f"refused ({r['refused']})", "read": False, "counts": False,
+                               "scored": scored}
+                continue
+            c = r["configs"]
+            cl = cell(c["bS"][key], _ctl(c, "bR_", key), gain=c["g_bS"][key], d=c["bS"]["D"],
+                      d_ctl=_ctl(c, "bR_", "D"))
+            rr = r3_read(cl)
+            short = max(r.get("short", {}).values(), default=0)
+            if short:                          # bR not as many pairs as bS: refused, read beside
+                rr = {"label": f"{rr['label']} (refused: bR short by {short} pairs; description)",
+                      "read": False, "counts": False}
+            cells[name] = {**cl, **rr, "base": c["base"][key], "scored": scored, "short": short}
+            if scored:
+                g1[name] = label(c[f"bR_{N_CTL}"][key], _ctl(c, "bR_", key))
+    n1 = sum(v != "as its controls" for v in g1.values())
+    ok = n1 <= R3_G1_MAX
+    out = {"cells": cells, "G1": {"labels": g1, "labelled": n1, "pass": ok}}
+    for key, steps, need in (("V", R3_V_STEPS, 4), ("G", R3_G_STEPS, 3)):
+        n = sum(cells[f"{key}@{s}"]["counts"] for s in steps)
+        unmatched = all(cells[f"{key}@{s}"].get("short") for s in steps)
+        out[key] = {"counts": n, "answer": "refused (R3's G1)" if not ok else
+                    "refused as frozen (unmatched: bR short at every step)" if unmatched else
+                    "S1's shared rotation carries it" if n >= need else "not shown"}
+    return out
+
+
+def r3_read_all(out: Path) -> None:
+    """R3 (design "Readings"; guard Blocked 89 (a)) from `r3_{step}.json` (no GPU)."""
+    recs, shas = {}, {}
+    for s in R3_STEPS:
+        p = out / f"r3_{s}.json"
+        body = p.read_bytes()
+        recs[s] = json.loads(body)
+        if not recs[s].get("done"):
+            raise S2Error(f"{p} not done")
+        shas[p.name] = hashlib.sha256(body).hexdigest()[:12]
+    res = {"code": code_sha(), "records": shas, **r3_cells(recs), "selection": {}, "sizes": {}}
+    for s, r in recs.items():
+        res["selection"][str(s)] = {k: v for k, v in r["selection"].items() if k != "sel"}
+        if not r.get("refused"):
+            res["sizes"][str(s)] = {"bS": r["sizes"]["bS"],
+                                    "bR_edit_median": size_summary([r["sizes"][f"bR_{i}"]["edit"]["median"]
+                                                                    for i in range(N_CTL)]),
+                                    "short_max": max(r["short"].values())}
+    _save(out / "r3_readings.json", res)
+    print(f"R3's G1: {res['G1']['labelled']} labelled (pass {res['G1']['pass']}); "
+          f"V: {res['V']['answer']} ({res['V']['counts']} of 5); G: {res['G']['answer']} ({res['G']['counts']} of 4)",
+          flush=True)
+    for k, v in res["cells"].items():
+        if "ctl" not in v:
+            print(f"  {k}: {v['label']}", flush=True)
+            continue
+        print(f"  {k}: bS {v['value']:.3g} (base {v['base']:.3g}) bR [{v['ctl']['min']:.3g}, {v['ctl']['median']:.3g}, "
+              f"{v['ctl']['max']:.3g}] gain {v['gain']['value']:.3g} D {v['D']['value']:.3f} "
+              f"[{v['D']['ctl_min']:.3f}, {v['D']['ctl_max']:.3f}] → {v['label']}"
+              + ("" if v["scored"] else " (beside)"), flush=True)
+
+
+def s1_r3_loo(out: Path) -> None:
+    """S1's R3 table re-read on S₋ₗ (beside, weights only; design "Carried in from S1"): per OV family
+    and S1 step, layer l's compression S₋ₗᵀ V_l S₋ₗ against the same 100 Haar draws as S1's (S1's
+    seeds), summarised as S1's `r3_summary`."""
+    from trackS_subspace import s1
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / "s1_r3_loo.json"
+    res = {"code": code_sha(), "s1_code": s1.code_sha(), "s_width": s1.S_WIDTH, "n_haar": s1.R3_HAAR, "cells": {}}
+    if path.exists():
+        prev = json.loads(path.read_text())
+        if prev["code"] != res["code"]:
+            raise S2Error(f"{path} was written by code {prev['code']}; not resuming")
+        res = prev
+    t0 = time.time()
+    for s in S1_STEPS:
+        if all(f"{s}|{f}" in res["cells"] for f in OV_FAMILIES):
+            continue
+        Ws = s1.step_weights(s)
+        hb = [s1.head_bases(W) for W in Ws]
+        Vl = [s1.layer_ov(Ws, l) for l in range(N_LAYERS)]
+        del Ws
+        for f in OV_FAMILIES:
+            S_loo = loo_spaces([x[f] for x in hb], s1.S_WIDTH)
+            rng = np.random.default_rng(seed_for("s1-r3-haar", s, f))
+            H = [np.linalg.qr(rng.standard_normal((D_MODEL, s1.S_WIDTH)))[0] for _ in range(s1.R3_HAAR)]
+            obs = [s1.r3_reading(U.T @ V @ U) for U, V in zip(S_loo, Vl)]
+            haar = [[s1.r3_reading(h.T @ V @ h) for h in H] for V in Vl]
+            res["cells"][f"{s}|{f}"] = {"layers": obs, "summary": s1.r3_summary(obs, haar)}
+        _save(path, res)
+        print(f"step {s} ({time.time() - t0:.0f}s)", flush=True)
+    print(f"s1-r3-loo done ({time.time() - t0:.0f}s)", flush=True)
+
+
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=("g0", "preflight", "preflight-tool", "beside", "gates", "gate-read",
-                                    "arms", "read"))
+                                    "arms", "read", "r3", "r3-read", "s1-r3-loo"))
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     {"g0": g0, "preflight": preflight, "preflight-tool": preflight_tool, "beside": beside, "gates": gates,
-     "gate-read": gate_read, "arms": arms, "read": read}[a.cmd](a.out)
+     "gate-read": gate_read, "arms": arms, "read": read, "r3": r3, "r3-read": r3_read_all,
+     "s1-r3-loo": s1_r3_loo}[a.cmd](a.out)
 
 
 if __name__ == "__main__":

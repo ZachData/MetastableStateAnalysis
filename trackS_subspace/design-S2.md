@@ -287,6 +287,26 @@ V at 512 and 1000, beyond its controls and gain arm), stated before R1 is read. 
 and the gates, where arms are structured and controls random; R3 compares two structured edits
 (bS against bR), so its guard is Blocked 89.
 
+## Unit 3: fixed in code (2026-10-22, before any R3 output)
+
+**Blocked 89 decided (a), the user's, 2026-10-22: R3 keeps the one-sided guard of 87 (a).** bS
+read *lower* (in V or in G) while it moved the stream further than every bR is written "…, moved
+further" and not read; every other label is read with D beside.
+
+| item | fixed as | why |
+|---|---|---|
+| S₋ₗ | S1's `ov_cplx` bases (raw frame, r 16) at the step; for layer l, P̄'s top 10 over the other 23 layers' 368 heads (`s2.loo_spaces`) | "Q3's S and selection" |
+| a pair's plane | (b-schur)'s 2 × 2 block i: Q UV[:, i:i+2] (`s2.schur_pairs`), in S2's centred, γ-folded frame, while S₋ₗ is in S1's raw frame | it is the plane bS's edit writes and reads in. The frames differ by the centring and LN1's gain; the plane is a Schur plane, not an invariant one unless its block is first |
+| "in S" | share ‖P_S U_pair‖²_F / 2 ≥ the 99th percentile of a Haar 2-plane's share in a 10-dim space of R¹⁰²⁴ (10⁵ draws, `seed_for("s2-r3-haar")`); fewer than 100 pairs over the model: the step refused | "Q3's S and selection" |
+| bR | per head, as many of its other blocks as it has in S, without replacement (`seed_for("s2-r3-bR", step, draw, l, h)`); a head with fewer: all of them, the shortfall counted | the design's "same number of each head's other complex pairs". bR is not matched in edit size: bS's blocks may be larger, so D is beside every cell |
+| gain arm | g_bS: each head's K scaled to ‖K′_bS‖ | "The gain arm (every cell)" |
+| R3's G1 | bR's 41st draw labelled against draws 0–39 at the 9 cells; more than 2 labelled refuses R3 (fallback: 100 draws, re-gated once) | the labeller's check, as G1. **No planted effect for R3**: no known shared-rotation effect exists to plant; stated as a gap |
+| steps | the 5 scored steps; G at 512 beside, as R2's; 0 and 256 not run | "Readings" |
+| answers | V: "S1's shared rotation carries it" at ≥ 4 of 5 read *lower*; G: at ≥ 3 of 4; else "not shown". No V ≤ 7 rule (R3 compares structure, not a return to monotone) | "Readings" |
+| S1's R3, beside | `s2.py s1-r3-loo`: S1's 8 steps, the five OV families, layer l's compression S₋ₗᵀ V_l S₋ₗ against S1's own 100 Haar draws (S1's seeds), S1's `r3_summary` | "Carried in from S1"; description |
+| *after `/challenge-pr` on #249* | a step where bR is short (any head with more pairs in S than out) is refused, its labels kept as description (`s2.r3_cells`). The Haar threshold was the wrong null: a pair's plane lies in its head's write space, which overlaps S, and a random plane there sits as high as the pairs (`status-S.md` "S2 unit 3") | refuse rather than degrade; the shortfall was 577–5,609 pairs at every step |
+| the matched-distance fallback | not run in this unit unless a cell is withheld by the guard and the budget allows; if run, it names its null and passes a planted null at matched D first | as frozen (87 (a)) |
+
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
 | finding | change |
