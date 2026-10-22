@@ -13,16 +13,16 @@
   - Unit 3, the anisotropy control (tier 1, description): the frozen rule reads **"mostly removed"** (centred plateau 20 against 57 at D2's 1e-3; Blocked 95 (a)), but that label's size half is a scale effect: centring makes E₁'s layer-to-layer changes about 30× smaller, and at a matched tolerance (1e-4, 1e-5; post hoc, `/challenge-pr` on #255) it reads "moved" (ratio 0.90–1.10, centred date 1000). What holds at every tolerance: at 512, the break's step, the centred count is 4–13 against 56–60, so the break at 512 is mostly the common direction's (F9 a finding), and a full-size centred break appears at 1000, induction's grid step; seed 0 only. 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
   - Unit 3s, the centred count on the 9 PolyPythias seeds (tier 1, description; Blocked 96 (b)): one centred tolerance on the centred energy's own scale failed its own gate, because no tolerance reads a planted change alike through both counts, so no size comparison between them is calibrated; the rule reads dates only at four centred tolerances (Blocked 97 (a)). The centred date reproduces: the centred half-rise is at 1000, one grid step after the uncentred break, on 8 of 9 seeds (K1 and K2 are one reading on this grid; seed 6 ties on one arm), so F9 is a finding on the seeds as a date (how much of the break is the common direction's is not calibrated), and the centred break shares 1000 with D10's heads; revised after `/challenge-pr` on #256 (findings 1–4); 91 goes to the user, decided (c) (Blocked 98): the draft heads on the two events — `trackC_writeup/status-C.md` "C2 unit 3s"
   - Unit 3b, the LR-dose arm on `pythia-70m` and `pythia-160m` (tier 1, description; Blocked 99 (a), 100 (a)): both dates on both sizes, against three schedules' predictions on Pythia's grid. E₁'s break at 256 and the centred date at 1000 on both: **consistent with step and cumulative** (the same without 70m's fragile E₁ date), an LR level excluded on one seed per size; step against cumulative is not told apart on this grid, and size is confounded. F1 stands — `trackC_writeup/status-C.md` "C2 unit 3b"
-  - Unit 3c, the warmup arm on Mistral GPT-2 small's 5 seeds (tier 1, description): its warmup is logarithmic, not linear (unit 1 corrected before the freeze), so the LR dose predicts far earlier dates than step. E₁'s break falls at 250 or 350 on all 5 seeds: **"consistent with step"**, on E₁'s dates alone (the centred arms disagree from 100 to 2000 and keep every schedule but an LR level). The margin: E₁ rises in two stages (a first at 60–100, in the dose's band), and against a 1000–4000 plateau the joint would read "neither", so the label holds for the larger stage at the frozen window. F1 narrows for E₁'s break only — `trackC_writeup/status-C.md` "C2 unit 3c"
+  - Unit 3c, the warmup arm on Mistral GPT-2 small's 5 seeds (tier 1, description): its warmup is logarithmic, not linear (unit 1 corrected before the freeze), so the LR dose predicts far earlier dates than step. E₁'s break falls at 250 or 350 on all 5 seeds (step's band), and the frozen joint reads **"consistent with step"**, but it turns on two choices: the plateau window (against 1000–4000, "neither") and, on 4 of 5 seeds, a centred arm whose tolerance is one re-init unit (at the next, "neither"; `/challenge-pr` on #258). The centred arms disagree from 100 to 2000, so no centred date; E₁ rises in two stages (a first at 60–100, in the dose's band) that neither schedule maps whole. Whether F1 narrows is Blocked 101, the user's — `trackC_writeup/status-C.md` "C2 unit 3c"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
-  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage at its frozen window, with a first stage in the dose's band and no centred date (description only); how §7 words it is unit 4's — `trackC_writeup/status-C.md` "C2 unit 3c"
+  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); whether F1 narrows is Blocked 101 — `trackC_writeup/status-C.md` "C2 unit 3c"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `ab81e3596b`
+- **Reviewed:** 2026-10-22 · body `d8e1d3fe85`
 <!-- /phase-card -->
 
 ## Units
@@ -35,7 +35,7 @@
 | C2 3. anisotropy control | **done 2026-10-22: frozen before output (95 (a), the user's), preflight cited; reads "mostly removed", the centred date 1000; Blocked 96** | `c2_aniso.py`, design "Unit 3"; "C2 unit 3" below |
 | C2 3s. the centred count on the seeds (96 (b)) | **done 2026-10-22: 96 (b)'s tolerance refused by its gate; dates at four arms (97 (a), the user's); K1 = K2 = 8 of 9, "reproduced"; Blocked 98** | `c2_seeds.py`, design "Unit 3s"; "C2 unit 3s" below |
 | C2 3b. LR-dose arm (70m, 160m) | **done 2026-10-22: 98 (c), 99 (a), 100 (a), the user's; frozen before output; "consistent with step and cumulative" (instantaneous excluded); F1 stands** | `c2_dose.py`, design "Unit 3b"; "C2 unit 3b" below |
-| C2 3c. warmup arm (Mistral GPT-2 small) | **done 2026-10-22: frozen before output (`0623dd9`); the warmup is logarithmic (unit 1 corrected); "consistent with step" on E₁'s dates alone, fragile to the plateau window; the centred arms disagree, every schedule but an LR level kept** | `c2_warmup.py`, design "Unit 3c"; "C2 unit 3c" below |
+| C2 3c. warmup arm (Mistral GPT-2 small) | **done 2026-10-22: frozen before output (`0623dd9`); the warmup is logarithmic (unit 1 corrected); the frozen joint "consistent with step", turning on the plateau window and a one-unit centred arm; no centred date; revised after `/challenge-pr` on #258; Blocked 101** | `c2_warmup.py`, design "Unit 3c"; "C2 unit 3c" below |
 | C2 4, 5, close-out | next: 4 (the rest of the draft) | — |
 
 ## C2 unit 3c, the warmup arm (2026-10-22)
@@ -69,11 +69,18 @@ which is what lets 3c separate step from cumulative; annotated in place (§5).
 
 **The reading, by the frozen rule:** nothing unreadable (steps 0 and 10 at most 1 on E₁ and at
 most 4 on any centred arm, against plateaus of 22–54; every arm gated). The schedules consistent
-with all 10 dates: **step: "consistent with step"** (`with_3b`: step). It rests on E₁'s dates
-alone: each seed's centred arms disagree (100–2000), and by the rule a disagreement widens the
-date, so the centred count keeps every schedule but an LR level. By the outcomes fixed in the
-design: §7 says E₁'s break tracks the updates applied across a 4× change in tokens a step and a
-log warmup; F1 narrows for E₁'s break, description across models.
+with all 10 dates: **step: "consistent with step"** (`with_3b`: step). E₁'s dates are step-only
+on every seed; each seed's centred arms disagree (100–2000), and by the rule a disagreement
+widens the date. **But step survives the centred count on battlestar, caprica, darkmatter and
+expanse only through the null-matched arm** (`/challenge-pr` on #258, finding 1): the fixed arms
+date in the cumulative band and the B-matched arm in fraction / tokens'. That arm's tolerance
+(2.45e-3) is the single largest of the 252 re-init centred drops, 3.3× the next (7.32e-4),
+because the re-inits' uncentred rate at 1e-3 is 0 (every re-init drop is negative), so matching
+it asks for a centred rate of 0. At the next value the arm dates 150–350 and the joint reads
+"neither". So the widening rule, which in 3b only kept schedules, here holds up the positive
+label (finding 3). By the outcomes fixed in the design "consistent with step" narrows F1 for
+E₁'s break; whether it should, given this and the window below, is **Blocked 101** (the user's;
+recommended: F1 stands).
 
 **The margin, stated beside the reading (post hoc, seen at reading).** E₁ rises in two stages on
 every seed: to 14–17 by 100 (from 60–80, the cumulative band 40–150), then to 31–39 by 350
@@ -83,8 +90,11 @@ stages, 1.5–3.5 units above V at the grid step before each date. Against 410m'
 (1000–4000, the beside fixed in the design) the half-rise reads 80 on alias, darkmatter and
 expanse (cumulative) and 200 on battlestar and caprica (step), and the joint would read "neither".
 So the step label holds for the second, larger stage and depends on the plateau window; the
-first stage sits where the dose predicts. Not a reading: the frozen statistic is the joint at its
-window.
+first stage sits where the dose predicts. Neither schedule maps the whole curve (finding 2):
+under step, 410m has nothing at GPT-2's first stage (seed 0's V is 0 through 128); under the
+cumulative dose, GPT-2's step 100 maps to 410m's step 450, most of the way up 410m's rise (19 at
+256, 56 at 512), where GPT-2 is at about 0.3 of its own plateau. Not a reading:
+the frozen statistic is the joint at its window.
 
 **Beside, not the reading:**
 
@@ -95,18 +105,20 @@ window.
 | sustained crossings | E₁: 250, 900, 250, 350, 350 (battlestar dips below half at 800); the fixed centred arms' equal their dates |
 
 **What it changes.** §7 can say: on another suite with a log warmup 2.8× longer and 4× fewer
-tokens a step, E₁'s main rise falls where the count of updates predicts (250–350 against 410m's
-256–512), not where the LR dose, the warmup's fraction or the tokens seen predict, on 5 of 5
-seeds; with the margin beside it (a first stage at 60–100 in the dose's band; the label depends
-on the plateau window). The centred date does not transfer as one date. F1 narrows for E₁'s
-break only, at that weight.
+tokens a step, E₁'s larger rise falls where the count of updates predicts (250–350 against
+410m's 256–512) on 5 of 5 seeds, after a smaller first rise where the LR dose predicts; neither
+schedule maps the whole curve; the frozen joint's "step" turns on the plateau window and on one
+re-init unit. The centred date does not transfer as one date. F1: Blocked 101.
 
 **Not established:** that Pythia's break follows updates (3b could not separate step from
 cumulative there); anything about the model, the data or the tokenizer; a centred date on GPT-2
 small; whether E₁'s two stages are two events or one rise that Pythia's grid (nothing between
 128 and 256) could not split.
 
-**Parked:** (1) `numbers.py` keys for this `reading.json`: unit 4, with 3b's Parked 2.
+**Parked:** (0) A refusal in `c2_seeds.null_matched_tol` when the null's uncentred rate is 0
+(finding 1's ask): not made here, because `c2_seeds.py` is frozen code that 3s's and 3b's
+preflights re-derive their arms with, and a refusal could stop their re-runs; carried to the next
+unit that derives a centred arm, which adds it before its freeze (`LESSONS.md` 6). (1) `numbers.py` keys for this `reading.json`: unit 4, with 3b's Parked 2.
 (2) Whether §7 shows the two-stage rise and the window margin as a figure (V by step, 5 seeds,
 both windows marked): unit 4's call; cost a figure function in `numbers.py`; could change how
 strongly §7 words F1's narrowing.
