@@ -301,3 +301,15 @@ def test_r3_cells_count_and_refuse():
     r = s2.r3_cells(recs)
     assert r["V"]["counts"] == 3 and r["V"]["answer"] == "not shown" and r["G"]["counts"] == 2
     assert r["cells"]["V@1000"]["label"].startswith("refused")
+
+
+def test_r3_refuses_a_step_where_br_is_short():
+    recs = {s: {**_r3_rec(5, 1.0), "short": {"0": 0}} for s in s2.R3_STEPS}
+    recs[512]["short"] = {"0": 7}
+    r = s2.r3_cells(recs)
+    assert not r["cells"]["V@512"]["read"] and "bR short by 7" in r["cells"]["V@512"]["label"]
+    assert r["V"]["counts"] == 4 and r["V"]["answer"] == "S1's shared rotation carries it"
+    for s in s2.R3_STEPS:
+        recs[s]["short"] = {"0": 3}
+    r = s2.r3_cells(recs)
+    assert r["V"]["answer"] == r["G"]["answer"] == "refused as frozen (unmatched: bR short at every step)"

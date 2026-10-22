@@ -1504,7 +1504,8 @@ def select_pairs(heads: Heads, S_loo: Sequence[np.ndarray], thr: float) -> Dict:
 
 def r_draw(sel: Dict, pool: Dict, step: int, draw: int) -> Tuple[Dict, int]:
     """bR's draw: per head as many of its other blocks as it has selected, at random (all of them if
-    it has fewer; the shortfall is counted)."""
+    it has fewer; the shortfall is counted, the same in every draw, and `r3_cells` refuses a step
+    with any: `/challenge-pr` on #249)."""
     out, short = {}, 0
     for (l, h), s in sel.items():
         p = pool[(l, h)]
@@ -1623,18 +1624,24 @@ def r3_cells(recs: Dict[int, Dict]) -> Dict:
             c = r["configs"]
             cl = cell(c["bS"][key], _ctl(c, "bR_", key), gain=c["g_bS"][key], d=c["bS"]["D"],
                       d_ctl=_ctl(c, "bR_", "D"))
-            cells[name] = {**cl, **r3_read(cl), "base": c["base"][key], "scored": scored}
+            rr = r3_read(cl)
+            short = max(r.get("short", {}).values(), default=0)
+            if short:                          # bR not as many pairs as bS: refused, read beside
+                rr = {"label": f"{rr['label']} (refused: bR short by {short} pairs; description)",
+                      "read": False, "counts": False}
+            cells[name] = {**cl, **rr, "base": c["base"][key], "scored": scored, "short": short}
             if scored:
                 g1[name] = label(c[f"bR_{N_CTL}"][key], _ctl(c, "bR_", key))
     n1 = sum(v != "as its controls" for v in g1.values())
-    nv = sum(cells[f"V@{s}"]["counts"] for s in R3_V_STEPS)
-    ng = sum(cells[f"G@{s}"]["counts"] for s in R3_G_STEPS)
     ok = n1 <= R3_G1_MAX
-    return {"cells": cells, "G1": {"labels": g1, "labelled": n1, "pass": ok},
-            "V": {"counts": nv, "answer": "refused (R3's G1)" if not ok else
-                  "S1's shared rotation carries it" if nv >= 4 else "not shown"},
-            "G": {"counts": ng, "answer": "refused (R3's G1)" if not ok else
-                  "S1's shared rotation carries it" if ng >= 3 else "not shown"}}
+    out = {"cells": cells, "G1": {"labels": g1, "labelled": n1, "pass": ok}}
+    for key, steps, need in (("V", R3_V_STEPS, 4), ("G", R3_G_STEPS, 3)):
+        n = sum(cells[f"{key}@{s}"]["counts"] for s in steps)
+        unmatched = all(cells[f"{key}@{s}"].get("short") for s in steps)
+        out[key] = {"counts": n, "answer": "refused (R3's G1)" if not ok else
+                    "refused as frozen (unmatched: bR short at every step)" if unmatched else
+                    "S1's shared rotation carries it" if n >= need else "not shown"}
+    return out
 
 
 def r3_read_all(out: Path) -> None:

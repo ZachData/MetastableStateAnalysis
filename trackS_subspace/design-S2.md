@@ -304,6 +304,7 @@ further" and not read; every other label is read with D beside.
 | steps | the 5 scored steps; G at 512 beside, as R2's; 0 and 256 not run | "Readings" |
 | answers | V: "S1's shared rotation carries it" at ≥ 4 of 5 read *lower*; G: at ≥ 3 of 4; else "not shown". No V ≤ 7 rule (R3 compares structure, not a return to monotone) | "Readings" |
 | S1's R3, beside | `s2.py s1-r3-loo`: S1's 8 steps, the five OV families, layer l's compression S₋ₗᵀ V_l S₋ₗ against S1's own 100 Haar draws (S1's seeds), S1's `r3_summary` | "Carried in from S1"; description |
+| *after `/challenge-pr` on #249* | a step where bR is short (any head with more pairs in S than out) is refused, its labels kept as description (`s2.r3_cells`). The Haar threshold was the wrong null: a pair's plane lies in its head's write space, which overlaps S, and a random plane there sits as high as the pairs (`status-S.md` "S2 unit 3") | refuse rather than degrade; the shortfall was 577–5,609 pairs at every step |
 | the matched-distance fallback | not run in this unit unless a cell is withheld by the guard and the budget allows; if run, it names its null and passes a planted null at matched D first | as frozen (87 (a)) |
 
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
