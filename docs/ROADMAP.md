@@ -246,8 +246,9 @@ Units: `trackS_subspace/status-S.md`.
 + close-out, the third for S1's carried items and Q3); unit 1 done 2026-10-21; frozen (Blocked 87
 (a)); unit 2 done 2026-10-21 (Blocked 88 (a): the displacement guard as description; R1 "not
 shown" under both arms, R2 under b "survives"); unit 3 done 2026-10-22 (Blocked 89 (a): R3 refused
-as frozen, unmatched; a matched R3 or the close-out is Blocked 90)** (`trackS_subspace/design-S2.md`,
-`status-S.md` "S2 unit 1", "S2 unit 2", "S2 unit 3"). What the design changed from the row above:
+as frozen, unmatched); extended to 4 units by Blocked 90 (b), the user's; unit 4 done 2026-10-22
+(the matched R3, description: as its controls in all 9 cells); the close-out next**
+(`trackS_subspace/design-S2.md`, `status-S.md` "S2 unit 1" … "S2 unit 4"). What the design changed from the row above:
 "angle set to 0" and "λ → Re λ" differ: λ → Re λ in A's eigenbasis edits a 410m head by 1.6× its
 own size at 512 (`/challenge-pr` on #246), so the recommended arm (b) removes the rotation in an
 orthonormal basis of each invariant plane (the real Schur blocks made symmetric; Blocked 86 is the

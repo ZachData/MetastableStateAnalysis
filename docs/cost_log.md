@@ -457,3 +457,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-22 | S2 unit 2: CodeRabbit on #248 answered (G3′ base check on the stored record; STATE bold) | 34 | 104k | 2.7M | 25k | #248 |
 | 2026-10-22 | S2 unit 3: R3, S1's R3 on S-minus-l (#249), before /challenge-pr · subagents: runner haiku-5-5 109k · runner batches, main calls: 4 (haiku-5-5) | 55 | 204k | 8.0M | 56k | #249 |
 | 2026-10-22 | S2 unit 3: R3, S1's R3 on S-minus-l (#249), after /challenge-pr (accept with changes; 1-5 taken: R3 refused as frozen, unmatched; write-space null; draws partly one edit; gain label; Schur order) · subagents: general-purpose opus-5-5 2.1M, runner haiku-5-5 109k · runner batches, main calls: 4 (haiku-5-5) | 74 | 229k | 12.1M | 60k | #249 |
+| 2026-10-22 | S2 unit 4 (matched R3), before /challenge-pr · subagents: runner haiku-5-5 141k · runner batches, main calls: 6 (haiku-5-5) | 48 | 173k | 6.0M | 45k | #250 |
