@@ -80,3 +80,32 @@ def test_changed_record_refuses_until_reread(tmp_path, monkeypatch):
     with pytest.raises(n.Refused, match="absent"):
         monkeypatch.setattr(n, "RECORDS", {"r": "data:gone.json"})
         n.produce()
+
+
+def test_draft_sentences_hold_on_the_tracked_table():
+    assert n.check_claims(json.loads(n.TABLE.read_text())["keys"]) == []
+
+
+def test_a_false_sentence_is_caught():
+    table = json.loads(n.TABLE.read_text())["keys"]
+    table["a3.rows"]["value"]["E8"]["step"] = 2000          # E8 after the tie: §5's order sentence breaks
+    table["a5.mid_max"]["value"] = 1                         # "V is 0 at 8 to 64 on every seed" breaks
+    assert set(n.check_claims(table)) == {"§5 E8 between the break and the tie, 512 from its peak",
+                                          "§4 V is 0 at 8 to 64 on every seed"}
+
+
+def test_changed_value_refuses_until_reread(tmp_path, monkeypatch):
+    rec = tmp_path / "r.json"
+    rec.write_text('{"x": 2}')
+    monkeypatch.setattr(n, "DATA", tmp_path)
+    monkeypatch.setattr(n, "RECORDS", {"r": "data:r.json", "a5_audit": "data:r.json", "a5_score": "data:r.json"})
+    monkeypatch.setattr(n, "KEYS", {"x": ("r", lambda r: r["x"])})
+    monkeypatch.setattr(n, "CLAIMS", [])
+    monkeypatch.setattr(n, "TABLE", tmp_path / "numbers.json")
+    monkeypatch.setattr(n, "sha256", lambda p: "h")
+    rec_score = {"score_sha256": "h"}
+    monkeypatch.setattr(n, "load", lambda rid: {**rec_score, "x": 2})
+    n.TABLE.write_text(json.dumps({"records": {"data:r.json": "h"}, "keys": {"x": {"value": 1, "record": "data:r.json"}}}))
+    with pytest.raises(n.Refused, match="changed value"):
+        n.produce()
+    assert n.produce(["x"])["keys"]["x"]["value"] == 2

@@ -18,7 +18,7 @@
   - Whether the break is the LR schedule's or a training event's, and whether it is anisotropy's (F1, F9); units 3, 3b and 3c read each, 3c on another suite's warmup (description only) — `trackC_writeup/design-C2.md` "What C2 may not go past"
 - **After Phase 10:**
   - The anisotropy control: V on token-centred clouds at the 18 steps on seed 0 *(forward pass, cached checkpoints)*
-- **Reviewed:** 2026-10-22 · body `7493815de2`
+- **Reviewed:** 2026-10-22 · body `876c36e56b`
 <!-- /phase-card -->
 
 ## Units
@@ -27,7 +27,7 @@
 |---|---|---|
 | C2 0. design (writing only) | **done 2026-10-22: frozen, Blocked 91–94 decided as recommended (left to Claude)** | `design-C2.md` "Decided 2026-10-22" |
 | C2 1. reading (writing only) | **done 2026-10-22: F5 worded, F9 narrowed, 92 (ii) feasible (GPT-2 small), §2 and §8 drafted; revised after `/challenge-pr` on #253** | `lit-C2-unit1.md`, `draft-C2.md`; "C2 unit 1" below |
-| C2 2. `numbers.py`, figures, §3–§5 | **done 2026-10-22: 109 keys from 13 records, §3–§5 render, figures 1–3 drawn** | `numbers.py`, `numbers.json`, `draft-C2.src.md` → `draft-C2.md`, `fig/`; "C2 unit 2" below |
+| C2 2. `numbers.py`, figures, §3–§5 | **done 2026-10-22: 102 keys from 13 records, 24 sentence claims checked, §3–§5 render, figures 1–3 drawn; revised after `/challenge-pr` on #254** | `numbers.py`, `numbers.json`, `draft-C2.src.md` → `draft-C2.md`, `fig/`; "C2 unit 2" below |
 | C2 3, 3b, 3c. anisotropy control; LR-dose arm (70m, 160m); warmup arm (Mistral GPT-2 small) | next (3 first) | design 92 (i), (iii), (ii); 3c's separations `lit-C2-unit1.md` §5 |
 | C2 4, 5, close-out | after 3c | — |
 
@@ -37,17 +37,28 @@ Writing and tooling; no forward pass. `trackC_writeup/numbers.py`:
 
 | step | what it does | needs |
 |---|---|---|
-| `produce` | reads the 13 records, computes 109 keys, writes `numbers.json` (each key's value and record id, each record's sha256, the code hash); refuses a record whose sha256 differs from the table's until it is named with `--reread`, and refuses unless `score.json` is the one `claims/audits/p_a5_real_run.json` hashes | the main tree's `data/` |
-| `render` / `check` | `draft-C2.src.md` + `numbers.json` → `draft-C2.md`; an unknown key or format, or a non-integer with no format, refuses; `check` fails if the tracked draft is not the render | any checkout (CI: `tests/test_trackC_numbers.py`, pure, 11) |
-| `figures` | `fig/fig1_break.svg`, `fig2_timeline.svg`, `fig3_ov.svg` from `numbers.json` alone; byte-identical on re-run | matplotlib |
+| `produce` | reads the 13 records, computes 102 keys, writes `numbers.json` (each key's value and record id, each record's sha256, the code hash). Refuses: a record whose sha256 differs from the table's, or a key whose value or record moved (a new run directory, a code change), until named with `--reread`; any of `CLAIMS` false (24 assertions the draft's sentences make beyond the printed values: orders, "every", "none", margins, tallies); `score.json` not the one `claims/audits/p_a5_real_run.json` hashes; a V series off the 18-step grid | the main tree's `data/` |
+| `render` / `check` | `draft-C2.src.md` + `numbers.json` → `draft-C2.md`; an unknown key or format, or a non-integer with no format, refuses; `check` fails if the tracked draft is not the render | any checkout (CI: `tests/test_trackC_numbers.py`, pure, 14, the claims on the tracked table among them) |
+| `figures` | `fig/fig1_break.svg`, `fig2_timeline.svg`, `fig3_ov.svg` from `numbers.json` alone; byte-identical on re-run (one matplotlib); CI checks that they draw, not their bytes | matplotlib (`tests/test_trackC_figures.py`, deps) |
 
-**Input set:** the record ids and sha256s in `numbers.json` `records` (A5: `trackA/a5/2026-10-20-u1/seed0/{gate,plan}.json`, `…-u2/score.json`; A3: `trackA/a3/2026-10-20-A3u5/a3_rows.json`; S2: `trackS/s2/2026-10-21-u2/{readings,gate_read}.json`; Pythia's `models/{70M,160M,410M}/pythia-*.yml` from `EleutherAI/pythia` main, fetched 2026-10-22 to `data/trackC/configs/`, read by a line parser only; tracked: `claims/audits/p_a5_real_run.json`, `claims/registry.json`, `core/metrics.py`'s and `core/evalues.py`'s constants). Code hash in the table.
+**Input set:** the record ids and sha256s in `numbers.json` `records` (A5: `trackA/a5/2026-10-20-u1/seed0/{gate,plan}.json`, `…-u2/score.json`; A3: `trackA/a3/2026-10-20-A3u5/a3_rows.json`; S2: `trackS/s2/2026-10-21-u2/{readings,gate_read}.json`; Pythia's `models/{70M,160M,410M}/pythia-*.yml` from `EleutherAI/pythia` main at `a19eecb807ec` (its newest commit, 2025-11-15), fetched 2026-10-22 to `data/trackC/configs/`, read by a line parser only; tracked: `claims/audits/p_a5_real_run.json`, `claims/registry.json`, `core/metrics.py`'s and `core/evalues.py`'s constants). Code hash in the table.
 
 **What it found:** no number moved. Every rendered value equals its pointer in "What the record
 supports" (L1–L4) and in A5's, A3's and S2's status sections. Two sentences the draft had carried
 from summaries were checked against the source and reworded: the prompts are "hand-picked, not
 sampled" (not "outside the training distribution": a Wikipedia paragraph and the *Iliad* may be in
 the Pile), and PolyPythias's seeds differ in initialisation *and* data order.
+
+**`/challenge-pr` on #254: accept with changes.** Findings taken: (1) §5's order line rendered
+"E8 (1000) < E3 … (1000)", copied from A3's order, which placed E8 by its peak date: now E8 is
+written between the groups with both dates; (2) the sentences' assertions are now checked (`CLAIMS`),
+in `produce` and in CI, and the 23 unused keys are gone or used by a claim; (3) the guard now
+compares key values and records, not only a record's hash at a fixed path; (4) the typed results
+are keys (the late rise's steps, the tolerances, the block count, the time zone); "1024
+sequences" stays as the Pythia paper's, cited; (5) grid positions are looked up on the 18-step
+grid, and a series of another length refuses. (6) in part: the configs' upstream commit is
+recorded here; CI checks that the figures draw but not their bytes (matplotlib's SVG moves
+between versions). Answered on the PR.
 
 **Choices made in the writing** (each in the PR's "Worth challenging"):
 

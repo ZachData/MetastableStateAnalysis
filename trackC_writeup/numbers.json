@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "cb07ddf54796",
+ "code": "613cfadb0890",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -136,16 +136,8 @@
    "value": 12,
    "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
   },
-  "grid.last_early": {
-   "value": 512,
-   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
-  },
   "a5.prompts_hash": {
    "value": "976b62d677bc",
-   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
-  },
-  "a5.code": {
-   "value": "7ae0bff62ada",
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
   "a5.max_tokens": {
@@ -172,18 +164,6 @@
    "value": 7,
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
-  "a5.prompts": {
-   "value": [
-    "camus_letranger",
-    "hdbscan_code",
-    "homer_iliad",
-    "latex_monograph",
-    "paper_excerpt",
-    "sullivan_ballou",
-    "wiki_paragraph"
-   ],
-   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
-  },
   "s0.V": {
    "value": [
     0.0,
@@ -207,10 +187,6 @@
    ],
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
-  "s0.V128": {
-   "value": 0.0,
-   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
-  },
   "s0.V256": {
    "value": 19.0,
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
@@ -223,12 +199,15 @@
    "value": 0.0,
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
-  "s0.plateau": {
-   "value": 57.0,
+  "s0.late_rise": {
+   "value": [
+    16000,
+    32000
+   ],
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
-  "s0.half": {
-   "value": 28.5,
+  "s0.plateau": {
+   "value": 57.0,
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
   "s0.break": {
@@ -251,8 +230,12 @@
    "value": true,
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
-  "s0.planted_effect": {
-   "value": 1000,
+  "s0.tols": {
+   "value": [
+    0.0001,
+    0.001,
+    0.01
+   ],
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
   "s0.tol_steps": {
@@ -267,10 +250,6 @@
    "value": [
     512
    ],
-   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
-  },
-  "s0.null_tail_ge7": {
-   "value": 5e-05,
    "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   },
   "reg.at": {
@@ -292,10 +271,6 @@
   "reg.lag_min": {
    "value": 3,
    "record": "repo:claims/audits/p_a5_real_run.json"
-  },
-  "reg.relevance": {
-   "value": 0.6,
-   "record": "repo:claims/registry.json"
   },
   "reg.falsifier_K": {
    "value": 3,
@@ -666,10 +641,6 @@
    ],
    "record": "data:trackA/a5/2026-10-20-u2/score.json"
   },
-  "a3.code": {
-   "value": "92c992e25340",
-   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
-  },
   "a3.rows": {
    "value": {
     "E5": {
@@ -1012,13 +983,13 @@
    "value": true,
    "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
   },
+  "a3.ngram_blocks": {
+   "value": 64,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
   "a3.floor": {
    "value": 4.0,
    "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
-  },
-  "s2.code": {
-   "value": "37a2d6a9046d",
-   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
   },
   "s2.a": {
    "value": {

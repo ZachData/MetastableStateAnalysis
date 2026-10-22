@@ -196,7 +196,7 @@ of the grid; the first gate failed on four rows, whose spread grows by orders of
 training, and the revised gate passes on every row dated here (appendix B).
 
 *Table 1. Seed 0's rows, ordered by their dated step. All are on `pythia-410m`'s 18
-steps, v1's 7 prompts, except the n-gram rows, read on 64 blocks of 1024 tokens of
+steps, v1's 7 prompts, except the n-gram rows, read on 64 held-out text blocks from
 the Pile's validation split.*
 
 | row | what changes | dated step |
@@ -220,14 +220,15 @@ V over its plateau median; the n-gram rows as the fall into their minimum), cut 
 the dated step. Shaded: the warmup, to step 1430.*
 
 **The order.** E5 (8) < E6u (128) < E6b
-(256) < E1 = E2 (512) < E8 (1000) < E3 = E4 = E10
-(1000). The rank collapse and the unigram minimum come before the break; the
+(256) < E1 = E2 (512) < E3 = E4 = E10 (1000), with
+E8 between the two groups: dated from step 0 it ties the second (1000), dated from
+its peak the first (512). The rank collapse and the unigram minimum come before the break; the
 break falls with the OV fall, one grid step after the bigram minimum and one before the
 previous-token and induction heads. Of the 11 pairs read with the break and among the
 circuit rows, 7 are aligned within one grid step, 2 are not (the
 rank collapse and the unigram minimum come first) and 2 are unread (E7 censored,
 E11 refused). That E1 and E2 align is not new: this project's earlier medians of the OV maps
-already put E2's fall at 512.
+already put E2's fall at the same step.
 
 **Every aligned pair is inside the warmup.** The schedule's own row reads 1000 by construction
 (the learning rate reaches half its peak at step 715, between grid steps), and inside a linear ramp "within one grid step" includes "driven by the same ramp". Nothing in

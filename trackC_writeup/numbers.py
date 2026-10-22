@@ -52,12 +52,14 @@ RECORDS = {
     "s2_gates": "data:trackS/s2/2026-10-21-u2/gate_read.json",
     "metrics": "repo:core/metrics.py",
     "evalues": "repo:core/evalues.py",
-    # EleutherAI/pythia models/{70M,160M,410M}/pythia-*.yml, fetched 2026-10-22 from main
+    # EleutherAI/pythia models/{70M,160M,410M}/pythia-*.yml, fetched 2026-10-22 from main at a19eecb807ec
     "cfg_70m": "data:trackC/configs/pythia-70m.yml",
     "cfg_160m": "data:trackC/configs/pythia-160m.yml",
     "cfg_410m": "data:trackC/configs/pythia-410m.yml",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
+#: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
+GRID = (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 54000, 143000)
 S2_STEPS = ("0", "256", "512", "1000", "2000", "4000", "143000")
 #: The rows §5's table and figure 2 show, in the order of their dates.
 A3_ROWS = ("E5", "E6u", "E6b", "E1", "E2", "E8", "E3", "E4", "E10")
@@ -122,8 +124,30 @@ def _steps(a3: dict) -> List[int]:
     return list(a3["steps"])
 
 
+def _i(step: int) -> int:
+    return GRID.index(step)
+
+
+def _upto(v: Sequence[float], step: int) -> List[float]:
+    """V at every grid step up to and including `step`."""
+    return list(v[:_i(step) + 1])
+
+
+def _between(v: Sequence[float], lo: int, hi: int) -> List[float]:
+    return list(v[_i(lo):_i(hi) + 1])
+
+
 def _v(score: dict, seed: str) -> List[float]:
-    return score["notes"][seed]["V"]
+    v = score["notes"][seed]["V"]
+    if len(v) != len(GRID):
+        raise Refused(f"refusing: seed {seed}'s V has {len(v)} steps, not the {len(GRID)} of GRID")
+    return v
+
+
+def _late_rise(v: Sequence[float]) -> List[int]:
+    """The consecutive pair of steps after 4000 across which V rises most."""
+    j = max(range(_i(4000), len(GRID) - 1), key=lambda i: v[i + 1] - v[i])
+    return [GRID[j], GRID[j + 1]]
 
 
 def _at(a3: dict, series: Sequence[float], step: int) -> float:
@@ -147,9 +171,9 @@ def _utc(iso: str):
 
 def _early_argmax(score: dict) -> int:
     """The grid step (of 0, 2, 4) at which the largest early count sits, on the seed that has it."""
-    seed = max(SEEDS, key=lambda k: max(_v(score, k)[:3]))
-    v = _v(score, seed)[:3]
-    return (0, 2, 4)[v.index(max(v))]
+    seed = max(SEEDS, key=lambda k: max(_upto(_v(score, k), 4)))
+    v = _upto(_v(score, seed), 4)
+    return GRID[v.index(max(v))]
 
 
 def _lane(a3: dict, rid: str) -> dict:
@@ -194,34 +218,29 @@ KEYS: Dict[str, tuple] = {
     "grid.steps": ("a3", _steps),
     "grid.n": ("a3", lambda a: len(_steps(a))),
     "grid.n_to4000": ("a3", lambda a: sum(0 < s <= 4000 for s in _steps(a))),
-    "grid.last_early": ("a3", lambda a: max(s for s in _steps(a) if s < 1000)),
     "a5.prompts_hash": ("a5_seed0", lambda g: g["prompts_hash"]),
-    "a5.code": ("a5_seed0", lambda g: g["code"]),
     "a5.max_tokens": ("a5_plan0", lambda p: p["max_tokens"]),
     "a5.dtype": ("a5_plan0", lambda p: p["dtype"]),
     "a5.tf32": ("a5_plan0", lambda p: p["tf32"]),
     "rel_tol": ("metrics", lambda s: constant(s, "ENERGY_VIOLATION_REL_TOL")),
     "kappa": ("evalues", lambda s: constant(s, "DEFAULT_KAPPA")),
     "a5.n_prompts": ("a5_seed0", lambda g: len(g["sensitivity"]["leave_one_out"])),
-    "a5.prompts": ("a5_seed0", lambda g: sorted(g["sensitivity"]["leave_one_out"])),
     # seed 0 (§4; A5's gate record, whose V equals A3's E1 and the panel's)
     "s0.V": ("a5_seed0", lambda g: g["known_answer"]["V"]),
-    "s0.V128": ("a5_seed0", lambda g: g["known_answer"]["V"][7]),
-    "s0.V256": ("a5_seed0", lambda g: g["known_answer"]["V"][8]),
-    "s0.V512": ("a5_seed0", lambda g: g["known_answer"]["V"][9]),
-    "s0.Vmax_to128": ("a5_seed0", lambda g: max(g["known_answer"]["V"][:8])),
+    "s0.V256": ("a5_seed0", lambda g: g["known_answer"]["V"][_i(256)]),
+    "s0.V512": ("a5_seed0", lambda g: g["known_answer"]["V"][_i(512)]),
+    "s0.Vmax_to128": ("a5_seed0", lambda g: max(_upto(g["known_answer"]["V"], 128))),
+    "s0.late_rise": ("a5_seed0", lambda g: _late_rise(g["known_answer"]["V"])),
     "s0.plateau": ("a5_seed0", lambda g: g["known_answer"]["break"]["plateau_median"]),
-    "s0.half": ("a5_seed0", lambda g: g["known_answer"]["break"]["plateau_median"] / 2),
     "s0.break": ("a5_seed0", lambda g: g["known_answer"]["break"]["step"]),
     "s0.V_end": ("a5_seed0", lambda g: g["known_answer"]["V"][-1]),
     "s0.ln1_break": ("a5_seed0", lambda g: g["d10"]["seed_reading"]["beside_ln1_b35"]["break"]["step"]),
     "s0.energy_rel_diff": ("a5_seed0", lambda g: g["known_answer"]["energy_max_rel_diff"]),
     "s0.V_equal": ("a5_seed0", lambda g: g["known_answer"]["V_equal"]),
-    "s0.planted_effect": ("a5_seed0", lambda g: g["planted_effect"]["reading"]["step"]),
+    "s0.tols": ("a5_seed0", lambda g: sorted(float(t) for t in g["sensitivity"]["rel_tol"])),
     "s0.tol_steps": ("a5_seed0", lambda g: [g["sensitivity"]["rel_tol"][t]["step"]
                                             for t in sorted(g["sensitivity"]["rel_tol"], key=float)]),
     "s0.loo_steps": ("a5_seed0", lambda g: sorted({v["step"] for v in g["sensitivity"]["leave_one_out"].values()})),
-    "s0.null_tail_ge7": ("a5_seed0", lambda g: g["planted_null"]["tail_ge7"]),
     # the registration (§3)
     "reg.at": ("a5_audit", lambda a: a["order"]["registered_at"]),
     "reg.first_record": ("a5_audit", lambda a: a["order"]["first_record_at"]),
@@ -229,7 +248,6 @@ KEYS: Dict[str, tuple] = {
     "reg.first": ("a5_audit", lambda a: a["order"]["registered_first"]),
     "reg.lag_min": ("a5_audit", lambda a: round((_utc(a["order"]["first_record_at"])
                                                  - _utc(a["order"]["registered_at"])).total_seconds() / 60)),
-    "reg.relevance": ("registry", lambda r: _p_a5(r)["relevance"]),
     "reg.falsifier_K": ("registry", lambda r: int(re.search(r"K <= (\d+)", _p_a5(r)["falsifier"]).group(1))),
     "reg.p0": ("a5_score", lambda s: str(Fraction(s["p0"]).limit_denominator(100))),
     # the nine seeds (§4)
@@ -245,19 +263,19 @@ KEYS: Dict[str, tuple] = {
     "a5.plateau_min": ("a5_score", lambda s: min(s["per_seed"][k]["plateau_median"] for k in SEEDS)),
     "a5.plateau_max": ("a5_score", lambda s: max(s["per_seed"][k]["plateau_median"] for k in SEEDS)),
     "a5.plateaus": ("a5_score", lambda s: [s["per_seed"][k]["plateau_median"] for k in SEEDS]),
-    "a5.V128_max": ("a5_score", lambda s: max(_v(s, k)[7] for k in SEEDS)),
+    "a5.V128_max": ("a5_score", lambda s: max(_v(s, k)[_i(128)] for k in SEEDS)),
     "a5.half_min": ("a5_score", lambda s: min(s["per_seed"][k]["plateau_median"] for k in SEEDS) / 2),
-    "a5.V512_min": ("a5_score", lambda s: min(_v(s, k)[9] for k in SEEDS)),
+    "a5.V512_min": ("a5_score", lambda s: min(_v(s, k)[_i(512)] for k in SEEDS)),
     "a5.half_max": ("a5_score", lambda s: max(s["per_seed"][k]["plateau_median"] for k in SEEDS) / 2),
     "a5.step0_seeds": ("a5_score", lambda s: [int(k) for k in SEEDS if _v(s, k)[0] > 0]),
     "a5.step0_n": ("a5_score", lambda s: sum(_v(s, k)[0] > 0 for k in SEEDS)),
     "a5.step0_min": ("a5_score", lambda s: min(_v(s, k)[0] for k in SEEDS if _v(s, k)[0] > 0)),
     "a5.step0_max": ("a5_score", lambda s: max(_v(s, k)[0] for k in SEEDS)),
-    "a5.early_max": ("a5_score", lambda s: max(max(_v(s, k)[:3]) for k in SEEDS)),
-    "a5.early_max_seed": ("a5_score", lambda s: int(max(SEEDS, key=lambda k: max(_v(s, k)[:3])))),
+    "a5.early_max": ("a5_score", lambda s: max(max(_upto(_v(s, k), 4)) for k in SEEDS)),
+    "a5.early_max_seed": ("a5_score", lambda s: int(max(SEEDS, key=lambda k: max(_upto(_v(s, k), 4))))),
     "a5.early_max_step": ("a5_score", lambda s: _early_argmax(s)),
     "a5.step0_clean": ("a5_score", lambda s: sum(_v(s, k)[0] == 0 for k in SEEDS)),
-    "a5.mid_max": ("a5_score", lambda s: max(max(_v(s, k)[3:7]) for k in SEEDS)),
+    "a5.mid_max": ("a5_score", lambda s: max(max(_between(_v(s, k), 8, 64)) for k in SEEDS)),
     "a5.ln1_512": ("a5_score", lambda s: sum(s["notes"][k]["beside_ln1_b35"]["break"]["step"] == 512
                                              for k in SEEDS)),
     "a5.d10_n": ("a5_score", lambda s: len(_d10_pairs(s))),
@@ -276,7 +294,6 @@ KEYS: Dict[str, tuple] = {
                                                 max(p["shares"][1] for p in _d10_pairs(s).values()
                                                     if p.get("further") == "prev")]),
     # the timeline (§5; seed 0)
-    "a3.code": ("a3", lambda a: a["code"]),
     "a3.rows": ("a3", lambda a: {r: {"row": a["rows"][r]["row"], "step": a["rows"][r].get("step"),
                                      "reading": a["rows"][r]["reading"],
                                      "censored": a["rows"][r].get("censored", False)}
@@ -295,13 +312,65 @@ KEYS: Dict[str, tuple] = {
     "a3.n_unread": ("a3", lambda a: _verdicts(a, "unread")),
     "a3.aligned_in_warmup": ("a3", lambda a: all("inside warmup (E10)" in p.get("notes", [])
                                                  for p in a["reading"]["pairs"] if p["verdict"] == "aligned")),
+    "a3.ngram_blocks": ("a3", lambda a: a["rows"]["E6u"]["n_units"]),
     "a3.floor": ("a3", lambda a: a["constants"]["FLOOR"]),
     # S2 (figure 3; §6 is unit 4's)
-    "s2.code": ("s2_readings", lambda r: r["code"]),
     "s2.a": ("s2_readings", lambda r: _s2_cells(r, "a")),
     "s2.b": ("s2_readings", lambda r: _s2_cells(r, "b")),
     "s2.g3p": ("s2_gates", _g3p),
 }
+
+
+#: What the draft's sentences assert of the keys, beyond the values it prints. Checked by `produce`
+#: (a failing claim refuses the table) and by CI on the tracked table, so a re-run that keeps the
+#: render consistent but makes a sentence false cannot pass. Each names its sentence.
+CLAIMS: List[tuple] = [
+    ("§3.1 the grid is A5's", lambda k: tuple(k["grid.steps"]) == GRID),
+    ("§3.2 one date at every tolerance and prompt left out",
+     lambda k: len(set(k["s0.tol_steps"])) == 1 and len(set(k["s0.loo_steps"])) == 1
+     and k["s0.tol_steps"][0] == k["s0.break"]),
+    ("§3.3 the plateau is not the end", lambda k: k["s0.V_end"] != k["s0.plateau"]),
+    ("§3.4 registered before the first record", lambda k: k["reg.first"] is True and k["reg.lag_min"] > 0),
+    ("§3.1 seed 0 reproduces exactly", lambda k: k["s0.V_equal"] is True),
+    ("§4 seed 0: no drop up to 128, the break at 512", lambda k: k["s0.Vmax_to128"] == 0 and k["s0.break"] == 512),
+    ("§4 all seeds inside, K = n", lambda k: k["a5.K"] == k["a5.n"] and set(k["a5.steps"]) <= {256, 512}),
+    ("§4 the rest date 512, as seed 0", lambda k: k["a5.n512"] + len(k["a5.at256"]) == k["a5.n"]),
+    ("§4 both outliers inside", lambda k: k["a5.K"] == k["a5.n"]),
+    ("§4 a count moved by one stays in the window",
+     lambda k: k["a5.V128_max"] + 1 < k["a5.half_min"] and k["a5.V512_min"] - 1 >= k["a5.half_max"]),
+    ("§4 V is 0 at 8 to 64 on every seed", lambda k: k["a5.mid_max"] == 0),
+    ("§4 seed 0 and the clean seeds", lambda k: k["a5.step0_clean"] + k["a5.step0_n"] == k["a5.n"]),
+    ("§4 the second energy agrees", lambda k: k["a5.ln1_512"] == k["a5.n"] and k["s0.ln1_break"] == 512),
+    ("§5 the order, strict where written <, tied where =",
+     lambda k: _st(k, "E5") < _st(k, "E6u") < _st(k, "E6b") < _st(k, "E1") == _st(k, "E2")
+     < _st(k, "E3") == _st(k, "E4") == _st(k, "E10")),
+    ("§5 E8 between the break and the tie, 512 from its peak",
+     lambda k: _st(k, "E1") <= _st(k, "E8") <= _st(k, "E3") and k["a3.E8_peak"] == _st(k, "E1")),
+    ("§5 E6b′ dates as E6b", lambda k: k["a3.E6b_full"] == _st(k, "E6b")),
+    ("§5 every aligned pair inside the warmup", lambda k: k["a3.aligned_in_warmup"] is True
+     and _st(k, "E3") < k["a3.warmup_end"] == k["cfg.warmup_steps"]),
+    ("§5 the pairs add up", lambda k: k["a3.n_aligned"] + k["a3.n_misaligned"] + k["a3.n_unread"] == k["a3.n_pairs"]),
+    ("§5 E2's bottom is induction's step", lambda k: k["a3.E2_bottom"] == _st(k, "E3")),
+    ("§5 the schedule beside previous-token at 512",
+     lambda k: abs(k["a3.share512"]["E10"] - k["a3.share512"]["E4"]) < 0.05),
+    ("§5 the shares order the tie", lambda k: k["a3.share512"]["E1"] > k["a3.share512"]["E2"]
+     > k["a3.share512"]["E4"] > k["a3.share512"]["E3"]),
+    ("§5 every located seed ties, one tie step", lambda k: k["a5.d10_tied"] == k["a5.d10_n"]
+     and k["a5.d10_tie_steps"] == [_st(k, "E3")]),
+    ("§5 the seeds' D10 counts add up", lambda k: k["a5.d10_prev"] + len(k["a5.d10_other"]) == k["a5.d10_n"]
+     and k["a5.d10_n"] + len(k["a5.d10_unlocated"]) == k["a5.n"]),
+    ("§5 previous-token's share above induction's on the seeds that say so",
+     lambda k: k["a5.d10_prev_share"][0] > k["a5.d10_ind_share"][1]),
+]
+
+
+def _st(k: Dict[str, object], row: str) -> int:
+    return k["a3.rows"][row]["step"]
+
+
+def check_claims(keys: Dict[str, dict]) -> List[str]:
+    k = {n: v["value"] for n, v in keys.items()}
+    return [name for name, ok in CLAIMS if not ok(k)]
 
 
 def compute(records: Dict[str, object]) -> Dict[str, dict]:
@@ -338,9 +407,20 @@ def produce(reread: Sequence[str] = ()) -> dict:
     audit, score_path = recs["a5_audit"], resolve(RECORDS["a5_score"])
     if audit["score_sha256"] != sha256(score_path):
         raise Refused("refusing: score.json is not the one P-A5's tracked real-run record hashes")
+    keys = compute(recs)
+    false = check_claims(keys)
+    if false:
+        raise Refused(f"refusing: the draft's sentences no longer hold: {false}")
+    if TABLE.is_file():
+        old = json.loads(TABLE.read_text())["keys"]
+        moved = [n for n, v in keys.items() if n in old and old[n] != v
+                 and n not in reread and v["record"] not in reread]
+        if moved:
+            raise Refused(f"refusing: keys changed value or record with no record's change named: {moved}; "
+                          f"read the change, then pass --reread for each key or record")
     return {"producer": "python -m trackC_writeup.numbers produce",
             "code": sha256(Path(__file__))[:12],
-            "records": hashes, "keys": compute(recs)}
+            "records": hashes, "keys": keys}
 
 
 # ---------------------------------------------------------------------------
@@ -372,9 +452,12 @@ def _sci(v: float) -> str:
     return f"{m} × 10{str(int(e)).translate(_SUP)}" if m != "1" else f"10{str(int(e)).translate(_SUP)}"
 
 
-def _and(xs: Sequence) -> str:
-    xs = [_num(x) for x in xs]
+def _andstr(xs: Sequence[str]) -> str:
     return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+def _and(xs: Sequence) -> str:
+    return _andstr([_num(x) for x in xs])
 
 
 FORMATS: Dict[str, Callable] = {
@@ -387,6 +470,8 @@ FORMATS: Dict[str, Callable] = {
     "range3": lambda v: f"{v[0]:.3f}–{v[1]:.3f}",
     "date": lambda v: v[:10],
     "onoff": lambda v: "on" if v else "off",
+    "tz": lambda v: "UTC" + ("+" if v[19] == "+" else "−") + str(int(v[20:22])),
+    "scis": lambda v: _andstr([_sci(x) for x in v]),
     "word": lambda v: WORDS[int(v)], "Word": lambda v: WORDS[int(v)].capitalize(),
     "uniq": lambda v: _and(sorted(set(v))) if len(set(v)) > 1 else _num(v[0]),
     "step": lambda v: ("refused" if v["reading"].startswith("refused") else
@@ -420,7 +505,7 @@ def render(source: str, keys: Dict[str, dict]) -> str:
 # Figures (from the table alone)
 # ---------------------------------------------------------------------------
 
-INK, MUTED, GRID = "#0b0b0b", "#52514e", "#d8d7d2"
+INK, MUTED, RULE = "#0b0b0b", "#52514e", "#d8d7d2"
 SERIES = ("#2a78d6", "#eb6834", "#1baf7a")          # dataviz reference palette, slots 1–3
 WARM = "#efeee9"
 LANE_FLOOR = -1.2      # figure 2 cuts a lane here: its late fall (E5, E6u) is not what it dates
@@ -430,7 +515,7 @@ def _style(plt) -> None:
     plt.rcParams.update({"svg.hashsalt": "c2", "svg.fonttype": "none", "font.size": 9,
                          "axes.edgecolor": MUTED, "axes.labelcolor": INK, "xtick.color": MUTED,
                          "ytick.color": MUTED, "axes.spines.top": False, "axes.spines.right": False,
-                         "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.6,
+                         "axes.grid": True, "grid.color": RULE, "grid.linewidth": 0.6,
                          "lines.linewidth": 1.6, "legend.frameon": False})
 
 
@@ -551,7 +636,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description="C2's numbers, draft and figures from their records")
     ap.add_argument("step", choices=("produce", "render", "check", "figures"))
     ap.add_argument("--reread", action="append", default=[],
-                    help="a record id whose change has been read (produce only)")
+                    help="a record id or key whose change has been read (produce only)")
     a = ap.parse_args(argv)
     if a.step == "produce":
         table = produce(a.reread)

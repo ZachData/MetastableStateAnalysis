@@ -112,7 +112,7 @@ the number of drops at one checkpoint: over the {{cfg.layers}} steps of each pro
 the {{a5.n_prompts}} prompts. In the identity-weight picture V is 0. A drop is a departure from
 that picture's prediction, not the violation of a theorem (§2.1). The tolerance keeps float
 noise out of the count; on seed 0 the break's date below is {{s0.tol_steps|uniq}} at each of the
-tolerances 10⁻⁴, 10⁻³ and 10⁻², and {{s0.loo_steps|uniq}} with any one prompt left out.
+tolerances {{s0.tols|scis}}, and {{s0.loo_steps|uniq}} with any one prompt left out.
 
 β = 1 is the one setting seed 0 had been read at before the seeds were registered (§3.4). A
 second energy, E₃.₅ in each block's input frame (after its first layer norm, positions 1 to
@@ -126,7 +126,7 @@ training (on seed 0, {{s0.plateau}} on the plateau and {{s0.V_end}} at the last 
 reference taken there would let a late rise move an early date. Two other rules were set aside
 on seed 0 before the seeds were read: the first step with V > 0 moves with a single stray drop,
 and V's change-weighted centroid in log step lands at about {{a3.E1_centroid|f0}} on seed 0,
-pulled late by the rise between 16 000 and 32 000.
+pulled late by the rise between {{s0.late_rise[0]}} and {{s0.late_rise[1]}}.
 
 ### 3.4 What was registered, and when
 
@@ -140,7 +140,7 @@ E = κ p^(κ−1) with κ = {{kappa|f1}}, a p-to-e calibrator fixed before the r
 2021]. Nobody holds that null. It says the step is the run's, scattered over the early grid; it
 is the alternative to "the step is the recipe's", and beating it says only that.
 
-The registration commit (`{{reg.commit}}`) is dated {{reg.at|date}}, {{reg.at|time}} UTC−5; the
+The registration commit (`{{reg.commit}}`) is dated {{reg.at|date}}, {{reg.at|time}} {{reg.at|tz}}; the
 first seed record was written at {{reg.first_record|time}} UTC the same day, {{reg.lag_min}}
 minutes later. Every seed's first and last checkpoints were already on disk, and an earlier
 phase of this project had read the first.
@@ -203,7 +203,7 @@ of the grid; the first gate failed on four rows, whose spread grows by orders of
 training, and the revised gate passes on every row dated here (appendix B).
 
 *Table 1. Seed 0's rows, ordered by their dated step. All are on `pythia-410m`'s {{grid.n}}
-steps, v1's {{a5.n_prompts}} prompts, except the n-gram rows, read on 64 blocks of 1024 tokens of
+steps, v1's {{a5.n_prompts}} prompts, except the n-gram rows, read on {{a3.ngram_blocks}} held-out text blocks from
 the Pile's validation split.*
 
 | row | what changes | dated step |
@@ -227,14 +227,15 @@ V over its plateau median; the n-gram rows as the fall into their minimum), cut 
 the dated step. Shaded: the warmup, to step {{cfg.warmup_steps}}.*
 
 **The order.** E5 ({{a3.rows[E5]|step}}) < E6u ({{a3.rows[E6u]|step}}) < E6b
-({{a3.rows[E6b]|step}}) < E1 = E2 ({{a3.rows[E1]|step}}) < E8 ({{a3.rows[E8]|step}}) < E3 = E4 = E10
-({{a3.rows[E3]|step}}). The rank collapse and the unigram minimum come before the break; the
+({{a3.rows[E6b]|step}}) < E1 = E2 ({{a3.rows[E1]|step}}) < E3 = E4 = E10 ({{a3.rows[E3]|step}}), with
+E8 between the two groups: dated from step 0 it ties the second ({{a3.rows[E8]|step}}), dated from
+its peak the first ({{a3.E8_peak}}). The rank collapse and the unigram minimum come before the break; the
 break falls with the OV fall, one grid step after the bigram minimum and one before the
 previous-token and induction heads. Of the {{a3.n_pairs}} pairs read with the break and among the
 circuit rows, {{a3.n_aligned}} are aligned within one grid step, {{a3.n_misaligned}} are not (the
 rank collapse and the unigram minimum come first) and {{a3.n_unread}} are unread (E7 censored,
 E11 refused). That E1 and E2 align is not new: this project's earlier medians of the OV maps
-already put E2's fall at 512.
+already put E2's fall at the same step.
 
 **Every aligned pair is inside the warmup.** The schedule's own row reads 1000 by construction
 (the learning rate reaches half its peak at step {{cfg.warmup_half}}, between grid steps), and inside a linear ramp "within one grid step" includes "driven by the same ramp". Nothing in
