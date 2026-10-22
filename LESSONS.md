@@ -1444,6 +1444,15 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   displacement guard would have left R1 and R2 unread at every cell, found here before any scored
   step, which is the preflight's job (Blocked 87). Rule: **every population given to the
   preflight is on the statistic's own scale (the same sum, the same units) as its null.**
+- 2026-10-22 (S2 unit 3, R3): the pairs "in S" were selected at a Haar plane's 99th-percentile
+  share, a null nobody checked against the trained pairs before the freeze. The trained median
+  pair's share already sat above it, so the rule took 37–69 % of the model's pairs, bR (as many
+  of each head's *other* pairs) could not match the count, and R3 read S's pairs against fewer,
+  smaller edits. The preflight ran on V, the reading's statistic, not on the selection that
+  defines the arm. Second, R3 asked whether S's pairs carry what R1 and R2 read, and was run after
+  R1 and R2 read nothing under arm b. Rule: **a selection threshold set against a null is run on
+  the real population before the freeze, and its selected fraction is stated in the design; a
+  reading conditional on an earlier effect is re-scoped when that effect is not shown.**
 
 ## 7. Literature found after the construction was built
 

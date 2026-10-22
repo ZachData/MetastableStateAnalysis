@@ -12,6 +12,7 @@
   - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
   - Unit 3 (Blocked 83–85 (a), the user's): QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000, and are the most concentrated of the 7 from 2000 on (`ov_write` is at 512–1000); inside each family's 10 most shared directions the radial sign reads S at no step from 512 (inside random subspaces' range at 512, and at 1000–4000 random subspaces hold no attractive part in 18–20 of 24 layers, so only "less repulsive" can show); the OV families' S is drawn from the heads it compresses, a bias of unknown size, so QK's readings are the clean ones; collapsible negative pairs are rarer than random in QK's S at 1000–4000; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
   - S1 closed 2026-10-21 at its revised exit (3 units + close-out): the shared spaces are described against an exact null, never counted or calibrated on the effect side — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - S2 unit 3 (Blocked 89 (a), the user's): removing rotation only in the pairs lying in S1's shared complex space (left out by layer) changes the energy break and in-context copying no more than removing it in random other pairs (R3 "not shown" in both), but the frozen rule counted 37–69 % of all pairs as "in S", so the random side edited fewer pairs and the comparison is unmatched; with every pair's rotation removed already inert (unit 2) there was little to carry. S1's readings inside the OV families' shared spaces hold on a leave-the-layer-out S from 512 (its early `ov_neg` / `ov_pos` readings were the selection bias) — `trackS_subspace/status-S.md` "S2 unit 3"
   - S2 unit 2 (Blocked 87 (a) and 88 (a), the user's): neither symmetrising every head's OV nor removing its rotation in the Schur planes takes the energy break back toward monotone at any scored step (R1 "not shown" under both; the symmetric part raises the violations beyond random edits of its size at 512 and 143000), and the one OV-only edit tried with a known destination does not either (every head given its step-128 map halves the violations at 512 and 1000 but leaves 29–61); in-context copying survives the rotation's removal at all four steps; the displacement guard was made description for R1 and R2 after it refused both planted effects (R3's guard is Blocked 89) — `trackS_subspace/status-S.md` "S2 unit 2"
   - S2 unit 1 (Blocked 86 (a) and (i), the user's: arm b in Schur planes, 3 units): the hook is the model at its base core and every arm's read-back is exact; at 8000, off the grid, both arms move the residual stream further than all 40 of their size-matched random edits, so the frozen displacement guard would leave their cells unread; arm a's random edits alone break most in-context copying; removing rotation in the Schur planes changes about a tenth of each head's map; the shared write space meets the shared read and key spaces from 512; the freeze is Blocked 87 — `trackS_subspace/status-S.md` "S2 unit 1"
   - S2 opened 2026-10-21 (Blocked 86 since decided (a) and (i)): every head's OV edited at once, (a) to its symmetric part and (b) with its rotation removed (recommended: in an orthonormal basis of each invariant plane, since λ → Re λ in the eigenbasis edits a head by 1.6× its size at 512), each against 40 random edits matched in size and in the edited head's norm, and read only beyond the gain change alone; reading the energy break, in-context copying and S1's shared rotation; no theorem predicts "monotone" for (a) — `trackS_subspace/design-S2.md`
@@ -20,10 +21,10 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); arm a's displacement at 143000 (11.9 against 1.0–1.1, S2 unit 2, Parked); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - A matched R3 (Blocked 90; S2 unit 3, Parked); arm a's displacement at 143000 (11.9 against 1.0–1.1, S2 unit 2, Parked); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-22 · body `3b6dba2f0f`
+- **Reviewed:** 2026-10-22 · body `5aac8bc1c8`
 <!-- /phase-card -->
 
 ## Units
@@ -38,12 +39,15 @@
 | S2 0. scan, design, `sympy` check | **done 2026-10-21; Blocked 86 decided (a) and (i), the user's** | `lit-S2.md`, `design-S2.md`, `tools/math_checks/s2_ov_arms.py` (24 of 24 after `/challenge-pr` on #246) |
 | S2 1. code, G0, the preflight at 8000; R1b, R2 beside; then the freeze | **done 2026-10-21: G0 passes (its (b) read-back revised); the preflight's refusals argued; both arms move the stream further than every control at 8000; the freeze is Blocked 87** | "S2 unit 1" below; `s2.py g0`, `preflight`, `beside` |
 | S2 2. G1–G3 at the design points; R1, R2 | **done 2026-10-21: Blocked 87 (a) and 88 (a), the user's; the gates pass with the guard as description; R1 "not shown" under both arms; R2 under b "survives" at 4 of 4** | "S2 unit 2" below; `s2.py gates`, `gate-read`, `arms`, `read` |
-| S2 3. R3 on S₋ₗ; S1's R3 on S₋ₗ beside | not started | `design-S2.md` "The arms" |
+| S2 3. R3 on S₋ₗ; S1's R3 on S₋ₗ beside | **done 2026-10-22: Blocked 89 (a), the user's; R3 "not shown" in V and G, on an unmatched comparison (the frozen selection took 37–69 % of pairs); S1's R3 on S₋ₗ as S1's from 512; a matched R3 is Blocked 90** | "S2 unit 3" below; `s2.py r3`, `r3-read`, `s1-r3-loo` |
 | S2 close-out | not started | — |
 
 ## Corrections received
 
-(none)
+- 2026-10-22, S2 unit 3: S1's "the OV families' R3 readings carry a bias of unknown size" is now
+  measured: on a leave-the-layer-out S they read as before from 512, so the bias moves none of
+  S1's readings there; before 512 `ov_neg`'s and `ov_pos`'s outside-Haar `share` layers (up to 11)
+  were the bias (0–2 on S₋ₗ). "S2 unit 3" below.
 
 ## S1 on one page (closed 2026-10-21)
 
@@ -705,4 +709,77 @@ OV-only edit" narrowed to the one edit tried, its halving at 512 and 1000 stated
 
 **Re-run.** `s2.py gates --out <dir>` (≈ 30 min), `gate-read`, `arms` (refuses without
 `gate_read.json`), `read`, each `--out` the same directory.
+
+## S2 unit 3, R3 on S₋ₗ and S1's R3 beside (2026-10-22)
+
+Blocked 89 decided (a), the user's: R3 keeps the one-sided guard (`design-S2.md` "Unit 3: fixed in
+code", written before any R3 output). Tier 1, one rung.
+
+**Run.** From `../Mets-work` (the `runner` agent), env as unit 2; code `e62e8518cd16` (`45da0c5`).
+Records `data/trackS/s2/2026-10-22-u3/` (main tree): `plan.json` `b5122ae16a40`, `r3_{512,1000,2000,4000,143000}.json`
+`c9f2fd0bc252`, `9a350416d8ff`, `207796542514`, `c4138c274501`, `613d6b8c07ff` (44 configurations
+each: base, bS, g_bS, bR 0–40), `r3_readings.json` `f438fc7c6fb2`, `s1_r3_loo.json` `56a091701b94`.
+`r3` 249 s, `s1-r3-loo` 210 s. Base V and G equal unit 2's at every step.
+
+**The selection did not select.** The Haar threshold (a random plane's 99th-percentile share in a
+10-dim space) is 0.0183 (mean 0.0098). The trained heads' Schur planes sit higher as a population:
+the median share of *every* pair is 0.016, 0.020, 0.025, 0.020, 0.020 at 512 … 143000. So "in S"
+took most of the model's rotation:
+
+| step | pairs in S / all | heads with any | bR shortfall (pairs, worst draw) | edit, median over heads (‖K‖): bS; bR (median draw) | D: bS; bR [min, max] |
+|---|---|---|---|---|---|
+| 512 | 3,966 / 10,819 (37 %) | 367 | 577 | 0.075; 0.063 | 0.025; [0.019, 0.021] |
+| 1000 | 6,237 / 10,645 (59 %) | 377 | 3,697 | 0.075; 0.039 | 0.043; [0.024, 0.025] |
+| 2000 | 7,225 / 10,450 (69 %) | 372 | 5,609 | 0.070; 0.022 | 0.043; [0.025, 0.028] |
+| 4000 | 5,871 / 10,485 (56 %) | 382 | 3,180 | 0.068; 0.039 | 0.063; [0.030, 0.032] |
+| 143000 | 5,978 / 10,390 (58 %) | 380 | 3,013 | 0.077; 0.045 | 0.267; [0.119, 0.125] |
+
+A head with more pairs in S than out cannot give bR its count, so bR edits fewer pairs, by less,
+and bS moves the stream further than every bR at every step. **The comparison is unmatched**: it
+reads "S's pairs" against fewer, smaller edits, not against as many random ones.
+
+**R3 (`r3_readings.json`).** R3's G1 (a 41st bR read as bS): 1 of 9 labelled (G at 2000), passes.
+
+| cell | bS (base); bR [min, median, max]; gain → label |
+|---|---|
+| V 512 | 54 (56); [54, 55, 55]; 56 → as its controls, moved further |
+| V 1000 | 57 (56); [56, 56, 58]; 56 → as its controls, moved further |
+| V 2000 | 60 (61); [60, 61, 63]; 60 → as its controls, moved further |
+| V 4000 | 53 (57); [53, 54, 55]; 57 → as its controls (a tie at the minimum), moved further |
+| V 143000 | 67 (70); [61, 66, 69]; 70 → as its controls, moved further |
+| G 1000 | 8.199 (8.214); [8.203, 8.211, 8.217]; 8.211 → **lower, moved further: not read** (89 (a)) |
+| G 2000 | 11.891 (11.894); [11.882, 11.887, 11.897]; 11.894 → as its controls, moved further |
+| G 4000 | 12.416 (12.437); [12.432, 12.441, 12.452]; 12.433 → **lower, moved further: not read** (89 (a)) |
+| G 143000 | 12.311 (12.126); [12.060, 12.135, 12.187]; 12.119 → higher, moved further |
+| G 512 (beside) | −0.003 (−0.003) → as its controls, moved further |
+
+**R3: "not shown" in V (0 of 5) and in G (0 of 4).** Under 88's rule (option (b)) the two withheld
+G cells would read, 2 of 4, still short of 3: Blocked 89's choice changed no answer. The G
+differences from base are 0.003–0.19 on 8–12. In V, editing 1.2–3.2 times the random pairs' size inside S moves
+the violations no more than the random pairs do. With R1 under arm b (every pair) as its controls
+at every step and copying surviving it (unit 2), there was nothing in V or G for S's pairs to
+carry: Q3 was conditional on an effect Q1 and Q2 did not show.
+
+**S1's R3 on S₋ₗ (beside, description; `s1_r3_loo.json`, S1's own Haar draws).** From 512 the
+leave-the-layer-out S reads as S1's S: `share` 0 in every OV family at 512–2000, layers outside
+Haar within 0–2 of S1's count at 512–2000 and 143000 (`arg` within 0–3), the end state's shares
+as before (0.52–0.74). At 4000 `ov_pos`'s share median falls (0.118 → 0.041; outside 12 → 11).
+Before 512 the bias was real: `ov_neg`'s layers outside on `share` fall from 5, 7, 11 to 2, 1, 0
+at 0, 128, 256, `ov_pos`'s from 3, 4, 3 to 0, 0, 2. So **the OV families' R3 readings from 512 on
+carry no selection bias that moves them**; S1's "reads nothing of S's own from 512" stands for OV
+as for QK; its early `ov_neg` / `ov_pos` readings were the bias (Corrections received, above).
+
+**Not established.** Whether the most shared pairs carry anything at a matched selection (each
+head's top pairs by share against as many of its others, matched in size): the frozen rule could
+not ask it. That the heads' planes lean into S beyond chance per head: the population's shift
+above Haar is description, not a test (S₋ₗ is built from the other layers' heads, which share the
+directions by S1's own reading).
+
+**Parked.**
+- A matched R3 (fixed top-m pairs per head by share; bR from the same head's rest, matched in
+  edit size). Why: the frozen selection took 37–69 % of pairs. Cost: one unit (the pass is 4 min).
+  Could change: R3's "not shown" from unmatched to matched. Against it: arm b on every pair moves
+  nothing in V and leaves copying (unit 2), so a subset has little to carry. *Blocked 90.*
+
+**Re-run.** `s2.py r3 --out <dir>` (≈ 4 min), `r3-read`, `s1-r3-loo` (≈ 4 min, weights only).
 
