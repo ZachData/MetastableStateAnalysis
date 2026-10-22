@@ -31,6 +31,9 @@
 # Phase 1e's four new long passages and their provenance (p1e_energy_field/long_prompts_1e.py). Inputs, not run output.
 !p1e_energy_field/long_prompts_1e/*.txt
 !p1e_energy_field/long_prompts_1e/provenance.json
+# C2's numbers table and figures (trackC_writeup/numbers.py): rendered from records, tracked so the draft renders on any checkout.
+!trackC_writeup/numbers.json
+!trackC_writeup/fig/*.svg
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh

@@ -57,9 +57,9 @@ Each is written into the draft beside the line it limits, not only in a limits s
 |---|---|---|---|
 | 1 | Introduction: the particle picture's prediction (E_β non-decreasing in depth: the identity-weight dynamics ascend it, and a drop between layers is a violation, `core/metrics.py` `energy_violation_severity`), what trained 410m does at step 143000, and the question "when does it stop?"; contributions L1–L3, L6 with F1 and F2 stated in the first page | L1–L3, L6; F1, F2 | to write (unit 4) |
 | 2 | Background: the energy and its monotonicity (exact hypotheses), the developmental stages (n-grams, previous-token, induction), Pythia's warmup | F5, F8 | drafted (unit 1, `draft-C2.md`) |
-| 3 | Setup: 410m and its 18 steps, the 9 PolyPythias seeds, the prompts, E_β and V, the half-rise statistic, the registration order (`P-A5` before the download) | F4 | to write |
-| 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | to write |
-| 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | to write |
+| 3 | Setup: 410m and its 18 steps, the 9 PolyPythias seeds, the prompts, E_β and V, the half-rise statistic, the registration order (`P-A5` before the download) | F4 | drafted (unit 2, `draft-C2.src.md`) |
+| 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | drafted (unit 2) |
+| 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | drafted (unit 2) |
 | 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | to write (unit 4; 94 (a)) |
 | 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | after units 3, 3b, 3c (92 (i), (iii), (ii)) |
 | 8 | Related work | F8, F9 | drafted (unit 1, `draft-C2.md`) |
@@ -68,8 +68,8 @@ Each is written into the draft beside the line it limits, not only in a limits s
 
 ## Numbers and figures
 
-"Write once" applies to a paper too. The draft's Markdown source (under `trackC_writeup/`, made in
-unit 2) carries a key where a number goes; a script under `trackC_writeup/` (numbers.py) reads each key from its
+"Write once" applies to a paper too. The draft's Markdown source (`trackC_writeup/draft-C2.src.md`,
+made in unit 2; rendered to `draft-C2.md`) carries a key where a number goes; a script under `trackC_writeup/` (numbers.py) reads each key from its
 record (the A5 seeds' records, A3's table, S2's `gate_read.json`, the panel CSV) and renders
 the draft; a key with no record is an error. Its producer step writes a tracked table under
 `trackC_writeup/` (each key's value, record path and record sha256, as
