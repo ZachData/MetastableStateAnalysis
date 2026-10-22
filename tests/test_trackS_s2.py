@@ -348,3 +348,13 @@ def test_matched_draw_matches_edit_and_stays_outside():
     assert seen == {(6, 8)}
     ch, r, n_ok = s2.matched_draw([12, 0], [4, 10, 2], edit, 0)          # nothing within 10 %
     assert n_ok == 0 and ch == [2, 4] and r < 0.5
+
+
+def test_the_design_selection_shas_are_the_records():
+    import json
+    from pathlib import Path
+    d = s2.REPO / "data" / "trackS" / "s2" / "2026-10-22-u4"
+    if not d.exists():
+        pytest.skip("records live in the main tree")
+    for step, want in s2.R3M_SEL_SHA.items():
+        assert s2.sel_sha(json.loads(Path(d / f"select_{step}.json").read_text())["sel"]) == want

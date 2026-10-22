@@ -1937,6 +1937,15 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   `base_D` ≤ 1.6e-6). Rule: before the Stop protocol's last report, list the PR's inline review
   comments (`gh api repos/<repo>/pulls/<N>/comments`) and answer each; a refusal check runs on the
   stored record, not only on the branch that computes it.
+- 2026-10-22, S2 unit 4 (found by `/challenge-pr` on #250, findings 1 and 3): the design chose m = 2
+  from a scratch script outside the repo, and the write-up said bS's top 2 per head "are about
+  half" of the pairs that lean into S. The committed records said the reverse: bS holds 84–94 % of
+  them, but half of bS is filler, and 102–163 heads have none, so the null holds there by
+  construction. When the scratch check was rerun as tracked code, it found a fact the scratch had
+  missed: m = 1 would have been refused at every step. Rule: a number that justifies a design
+  choice comes from a tracked command with its record's sha; a sentence about a selection's
+  purity is read off the record in both directions (what share of the selection passes, what
+  share of the passing is selected).
 
 ## 12. Deleted, then needed
 

@@ -33,6 +33,7 @@ Tier 1: exploratory, unregistered.
     python -m trackS_subspace.s2 r3m-select --out <dir>   # unit 4: the top-m pairs, weights only (CPU)
     python -m trackS_subspace.s2 r3m --out <dir>          # unit 4: bS, g_bS, 41 bR matched in edit size
     python -m trackS_subspace.s2 r3m-read --out <dir>     # the matched R3, description (no GPU)
+    python -m trackS_subspace.s2 r3m-msweep --out <dir>   # the selection at m = 1-4 (m's choice), weights only
 """
 
 from __future__ import annotations
@@ -1691,7 +1692,15 @@ def r3_read_all(out: Path, prefix: str = "r3") -> None:
 R3M_M = 2                                                  # placed (unit 4): each head's top m pairs by share
 R3M_TOL = 0.10                                             # placed (unit 4): bR's edit within 10 % of bS's, per head
 R3M_NULL_N = 2000                                          # random planes per head in its write space
-R3M_MAX_UNMATCHED = 0.10                                   # more heads outside R3M_TOL: the step refused
+R3M_MAX_UNMATCHED = 0.10                                   # placed (unit 4): more heads outside R3M_TOL, the step refused
+R3M_M_SWEEP = (1, 2, 3, 4)                                 # `r3m-msweep`: the producer of m's choice (design "Unit 4")
+# sha256 (12) of each step's selection as quoted in the design ("sel", keys sorted): `r3m` refuses another
+R3M_SEL_SHA = {512: "fdd771df10cf", 1000: "9b678a99fcec", 2000: "9e20446e327f", 4000: "5c6df1a90871",
+               143000: "687dc38dd88a"}
+
+
+def sel_sha(sel: Dict) -> str:
+    return hashlib.sha256(json.dumps(sel, sort_keys=True).encode()).hexdigest()[:12]
 
 
 def pair_skews(sp: Dict) -> List[float]:
@@ -1766,9 +1775,11 @@ def r3m_selection(tp: Dict) -> Dict:
     n_all = sum(v["n"] for v in per.values())
     n_sel = sum(len(v) for v in tp["sel"].values())
     n_ok = np.array([matched_draw(s, tp["pool"][k], per[k]["edit"], 0)[2] for k, s in tp["sel"].items()])
-    return {"m": R3M_M, "pairs_total": n_all, "pairs_in_S": n_sel, "fraction": n_sel / n_all,
-            "above_write_q99_all": sum(v["above"] for v in per.values()) / n_all,
-            "above_write_q99_selected": sum(v["sel_above"] for v in per.values()) / n_sel,
+    n_above, n_sel_above = sum(v["above"] for v in per.values()), sum(v["sel_above"] for v in per.values())
+    return {"m": len(next(iter(tp["sel"].values()))), "pairs_total": n_all, "pairs_in_S": n_sel,
+            "fraction": n_sel / n_all, "above_write_q99_all": n_above / n_all,
+            "above_write_q99_selected": n_sel_above / n_sel,
+            "share_of_passing_in_bS": n_sel_above / max(n_above, 1),
             "heads_with_any_above": sum(v["above"] > 0 for v in per.values()),
             "unmatched_heads": int((n_ok == 0).sum()),
             "candidates_per_head": {"median": float(np.median(n_ok)), "min": int(n_ok.min())},
@@ -1795,10 +1806,28 @@ def r3m_select(out: Path) -> None:
               f"min {sel['candidates_per_head']['min']}; bS edit median {sel['bS_edit_median']:.4f}", flush=True)
 
 
+def r3m_msweep(out: Path) -> None:
+    """The producer of m's choice (`/challenge-pr` on #250, finding 3): the selection's summary at
+    each m of ``R3M_M_SWEEP`` and scored step, weights only (CPU), to `msweep.json`."""
+    from trackS_subspace import s1
+    out.mkdir(parents=True, exist_ok=True)
+    res = {"code": code_sha(), "s1_code": s1.code_sha(), "cells": {}}
+    for step in R3_STEPS:
+        S_loo = loo_spaces([x["ov_cplx"] for x in s1.step_bases(step)], s1.S_WIDTH)
+        heads = Heads(load_cpu(step))
+        for m in R3M_M_SWEEP:
+            sel = r3m_selection(top_pairs(heads, S_loo, step, m))
+            res["cells"][f"{step}|{m}"] = {k: v for k, v in sel.items() if k not in ("sel", "per_head")}
+            print(f"step {step} m {m}: selected above q99 {sel['above_write_q99_selected']:.3f}, of passing in bS "
+                  f"{sel['share_of_passing_in_bS']:.2f}, unmatched {sel['unmatched_heads']}, bS edit "
+                  f"{sel['bS_edit_median']:.4f}", flush=True)
+    _save(out / "msweep.json", res)
+
+
 def r3m(out: Path) -> None:
     """Unit 4's pass: per scored step the top-m pairs, then base, bS, g_bS and 41 matched bR draws
-    (draw 40 is R3's G1). Refuses without `select_{step}.json` (the selection quoted first) or when
-    the selection moved since."""
+    (draw 40 is R3's G1). Refuses without `select_{step}.json` (the selection quoted first), when the
+    selection moved since, or when it is not the design's (``R3M_SEL_SHA``)."""
     import gc
     import torch
     from trackS_subspace import s1
@@ -1821,6 +1850,8 @@ def r3m(out: Path) -> None:
         rec["selection"] = r3m_selection(tp)
         if rec["selection"]["sel"] != json.loads(pre.read_text())["sel"]:
             raise S2Error(f"step {step}: the selection differs from {pre.name}")
+        if sel_sha(rec["selection"]["sel"]) != R3M_SEL_SHA[step]:
+            raise S2Error(f"step {step}: the selection is not the design's ({R3M_SEL_SHA[step]})")
         print(f"step {step}: {rec['selection']['pairs_in_S']} pairs in S of {rec['selection']['pairs_total']}",
               flush=True)
         if rec["selection"]["unmatched_heads"] > R3M_MAX_UNMATCHED * N_LAYERS * N_HEADS:
@@ -1892,13 +1923,14 @@ def s1_r3_loo(out: Path) -> None:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=("g0", "preflight", "preflight-tool", "beside", "gates", "gate-read",
-                                    "arms", "read", "r3", "r3-read", "s1-r3-loo", "r3m-select", "r3m", "r3m-read"))
+                                    "arms", "read", "r3", "r3-read", "s1-r3-loo", "r3m-select", "r3m", "r3m-read",
+                                    "r3m-msweep"))
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     {"g0": g0, "preflight": preflight, "preflight-tool": preflight_tool, "beside": beside, "gates": gates,
      "gate-read": gate_read, "arms": arms, "read": read, "r3": r3, "r3-read": r3_read_all,
      "s1-r3-loo": s1_r3_loo, "r3m-select": r3m_select, "r3m": r3m,
-     "r3m-read": lambda o: r3_read_all(o, "r3m")}[a.cmd](a.out)
+     "r3m-read": lambda o: r3_read_all(o, "r3m"), "r3m-msweep": r3m_msweep}[a.cmd](a.out)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@
   - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
   - Unit 3 (Blocked 83–85 (a), the user's): QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000, and are the most concentrated of the 7 from 2000 on (`ov_write` is at 512–1000); inside each family's 10 most shared directions the radial sign reads S at no step from 512 (inside random subspaces' range at 512, and at 1000–4000 random subspaces hold no attractive part in 18–20 of 24 layers, so only "less repulsive" can show); the OV families' S is drawn from the heads it compresses, a bias of unknown size, so QK's readings are the clean ones; collapsible negative pairs are rarer than random in QK's S at 1000–4000; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
   - S1 closed 2026-10-21 at its revised exit (3 units + close-out): the shared spaces are described against an exact null, never counted or calibrated on the effect side — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
-  - S2 unit 4 (Blocked 90 (b), the user's: one more unit, as description): with each head's 2 pairs most in the shared complex space against 2 of its others removing as much rotation, neither the energy break nor copying moves beyond the random pairs at any step (as its controls in all 9 cells); the selected pairs move the stream slightly further than the random ones at 1000, 4000 and 143000. Against a random plane in each head's own write space, 3.4–5.0 % of pairs lie in the shared space beyond its 99th percentile, where 1 % would by chance — `trackS_subspace/status-S.md` "S2 unit 4"
+  - S2 unit 4 (Blocked 90 (b), the user's: one more unit, as description): with each head's 2 pairs most in the shared complex space against 2 of its others removing as much rotation, neither the energy break nor copying moves beyond the random pairs at any step (as its controls in all 9 cells). About half the selected pairs lean into the shared space beyond chance; in 102–163 heads none does, and there the null holds by construction. The selected pairs move the stream further than the random ones at 1000, 4000 and 143000 (about 1.5× at 143000), so the null holds against the larger edit in effect. Against a random plane in each head's own write space, 3.4–5.0 % of pairs lie in the shared space beyond its 99th percentile, where 1 % would by chance — `trackS_subspace/status-S.md` "S2 unit 4"
   - S2 unit 3 (Blocked 89 (a), the user's): removing rotation only in the pairs lying in S1's shared complex space (left out by layer) was meant to be read against removing it in as many random other pairs, but the frozen rule counted 37–69 % of all pairs as "in S" (a random plane in a head's own write space sits as high), so the random side could not match the count and R3 is refused as frozen (unmatched); as description, neither the energy break nor copying moves beyond the fewer random pairs, and with every pair's rotation removed already inert (unit 2) there was little to carry. S1's readings inside the OV families' shared spaces hold on a leave-the-layer-out S from 512 (its early `ov_neg` / `ov_pos` readings were the selection bias) — `trackS_subspace/status-S.md` "S2 unit 3"
   - S2 unit 2 (Blocked 87 (a) and 88 (a), the user's): neither symmetrising every head's OV nor removing its rotation in the Schur planes takes the energy break back toward monotone at any scored step (R1 "not shown" under both; the symmetric part raises the violations beyond random edits of its size at 512 and 143000), and the one OV-only edit tried with a known destination does not either (every head given its step-128 map halves the violations at 512 and 1000 but leaves 29–61); in-context copying survives the rotation's removal at all four steps; the displacement guard was made description for R1 and R2 after it refused both planted effects (R3's guard is Blocked 89) — `trackS_subspace/status-S.md` "S2 unit 2"
   - S2 unit 1 (Blocked 86 (a) and (i), the user's: arm b in Schur planes, 3 units): the hook is the model at its base core and every arm's read-back is exact; at 8000, off the grid, both arms move the residual stream further than all 40 of their size-matched random edits, so the frozen displacement guard would leave their cells unread; arm a's random edits alone break most in-context copying; removing rotation in the Schur planes changes about a tenth of each head's map; the shared write space meets the shared read and key spaces from 512; the freeze is Blocked 87 — `trackS_subspace/status-S.md` "S2 unit 1"
@@ -26,7 +26,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-22 · body `8fd69b06d0`
+- **Reviewed:** 2026-10-22 · body `11a45f9ae5`
 <!-- /phase-card -->
 
 ## Units
@@ -851,14 +851,22 @@ energy break or of copying than as much rotation removed elsewhere in the same h
 
 **Beside, the displacement.** At 1000, 4000 and 143000 bS moves the stream further than every bR
 at the same edit size (D 0.019 against 0.016–0.017; 0.027 against 0.023–0.024; 0.142 against
-0.085–0.095). At 512 and 2000 it moves as far as the bR draws do. The edits in S are about the same size
-per head, so this hints that they add coherently across heads (S is shared); nothing here tests it.
+0.085–0.095, about 1.5×). At 512 and 2000 it moves as far as the bR draws do. bR is matched on the
+weight edit, but V and G read the stream. Two explanations, neither tested: the edits in S add
+coherently across heads (S is shared), or, at 143000, S partly overlaps the massive-activation
+coordinates (S1, "S1 on one page"), so an edit of the same size acts on more input. Either way bS
+was the larger edit *in effect* and still read as its controls, which makes the null stronger
+there, not weaker (`/challenge-pr` on #250, finding 2).
 
 **The selection, against the right null** (weights only; `design-S2.md` "Unit 4"). Against each
 head's own write space (the null unit 3's review named), 3.4–5.0 % of all pairs lie above their
 head's 99th percentile of a random plane's share, where 1 % would if the planes were random (they
 are Schur planes, so this is description). 41–58 % of bS's pairs pass. So a minority of planes
-lean into S, and the top 2 per head are about half of them.
+lean into S, and bS holds 84–94 % of all the pairs that pass. But only about half of bS's pairs
+pass, and 102–163 of 384 heads have no passing pair at all. In those heads bS against bR compares
+one chance-level pair with another, so the null there holds by construction. **The null reads on a
+selection that is about half filler** (`/challenge-pr` on #250, finding 1). bR's pool keeps only
+23–83 passing pairs over the whole model.
 
 **Not established.** Whether a selection by the write-space test itself (a variable count per
 head) would read otherwise. Whether m other than 2 would; m = 2 was fixed before output, m = 1 is
@@ -868,5 +876,14 @@ Every limit of unit 3 on the Schur order holds here.
 **Parked.** None new. The extra displacement goes to the close-out as a description line. Why:
 it is the one thing in which bS differs from bR. Cost: none. It could change nothing in R3.
 
+**After `/challenge-pr` on #250** (accept with changes; findings 1–3 taken): (1) the selection is
+about half filler, and the null holds by construction in the 102–163 heads with no passing pair
+(above); (2) the extra displacement is about 1.5× at 143000, with the massive coordinates named as
+the other explanation; (3) m's choice has a tracked producer, `r3m-msweep` (`msweep.json`
+`07f4d745e930`), which also shows m = 1 would be refused (43–63 heads unmatched).
+`R3M_MAX_UNMATCHED` is labelled placed. `r3m` now refuses a selection whose content sha is not the
+design's (`R3M_SEL_SHA`). Code after the run: `08a7d72d9d64`. No line that computes `r3m`'s or
+`r3m-read`'s numbers changed.
+
 **Re-run.** `s2.py r3m-select --out <dir>` (weights only, ≈ 3 min CPU), `r3m` (≈ 5 min GPU),
-`r3m-read`.
+`r3m-read`; `r3m-msweep` (≈ 8 min CPU) for m's choice.
