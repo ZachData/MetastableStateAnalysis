@@ -463,3 +463,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-22 | S2 close-out (writing only, #251), after /challenge-pr (accept with changes; 1-4 taken: G3' raises V at 2000, C2's copy keeps the 0.1 norm limit, the drop reason held before unit 4 (LESSONS 6), 2b's line names the count and steps) · subagents: general-purpose opus-5-5 1.3M | 61 | 207k | 9.2M | 65k | #251 |
 | 2026-10-22 | C2 opened: design proposed (writing only), before /challenge-pr | 36 | 139k | 3.8M | 37k | #252 |
 | 2026-10-22 | C2 opened: design proposed (writing only, #252), after /challenge-pr (accept with changes; 1-5 taken: energy sign, LR-dose arm and continued training in 92, L1 step-0 count, tracked numbers table, anisotropy rule) · subagents: general-purpose opus-5-5 1.9M | 50 | 163k | 5.9M | 44k | #252 |
+| 2026-10-22 | C2 freeze + unit 1 (reading, writing only), before /challenge-pr | 59 | 184k | 6.8M | 45k | #253 |
