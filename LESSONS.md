@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-22 (C2 unit 3s): unit 3's Parked 2 and Blocked 96 (b) costed the seeds unit as "a
+  re-download of about 160 checkpoints (the seed checkpoints are no longer in the HF cache)".
+  All 162 (9 seeds × 18 steps) are in `HDD_1TB/mets_data/hf`, where A5 put them and where
+  `STATE.md`'s disk line says they are. "No longer in the HF cache" was true only of the default
+  cache. The user chose (b) on that cost; it was a cheaper option than written, so the choice
+  stands. In the same session the start hook printed the main tree's `STATE.md` at #240 while
+  `origin/main` was at #255, the third time. Rule: **a claim that an input is absent names the
+  place it looked, and an option's cost is checked against `STATE.md`'s disk line first**.
 - 2026-10-19 (A3 opened): Claude put "A3 first, and start the 9-seed download now" to the user as
   the recommended answer to #231's finding 4, from the reviewer's wording alone; the user took
   it. The decided `design-A5.md` (step 3, and its line 19) registers *before* the seeds are

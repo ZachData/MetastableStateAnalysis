@@ -166,6 +166,74 @@ median token norm.
 steps. They are not readings; the label is read only off the 18 steps. 95 (a) was taken before
 either number existed.
 
+## Unit 3s: the centred count on the seeds (frozen 2026-10-22, before any seed's centred record)
+
+Blocked 96 (b), the user's: one unit on the 9 PolyPythias seeds, "with a rule on the centred
+energy's own scale (its tolerance set from an off-grid step's per-transition spread, and a plant
+read on both counts) frozen before the download". No download was needed: all 162 checkpoints
+are in `HDD_1TB/mets_data/hf` (`LESSONS.md` 1). Code `trackC_writeup/c2_seeds.py`, pure tests
+`tests/test_trackC_seeds.py`. The scored family is seeds 1–9 × the 18 grid steps × the 7 v1
+prompts; seed 0 (unit 3's records) is read beside as the development set.
+
+**96 (b)'s tolerance was refused by its own gate** (preflight v0,
+`data/trackC/c2u3s/2026-10-22-preflight-v0/`, before the rule froze, no seed read). The
+median-matched τ_c = 1e-3 × s_c / s_u = 2.81e-5 (s the median |relative change| per (prompt,
+transition) at seed 0's step 7000: 1.41e-2 uncentred, 3.96e-4 centred) failed all three checks:
+plant B (token-independent spread, a change both counts should see) turned 2.0× and 5.0× more
+of the units centred than uncentred at its two partial doses; plant A (a common vector) leaked
+0.24 into the centred count at dose 1; the re-inits' centred rate was 8.5 %. A sweep over τ_c
+from 1e-5 to 1e-3 on the same populations found none that reads plant B alike at more than one
+dose: the centred count's dose response is steeper. Read at step 7000, the centred/uncentred
+rate ratio is 1.0 at the median-matched τ, 0.93 null-matched, 0.44 B-matched. **So a size
+comparison between the two counts has no calibration, and the rule reads dates only.**
+
+**Blocked 97, decided (a), the user's, in session after preflight v0 and before any seed
+record.** The options were: (a) dates only, each on its own count's plateau, at four centred
+tolerances, a seed counting only if the event holds at every arm; (b) one τ_c, B-matched, with the
+size event kept (it still fails plant B at dose 0.1); (c) the seeds as description with no frozen
+rule; (d) no seeds, 96 (a).
+
+| item | fixed as | why |
+|---|---|---|
+| the arms | τ_c ∈ {7.55e-5, 1e-4, 3e-4, 7.58e-4}: the null-matched τ (the re-inits' centred false-positive rate equal to the uncentred one at 1e-3, 1.8 %), unit 3's 1e-4, 3e-4, and the B-matched τ (plant B at 0.25 turns the same share of step 7000's units both ways, 0.467); uncentred at D2's 1e-3 throughout | each arm is "matched" by a different defensible criterion, and they span a factor of 10; an event that holds at all four does not rest on which criterion is right |
+| the gate, per arm (the thresholds set after v0, with 97 (a)) | the re-inits' centred rate ≤ 5 %; plant B at 0.25 turns ≥ 0.4 of step 7000's units not already violating; plant A at 0.5 turns ≤ 0.1 | the null is clean; the count can see a change that is not the common direction's; it does not see one that is |
+| per seed | centred V per arm; per arm, `a3.d4a`'s half-rise on the centred V's own plateau; unreadable if that plateau is 0 or a step 0–128 count is ≥ half of it (92 (i)) | the half-rise is relative to its own count's plateau, so no cross-count scale enters |
+| event 1 | the centred half-rise is later than the seed's uncentred break (A5's date, recomputed from the records and checked against A5's V) | "the break at its step is mostly the common direction's", read on each count's own scale |
+| event 2 | the centred half-rise is at 1000 | unit 3's date on seed 0; L3's grid step of induction, previous-token and the LR half-point |
+| a seed | carries an event only if it holds at all four arms; unreadable at any arm reads both False, flagged | conservative across arms, as D7 (a) |
+| the tally | K1, K2 of 9; ≥ 7 "reproduced", ≤ 2 "seed 0's only", else "mixed" | at most two seeds the other way (PolyPythias names two 410m outliers, seeds 3 and 4); description, no null |
+| known answer | each record's e1 equals A5's record for that seed and step (≤ 1e-4, tokens' hash equal), else refuse; each seed's V equals A5's `score.json` V, else refuse | the records are the ones A5 scored |
+| beside | V_c at 1e-3; the raw-centred V per arm; the layer-mean cosine per step; D10's previous-token and induction dates per seed (A5's `score.json`) | description |
+
+**What each outcome changes (fixed now).** K1 and K2 both "reproduced": 96 (c) is open on the
+seeds, and the choice between (a) and (c) goes to the user (Blocked 98). K1 "reproduced", K2 not:
+(a), with F9 a finding on the seeds and the 1000 date as seed-0 description (or "on K2 of 9").
+K1 not "reproduced": F9's finding stays seed 0's, and (a) is written with that limit. "Mixed"
+is reported as the count, and the user decides.
+
+**Plant A's leak.** At dose 1 (a common vector of the median token's norm) plant A turns 0.05–0.24
+of step 7000's units centred, depending on the arm. A leak can only make the centred count rise
+with the common direction, so its date earlier. Both events say the centred date is *later*, so
+the leak works against them.
+
+**The preflight** (`data/trackC/c2u3s/2026-10-22-preflight/`, main tree, code `e7a1e159f247`, the
+frozen code; it re-derives the two matched arms and refuses unless they round to `TAU_ARMS`).
+Report `preflight_report.json` sha256 `6c584c1aafb89e191a78ce69cfb524b24c6ffffd7022a24bebc2d338d269cd43`
+(input `f27bbafd9494…`; per-arm gate `preflight_plants.json` `0d566ced2973…`; per-unit drops
+`preflight_units.json` `df989090c7b0…`). The tool refuses `floor` only (1/505 → E 11.2 < 20), as
+in unit 3: C2 computes no E, and the reading is a date against a tolerance. Plant B on the
+re-inits at τ = 7.55e-5: 0.08, 0.17, 0.88, 0.99, 1.00 at 0.01–0.25.
+
+| arm | re-init centred rate | B at 0.25, share | A at 0.5, share | gate | beside: step 7000 centred / uncentred rate; A at dose 1; B at 0.1 |
+|---|---|---|---|---|---|
+| 7.55e-5 (null-matched) | 0.020 | 0.94 | 0.07 | pass | 0.34 / 0.36; 0.22; 0.16 |
+| 1e-4 | 0.004 | 0.94 | 0.06 | pass | 0.33 / 0.36; 0.21; 0.15 |
+| 3e-4 | 0 | 0.92 | 0.02 | pass | 0.27 / 0.36; 0.13; 0.05 |
+| 7.58e-4 (B-matched) | 0 | 0.46 | 0.01 | pass | 0.16 / 0.36; 0.05; 0.01 |
+
+**A lean, stated before the run.** Seed 0 reads both events at 1e-4 (centred date 1000 against
+512) and at 1e-3 (1000). It is the development set, not a reading.
+
 ## Worth challenging (for the PR)
 
 - **No fresh literature scan in unit 0.** The C2 scan is 4 days old and was made for this row;
