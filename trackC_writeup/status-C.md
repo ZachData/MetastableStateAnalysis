@@ -11,7 +11,7 @@
   - Unit 1, the reading: the plain E_β is proved monotone only at identity weights; wider hypotheses (symmetric scores tied to the values) make a weighted energy monotone, not E_β; so the break violates no theorem (F5 worded from the texts); published anisotropy along Pythia starts at step 10 000, not in the break's window (F9 narrowed); Mistral GPT-2 small (4000-step warmup, checkpoints every 50 steps to 2000) makes 92 (ii) feasible, so 3c runs (7 units + close-out); §2 and §8 drafted (revised after `/challenge-pr` on #253, findings 1–5) — `trackC_writeup/status-C.md` "C2 unit 1"
   - Unit 2, the render step: every number in the draft is a key that `numbers.py` reads from its record (A5's seeds and gate, A3's rows, S2's readings, Pythia's released configs; 13 records, each sha256 in the tracked `numbers.json`), and CI checks the draft against that table; §3–§5 drafted and the three figures drawn; no reading moved — `trackC_writeup/status-C.md` "C2 unit 2"
   - Unit 3, the anisotropy control (tier 1, description): the frozen rule reads **"mostly removed"** (centred plateau 20 against 57 at D2's 1e-3; Blocked 95 (a)), but that label's size half is a scale effect: centring makes E₁'s layer-to-layer changes about 30× smaller, and at a matched tolerance (1e-4, 1e-5; post hoc, `/challenge-pr` on #255) it reads "moved" (ratio 0.90–1.10, centred date 1000). What holds at every tolerance: at 512, the break's step, the centred count is 4–13 against 56–60, so the break at 512 is mostly the common direction's (F9 a finding), and a full-size centred break appears at 1000, induction's grid step; seed 0 only. 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
-  - Unit 3s, the centred count on the 9 PolyPythias seeds (tier 1, description; Blocked 96 (b)): one centred tolerance on the centred energy's own scale failed its own gate, because no tolerance reads a planted change alike through both counts, so no size comparison between them is calibrated; the rule reads dates only at four centred tolerances (Blocked 97 (a)). Both events reproduce: the centred half-rise is later than the uncentred break on 8 of 9 seeds and at 1000 on 8 of 9 (seed 6 ties on one arm), so F9 is a finding on the seeds and the centred break shares 1000 with D10's heads; 91 goes to the user (Blocked 98) — `trackC_writeup/status-C.md` "C2 unit 3s"
+  - Unit 3s, the centred count on the 9 PolyPythias seeds (tier 1, description; Blocked 96 (b)): one centred tolerance on the centred energy's own scale failed its own gate, because no tolerance reads a planted change alike through both counts, so no size comparison between them is calibrated; the rule reads dates only at four centred tolerances (Blocked 97 (a)). The centred date reproduces: the centred half-rise is at 1000, one grid step after the uncentred break, on 8 of 9 seeds (K1 and K2 are one reading on this grid; seed 6 ties on one arm), so F9 is a finding on the seeds as a date (how much of the break is the common direction's is not calibrated), and the centred break shares 1000 with D10's heads; revised after `/challenge-pr` on #256 (findings 1–4); 91 goes to the user (Blocked 98) — `trackC_writeup/status-C.md` "C2 unit 3s"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -21,7 +21,7 @@
   - What the headline says now that both dated events reproduce on the seeds: (a) the E₁ break restated as the common direction's, or (c) the two events (Blocked 98, the user's) — `trackC_writeup/status-C.md` "C2 unit 3s"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `8f2f5e84d7`
+- **Reviewed:** 2026-10-22 · body `79fddd8675`
 <!-- /phase-card -->
 
 ## Units
@@ -66,7 +66,10 @@ A5's `score.json` V. Seed 0 is unit 3's records, read beside.
 **The reading, by the frozen rule:** no seed unreadable at any arm (steps 0–128's centred counts
 at most 4). **K1 = 8 of 9, "reproduced"** (the centred half-rise later than the uncentred break);
 **K2 = 8 of 9, "reproduced"** (the centred half-rise at 1000). By the outcomes fixed in the design,
-96 (c) is open on the seeds and the choice goes to the user: **Blocked 98**.
+96 (c) is open on the seeds and the choice goes to the user: **Blocked 98**. *On this grid K1 and K2
+are one reading, not two (`/challenge-pr` on #256, finding 2): every uncentred break is at 256 or
+512, so a centred date at 1000 implies one later than the break. The two events would differ only
+for a seed whose centred date was 2000 or 4000, and none was.*
 
 **Beside, not the reading:**
 
@@ -76,14 +79,19 @@ at most 4). **K1 = 8 of 9, "reproduced"** (the centred half-rise later than the 
 | the size at 512 | across the 10 seeds and 4 arms V_c at 512 is 2–20 against V_u 41–58; at 1e-3 it is 1–7 at 512, 10–16 at 1000. That holds on every seed. It is not a ratio label: the gate showed the two counts have no common scale |
 | seeds 3 and 9 | their uncentred break is at 256 (V_u 35, 29); their centred counts at 256 are 0–2 and their centred date is 1000 too, so the centred date does not move with the uncentred one |
 | the centred date against D10 | on the 7 seeds where D10 dates both heads at 1000 and the rule reads 1000 (1, 2, 4, 5, 7, 8, 9), the centred date is the heads' grid step. Seed 3's heads are not both located. With no grid step between 512 and 1000, that is one grid step shared, not an order |
-| the centred plateau's size | on its own count it falls with the arm (e.g. seed 0: 59, 55, 41, 22), as a larger tolerance should; the date does not move |
+| the centred plateau's size | on its own count it falls with the arm (e.g. seed 0: 59, 55, 41, 22), as a larger tolerance should; the date does not move. At the B-matched arm the centred count keeps rising after 1000 (to 34–71 at 143000), so there the date is a half-rise on a rising curve, not a step onto a flat plateau (finding 2) |
+| **post hoc (`/challenge-pr` on #256, findings 1, 3, 4)**: the centred count at the break, on its own scale | V_c at the seed's break is 0.17–0.50 of its own plateau on the 8 seeds that break at 512 (5–16 units at the null-matched arm) and 0–0.04 on seeds 3 and 9 (at 256). Below half on every seed but the tie; well above the early-step floor (≤ 4). It is not "near the floor" |
+| post hoc: the common direction by layer, per seed | the layer-mean cosine rises with depth at all 23 block transitions at 128 on all 10 seeds (none falling); at 512, 6–10 falling on every seed (seeds 3 and 9: 3 and 6 falling at 256, 9 and 8 at 512). So seed 0's turn of the cosine profile at the break is on every seed. It is E₁'s first-order term, so this is the same break decomposed, not separate evidence |
+| post hoc: margins | per seed and arm, how far the half-rise is from moving: below half before 1000 by 0 (seed 6 at 3e-4, the tie), 2.0 (seed 9, null-matched), 2.5 (seeds 1, 6), 3.0–3.5 (seeds 2, 6, 7); above half at 1000 by 1.5 (seed 7, B-matched), 4.5 (seeds 1, 2, 5), then ≥ 5. All the near misses are at the outer arms, mostly the B-matched one. One unit's change flips seed 6 back, and about two flip seed 7 or 9. "Reproduced" (≥ 7) holds with 1 seed to spare |
 
-**What it changes.** Both dated events reproduce across the PolyPythias seeds. At the uncentred
-break (512 on 7 seeds, 256 on 2), E₁'s layer-monotonicity breaks mostly through the common
-direction: the centred count stays near its floor. One grid step later, at 1000, the
-token-centred cloud breaks on 8 of 9 seeds (9 of 10 with seed 0) at every arm, the step where D10
-dates previous-token and induction on 8 seeds. F9 is a finding on the seeds. 91's headline goes
-back to the user as Blocked 98: (a) or (c).
+**What it changes.** The centred date reproduces across the PolyPythias seeds: on 8 of 9 (9 of
+10 with seed 0) at every arm, the token-centred count reaches half its own plateau at 1000, one
+grid step after E₁'s break (512 on 7 seeds, 256 on 2), the step where D10 dates previous-token and
+induction on 8 seeds. At the break step itself the centred count has not yet reached half of its
+own plateau (0.17–0.50 of it), and the layer-mean cosine turns from rising with depth at the break
+on every seed. F9 is a finding on the seeds, as a date: the break comes before the centred
+cloud's. How *much* of the break is the common direction's is not calibrated (the gate). 91's
+headline goes back to the user as Blocked 98: (a) or (c).
 
 **Not established:** that the centred break at 1000 is a separate event rather than the same
 change read later (no step between 512 and 1000; the same limit as unit 3); any size comparison

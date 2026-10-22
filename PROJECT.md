@@ -2901,11 +2901,12 @@ cheap and would resolve it.**
 project-wide.
 
 - §3.66's two events, read on seeds 1–9 under a rule frozen before any seed's centred record
-  (`design-C2.md` "Unit 3s"): the centred half-rise falls later than the seed's uncentred break on
-  **8 of 9** seeds and at **1000** on **8 of 9**, at each of four centred tolerances. Seed 6 ties
-  on one tolerance. So the break §3.61 dated and `P-A5` reproduced is, at its step, mostly the
-  common direction on every seed, and the token-centred cloud breaks one grid step later, at
-  the step where D10 dates previous-token and induction on 8 seeds.
+  (`design-C2.md` "Unit 3s"): the centred half-rise falls at **1000**, one grid step after the
+  seed's uncentred break, on **8 of 9** seeds at each of four centred tolerances (one reading on
+  this grid; seed 6 ties on one tolerance). So the break §3.61 dated and `P-A5` reproduced comes,
+  on 8 of 9 seeds, before the token-centred cloud's break: at the break step the centred count
+  is below half of its own plateau (0.17–0.50 of it). The token-centred cloud breaks at the step
+  where D10 dates previous-token and induction on 8 seeds.
 - A single "matched" tolerance between the centred and uncentred counts was refused by its own
   gate: no tolerance reads a planted change alike through both. So no claim about how *much* of
   the break is the common direction's is calibrated; the reading is about dates.
