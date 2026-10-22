@@ -49,7 +49,7 @@ Each is written into the draft beside the line it limits, not only in a limits s
 | F6 | Nothing causal about which components push apart; no energy sentence about components before an energy split per component | A2's ablation calibration failed | `trackA_force/status-A.md` "A2 on one page (closed 2026-10-17)" |
 | F7 | H-RESIST's `reject_null` on `P-A5` is not evidence that trained weights resist the collapse dynamics | one cheap factor; its validity for the e-process unargued | A5 on one page, item 3 and "Not established" |
 | F8 | A non-monotone geometric arc along training (2509.23024, 2602.15997) and the stagewise order (the LLC literature) are not new; E_β's monotonicity read along a real training axis, dated and reproduced, is what is | the scan | `trackA_force/lit-C2.md` §1–§2 |
-| F9 | Whether the break is anisotropy's: E_β is a moment of the Gram matrix; anisotropy along Pythia's training is published from step 10 000 on (Bernas et al., ICML 2026, App. D; its main measure is the gradients'), not in the break's window, where only an unreviewed 70m project reports it rising by 512; measured here by unit 3 *(narrowed at unit 1, 2026-10-22: the scan's row was abstract-level)* | the scan's one unmeasured objection | `trackA_force/lit-C2.md` §1; `lit-C2-unit1.md` §3–§4; Blocked 92 (i) |
+| F9 | Whether the break is anisotropy's: E_β is a moment of the Gram matrix; anisotropy along Pythia's training is published from step 10 000 on (Bernas et al., ICML 2026, App. D; its main measure is the gradients'), not in the break's window, where only an unreviewed 70m project reports it rising by 512; measured here by unit 3 *(narrowed at unit 1, 2026-10-22: the scan's row was abstract-level; read at unit 3, 2026-10-22: "mostly removed" as frozen, "moved" to 1000 on a matched scale (post hoc); at 512 mostly the common direction's at every tolerance, so a finding, not a fence; `status-C.md` "C2 unit 3", Blocked 96)* | the scan's one unmeasured objection | `trackA_force/lit-C2.md` §1; `lit-C2-unit1.md` §3–§4; Blocked 92 (i) |
 
 ## The outline
 
@@ -128,6 +128,43 @@ to 100 and every 50 to 2000 as Hub tags (`lit-C2-unit1.md` §5; first read as go
 after `/challenge-pr` on #253). So 3c runs, and the budget is 7 units + close-out. What 3c can
 tell apart is fixed there before its rule: optimizer steps or LR dose against warmup fraction
 or tokens, not within either pair; description, since model, data and tokenizer differ.
+
+## Unit 3: the anisotropy control (frozen 2026-10-22, before any scored output)
+
+Code `trackC_writeup/c2_aniso.py` (`d90bb06b7910`); pure tests `tests/test_trackC_aniso.py`. The
+rule is 92 (i)'s with one addition, the size label (Blocked 95 (a), the user's, taken before any
+centred number existed, the preflight's included). The scored family is seed 0's 18 grid steps ×
+the 7 v1 prompts, as in A5's records; nothing else enters the label.
+
+| item | fixed as | why |
+|---|---|---|
+| the cloud | U = the L2-normalised hidden states, the cloud A5's E₁ reads (all positions, 25 states incl. the post-final-LN one); centred: U − its token mean, each row re-normalised (float64); a row shorter than 1e-6 refuses | F9's anisotropy is a Gram moment of U: its mean off-diagonal cosine is (‖Σ Uᵢ‖² − n) / (n (n − 1)), so subtracting U's mean is what removes it; a vector added on the sphere is removed exactly (test) |
+| the energy and count | E₁ (β = 1) on the centred cloud; a violation at D2 (a)'s 1e-3; V_c summed over 7 prompts × 24 transitions; tolerances 1e-4 and 1e-2 beside | A5's D2 (a), unchanged except for the centring |
+| beside, not in the label | the raw-centred cloud (x − token mean, then normalised); each layer's mean cosine of U, prompt-averaged; A5's E₁ recomputed per record | the other reading of "centred"; F9's anisotropy as a number; A5's e1 is the known answer (≤ 1e-4 per layer and the tokens' hash equal, else refuse) |
+| **95 (a), the size label** | first: centred plateau median (1000, 2000, 4000) 0 → **removed**; centred plateau < ½ the uncentred plateau on the same records → **mostly removed**, the date and ratio beside | 92 (i)'s half-rise reads only the shape: with any positive plateau it finds a step ≤ 4000, so a plateau that fell from 57 to 3 would read "survives", which licenses "not the common direction's" (test) |
+| 92 (i), then | steps 0–128's centred counts reported first; any ≥ ½ the centred plateau → **unreadable**; else the half-rise (`a3.d4a`) at 256 or 512 → **survives**; at 1000–4000 → **moved** | as written in 92 (i); exhaustive once the plateau is positive |
+| what each changes | removed / mostly removed: F9 becomes a finding (the break's count is mostly the common direction's), 91 reopens; survives: §4 says the break is not the common direction's; moved: §4 gives both dates; unreadable: a limit, stated | 92 (i), with 95 (a)'s label read as "removed" |
+
+**The preflight** (`data/trackC/c2u3/2026-10-22-preflight/`, main tree; same code). Report
+`preflight_report.json` sha256 `ca14c358404d3427c524e32b5edc400d960010946ee8e06e3c628c83c314e217`
+(input `490707e60ab6…`, plants `preflight_plants.json` `47ce90a1eac7…`). The statistic per unit is
+the centred relative drop per (prompt, transition). The null is 3 matched re-inits (Pythia's σ,
+every tensor within 1 %: small 0.01974–0.01978, wang 0.00260–0.00261), 504 values; trained is the
+off-grid step 7000 (168); the planted control (B) is on the re-inits at 0.25, 0.5 and 1 × the
+median token norm.
+
+| check | result |
+|---|---|
+| refusals | `floor` only (1/505 → E 11.2 < 20): C2 computes no E; the label is a count against a tolerance, so `decision_p` 0.05 stands in. No band refusal (trained outside the null's band 82.7 % < 90 %), no size refusal (dose 0 at α 4.8 %), no dose-side or power refusal (every dose 100 %) |
+| (B) spread on the later state, centred, units over 1e-3 (of 504) | 0 → 501 → 504 → 504: the centred count sees a planted break that is not a common direction |
+| (A) a common vector on the earlier state, re-inits (of 504) | uncentred 9 → 415 → 504 → 504; centred 0 → 0 → 0 → 0 (largest shift 3.9e-5): the centred count does not see it |
+| (A) at step 7000 (of 168) | uncentred 61 → 152 → 161 → 168; centred 26 → 27 → 27 → 29 (largest shift 2.6e-3): it leaks, by at most 3 units, at a plant that saturates the uncentred count |
+
+**A lean, stated before the run.** At 7000, off the grid, 26 of 168 units violate centred against
+61 uncentred (0.43), and the re-inits' centred drops sit far below the tolerance (band
+[−1.7e-4, 5.7e-5]). Both point toward "mostly removed" and away from "unreadable" on the scored
+steps. They are not readings; the label is read only off the 18 steps. 95 (a) was taken before
+either number existed.
 
 ## Worth challenging (for the PR)
 
