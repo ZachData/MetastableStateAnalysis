@@ -1485,6 +1485,17 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   preflight, a plant read on both whose true ratio is known (1 for a change both should see), and
   their per-unit scales are stated before the freeze; a size condition reads a scale-free quantity
   or a tolerance matched to each statistic's own spread**.
+- 2026-10-22 (C2 unit 3s, caught by the gate, before any seed record): the rule above did its job
+  and showed its own second half was not enough. 96 (b)'s tolerance "matched to the centred
+  statistic's own spread" (the median per-unit change, 2.81e-5) failed the plant read on both
+  counts: plant B turned 2–5× more units centred than uncentred. A sweep from 1e-5 to 1e-3 found
+  no tolerance that reads plant B alike at more than one dose, because the two counts' dose
+  responses have different slopes. Matching spread, null rate or one plant dose gave step 7000
+  ratios of 1.0, 0.93 and 0.44. The rule became dates only, each on its own count's plateau, at
+  four arms (Blocked 97 (a), the user's). Rule: **two counts are comparable in size only if one
+  tolerance reads a planted change alike through both at two or more doses; if none does, read
+  each count on its own scale (a date, a half-rise), and give the matching criteria as arms, not
+  one choice**.
 
 ## 7. Literature found after the construction was built
 

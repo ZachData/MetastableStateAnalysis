@@ -128,6 +128,8 @@ to 100 and every 50 to 2000 as Hub tags (`lit-C2-unit1.md` §5; first read as go
 after `/challenge-pr` on #253). So 3c runs, and the budget is 7 units + close-out. What 3c can
 tell apart is fixed there before its rule: optimizer steps or LR dose against warmup fraction
 or tokens, not within either pair; description, since model, data and tokenizer differ.
+Blocked 96 (b), the user's, 2026-10-22, adds unit 3s (the centred count on the seeds): **8 units +
+close-out**.
 
 ## Unit 3: the anisotropy control (frozen 2026-10-22, before any scored output)
 

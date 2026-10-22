@@ -11,16 +11,17 @@
   - Unit 1, the reading: the plain E_β is proved monotone only at identity weights; wider hypotheses (symmetric scores tied to the values) make a weighted energy monotone, not E_β; so the break violates no theorem (F5 worded from the texts); published anisotropy along Pythia starts at step 10 000, not in the break's window (F9 narrowed); Mistral GPT-2 small (4000-step warmup, checkpoints every 50 steps to 2000) makes 92 (ii) feasible, so 3c runs (7 units + close-out); §2 and §8 drafted (revised after `/challenge-pr` on #253, findings 1–5) — `trackC_writeup/status-C.md` "C2 unit 1"
   - Unit 2, the render step: every number in the draft is a key that `numbers.py` reads from its record (A5's seeds and gate, A3's rows, S2's readings, Pythia's released configs; 13 records, each sha256 in the tracked `numbers.json`), and CI checks the draft against that table; §3–§5 drafted and the three figures drawn; no reading moved — `trackC_writeup/status-C.md` "C2 unit 2"
   - Unit 3, the anisotropy control (tier 1, description): the frozen rule reads **"mostly removed"** (centred plateau 20 against 57 at D2's 1e-3; Blocked 95 (a)), but that label's size half is a scale effect: centring makes E₁'s layer-to-layer changes about 30× smaller, and at a matched tolerance (1e-4, 1e-5; post hoc, `/challenge-pr` on #255) it reads "moved" (ratio 0.90–1.10, centred date 1000). What holds at every tolerance: at 512, the break's step, the centred count is 4–13 against 56–60, so the break at 512 is mostly the common direction's (F9 a finding), and a full-size centred break appears at 1000, induction's grid step; seed 0 only. 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
+  - Unit 3s, the centred count on the 9 PolyPythias seeds (tier 1, description; Blocked 96 (b)): one centred tolerance on the centred energy's own scale failed its own gate, because no tolerance reads a planted change alike through both counts, so no size comparison between them is calibrated; the rule reads dates only at four centred tolerances (Blocked 97 (a)). Both events reproduce: the centred half-rise is later than the uncentred break on 8 of 9 seeds and at 1000 on 8 of 9 (seed 6 ties on one arm), so F9 is a finding on the seeds and the centred break shares 1000 with D10's heads; 91 goes to the user (Blocked 98) — `trackC_writeup/status-C.md` "C2 unit 3s"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the break is the LR schedule's or a training event's (F1); units 3b and 3c read it, 3c on another suite's warmup (description only) — `trackC_writeup/design-C2.md` "What C2 may not go past"
-  - What the headline says now that the break at 512 is mostly the common direction's (Blocked 96, the user's) — `trackC_writeup/status-C.md` "C2 unit 3"
+  - What the headline says now that both dated events reproduce on the seeds: (a) the E₁ break restated as the common direction's, or (c) the two events (Blocked 98, the user's) — `trackC_writeup/status-C.md` "C2 unit 3s"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `2b2e40a850`
+- **Reviewed:** 2026-10-22 · body `8f2f5e84d7`
 <!-- /phase-card -->
 
 ## Units
@@ -31,8 +32,73 @@
 | C2 1. reading (writing only) | **done 2026-10-22: F5 worded, F9 narrowed, 92 (ii) feasible (GPT-2 small), §2 and §8 drafted; revised after `/challenge-pr` on #253** | `lit-C2-unit1.md`, `draft-C2.md`; "C2 unit 1" below |
 | C2 2. `numbers.py`, figures, §3–§5 | **done 2026-10-22: 102 keys from 13 records, 24 sentence claims checked, §3–§5 render, figures 1–3 drawn; revised after `/challenge-pr` on #254** | `numbers.py`, `numbers.json`, `draft-C2.src.md` → `draft-C2.md`, `fig/`; "C2 unit 2" below |
 | C2 3. anisotropy control | **done 2026-10-22: frozen before output (95 (a), the user's), preflight cited; reads "mostly removed", the centred date 1000; Blocked 96** | `c2_aniso.py`, design "Unit 3"; "C2 unit 3" below |
-| C2 3b, 3c. LR-dose arm (70m, 160m); warmup arm (Mistral GPT-2 small) | next, after Blocked 96 | design 92 (iii), (ii); 3c's separations `lit-C2-unit1.md` §5 |
+| C2 3s. the centred count on the seeds (96 (b)) | **done 2026-10-22: 96 (b)'s tolerance refused by its gate; dates at four arms (97 (a), the user's); K1 = K2 = 8 of 9, "reproduced"; Blocked 98** | `c2_seeds.py`, design "Unit 3s"; "C2 unit 3s" below |
+| C2 3b, 3c. LR-dose arm (70m, 160m); warmup arm (Mistral GPT-2 small) | next, after Blocked 98 (whether the centred date is read beside or as primary) | design 92 (iii), (ii); 3c's separations `lit-C2-unit1.md` §5 |
 | C2 4, 5, close-out | after 3c | — |
+
+## C2 unit 3s, the centred count on the seeds (2026-10-22)
+
+Blocked 96 (b), the user's. The rule is in `design-C2.md` "Unit 3s", frozen and pushed (`98617c7`)
+before any seed's centred record. 96 (b)'s single median-matched tolerance failed its own gate,
+so it reads dates only, at four centred arms (Blocked 97 (a), the user's, in session).
+
+**Input:** PolyPythias `pythia-410m-seed1`–`seed9` at A5's 18 grid steps (`HDD_1TB/mets_data/hf`,
+offline; nothing downloaded) × the 7 v1 prompts (`prompts_hash` `976b62d677bc`), float32, eager,
+TF32 off, RTX 3080; code `e7a1e159f247` (`trackC_writeup/c2_seeds.py`). Records
+`data/trackC/c2u3s/2026-10-22-run/seed{1..9}/records/` (126 each, main tree; about 41 min);
+reading `…/reading.json` sha256 `8d5ed734f665…`. Known answer: every record's e1 equals A5's
+record for that seed and step (largest deviation 0.0), tokens identical, and each seed's V equals
+A5's `score.json` V. Seed 0 is unit 3's records, read beside.
+
+| seed | uncentred break (A5) | V_u at 512 | V_c at 512, per arm (7.55e-5, 1e-4, 3e-4, 7.58e-4) | V_c at 1000, per arm | centred date, per arm | event 1 | event 2 | D10's prev / ind |
+|---|---|---|---|---|---|---|---|---|
+| 0 (beside) | 512 | 56 | 11, 11, 10, 5 | 56, 55, 35, 19 | 1000 ×4 | yes | yes | — |
+| 1 | 512 | 47 | 10, 10, 9, 7 | 36, 36, 32, 14 | 1000 ×4 | yes | yes | 1000 / 1000 |
+| 2 | 512 | 41 | 16, 16, 11, 5 | 35, 34, 26, 16 | 1000 ×4 | yes | yes | 1000 / 1000 |
+| 3 | 256 | 49 | 5, 5, 3, 2 | 57, 55, 46, 20 | 1000 ×4 | yes | yes | 4000 / not located |
+| 4 | 512 | 58 | 9, 9, 7, 2 | 38, 38, 30, 19 | 1000 ×4 | yes | yes | 1000 / 1000 |
+| 5 | 512 | 55 | 14, 14, 8, 7 | 51, 48, 33, 16 | 1000 ×4 | yes | yes | 1000 / 1000 |
+| 6 | 512 | 53 | 14, 14, 11, 5 | 25, 24, 20, 14 | 1000, 1000, **512**, 1000 | no | no | 1000 / 1000 |
+| 7 | 512 | 43 | 13, 12, 9, 6 | 42, 39, 25, 11 | 1000 ×4 | yes | yes | 1000 / 1000 |
+| 8 | 512 | 58 | 15, 13, 9, 7 | 49, 46, 33, 18 | 1000 ×4 | yes | yes | 1000 / 1000 |
+| 9 | 256 | 52 | 20, 17, 10, 6 | 42, 42, 35, 18 | 1000 ×4 | yes | yes | 1000 / 1000 |
+
+**The reading, by the frozen rule:** no seed unreadable at any arm (steps 0–128's centred counts
+at most 4). **K1 = 8 of 9, "reproduced"** (the centred half-rise later than the uncentred break);
+**K2 = 8 of 9, "reproduced"** (the centred half-rise at 1000). By the outcomes fixed in the design,
+96 (c) is open on the seeds and the choice goes to the user: **Blocked 98**.
+
+**Beside, not the reading:**
+
+| what | reads |
+|---|---|
+| seed 6 | its one miss is a tie on one arm: at 3e-4 the centred plateau is 22 and V_c at 512 is 11, exactly half, so the half-rise lands at 512. At the other three arms it reads 1000 |
+| the size at 512 | across the 10 seeds and 4 arms V_c at 512 is 2–20 against V_u 41–58; at 1e-3 it is 1–7 at 512, 10–16 at 1000. That holds on every seed. It is not a ratio label: the gate showed the two counts have no common scale |
+| seeds 3 and 9 | their uncentred break is at 256 (V_u 35, 29); their centred counts at 256 are 0–2 and their centred date is 1000 too, so the centred date does not move with the uncentred one |
+| the centred date against D10 | on the 7 seeds where D10 dates both heads at 1000 and the rule reads 1000 (1, 2, 4, 5, 7, 8, 9), the centred date is the heads' grid step. Seed 3's heads are not both located. With no grid step between 512 and 1000, that is one grid step shared, not an order |
+| the centred plateau's size | on its own count it falls with the arm (e.g. seed 0: 59, 55, 41, 22), as a larger tolerance should; the date does not move |
+
+**What it changes.** Both dated events reproduce across the PolyPythias seeds. At the uncentred
+break (512 on 7 seeds, 256 on 2), E₁'s layer-monotonicity breaks mostly through the common
+direction: the centred count stays near its floor. One grid step later, at 1000, the
+token-centred cloud breaks on 8 of 9 seeds (9 of 10 with seed 0) at every arm, the step where D10
+dates previous-token and induction on 8 seeds. F9 is a finding on the seeds. 91's headline goes
+back to the user as Blocked 98: (a) or (c).
+
+**Not established:** that the centred break at 1000 is a separate event rather than the same
+change read later (no step between 512 and 1000; the same limit as unit 3); any size comparison
+between the two counts (the gate showed none is calibrated); that the centred date follows
+induction or previous-token rather than the LR half-point or anything else at 1000 (one grid
+step; 3b and 3c are what could separate the schedule); anything on another model size.
+
+**Parked:** (1) `numbers.py` keys for this `reading.json` (K1, K2, the per-seed dates) and the
+centred row beside fig 1: unit 4, with unit 3's Parked 1 (cost: one render pass).
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c2_seeds preflight --out <dir>` (about
+3 min; refuses unless it re-derives `TAU_ARMS`), then `python -m tools.design_preflight
+<dir>/preflight_input.json --out <dir>/preflight_report.json`; `METS_DATA=<main>/data
+HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c2_seeds run --out <dir>` (about 41 min on
+the GPU, offline), then `read --out <dir>`. Tests: `tests/test_trackC_seeds.py` (pure, 13).
 
 ## C2 unit 3, the anisotropy control (2026-10-22)
 
@@ -84,9 +150,9 @@ component analysis); anything on the other 9 seeds (no centred records; A5's rec
 **Parked:** (1) `numbers.py` keys for `reading.json` (the label, the plateaus, the cosine profile)
 and a figure beside fig 1: unit 4 (cost: one render pass; changes nothing until §4 is rewritten).
 (2) The centred count on the 9 PolyPythias seeds, to say whether the 1000 date reproduces: about
-20 GPU minutes (seed 0's 18 steps took 125 s) after a re-download of about 160 checkpoints (the
-seed checkpoints are no longer in the HF cache); it could change 96's
-wording ("reproduced" or "seed 0 only"); an option in 96.
+20 GPU minutes (seed 0's 18 steps took 125 s); it could change 96's wording ("reproduced" or
+"seed 0 only"); an option in 96. *Carried to unit 3s (96 (b)). "After a re-download of about 160
+checkpoints" was wrong: all 162 are in `HDD_1TB/mets_data/hf`, where A5 put them (`LESSONS.md` 1).*
 
 **Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c2_aniso run --out <dir>` (about 2 min
 on the GPU, offline), then `read --out <dir>`; preflight `… preflight --out <dir>`, then
