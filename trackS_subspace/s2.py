@@ -1095,9 +1095,8 @@ def gates(out: Path) -> None:
                   for l, row in enumerate(heads.frames)]
             hook.set_frame([np.stack([x[0]["Q"] for x in row]) for row in fr])
             if not ps.has("g3p_base"):
-                r = ps.run("g3p_base", [np.stack([x[0]["K"] for x in row]) for row in fr])
-                if r["D"] > G3P_BASE_TOL:
-                    raise S2Error(f"step {step}: G3′'s frame at K_s is not the base (D {r['D']:.1e})")
+                ps.run("g3p_base", [np.stack([x[0]["K"] for x in row]) for row in fr])
+            check_g3p_base(step, ps.rec["configs"])
             if not ps.has("g3p"):
                 ps.run("g3p", [np.stack([x[1] for x in row]) for row in fr],
                        {"edit": [sizes(x[0]["K"], x[1])[0] for row in fr for x in row],
@@ -1197,7 +1196,7 @@ def gate_read(out: Path) -> None:
         cl = cell(c["g3p"]["V"], _ctl(c, "g3p_ctl_", "V"), gain=c["g3p_gain"]["V"], d=c["g3p"]["D"],
                   d_ctl=_ctl(c, "g3p_ctl_", "D"))
         g3p[str(s)] = {**cl, **r1_read(cl), "frozen_guard": r1_read(cl, guard=True), "G": c["g3p"]["G"],
-                       "base_D": c["g3p_base"]["D"],
+                       "base_D": check_g3p_base(s, c),
                        "sizes": g[s]["sizes"].get("g3p")}
     n3p = sum(v["counts"] for v in g3p.values())
     res["G3p"] = {"cells": g3p, "counts": n3p, "in_reach": n3p >= 4}
@@ -1246,6 +1245,15 @@ def arms(out: Path) -> None:
         gc.collect()
         torch.cuda.empty_cache()
     print(f"arms done ({time.time() - t0:.0f}s)", flush=True)
+
+
+def check_g3p_base(step: int, configs: Dict) -> float:
+    """G3′'s frame at K_s must reproduce the base (D ≤ G3P_BASE_TOL) or G3′ refuses; checked on the
+    stored record, so a resumed pass and the reading refuse too (CodeRabbit on #248)."""
+    d = configs["g3p_base"]["D"]
+    if d > G3P_BASE_TOL:
+        raise S2Error(f"step {step}: G3′'s frame at K_s is not the base (D {d:.1e})")
+    return d
 
 
 def gate_refusals(gr: Dict) -> Dict:

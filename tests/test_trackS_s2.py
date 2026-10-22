@@ -224,3 +224,9 @@ def test_gate_refusals_follow_the_fallbacks():
     assert s2.gate_refusals(_gr(counts=fail))["R1"] == "G3 failed"                       # not by monotone controls
     r = s2.gate_refusals(_gr(counts=fail, mono=(False, False, False, True, True)))
     assert r["R1"] is None and r["g3_mono"]
+
+
+def test_g3p_base_refuses_on_the_stored_record():
+    assert s2.check_g3p_base(512, {"g3p_base": {"D": 5e-7}}) == 5e-7
+    with pytest.raises(s2.S2Error, match="not the base"):
+        s2.check_g3p_base(512, {"g3p_base": {"D": 2 * s2.G3P_BASE_TOL}})

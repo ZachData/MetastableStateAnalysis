@@ -1919,6 +1919,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   the close-out copied it into the card, ROADMAP's B4 row and `PROJECT.md`. #228's finding 1 was
   the same slip on the same table. Rule: a sentence naming blocks from a `resid_pre` table writes
   the subtraction out once (`resid_pre` b → block b − 1) beside the first block it names.
+- 2026-10-22, S2 unit 2 (found at the next session's start): CodeRabbit posted two findings on
+  #248 at 21:09Z, six minutes before the `/challenge-pr` answers were pushed, and the session ended
+  with both unanswered. One was real: G3′'s base check sat inside `if not ps.has("g3p_base")`, so a
+  resumed gates pass skipped it and `gate-read` never checked it (no recorded number reached it:
+  `base_D` ≤ 1.6e-6). Rule: before the Stop protocol's last report, list the PR's inline review
+  comments (`gh api repos/<repo>/pulls/<N>/comments`) and answer each; a refusal check runs on the
+  stored record, not only on the branch that computes it.
 
 ## 12. Deleted, then needed
 

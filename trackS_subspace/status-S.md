@@ -23,7 +23,7 @@
   - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); arm a's displacement at 143000 (11.9 against 1.0–1.1, S2 unit 2, Parked); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `c2a2fca254`
+- **Reviewed:** 2026-10-22 · body `3b6dba2f0f`
 <!-- /phase-card -->
 
 ## Units
@@ -616,7 +616,11 @@ float32, TF32 off; transformers 4.44.2. Records `data/trackS/s2/2026-10-21-u2/` 
 | read-back at 143000 (`/challenge-pr` on #248, question 3; a scratch script calling `s2.readbacks`) | `b87b9405b7f2` | `readback_143000.json`: G0's read-backs on 20 heads pass (worst 4.7e-8 of ‖K‖); arm a's read-back equals sym K on all 384 heads to 4.3e-8 | — |
 
 After the runs, one comment in `s2.py` (a threshold's provenance label) moved its sha to
-`b87b9405b7f2`; no line that computes changed. Base V at the 7 steps: 0, 19, 56, 56, 61, 57, 70 (the panel's). Base G: ≈ 0 at 0–512, 8.21 at
+`b87b9405b7f2`; no line that computes changed. After CodeRabbit on #248, G3′'s base check
+(`check_g3p_base`, D ≤ `G3P_BASE_TOL`) runs on the stored record, so a resumed gates pass and
+`gate-read` refuse too (before, a resume skipped it); `abf4db781a29`. The five recorded `base_D`
+are 4.8e-7 to 1.6e-6; `gate-read` re-run at `abf4db781a29` on a scratch copy of the gate records
+equals `gate_read.json` but for its code field. Base V at the 7 steps: 0, 19, 56, 56, 61, 57, 70 (the panel's). Base G: ≈ 0 at 0–512, 8.21 at
 1000, 11.89, 12.44, 12.13 after.
 
 **The gates (`gate_read.json`; under the frozen guard beside).**
