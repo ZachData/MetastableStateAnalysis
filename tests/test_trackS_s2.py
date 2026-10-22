@@ -230,3 +230,74 @@ def test_g3p_base_refuses_on_the_stored_record():
     assert s2.check_g3p_base(512, {"g3p_base": {"D": 5e-7}}) == 5e-7
     with pytest.raises(s2.S2Error, match="not the base"):
         s2.check_g3p_base(512, {"g3p_base": {"D": 2 * s2.G3P_BASE_TOL}})
+
+
+# ---------------------------------------------------------------- unit 3: R3
+
+def test_arm_b_on_every_pair_is_arm_b_and_on_none_is_k():
+    for seed in range(5):
+        *_, f = _frame(seed)
+        sp = s2.schur_pairs(f)
+        assert sp["starts"]
+        assert np.allclose(s2.arm_b_pairs(f, sp, sp["starts"]), s2.arm_core(f, "b")[0], atol=1e-10)
+        assert np.array_equal(s2.arm_b_pairs(f, sp, []), f["K"])
+        one = s2.arm_b_pairs(f, sp, sp["starts"][:1])
+        i = sp["starts"][0]
+        blk = sp["S"][i:i + 2, i:i + 2]
+        assert np.isclose(np.linalg.norm(one - f["K"]), np.linalg.norm(s2.sym(blk) - blk))
+
+
+def test_pair_shares_and_the_haar_plane_share():
+    *_, f = _frame(2)
+    sp = s2.schur_pairs(f)
+    i = sp["starts"][0]
+    plane = f["Q"] @ sp["UV"][:, i:i + 2]
+    rest = np.linalg.qr(np.random.default_rng(0).standard_normal((D, 3)))[0]
+    US = np.linalg.qr(np.hstack([plane, rest]))[0]
+    sh = s2.pair_shares(f, sp, US)
+    assert np.isclose(sh[0], 1.0) and all(0 <= x <= 1 + 1e-12 for x in sh)
+    h = s2.haar_plane_share(20_000, 1, width=10, d=200, batch=5_000)
+    assert abs(h.mean() - 10 / 200) < 2e-3 and h.min() >= 0 and h.max() <= 1
+
+
+def test_r_draw_matches_counts_outside_the_selection():
+    sel = {(0, 0): [0, 2], (0, 1): [], (1, 0): [0, 2, 4]}
+    pool = {(0, 0): [4, 6, 8], (0, 1): [0, 2], (1, 0): [6]}
+    ch, short = s2.r_draw(sel, pool, 512, 3)
+    assert len(ch[(0, 0)]) == 2 and set(ch[(0, 0)]) <= set(pool[(0, 0)])
+    assert ch[(0, 1)] == [] and ch[(1, 0)] == [6] and short == 2
+    assert s2.r_draw(sel, pool, 512, 3)[0] == ch
+
+
+def test_r3_guard_is_one_sided():
+    ctl, dc = list(range(30, 40)), [0.5, 0.6]
+    assert s2.r3_read(s2.cell(5, ctl, gain=50, d=0.9, d_ctl=dc)) == \
+        {"label": "lower, moved further", "read": False, "counts": False}
+    assert s2.r3_read(s2.cell(5, ctl, gain=50, d=0.55, d_ctl=dc))["counts"]
+    assert s2.r3_read(s2.cell(5, ctl, gain=50, d=0.1, d_ctl=dc))["counts"]          # moved less: read
+    hi = s2.r3_read(s2.cell(60, ctl, gain=50, d=0.9, d_ctl=dc))
+    assert hi["read"] and not hi["counts"] and hi["label"] == "higher, moved further"
+    assert not s2.r3_read(s2.cell(5, ctl, gain=4, d=0.55, d_ctl=dc))["read"]        # as its gain
+
+
+def _r3_rec(v_bs, g_bs, d_bs=0.55, refused=None):
+    if refused:
+        return {"refused": refused, "done": True}
+    c = {"base": {"V": 50, "G": 12.0, "D": 0.0}, "bS": {"V": v_bs, "G": g_bs, "D": d_bs},
+         "g_bS": {"V": 50, "G": 12.0, "D": 0.1}}
+    for i in range(s2.N_CTL + 1):
+        c[f"bR_{i}"] = {"V": 40 + i % 10, "G": 11.0 + 0.01 * (i % 10), "D": 0.5 + 0.002 * (i % 40)}
+    return {"configs": c, "done": True}
+
+
+def test_r3_cells_count_and_refuse():
+    recs = {s: _r3_rec(5, 1.0) for s in s2.R3_STEPS}
+    r = s2.r3_cells(recs)
+    assert r["V"]["counts"] == 5 and r["G"]["counts"] == 4 and r["G1"]["pass"]
+    assert r["V"]["answer"] == r["G"]["answer"] == "S1's shared rotation carries it"
+    assert not r["cells"]["G@512"]["scored"]
+    recs[1000] = _r3_rec(5, 1.0, refused="12 pairs in S < 100")
+    recs[2000] = _r3_rec(5, 1.0, d_bs=0.9)                      # moved further: withheld
+    r = s2.r3_cells(recs)
+    assert r["V"]["counts"] == 3 and r["V"]["answer"] == "not shown" and r["G"]["counts"] == 2
+    assert r["cells"]["V@1000"]["label"].startswith("refused")
