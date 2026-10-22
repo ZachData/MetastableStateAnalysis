@@ -2895,7 +2895,7 @@ cheap and would resolve it.**
 
 ---
 
-## 3.65 Track S's S2 closed: no OV edit tried brings the energy break back; copying survives the rotation's removal (2026-10-22)
+## 3.65 Track S's S2 closed: no OV edit tried undoes the energy break; copying survives the rotation's removal at its size (2026-10-22)
 
 **`trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"** holds the detail; this
 section says why it is project-wide.
@@ -2905,9 +2905,10 @@ section says why it is project-wide.
   (arm a, Phase 2b's `W_OV := S`) nor OV with its rotation removed (arm b) takes the energy break
   (§3.61's 512) back toward monotone at any scored step.
 - **The one OV-only edit with a known destination does not either:** every head given its own
-  step-128 OV halves the violations at 512 and 1000 and never reaches V ≤ 7, while the whole model
-  moved to 128 does. So the break is neither shown to be OV's nor shown not to be; C2's draft
-  says neither.
+  step-128 OV never reaches V ≤ 7, while the whole model moved to 128 does. So the break is
+  neither shown to be OV's nor shown not to be; C2's draft says neither. As description that edit
+  changes sign along training: it halves the violations at 512 and 1000 and raises them above
+  every random edit at 2000, at the start of the OV repulsive phase (§3.61's sequence).
 - **In-context copying survives the rotation's removal** at 4 of 4 steps, but that edit is about
   0.1 of a head's norm (88 % of a head's map reads from outside its write space), so "rotation
   is inert" holds at that size only. Phase 2b's open rotation test is answered at it, on 410m

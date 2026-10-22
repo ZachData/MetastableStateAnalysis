@@ -10,7 +10,7 @@
   - On Pythia the complex fraction sits at its initialisation value to step 128 and drops a little (about 0.035) across steps 256–1000; Henrici rises after step 5000 — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
   - Signed-only rescaling does not rescue Phase 2's inert rescaled frame: where comparable (steps 256–5000) both rates are mostly negative; from step 7000 the frames score different transitions and are refused — `p2b_imaginary/status-2b.md` "The 2026-08-17 Pythia pilot"
   - Blocks 3 and 4 are degenerate as written (the projector is the identity; the curvature regressor is constant) — `p2b_imaginary/status-2b.md` "Verdict table"
-  - The rotation test that is not invariant under a global orthogonal map ran outside this phase (Track S's S2, 2026-10-22, tier 1): on `pythia-410m` at 7 steps, every head at once, against 40 random edits of the same size per head, `W_OV := S` never lowers the violation count beyond them and raises it at 512 and 143000, and removing only the rotation in each head's Schur planes (about 0.1 of its norm) moves the count and in-context copying no more than random edits do: rotation reads inert at that size, and the symmetric part alone is not the model — `trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"
+  - The rotation test that is not invariant under a global orthogonal map ran outside this phase (Track S's S2, 2026-10-22, tier 1): on `pythia-410m` at 5 scored steps (512–143000; 7 run), every head at once, against 40 random edits of the same size per head, `W_OV := S` never lowers A5's violation count (summed over v1's 7 prompts) beyond them and raises it at 512 and 143000, and removing only the rotation in each head's Schur planes (about 0.1 of its norm) moves the count and in-context copying no more than random edits do: rotation reads inert at that size, and the symmetric part alone is not the model — `trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"
 - **Superseded / wrong:**
   - The headline `rotation_neutral` (`elim_rotation = 0.0`, 35/35) is an orthogonal-invariance identity, withdrawn — `p2b_imaginary/status-2b.md` "Withdrawal: `rotation_neutral` was not a measurement"
   - `elim_signed = 1.0` (35/35) was scored under a different counting rule with truncation discarded, and is not re-adjudicated — `p2b_imaginary/status-2b.md` "Known issues"
@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - Explain the Phase 1 cross-check disagreement (free, reads the pilot and the 2026-08-12 run)
   - Rerun Block 1a with nulls (free, weights only)
-- **Reviewed:** 2026-10-22 · body `b925d63da4`
+- **Reviewed:** 2026-10-22 · body `e39d766748`
 <!-- /phase-card -->
 
 **Registered predictions:** none. Exploratory by design; nothing in this
@@ -245,8 +245,9 @@ question.
 4. **A null.** A norm-matched Gaussian is ~100% complex. Without
    `pythia-1.4b-random` and `core/nulls.py`, Block 1a's headline is not known to
    distinguish trained from random.
-5. **The real rotation test.** Something not invariant under a global orthogonal
-   map of the residual stream. Two are reachable: weight-space ablation through
+5. **The real rotation test.** *(The weight-space ablation ran on 410m in Track S's
+   S2, 2026-10-22: the card's Results; readout-space distance not run.)* Something
+   not invariant under a global orthogonal map of the residual stream. Two are reachable: weight-space ablation through
    `core/intervention.py` (set `W_OV := S`, re-run the forward pass), or
    readout-space measurement through `core/functional_distance.py` — the decoded
    next-token distribution depends on `embed_out`, which is fixed, so rotating the
