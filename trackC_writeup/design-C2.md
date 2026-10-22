@@ -236,6 +236,103 @@ re-inits at τ = 7.55e-5: 0.08, 0.17, 0.88, 0.99, 1.00 at 0.01–0.25.
 **A lean, stated before the run.** Seed 0 reads both events at 1e-4 (centred date 1000 against
 512) and at 1e-3 (1000). It is the development set, not a reading.
 
+## Blocked 98 and 99, decided 2026-10-22 (the user's, in session, before any 3b output)
+
+| # | taken | the options as written | what it fixes |
+|---|---|---|---|
+| 98 | (c), as recommended | (a) keep `P-A5`'s E₁ break as the headline, restated as the common direction's at its step, the centred date at 1000 beside; (c) re-head the draft on the two events | the draft is headed on two events: the common direction stops growing with depth at E₁'s break (`P-A5`, the registered anchor), and the token-centred cloud breaks at 1000, beside D10's heads (tier 1, 9 + 1 seeds); 3b and 3c read both dates as primary; §1, §4, §5 rewritten at unit 4 (no extra unit) |
+| 99 | (a), as recommended | (a) re-label 92 (iii) by which schedule predicts each date on the grid, run both sizes; (b) the same on 70m only; (c) drop 3b, F1 stays a limit, 3c carries the schedule | 92 (iii)'s labels overlapped on Pythia's grid (below); 3b reads each size's two dates against three schedules' grid predictions |
+
+## Unit 3b: the LR-dose arm (frozen 2026-10-22, before any scored record)
+
+Code `trackC_writeup/c2_dose.py`; pure tests `tests/test_trackC_dose.py`; the predictions'
+check `tools/math_checks/c2_dose_grid.py` (D1–D4, and what it does not prove). The scored
+family is `pythia-70m` and `pythia-160m` × the 18 grid steps × the 7 v1 prompts; 410m enters
+only as its 10 seeds' dates (`REF`). Description throughout: size (6, 12, 24 layers; width 512,
+768, 1024) moves with the LR, and there is one seed per size.
+
+**Why 92 (iii)'s labels had to change.** All three sizes share the warmup (1430 steps, linear;
+the released configs), the batch and so the tokens per step, and the data order; only the peak
+LR differs (1e-3, 6e-4, 3e-4). 410m's seeds already break anywhere in (128, 512]. If the break
+waits for the weights to have moved a fixed amount (the cumulative LR, p t² / 2W), 70m's
+crossing is at (70, 280], which the grid reads as 128, 256 or 512: the steps "step-locked"
+predicts, plus 128. So "the same step on all three" would have read "step-locked" off outcomes
+the dose reading predicts too.
+
+| item | fixed as | why |
+|---|---|---|
+| the schedules | **step**: 410m's date (the warmup's timing or the tokens seen, not told apart); **cumulative**: t · √(3e-4 / lr); **instantaneous**: t · 3e-4 / lr | the two dose forms bracket "how far the weights have moved" (Adam's step is about lr per coordinate) and "the LR reaches a level"; the check's D1–D2 |
+| 410m's dates (`REF`) | E₁'s break {256, 512} (A5, seeds 0–9); centred {512, 1000} (unit 3s, any seed at any arm; 512 is seed 6 at 3e-4, a tie) | a schedule is excluded only if no 410m seed at any arm maps to the date: the union is the conservative band |
+| a prediction | a grid date g stands for a crossing in (prev(g), g]; scaled by the schedule's factor, the grid steps whose interval meets it (`predicted`) | the grid is all the records see; D4 checks it against a scan |
+| per size, per count | `a3.d4a`'s half-rise on its own plateau; unreadable if the plateau is 0 or a step 0–128 count is ≥ half of it (92 (i)) | unit 3s's per-count dating |
+| the centred arms, per size | unit 3s's procedure on that size: null-matched and B-matched re-derived on 3 re-inits of its config and its off-grid step 7000, beside 1e-4 and 3e-4; each arm gated as unit 3s (re-init rate ≤ 5 %, plant B at 0.25 ≥ 0.4, plant A at 0.5 ≤ 0.1); frozen into `TAU_ARMS` from the preflight, which refuses if a re-run derives other arms | 410m's arms are on 410m's scale; the procedure, not the numbers, transfers |
+| the centred date | the dates of the arms that pass their gate and are readable; a schedule is consistent if it predicts any of them; unreadable if no arm is both | arms that disagree widen the date, which can only keep a schedule |
+| the uncentred count | D2's 1e-3, as A5; its preflight (`preflight_input_u.json`, the design tool) reported, since 1e-3 was never gated off 410m | refuse rather than degrade on a new model |
+| **the reading** (`joint`) | the schedules consistent with every readable date (2 sizes × 2 counts); all three → **"not told apart"**; none → **"neither"**; else **"consistent with …"** | one statistic, fixed before output |
+
+**What 3b can and cannot tell apart (the check's outcome table, fixed now).** Every date
+step-locked predicts, cumulative predicts too, so **3b cannot separate step-locked from
+cumulative**; it can exclude step-locked (a date earlier than 410m's: E₁'s break at ≤ 128, the
+centred date at ≤ 256) or instantaneous (E₁'s break at 512, the centred date at 1000), and a
+date at 2000 or later excludes all three.
+
+| size | E₁'s break: date → consistent | centred: date → consistent |
+|---|---|---|
+| 70m | 64 → inst.; 128 → cum., inst.; 256 → all; 512 → step, cum. | 128 → inst.; 256 → cum., inst.; 512 → all; 1000 → step, cum. |
+| 160m | 128 → cum., inst.; 256 → all; 512 → step, cum. | 256 → cum., inst.; 512 → all; 1000 → step, cum. |
+
+**What each outcome changes (fixed now).** "Not told apart": §7 says the LR-dose arm could not
+separate the schedules on Pythia's grid, and F1 stands as written. "Consistent with step and
+cumulative": §7 says the dates do not follow the LR level; F1 stands (the timing and the
+cumulative dose not told apart). Instantaneous or cumulative without step: §7 says the dates move
+earlier with the peak LR, size confounded; F1 is narrowed to "a dose, not a fixed step". "Neither":
+reported, with size the named confound. 3c is read the same way on its own grid.
+
+**Blocked 100, decided (a), the user's, in session after preflight v0 and before any scored
+record.** Preflight v0 (`data/trackC/c2u3b/2026-10-22-preflight-v0/`, unit 3s's gate as frozen)
+passed 160m at every arm and refused 70m at every arm: plant B at 0.25 turned 0.06–0.21 of 70m's
+units centred and 0.07 uncentred (the gate needs 0.4). 70m's layers move about 5× more than
+410m's (median |relative change| at step 7000: 0.068 uncentred against 410m's 0.014; 0.0033
+centred against 0.0004), so a plant sized in token norms is small against them. A sweep on 70m's
+step 7000 (off the grid; scratch, not kept) saw B at 0.5 at 1.0 centred and 0.45 uncentred, with
+A at 0.5 leaking 0.04. The options were (a) **plant B's gate dose per size: the smallest dose at
+which the uncentred count at 1e-3 turns ≥ 0.4** (0.25 on 410m and 160m, the frozen dose; 0.5 on
+70m), thresholds unchanged, or (b) the gate as frozen, 70m unreadable and 3b on 160m alone. The
+rule was written after seeing 70m's sweep, so it is not blind to 70m's dose.
+
+**The preflight** (`data/trackC/c2u3b/2026-10-22-preflight/`, main tree; code `02a3cae5c04f`, the
+frozen code, which refuses unless a re-run derives `TAU_ARMS`). Per size: 3 re-inits of its config
+(Pythia's σ) and its step 7000; 126 re-init and 42 (70m) or 84 (160m) trained units.
+
+| size | B's dose | arm | re-init centred rate | B share | A at 0.5 | gate |
+|---|---|---|---|---|---|---|
+| 70m | 0.5 (uncentred 0.41) | 9.61e-5 null-matched; 1e-4; 3e-4 | 0 | 1.00 | 0.04 | pass |
+| 70m | | 4.78e-3 B-matched | 0 | 0.41 | 0.03 | pass |
+| 160m | 0.25 (uncentred 0.44) | 1.25e-4 null-matched | 0.004 | 0.78 | 0.08 | pass |
+| 160m | | 1e-4; 3e-4 | 0.012; 0 | 0.79; 0.77 | 0.05; 0.02 | pass |
+| 160m | | 8.22e-4 B-matched | 0 | 0.44 | 0 | pass |
+
+Reports (`tools/design_preflight.py`): 70m centred `d61bc9aab699…`, uncentred `3516fef2d5a5…`;
+160m centred `a9d1e243eac6…`, uncentred `392f13ea7a80…` (inputs and `preflight_plants.json`
+hashed in each size's directory). Refusals, each argued:
+
+- `floor` on all four (E ≤ 5.6 < 20): C2 computes no E, and the reading is a date against a
+  tolerance, as in units 3 and 3s.
+- 70m centred `band:reinit` (92.9 % of step 7000's units outside the re-inits' band): the re-inits
+  set only the null-matched arm's false-positive rate; no unit is scored against their band, and
+  the date is read on the count's own plateau. The re-inits' centred drops are 20× smaller than
+  the trained ones (scale 1.7e-4 against 3.3e-3), as on 410m.
+- 70m uncentred `power` (B at 0.5 reaches p ≤ 0.05 against the re-inits in 69 % of draws, under 80 %):
+  **not fixed: 70m's uncentred count is the weakest reading in 3b.** On the trained step 7000 it
+  turns 0.41 of the units at that dose. It is kept because the date reads the count's rise to half
+  its own plateau over 42 units per step, not single units; it is a limit stated beside 70m's
+  E₁ date.
+
+**No lean.** No record of `pythia-70m`'s or `pythia-160m`'s E₁ along training exists in the
+repo (searched: `data/analysis` holds Phase 8's per-head readings of 70m, none an energy by
+step); nothing of either size was read before the freeze except the preflight's off-grid step 7000
+and re-inits.
+
 ## Worth challenging (for the PR)
 
 - **No fresh literature scan in unit 0.** The C2 scan is 4 days old and was made for this row;
