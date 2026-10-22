@@ -28,7 +28,7 @@
 - **Superseded / wrong:** none
 - **Registry:** `P-A5` (registered 2026-10-20 by the user, `c2eb9a7`; adjudicated 2026-10-20, `claims/adjudications/P-A5.json`, Blocked 78 (a); its `real_run_record` is the user's registry line, Blocked 79); A1 gives `P-gamma2` a number on 410m, an exploration rung, not an adjudication — `trackA_force/design-A5.md`; `trackA_force/design-A.md` "Fences"
 - **Depends on:** 1c@4a06306316, 1d@4168cdd237, 1e@02fc532205
-- **Feeds:** none
+- **Feeds:** C
 - **Open threads:**
   - The verdict rests on the projected step: on the calibrated step every cell is above t*, so "too shallow" and "resists" are told apart only by the field's direction — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"
   - t* assumes V = I, while from 1000 to 4000 most heads have no attractive part — `trackA_force/status-A.md` "A1 on one page (closed 2026-10-15)"

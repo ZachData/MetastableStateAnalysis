@@ -103,6 +103,9 @@ PHASES_WITHOUT_PREDICTIONS = {
     "S": "Track S, shared subspaces; tier 1 on 410m, an exploration rung, weights only, and "
          "deliberately unregistered: S1 opened 2026-10-20, no `P-*` id "
          "(`trackS_subspace/status-S.md`).",
+    "C": "Track C, the write-ups; registers nothing of its own: C2 quotes rows scored "
+         "elsewhere (`P-A5`, Track A's) and tier 1 readings "
+         "(`trackC_writeup/status-C.md`).",
 }
 
 #: Which `claims/audits/*.json` is a known-answer dry run, as opposed to a

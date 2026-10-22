@@ -21,7 +21,7 @@
 - **Superseded / wrong:** none
 - **Registry:** none, because Track S is tier 1 on an exploration rung (`trackS_subspace/design-S1.md` "Fences")
 - **Depends on:** none
-- **Feeds:** none
+- **Feeds:** C
 - **Open threads:**
   - Arm a's displacement at 143000 (11.9 against 1.0–1.1) and the selected pairs' at 143000 (about 1.5×), both carried to S3 — `trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"
   - Whether any OV-only edit undoes the break, and the gradient-flow statement's exact hypotheses (`lit-S2.md` Parked 1), both carried to C2's draft — `trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"

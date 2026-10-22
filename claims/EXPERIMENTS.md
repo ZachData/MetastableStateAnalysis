@@ -169,6 +169,7 @@ would otherwise have to reconstruct from five files.
 | `8` | `p8_scale_ladder/` | UNEXPLAINED — active phase, see the section below. |
 | `9` | `p9_metric_intervention/` | parked, pre-design and deliberately unregistered. `plan-9.md` §13 states it: no construction frozen, no `P-*` id. Nothing has run under its name; its E0 ran as Phase 10's F1. |
 | `B` | `trackB_circuit/` | Track B, the circuit side; tier 1 on 410m, an exploration rung, and deliberately unregistered: B0–B3 closed with readings, no `P-*` id (`trackB_circuit/status-B.md`). |
+| `C` | `trackC_writeup/` | Track C, the write-ups; registers nothing of its own: C2 quotes rows scored elsewhere (`P-A5`, Track A's) and tier 1 readings (`trackC_writeup/status-C.md`). |
 | `S` | `trackS_subspace/` | Track S, shared subspaces; tier 1 on 410m, an exploration rung, weights only, and deliberately unregistered: S1 opened 2026-10-20, no `P-*` id (`trackS_subspace/status-S.md`). |
 | `10` | `p10_cluster_function/` | pre-design and deliberately unregistered. `notes-10.md` §13 states it: no construction frozen, no `P-*` id, `claims/registry.json` untouched. Its free rows (F0, F1, F11-A0, F12) have RUN, and their records under `data/analysis/` are tier 1, exploratory, and not quotable as adjudications. |
 | `1b` | `p1b_hemisphere/` | hemisphere geometry; its findings feed P-H1 and CLAIM-A rather than carrying a falsifier of their own. |
