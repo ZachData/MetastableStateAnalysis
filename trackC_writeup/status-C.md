@@ -12,7 +12,7 @@
   - Unit 2, the render step: every number in the draft is a key that `numbers.py` reads from its record (A5's seeds and gate, A3's rows, S2's readings, Pythia's released configs; 13 records, each sha256 in the tracked `numbers.json`), and CI checks the draft against that table; §3–§5 drafted and the three figures drawn; no reading moved — `trackC_writeup/status-C.md` "C2 unit 2"
   - Unit 3, the anisotropy control (tier 1, description): the frozen rule reads **"mostly removed"** (centred plateau 20 against 57 at D2's 1e-3; Blocked 95 (a)), but that label's size half is a scale effect: centring makes E₁'s layer-to-layer changes about 30× smaller, and at a matched tolerance (1e-4, 1e-5; post hoc, `/challenge-pr` on #255) it reads "moved" (ratio 0.90–1.10, centred date 1000). What holds at every tolerance: at 512, the break's step, the centred count is 4–13 against 56–60, so the break at 512 is mostly the common direction's (F9 a finding), and a full-size centred break appears at 1000, induction's grid step; seed 0 only. 91 reopens (Blocked 96) — `trackC_writeup/status-C.md` "C2 unit 3"
   - Unit 3s, the centred count on the 9 PolyPythias seeds (tier 1, description; Blocked 96 (b)): one centred tolerance on the centred energy's own scale failed its own gate, because no tolerance reads a planted change alike through both counts, so no size comparison between them is calibrated; the rule reads dates only at four centred tolerances (Blocked 97 (a)). The centred date reproduces: the centred half-rise is at 1000, one grid step after the uncentred break, on 8 of 9 seeds (K1 and K2 are one reading on this grid; seed 6 ties on one arm), so F9 is a finding on the seeds as a date (how much of the break is the common direction's is not calibrated), and the centred break shares 1000 with D10's heads; revised after `/challenge-pr` on #256 (findings 1–4); 91 goes to the user, decided (c) (Blocked 98): the draft heads on the two events — `trackC_writeup/status-C.md` "C2 unit 3s"
-  - Unit 3b, the LR-dose arm on `pythia-70m` and `pythia-160m` (tier 1, description; Blocked 99 (a), 100 (a)): both dates on both sizes, against three schedules' predictions on Pythia's grid. E₁'s break at 256 and the centred date at 1000 on both: **consistent with step and cumulative**, so the dates do not wait for the LR to reach a level; step against cumulative is not told apart on this grid, and size is confounded. F1 stands — `trackC_writeup/status-C.md` "C2 unit 3b"
+  - Unit 3b, the LR-dose arm on `pythia-70m` and `pythia-160m` (tier 1, description; Blocked 99 (a), 100 (a)): both dates on both sizes, against three schedules' predictions on Pythia's grid. E₁'s break at 256 and the centred date at 1000 on both: **consistent with step and cumulative** (the same without 70m's fragile E₁ date), an LR level excluded on one seed per size; step against cumulative is not told apart on this grid, and size is confounded. F1 stands — `trackC_writeup/status-C.md` "C2 unit 3b"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -21,7 +21,7 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1); 3b could not separate them on Pythia's grid, 3c reads it on another suite's warmup (description only) — `trackC_writeup/status-C.md` "C2 unit 3b"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `278aade6c5`
+- **Reviewed:** 2026-10-22 · body `2d3a890240`
 <!-- /phase-card -->
 
 ## Units
@@ -71,14 +71,15 @@ apart, as the design said 3b could not.
 | what | reads |
 |---|---|
 | 3s's two events on the other sizes | on both sizes the centred date (1000) is later than E₁'s break (256), and at 1000: unit 3s's events 1 and 2 hold on 70m and 160m too, one seed each. At the break step the centred count is at most 1 (plateau 15–27) |
-| E₁'s break at 256 on both | earlier than 7 of 410m's 10 seeds (512), in the dose's direction, but inside 410m's own seed range (seeds 3 and 9 at 256), so not a reading. One seed per size: their own spread is unmeasured |
-| margins | 70m's E₁ break is a tie: V_u at 256 is 3, exactly half its plateau of 6 (one unit later and it reads 512, which is still "step, cumulative" and leaves the joint unchanged). The joint needs both sizes' centred dates to move before instantaneous survives: 70m is 2.5 units below half at 512 (5 against 7.5), 160m 2–4.5 units per arm |
+| E₁'s break at 256 on both | earlier than 8 of 410m's 10 seeds (512), in the dose's direction, but inside 410m's own seed range (seeds 3 and 9 at 256), so not a reading. One seed per size: their own spread is unmeasured |
+| margins | 70m's E₁ break is a tie: V_u at 256 is 3, exactly half its plateau of 6. It is fragile both ways: one unit later it reads 512 ("step, cumulative"), but read against its later level (15 from 8000 on) it reads 1000, which no schedule predicts for 70m, and the joint would be "neither" (`/challenge-pr` on #257, finding 1). **The joint is the same with 70m's E₁ date removed** (160m's E₁ date and both centred dates give "step and cumulative"), so it rests on those three. The joint needs both sizes' centred dates to move before instantaneous survives: 70m is 2.5 units below half at 512 (5 against 7.5), 160m 2–4.5 units per arm |
 | 70m's uncentred count | the weakest reading (the design tool's `power` refusal, argued): its plateau over 1000–4000 is 6 of 42 units, and it keeps rising after (15 at 8000–32000, 5 at 143000), so its "plateau" is a shelf |
+| **post hoc (`/challenge-pr` on #257, finding 2)**: the two counts lean different ways | "step" survives the E₁ dates only through 410m's two seeds at 256 (3 and 9; 8 of 10 read 512), and "cumulative" survives 70m's centred date only if 410m's centred crossing is in (935, 1000] (160m's: (724, 1000]), the top of its interval. So the E₁ dates lean toward a dose and the centred dates toward step. On 410m seeds 3 and 9 (E₁ at 256, centred at 1000 at all four arms, unit 3s) step accounts for both counts on one seed, the pattern 70m and 160m show. Not a reading: the frozen statistic is the joint |
 | the layer-mean cosine | on both sizes it rises to a peak at 32 (0.54, 0.67), falls to its lowest at 1000–2000 (0.20–0.23) and rises after; 410m's per-layer profile was not compared here |
 
-**What it changes.** §7 can say: across a 3.3× range of peak LR at a shared warmup, the
-centred date stays at 1000 and E₁'s break at 256–512, so the dates do not wait for the LR to reach
-a level; whether they are fixed in steps (or tokens) or wait for a cumulative LR dose, Pythia's
+**What it changes.** §7 can say: across a 3.3× range of peak LR at a shared warmup (one seed
+per size, size confounded), the centred date stays at 1000 and E₁'s break at 256–512, so the
+dates are not shown to wait for the LR to reach a level; whether they are fixed in steps (or tokens) or wait for a cumulative LR dose, Pythia's
 grid cannot say (`tools/math_checks/c2_dose_grid.py`'s outcome table). Size is confounded
 throughout. 3c, on GPT-2 small's finer grid and longer warmup, is the arm that can separate
 step from cumulative.
