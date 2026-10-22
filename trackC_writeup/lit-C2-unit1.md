@@ -122,6 +122,13 @@ So 3c separates {steps, LR dose} from {warmup fraction, tokens}; it cannot split
 reading is description. Unit 3c writes its rule from this table, with a preflight report,
 before any output.
 
+*Corrected at unit 3c, 2026-10-22, before any output: the warmup is **logarithmic**, not linear.
+Every seed's logged LR (`trainer_state.json` at `checkpoint-4100`) is 6e-4 · ln(n) / ln 4000,
+n = t − 15…18 (DeepSpeed's log warmup after fp16-overflow skips; 3.2e-4 at step 100). The config
+names the warmup's length, not its shape. So the cumulative-LR row above is wrong (about (29, 119]
+under the log form), and 3c separates steps from the LR dose too; the table that rules is
+`design-C2.md` "Unit 3c" (`tools/math_checks/c2_warmup_grid.py` W2).*
+
 ## 6. 92 (iii)'s configs [R] (`EleutherAI/pythia` `models/*/pythia-*.yml`)
 
 | size | layers × width, heads | peak LR | min LR | warmup | schedule | batch |
