@@ -1,0 +1,1153 @@
+{
+ "producer": "python -m trackC_writeup.numbers produce",
+ "code": "cb07ddf54796",
+ "records": {
+  "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
+  "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
+  "data:trackA/a5/2026-10-20-u1/seed0/plan.json": "1df0690389258e2f8f31f8e9c2ecff106c41371527bb45261468a03e51f14da8",
+  "repo:claims/audits/p_a5_real_run.json": "e812fccb0d859a71ce8260b83068f54264b4b273d5866e4763f2930cab28d40f",
+  "repo:claims/registry.json": "37ae3ec221598bbac8a55c27260162ed1256bbd116362eddedd9b02829f5b837",
+  "data:trackA/a3/2026-10-20-A3u5/a3_rows.json": "25c0867c40b29ccc1647532dce27b550836d20857a4d109c0e7b93d305472302",
+  "data:trackS/s2/2026-10-21-u2/readings.json": "c5ecf6863def480db4ff96bf8eea3275af3ad558f17d84402c9d3ae279232baa",
+  "data:trackS/s2/2026-10-21-u2/gate_read.json": "4e03ca7c7a9262ae9b5055462be8ed2f15726b8522fd59cd695d48ffd4a2f7c6",
+  "repo:core/metrics.py": "efe4de85d5e30d1f5ea8af47eec7062319e6d4d6a63548624336964979278fc8",
+  "repo:core/evalues.py": "6dece4e21837aa9b890206241a2a233cf79b296b4b93b1aff3af53394f102164",
+  "data:trackC/configs/pythia-70m.yml": "0e0275b9be689b2cc063b5609937708a3e5fac8d3a27e8dbc7f308ebda5d0aac",
+  "data:trackC/configs/pythia-160m.yml": "c6db6d26dccc7040089191600bc75cbce21313b55007adcb6dda277f80d712f3",
+  "data:trackC/configs/pythia-410m.yml": "ca164a903f2328bb77ffa4cf8e6932d44c25af0af0b12526a81b560e616ada82"
+ },
+ "keys": {
+  "cfg.train_iters": {
+   "value": 143000,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.warmup_pct": {
+   "value": 1.0,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.warmup_steps": {
+   "value": 1430,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.lr_floor_ratio": {
+   "value": 0.1,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.lr_410m": {
+   "value": 0.0003,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.lr_160m": {
+   "value": 0.0006,
+   "record": "data:trackC/configs/pythia-160m.yml"
+  },
+  "cfg.lr_70m": {
+   "value": 0.001,
+   "record": "data:trackC/configs/pythia-70m.yml"
+  },
+  "cfg.warmup_160m": {
+   "value": 1430,
+   "record": "data:trackC/configs/pythia-160m.yml"
+  },
+  "cfg.warmup_70m": {
+   "value": 1430,
+   "record": "data:trackC/configs/pythia-70m.yml"
+  },
+  "cfg.seq_len": {
+   "value": 2048,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.layers": {
+   "value": 24,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.width": {
+   "value": 1024,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.heads": {
+   "value": 16,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.heads_total": {
+   "value": 384,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.layers_m1": {
+   "value": 23,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.warmup_half": {
+   "value": 715,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.states": {
+   "value": 25,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.early_saves": {
+   "value": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512
+   ],
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "cfg.save_every": {
+   "value": 1000,
+   "record": "data:trackC/configs/pythia-410m.yml"
+  },
+  "grid.steps": {
+   "value": [
+    0,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1000,
+    2000,
+    4000,
+    8000,
+    16000,
+    32000,
+    54000,
+    143000
+   ],
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "grid.n": {
+   "value": 18,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "grid.n_to4000": {
+   "value": 12,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "grid.last_early": {
+   "value": 512,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a5.prompts_hash": {
+   "value": "976b62d677bc",
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5.code": {
+   "value": "7ae0bff62ada",
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5.max_tokens": {
+   "value": 512,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/plan.json"
+  },
+  "a5.dtype": {
+   "value": "float32",
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/plan.json"
+  },
+  "a5.tf32": {
+   "value": false,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/plan.json"
+  },
+  "rel_tol": {
+   "value": 0.001,
+   "record": "repo:core/metrics.py"
+  },
+  "kappa": {
+   "value": 0.5,
+   "record": "repo:core/evalues.py"
+  },
+  "a5.n_prompts": {
+   "value": 7,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5.prompts": {
+   "value": [
+    "camus_letranger",
+    "hdbscan_code",
+    "homer_iliad",
+    "latex_monograph",
+    "paper_excerpt",
+    "sullivan_ballou",
+    "wiki_paragraph"
+   ],
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.V": {
+   "value": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    19.0,
+    56.0,
+    56.0,
+    61.0,
+    57.0,
+    59.0,
+    64.0,
+    76.0,
+    72.0,
+    70.0
+   ],
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.V128": {
+   "value": 0.0,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.V256": {
+   "value": 19.0,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.V512": {
+   "value": 56.0,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.Vmax_to128": {
+   "value": 0.0,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.plateau": {
+   "value": 57.0,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.half": {
+   "value": 28.5,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.break": {
+   "value": 512,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.V_end": {
+   "value": 70.0,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.ln1_break": {
+   "value": 512,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.energy_rel_diff": {
+   "value": 1.45502223857959e-06,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.V_equal": {
+   "value": true,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.planted_effect": {
+   "value": 1000,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.tol_steps": {
+   "value": [
+    512,
+    512,
+    512
+   ],
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.loo_steps": {
+   "value": [
+    512
+   ],
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "s0.null_tail_ge7": {
+   "value": 5e-05,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "reg.at": {
+   "value": "2026-10-20T13:36:35-05:00",
+   "record": "repo:claims/audits/p_a5_real_run.json"
+  },
+  "reg.first_record": {
+   "value": "2026-10-20T18:39:17+00:00",
+   "record": "repo:claims/audits/p_a5_real_run.json"
+  },
+  "reg.commit": {
+   "value": "c2eb9a7",
+   "record": "repo:claims/audits/p_a5_real_run.json"
+  },
+  "reg.first": {
+   "value": true,
+   "record": "repo:claims/audits/p_a5_real_run.json"
+  },
+  "reg.lag_min": {
+   "value": 3,
+   "record": "repo:claims/audits/p_a5_real_run.json"
+  },
+  "reg.relevance": {
+   "value": 0.6,
+   "record": "repo:claims/registry.json"
+  },
+  "reg.falsifier_K": {
+   "value": 3,
+   "record": "repo:claims/registry.json"
+  },
+  "reg.p0": {
+   "value": "1/6",
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.K": {
+   "value": 9,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.n": {
+   "value": 9,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.p": {
+   "value": 9.92290301275212e-08,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.E": {
+   "value": 1587.2693533234994,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.steps": {
+   "value": [
+    512,
+    512,
+    256,
+    512,
+    512,
+    512,
+    512,
+    512,
+    256
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.n512": {
+   "value": 7,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.at256": {
+   "value": [
+    3,
+    9
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.outliers": {
+   "value": [
+    3,
+    4
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.V": {
+   "value": {
+    "1": [
+     2.0,
+     2.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     22.0,
+     47.0,
+     45.0,
+     45.0,
+     59.0,
+     52.0,
+     59.0,
+     59.0,
+     58.0,
+     65.0
+    ],
+    "2": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     17.0,
+     41.0,
+     52.0,
+     55.0,
+     56.0,
+     48.0,
+     68.0,
+     75.0,
+     80.0,
+     65.0
+    ],
+    "3": [
+     6.0,
+     6.0,
+     8.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     35.0,
+     49.0,
+     50.0,
+     54.0,
+     60.0,
+     59.0,
+     68.0,
+     76.0,
+     71.0,
+     79.0
+    ],
+    "4": [
+     0.0,
+     0.0,
+     1.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     18.0,
+     58.0,
+     45.0,
+     55.0,
+     62.0,
+     55.0,
+     63.0,
+     66.0,
+     62.0,
+     47.0
+    ],
+    "5": [
+     2.0,
+     2.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     2.0,
+     18.0,
+     55.0,
+     49.0,
+     58.0,
+     63.0,
+     69.0,
+     70.0,
+     64.0,
+     59.0,
+     64.0
+    ],
+    "6": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     17.0,
+     53.0,
+     50.0,
+     54.0,
+     62.0,
+     55.0,
+     63.0,
+     69.0,
+     71.0,
+     74.0
+    ],
+    "7": [
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     14.0,
+     43.0,
+     44.0,
+     44.0,
+     49.0,
+     59.0,
+     68.0,
+     68.0,
+     74.0,
+     75.0
+    ],
+    "8": [
+     5.0,
+     5.0,
+     5.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     19.0,
+     58.0,
+     53.0,
+     58.0,
+     58.0,
+     55.0,
+     74.0,
+     74.0,
+     75.0,
+     67.0
+    ],
+    "9": [
+     1.0,
+     2.0,
+     4.0,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     29.0,
+     52.0,
+     53.0,
+     51.0,
+     48.0,
+     48.0,
+     61.0,
+     62.0,
+     64.0,
+     66.0
+    ]
+   },
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.plateau_min": {
+   "value": 44.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.plateau_max": {
+   "value": 58.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.plateaus": {
+   "value": [
+    45.0,
+    55.0,
+    54.0,
+    55.0,
+    58.0,
+    54.0,
+    44.0,
+    58.0,
+    51.0
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.V128_max": {
+   "value": 2.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.half_min": {
+   "value": 22.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.V512_min": {
+   "value": 41.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.half_max": {
+   "value": 29.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.step0_seeds": {
+   "value": [
+    1,
+    3,
+    5,
+    8,
+    9
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.step0_n": {
+   "value": 5,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.step0_min": {
+   "value": 1.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.step0_max": {
+   "value": 6.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.early_max": {
+   "value": 8.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.early_max_seed": {
+   "value": 3,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.early_max_step": {
+   "value": 4,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.step0_clean": {
+   "value": 4,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.mid_max": {
+   "value": 0.0,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.ln1_512": {
+   "value": 9,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_n": {
+   "value": 8,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_tie_steps": {
+   "value": [
+    1000
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_tied": {
+   "value": 8,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_prev": {
+   "value": 7,
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_other": {
+   "value": [
+    4
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_unlocated": {
+   "value": [
+    3
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_prev_share": {
+   "value": [
+    0.40090375778320625,
+    0.48275656617024426
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a5.d10_ind_share": {
+   "value": [
+    0.006569227226266595,
+    0.0848437937406485
+   ],
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "a3.code": {
+   "value": "92c992e25340",
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.rows": {
+   "value": {
+    "E5": {
+     "row": "effective rank on the sphere (MinRank), mean over prompts",
+     "step": 8,
+     "reading": "located",
+     "censored": false
+    },
+    "E6u": {
+     "row": "KL(unigram ‖ model), mean over 64 blocks",
+     "step": 128,
+     "reading": "located",
+     "censored": false
+    },
+    "E6b": {
+     "row": "KL(bigram ‖ model), mean over 64 blocks",
+     "step": 256,
+     "reading": "located",
+     "censored": false
+    },
+    "E1": {
+     "row": "energy violations, Σ nViolRel at β = 1",
+     "step": 512,
+     "reading": "located",
+     "censored": false
+    },
+    "E2": {
+     "row": "OV: median attractive_energy_fraction_core, 384 heads",
+     "step": 512,
+     "reading": "located",
+     "censored": false
+    },
+    "E8": {
+     "row": "ESD tail α, median over types of median over layers",
+     "step": 1000,
+     "reading": "located",
+     "censored": false
+    },
+    "E3": {
+     "row": "induction at +1: L8H6, L11H14 pooled attention (strict pairs)",
+     "step": 1000,
+     "reading": "located",
+     "censored": false
+    },
+    "E4": {
+     "row": "previous-token score of L5H2",
+     "step": 1000,
+     "reading": "located",
+     "censored": false
+    },
+    "E10": {
+     "row": "LR schedule (confound)",
+     "step": 1000,
+     "reading": "located",
+     "censored": false
+    },
+    "E7": {
+     "row": "weight change ‖W−W0‖/‖W0‖, median over types of median over layers",
+     "step": 2000,
+     "reading": "located",
+     "censored": true
+    },
+    "E11": {
+     "row": "causal simulator's cluster count at t = 200, mean over prompts",
+     "step": null,
+     "reading": "refused",
+     "censored": false
+    }
+   },
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.lanes": {
+   "value": {
+    "E5": {
+     "y": [
+      -0.0,
+      0.0003419193070435507,
+      0.07989514474584022,
+      0.6294734442671529,
+      1.0,
+      0.9900843400957374,
+      0.8418053339411898,
+      0.8300661043993617,
+      0.588785046728972,
+      0.20139047184864356,
+      -1.315021654889446,
+      -2.1803054479142916,
+      -2.3786186459995444,
+      -1.9055162981536355,
+      -0.7785502621381353,
+      -0.1757465238203784,
+      -0.1045133348529746,
+      0.15204011853202645
+     ],
+     "step": 8,
+     "how": "Δ / ref"
+    },
+    "E6u": {
+     "y": [
+      0.0,
+      0.002280404608518599,
+      0.08932408416850761,
+      0.33275431397187594,
+      0.6160521143188491,
+      0.6090418941206392,
+      0.6190701579221056,
+      1.0,
+      0.949811515920364,
+      0.3829893191626167,
+      -0.44687020465461236,
+      -1.2725638348303627,
+      -1.7775481302863407,
+      -2.130583536223406,
+      -2.2601566646632993,
+      -2.493324553329257,
+      -2.6075249000588787,
+      -2.870080057845984
+     ],
+     "step": 128,
+     "how": "fall from step 0 / fall into the minimum"
+    },
+    "E6b": {
+     "y": [
+      0.0,
+      0.0012974069690544626,
+      0.05087366794612968,
+      0.19006128280308837,
+      0.3574346547613137,
+      0.44213203785300603,
+      0.5832770700872444,
+      0.8271034388199409,
+      1.0,
+      0.869421216548727,
+      0.5245265430422198,
+      0.20472709332228817,
+      -0.011147239009815723,
+      -0.16758711480850857,
+      -0.23513760981963408,
+      -0.3317689364191995,
+      -0.38110219738681056,
+      -0.4992214436929853
+     ],
+     "step": 256,
+     "how": "fall from step 0 / fall into the minimum"
+    },
+    "E1": {
+     "y": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.3333333333333333,
+      0.9824561403508771,
+      0.9824561403508771,
+      1.0701754385964912,
+      1.0,
+      1.0350877192982457,
+      1.1228070175438596,
+      1.3333333333333333,
+      1.263157894736842,
+      1.2280701754385965
+     ],
+     "step": 512,
+     "how": "V / plateau median (D4 (a))"
+    },
+    "E2": {
+     "y": [
+      -0.0,
+      6.102798736706861e-07,
+      5.1421024532088927e-05,
+      0.0012587881307145686,
+      0.0003432324331656598,
+      0.0013843127895073392,
+      0.008723136403265119,
+      0.0458375912260135,
+      0.23678097620226765,
+      0.8131199454994149,
+      1.0,
+      1.0,
+      0.9987530890213452,
+      0.9480941571113641,
+      0.8697238746944584,
+      0.7334159200951493,
+      0.5538404202132535,
+      0.22166848108294612
+     ],
+     "step": 512,
+     "how": "Δ / ref"
+    },
+    "E8": {
+     "y": [
+      -0.0,
+      -2.7512855606909735e-07,
+      -6.397118675634607e-07,
+      -1.3637414786161712e-06,
+      -0.007164038645982409,
+      -0.028428792066274952,
+      -0.04631257442677039,
+      -0.3225170283496396,
+      -0.38719390808796017,
+      0.37130294338485614,
+      0.8668391951528036,
+      1.0,
+      0.9926847418724862,
+      1.007971064583565,
+      1.0106223299429247,
+      0.9928326660095889,
+      0.9850816783549609,
+      1.038152346512462
+     ],
+     "step": 1000,
+     "how": "Δ / ref"
+    },
+    "E3": {
+     "y": [
+      0.0,
+      -1.7796008627713156e-06,
+      -7.99040893578697e-05,
+      -0.00040468800043974356,
+      -0.00029309073875507754,
+      -0.0003523582086976864,
+      -0.001125912447114595,
+      0.00010257212222086087,
+      0.0036969948183333363,
+      0.031166832942946726,
+      1.0,
+      0.7650357991244285,
+      0.5969959084959521,
+      0.4518238555792979,
+      0.3875414620945011,
+      0.36953359375215317,
+      0.3321049682611493,
+      0.2701881279414806
+     ],
+     "step": 1000,
+     "how": "Δ / ref"
+    },
+    "E4": {
+     "y": [
+      0.0,
+      3.011438703356038e-07,
+      1.1087582951286096e-05,
+      9.043430735409635e-05,
+      -6.325390439078049e-06,
+      -0.0005927698813839507,
+      2.8349514216114793e-05,
+      0.00045067809057436776,
+      0.0032971662375141804,
+      0.34997595841838536,
+      1.0,
+      0.9952769959713608,
+      0.9669192025250961,
+      0.9516350689978984,
+      0.9228350812665047,
+      0.9057394286739934,
+      0.8933503641333262,
+      0.8460888543178523
+     ],
+     "step": 1000,
+     "how": "Δ / ref"
+    },
+    "E10": {
+     "y": [
+      0.0,
+      0.001398651747886989,
+      0.002797303495773978,
+      0.005594606991547956,
+      0.011189213983095912,
+      0.022378427966191824,
+      0.04475685593238365,
+      0.0895137118647673,
+      0.1790274237295346,
+      0.3580548474590692,
+      0.6993258739434944,
+      1.0,
+      0.9993043487510721,
+      0.995261622350936,
+      0.9767181843171922,
+      0.9003976066977377,
+      0.7270081107959143,
+      0.10000359997391972
+     ],
+     "step": 1000,
+     "how": "Δ / ref"
+    }
+   },
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.E1_centroid": {
+   "value": 827.1688005893553,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.E2_bottom": {
+   "value": 1000,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.E8_peak": {
+   "value": 512,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.E6b_full": {
+   "value": 256,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.warmup_end": {
+   "value": 1430,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.share512": {
+   "value": {
+    "E1": 0.9824561403508771,
+    "E2": 0.8131199454994149,
+    "E3": 0.031166832942946726,
+    "E4": 0.34997595841838536,
+    "E10": 0.3580548474590692
+   },
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.n_pairs": {
+   "value": 11,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.n_aligned": {
+   "value": 7,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.n_misaligned": {
+   "value": 2,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.n_unread": {
+   "value": 2,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.aligned_in_warmup": {
+   "value": true,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.floor": {
+   "value": 4.0,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "s2.code": {
+   "value": "37a2d6a9046d",
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.a": {
+   "value": {
+    "0": {
+     "value": 11,
+     "min": 0.0,
+     "median": 6.0,
+     "max": 17.0
+    },
+    "256": {
+     "value": 30,
+     "min": 9.0,
+     "median": 11.0,
+     "max": 17.0
+    },
+    "512": {
+     "value": 60,
+     "min": 45.0,
+     "median": 49.0,
+     "max": 55.0
+    },
+    "1000": {
+     "value": 41,
+     "min": 40.0,
+     "median": 46.0,
+     "max": 54.0
+    },
+    "2000": {
+     "value": 29,
+     "min": 29.0,
+     "median": 35.0,
+     "max": 41.0
+    },
+    "4000": {
+     "value": 36,
+     "min": 27.0,
+     "median": 33.0,
+     "max": 38.0
+    },
+    "143000": {
+     "value": 65,
+     "min": 23.0,
+     "median": 37.0,
+     "max": 51.0
+    }
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.b": {
+   "value": {
+    "0": {
+     "value": 0,
+     "min": 0.0,
+     "median": 0.0,
+     "max": 2.0
+    },
+    "256": {
+     "value": 18,
+     "min": 17.0,
+     "median": 19.0,
+     "max": 23.0
+    },
+    "512": {
+     "value": 54,
+     "min": 54.0,
+     "median": 55.0,
+     "max": 58.0
+    },
+    "1000": {
+     "value": 56,
+     "min": 54.0,
+     "median": 57.0,
+     "max": 60.0
+    },
+    "2000": {
+     "value": 61,
+     "min": 57.0,
+     "median": 60.0,
+     "max": 62.0
+    },
+    "4000": {
+     "value": 54,
+     "min": 52.0,
+     "median": 55.5,
+     "max": 60.0
+    },
+    "143000": {
+     "value": 61,
+     "min": 56.0,
+     "median": 65.0,
+     "max": 70.0
+    }
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.g3p": {
+   "value": {
+    "512": {
+     "value": 29,
+     "min": 50.0,
+     "median": 57.0,
+     "max": 66.0
+    },
+    "1000": {
+     "value": 31,
+     "min": 38.0,
+     "median": 47.0,
+     "max": 58.0
+    },
+    "2000": {
+     "value": 56,
+     "min": 33.0,
+     "median": 41.0,
+     "max": 51.0
+    },
+    "4000": {
+     "value": 44,
+     "min": 36.0,
+     "median": 42.0,
+     "max": 52.0
+    },
+    "143000": {
+     "value": 61,
+     "min": 54.0,
+     "median": 61.0,
+     "max": 66.0
+    }
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  }
+ }
+}
