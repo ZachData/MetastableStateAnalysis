@@ -2895,6 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
+## 3.67 On the 9 PolyPythias seeds, both of §3.66's dated events reproduce (2026-10-22)
+
+**`trackC_writeup/status-C.md` "C2 unit 3s"** holds the numbers; this section says why it is
+project-wide.
+
+- §3.66's two events, read on seeds 1–9 under a rule frozen before any seed's centred record
+  (`design-C2.md` "Unit 3s"): the centred half-rise falls at **1000**, one grid step after the
+  seed's uncentred break, on **8 of 9** seeds at each of four centred tolerances (one reading on
+  this grid; seed 6 ties on one tolerance). So the break §3.61 dated and `P-A5` reproduced comes,
+  on 8 of 9 seeds, before the token-centred cloud's break: at the break step the centred count
+  is below half of its own plateau (0.17–0.50 of it). The token-centred cloud breaks at the step
+  where D10 dates previous-token and induction on 8 seeds.
+- A single "matched" tolerance between the centred and uncentred counts was refused by its own
+  gate: no tolerance reads a planted change alike through both. So no claim about how *much* of
+  the break is the common direction's is calibrated; the reading is about dates.
+- C2's headline goes back to the user as Blocked 98: the E₁ break restated as the common
+  direction's (91 (a)), or the two events (96 (c)).
+
+---
+
 ## 3.66 C2's anisotropy control: at 512 the energy break is mostly the common direction's; the centred cloud breaks at 1000 (2026-10-22)
 
 **`trackC_writeup/status-C.md` "C2 unit 3"** holds the numbers; this section says why it is
