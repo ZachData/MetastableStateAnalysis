@@ -3,7 +3,9 @@ State: §2 and §8 drafted at unit 1 (2026-10-22); §3–§5 at unit 2, §1, §6
 at unit 4. Unit 2 replaces every number below that comes from a record or a config with a
 numbers.py key; until then the numbers here are the configs' and the papers'. Each citation's
 mark ([H], [A], [R], [S]) is in `trackC_writeup/lit-C2-unit1.md` or `trackA_force/lit-C2.md`;
-a claim resting on an [S] row is not stated here. -->
+a claim resting on an [S] row is not stated here, and an [A] row is cited only for what its
+abstract says. -->
+
 
 # The interaction energy along a language model's training
 
@@ -21,16 +23,18 @@ Put each token's residual-stream state on the unit sphere, xᵢ ∈ S^{d−1}, i
 
 E_β is large when the tokens are close together and is maximised by a single cluster; on the
 sphere its minimiser is the uniform measure [Geshkovski et al. 2023, Prop. 3.4]. Read a
-transformer's layers as time steps of an interacting-particle system, with self-attention the
-interaction. When every layer has the same single head with Q = K = V = I, the dynamics ascend
-E_β, so E_β is non-decreasing from layer to layer [Geshkovski et al. 2023, §3.2]. The statement
-extends to one head whose score matrix QᵀK is symmetric and equal to V, as gradient ascent in a
-metric that weights each token by its attention normaliser [ibid., §3.4.1], and to many heads
-when each head's score matrix is symmetric and equal (or close) to its value map [Pendharkar
-2026, Theorems 11–12]; even then a single head's own energy can fall, through cross-head
-terms [ibid., Theorem 17]. No result covers MLP blocks, values untied from the scores, or
-weights that change from layer to layer, and trained transformers satisfy the symmetry and tying
-conditions nowhere exactly [ibid., §10].
+transformer's depth as continuous time for an interacting-particle system, with self-attention
+the interaction. When every layer has the same single head with Q = K = V = I, the dynamics
+ascend E_β, so E_β is non-decreasing in depth [Geshkovski et al. 2023, §3.2]; with V = −I it is
+non-increasing. Wider hypotheses give monotonicity of a different, weighted energy, not of E_β:
+for one head whose score matrix QᵀK is symmetric and equal to V, the dynamics ascend
+(1/2β) Σᵢⱼ exp(β⟨Vxᵢ, xⱼ⟩) in a metric that weights each token by its attention normaliser
+[ibid., §3.4.1], and for many heads whose score matrices are each symmetric and equal (or close)
+to their value maps, a sum of energies weighted by those matrices is non-decreasing [Pendharkar
+2026, Theorems 11–12], though a single head's own energy can fall through cross-head terms
+[ibid., Theorem 17]. No result covers MLP blocks, values untied from the scores, weights that
+change from layer to layer, or discrete layers, and trained transformers satisfy the symmetry
+and tying conditions nowhere exactly [ibid., §10].
 
 So no theorem says a trained language model's E_β should be monotone in depth, and none says
 a randomly initialised one's should. We read monotonicity as the prediction of the
@@ -83,7 +87,7 @@ schedule's (§7).
 
 ## 7. What would separate the schedule from training
 
-*(unit 4, after units 3 and 3b)*
+*(unit 4, after units 3, 3b and 3c)*
 
 ## 8. Related work
 
@@ -120,9 +124,10 @@ Isobe et al. [2026] train a noisy mean-field model's feed-forward part and find 
 the clustered regime near the final layers, a predicted shape with no checkpoints. Herty and
 Liu [2026] couple the tokens' flow in depth with the parameters' flow in training, as theory.
 
-**Earlier notes.** The author's informal notes reported energy violations in every trained model
-examined, and "under random weights too"; that clause concerned GPT-2's initialisation, and on
-Pythia at step 0 the energy is monotone or nearly so (§4).
+**Earlier notes.** The author's informal notes compared trained GPT-2, ALBERT and BERT models
+with random weights of matched norm: under random weights the energy rose monotonically in
+depth, as the identity-weight picture predicts, and in every trained model, prompt and β tested
+it did not. They read only endpoints; §4 dates when, along training, the monotonicity is lost.
 
 ## Appendix A. The shared subspaces
 

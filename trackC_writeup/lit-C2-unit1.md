@@ -18,20 +18,22 @@ reachable from this session** (`docs/LITERATURE.md` §0.2).
 
 | source | statement | hypotheses | direction |
 |---|---|---|---|
-| Geshkovski, Letrouit, Polyanskiy, Rigollet, 2312.10794 [H] (§1–§5 read, 100 000 of 220 935 characters) | §3.2 eq. (3.5)–(3.6): E_β[μ] = (1/2β) ∬ e^{β⟨x,x′⟩} dμ dμ, and dE_β/dt = ∫ ‖𝒳[μ]‖² Z_{β,μ} dμ | Q = K = V = I, one head, constant weights, tokens on the sphere, no MLP | **non-decreasing** (V = −I: non-increasing, §3.2) |
+| Geshkovski, Letrouit, Polyanskiy, Rigollet, 2312.10794 [R] (§3.2 and §3.4.1 read in the local LaTeX, `docs/readings/arXiv-2312.10794v5/survey.tex` lines 404–430 and 566–600, after `/challenge-pr` on #253; §1–§5 first through a fetch summary) | §3.2 eq. (3.5)–(3.6): E_β[μ] = (1/2β) ∬ e^{β⟨x,x′⟩} dμ dμ, and dE_β/dt = ∫ ‖𝒳[μ]‖² Z_{β,μ} dμ | Q = K = V = I, one head, constant weights, tokens on the sphere, no MLP | **non-decreasing** (V = −I: non-increasing, §3.2) |
 | the same, §3.3 Lemma 3.6–3.7, Remark 3.8 | the surrogate (USA), partition function replaced by n, is a Wasserstein gradient flow (ascent) of E_β | V = I; the proof omitted in the paper | non-decreasing |
-| the same, §3.4.1 | (SA) is gradient ascent of E_β(X) = (1/2β) Σᵢⱼ e^{β⟨Vxᵢ,xⱼ⟩} in a metric weighting token i by Z_{β,i} | **QᵀK symmetric and V = QᵀK**, one head, constant parameters, sphere | non-decreasing |
+| the same, §3.4.1 | (SA) is gradient ascent, in a metric weighting token i by Z_{β,i}, of the **V-weighted** energy (1/2β) Σᵢⱼ e^{β⟨Vxᵢ,xⱼ⟩}, not of the plain E_β | **QᵀK symmetric and V = QᵀK**, one head, constant parameters, sphere, continuous time | the V-weighted energy non-decreasing |
 | the same, §3.3 after (3.7) | "because of the lack of symmetry" (SA) is not the gradient of a functional in the standard metric | — | — |
 | the same, §2.3.1–§2.3.2 | multi-head (2.7) and the MLP block (2.8) are set up; no energy statement for either ("beyond the scope of our current methods" for the MLP) | — | — |
-| Pendharkar, 2605.04279 [H] (100 000 of 119 909 characters) | Theorem 11: Σₕ E^h non-decreasing, flat or sphere; Theorem 12: still so for W_V,h = Mₕ + Eₕ with ‖Eₕ‖ ≤ ε*(t); per head, cross-head "radial shadows" block monotonicity (Theorem 17, Condition 8) | every score matrix Mₕ symmetric and **W_V,h = Mₕ** (or within ε), Mₕ constant along the flow; no MLP; §10: the conditions are "never exactly satisfied in trained transformers" | non-decreasing |
+| Pendharkar, 2605.04279 [H] (100 000 of 119 909 characters) | Theorem 11: Σₕ E^h non-decreasing, flat or sphere, each E^h = (1/2βn²) Σᵢⱼ e^{β⟨xᵢ, Mₕxⱼ⟩} **weighted by its score matrix**; Theorem 12: still so for W_V,h = Mₕ + Eₕ with ‖Eₕ‖ ≤ ε*(t); per head, cross-head "radial shadows" block monotonicity (Theorem 17, Condition 8) | every score matrix Mₕ symmetric and **W_V,h = Mₕ** (or within ε), Mₕ constant along the flow; no MLP; §10: the conditions are "never exactly satisfied in trained transformers" | non-decreasing |
 | Tomihari, Karakida, 2505.19458 [A] | as in `lit-S2.md` | — | — |
 
-**F5, worded from the texts.** E_β's monotonicity in depth is a theorem only for constant
-weights whose score matrices are symmetric and tied to the values (one head, QᵀK = V symmetric:
-2312.10794 §3.4.1; many heads, each Mₕ = W_V,h symmetric or nearly: 2605.04279 Theorems
-11–12), tokens on the sphere, no MLP. Pythia's weights at every step, including step 0, and
-S2's edited weights meet none of these (QK untied from V, 16 heads, MLPs, weights that change
-by layer). So the break is a departure from the identity-weight picture's prediction, not a
+**F5, worded from the texts** (corrected after `/challenge-pr` on #253, finding 2). The plain
+E_β the repo measures is proved monotone only at Q = K = V = I (2312.10794 §3.2; V = −I
+reverses it), in continuous time with one constant head on the sphere and no MLP. Under the
+wider hypotheses (one head with QᵀK = V symmetric, §3.4.1; many heads with each Mₕ = W_V,h
+symmetric or nearly, 2605.04279 Theorems 11–12) what is monotone is a **V- or Mₕ-weighted**
+energy, not E_β. Pythia's weights at every step, including step 0, and S2's edited weights meet
+none of these (QK untied from V, 16 heads, MLPs, weights that change by layer, 24 discrete
+layers). So the break is a departure from the identity-weight picture's prediction, not a
 violated theorem, and L1's monotone steps 0–128 are an empirical fact, not a consequence of one.
 
 **A correction this reading makes.** `lit-S2.md`'s row read "the energy decreases along the
@@ -67,6 +69,7 @@ pool, so stated as different readings, neither confirming nor contradicting.
 | Wang et al., 2410.02984 | [S] | [A]: refined LLC on a two-layer attention-only transformer; heads differentiate and specialise; a multigram circuit | "staggered by thousands of steps" stays [S]; §8 cites it for head-level differentiation only |
 | Herty, Liu, 2608.25055 | [S] | [A]: mean-field theory of coupled token (depth) and parameter (training) dynamics; well-posedness, convergence; no experiments | §8, theory |
 | Rigollet, 2512.01868 | [S] "Rigollet et al.", "inner products concentrating along depth in trained models" | [A]: single author (ICM 2026); clustering, metastability, normalisation's effect on contraction, a long-context phase transition; no trained models in the abstract | the trained-model clause is unsupported and dropped; §8 cites it as theory |
+| Razzhigaev et al., 2311.05928 (EACL 2024) | [S] in `lit-1.md`, `lit-1b.md`, `lit-5c.md` | [A] (fetched at unit 1, recorded after `/challenge-pr` on #253, finding 3): decoders' anisotropy across layers is bell-shaped, peaking in the middle layers; intrinsic dimension rises early in training, then falls; models and checkpoints not named in the abstract | §8 cites the two abstract claims only |
 | Olsson et al., 2209.11895 | [S] (`lit-10.md` row 3) | [A]: induction heads develop at "precisely the same point" as a sudden sharp rise in in-context learning, visible as a bump in the training loss; causal evidence in small attention-only models, correlational in larger ones | §2.2 cites the abstract's claim; the Pythia step conversion (~1200–2400) stays `lit-10.md`'s |
 | Bruno, Pasqualotto, Agazzi, 2410.23228 | [S] | [A]: mean-field token flow on the sphere; near a uniform start, many tokens stay near a meta-stable manifold whose structure is set by β (a rescaled Gegenbauer polynomial); the PDE "can be interpreted as a Wasserstein gradient flow" | §8, theory |
 | Bernas et al., ICML 2026 / 2604.08764 | [A] "anisotropy of embeddings along Pythia ... checkpoints" | [H] (all 147 998 characters, in two reads): the main measure is IsoScore* on the covariance of **backpropagated gradients** (tangent against normal directions); activations only in App. D (MLP activations, wikitext), Pythia-410m from **step 10 000** (ranges 10k–22k … 126k–138k); "early" means the first 30 % of training; nothing in steps 0–4000 | **F9 narrows**: published anisotropy along Pythia's training starts at step 10 000; the break's window (128–512) is not read by it (design-C2 F9) |
@@ -91,14 +94,33 @@ Pythia's break is at steps 256–512, about 0.5–1.1B tokens (2 097 152 tokens 
 | suite | warmup | early checkpoints (checked 2026-10-22) | verdict |
 |---|---|---|---|
 | Pythia, PolyPythias | 1 % of 143 000 (1430 steps), every size [R] | 0, 1, 2, …, 512, 1000 | the same schedule |
-| Stanford CRFM Mistral GPT-2 small / medium, 5 seeds each | 4000 steps, linear; medium peak 1.5e-4 [R, `conf/trainers/gpt2-medium.yaml`]; batch 512 × 1024 | the docs list every 10 steps to 100, every 50 to 2000, as Hub branches; **the Hub repositories now hold only `main`** (`git ls-remote` on beren, eowyn; models API refs on arwen, alias, battlestar) | gone from the Hub |
+| Stanford CRFM Mistral **GPT-2 small**, 5 seeds (alias, battlestar, caprica, darkmatter, expanse) | 4000 steps, linear, peak 6e-4 [R, `conf/trainers/gpt2-small.yaml`]; batch 512 × 1024; 400 000 steps; 12 × 768 | **604–609 `checkpoint-N` git tags per repo** (not branches): 0, 10, …, 100, then every 50 to 2000, …, 400 000 (`git ls-remote --tags` on alias and expanse; `/challenge-pr` on #253, finding 1, counted all five) | **feasible** |
+| Mistral GPT-2 medium, 5 seeds | 4000 steps, peak 1.5e-4 [R]; 24 × 1024 (410m's shape) | `main` only, no tags (arwen, beren, eowyn) | gone from the Hub |
 | OLMo-2 1B (0425) | — | stage 1: step 0, 300 (1B tokens), then 10 000 | one point in the window |
 | OLMo-1B-0724, OLMo-1B | — | from step 1000 (2B and 4B tokens) | past the window |
 | LLM360 Amber | — | 360 over 1.26T tokens | coarser |
 | SmolLM2-135M intermediate, pico-decoder-small | — | from step 240 000; `main` only | none |
 
-**92 (ii) is not feasible: no public suite found with a different warmup and checkpoints inside
-its first billion tokens.** Unit 3c is not run; the budget is 6 units + close-out.
+**92 (ii) is feasible on Mistral GPT-2 small** (corrected after `/challenge-pr` on #253, finding
+1: the first reading looked for branches only and missed the tags). By the frozen rule ("(ii) if
+unit 1 finds a suite") unit 3c runs, and the budget is 7 units + close-out.
+
+**What 3c can tell apart** (fixed before its rule is written; Pythia's break bin (256, 512] carried
+to GPT-2 small under each hypothesis; tokens a step 2 097 152 against 524 288):
+
+| the break is locked to | predicted GPT-2 small bin (steps) |
+|---|---|
+| optimizer steps | (256, 512] |
+| cumulative LR (Σ lr, a dose: peak × s² / 2·warmup) | about (303, 605] |
+| the fraction of warmup done | about (716, 1432] |
+| tokens seen | (1024, 2048] |
+
+So 3c separates {steps, LR dose} from {warmup fraction, tokens}; it cannot split either pair
+(each pair's bins overlap or sit 1.4× apart against Pythia's 2× bin). Model (12 × 768), data
+(OpenWebText), tokenizer and the 1/layer attention scaling (`scale_attn_by_inverse_layer_idx: true`, [R] its
+`config.json`) all differ, so its
+reading is description. Unit 3c writes its rule from this table, with a preflight report,
+before any output.
 
 ## 6. 92 (iii)'s configs [R] (`EleutherAI/pythia` `models/*/pythia-*.yml`)
 
@@ -112,9 +134,16 @@ The design's numbers stand: the same warmup, the same tokens a step, the peak LR
 
 ## Parked
 
-1. **The Mistral GPT-2 checkpoints off the Hub** (why: the docs name only Hub branches, now gone;
-   cost: an email to Stanford CRFM, days; could change: 92 (ii), and with it a unit 3c). Carry to
-   C2's close-out, where it is carried or dropped.
+1. **Mistral GPT-2 medium's checkpoints off the Hub** (why: medium has 410m's shape, 24 × 1024,
+   and small does not; cost: an email to Stanford CRFM, days; could change: 3c's model confound
+   only). Carry to C2's close-out, where it is carried or dropped.
 2. **token-drift's per-step table** (why: a 70m anisotropy series in the window, uncentred;
    cost: one read of its config and outputs; could change: nothing in a rule, only §7's words
    beside unit 3b's 70m readings). Carry to unit 3b.
+3. **Where "under random weights too" comes from** (why: `lit-C2.md` §1 and `design-C2.md` 93
+   attribute it to Blog 1, but the local copy, `docs/readings/blog1_2026-07-08.txt`, says the
+   random-weight energy (norm-matched random weights, GPT-2, ALBERT, BERT) "rises monotonically";
+   `math-1.md` §13.2's GPT-2-era "including under random weights" is the likeliest source, Blog 2
+   unchecked; cost: one read of Blog 2; could change: §8's sentence and a later post's wording
+   only). The attribution is corrected now (`/challenge-pr` on #253, finding 4); the source is
+   carried to unit 4.
