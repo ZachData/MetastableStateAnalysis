@@ -111,3 +111,25 @@ def test_hook_refuses_without_attention_weights(torch64):
     with pytest.raises(s2.S2Error):
         hook._post(0, lay.input_layernorm)(lay.attention, (), (torch.zeros(1, 5, 32), None))
     hook.close()
+
+
+def test_wider_frame_at_k_s_is_the_model_and_set_frame_restores(torch64):
+    """G3′'s frame (4k wide, both steps' spaces) at the step's own K is the model."""
+    from trackS_subspace import s2
+    torch = torch64
+    m, m2 = tiny_model(torch, 4), tiny_model(torch, 5)
+    ids = torch.randint(0, 64, (1, 10))
+    with torch.no_grad():
+        bar = 1e-9 + 10 * _rowsum_gap(m, ids)
+        L0, _ = _run(m, ids)
+        heads, h2 = s2.Heads(m), s2.Heads(m2)
+        fr = [[s2.g3p_frame(f, h2.frames[l][h]) for h, f in enumerate(row)] for l, row in enumerate(heads.frames)]
+        hook = s2.Hook(m, heads)
+        hook.set_frame([np.stack([x[0]["Q"] for x in row]) for row in fr])
+        hook.set([np.stack([x[0]["K"] for x in row]) for row in fr])
+        L1, _ = _run(m, ids)
+        hook.set_frame(None)
+        hook.set(heads.cores("base")[0])
+        L2, _ = _run(m, ids)
+        hook.close()
+    assert s2.rel_err(L1, L0) < bar and s2.rel_err(L2, L0) < bar

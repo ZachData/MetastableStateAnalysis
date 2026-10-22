@@ -23,6 +23,10 @@ Tier 1: exploratory, unregistered.
     python -m trackS_subspace.s2 g0 --out <dir>
     python -m trackS_subspace.s2 preflight --out <dir>
     python -m trackS_subspace.s2 beside --out <dir>
+    python -m trackS_subspace.s2 gates --out <dir>        # unit 2: base, controls, gain arms, G2, G3, G3′
+    python -m trackS_subspace.s2 gate-read --out <dir>    # G1, G1′, G2, G3, G3′ (no GPU)
+    python -m trackS_subspace.s2 arms --out <dir>         # a, b, b-eig; refuses before gate-read
+    python -m trackS_subspace.s2 read --out <dir>         # R1, R2 (no GPU)
 """
 
 from __future__ import annotations
@@ -40,6 +44,13 @@ from trackB_circuit.b2a import D_MODEL, HEAD_DIM, N_HEADS, N_LAYERS, REPO, seed_
 
 SCORED_STEPS = (512, 1000, 2000, 4000, 143000)
 BESIDE_STEPS = (0, 256)
+UNIT2_STEPS = BESIDE_STEPS + SCORED_STEPS
+R2_STEPS = (1000, 2000, 4000, 143000)
+G2_STEPS = (512,) + R2_STEPS                               # 512 beside, as R2's
+V_PLACED = 7                                               # R1, G3: at most one violation per prompt
+G_HALF = 0.5                                               # R2: "survives" at G ≥ 0.5 G_base
+G2_MEMBERS = ("L5H2", "L7H8", "L12H5", "L8H6", "L11H14", "L8H9", "L15H14", "L7H1", "L9H13", "L10H9")
+G3P_BASE_TOL = 1e-4                                        # placed (unit 2): G3′'s frame at K_s, D to base
 G0_STEPS = (0, 256, 512, 1000, 2000, 4000, 143000)        # base V against the panel
 PREFLIGHT_STEP = 8000
 WIRING_STEPS = (0, 8000)
@@ -319,6 +330,14 @@ class Hook:
 
     def set(self, cores: Sequence[np.ndarray]) -> None:
         self.M = [self.torch.as_tensor(c, device=self.dev, dtype=self.dt) for c in cores]
+
+    def set_frame(self, Qs: Optional[Sequence[np.ndarray]] = None) -> None:
+        """Per-layer (H, d, m) bases the cores are written in (G3′'s wider frame, m = 4k); ``None``
+        restores the heads' own (d × 2k). The cores set next must match."""
+        if not hasattr(self, "Q0"):
+            self.Q0 = self.Q
+        self.Q = self.Q0 if Qs is None else [self.torch.as_tensor(q, device=self.dev, dtype=self.dt)
+                                             for q in Qs]
 
     def _pre(self, l):
         def f(mod, args, kwargs):
@@ -860,6 +879,462 @@ def summarise(rec: Dict) -> Dict:
     return out
 
 
+# ---------------------------------------------------------------- unit 2: labels and readings (pure)
+
+def label(x: float, ctl: Sequence[float]) -> str:
+    """Against the controls: *lower* (below every one), *higher* (above every one), else *as its
+    controls*; ties go to "as its controls" (design "Readings")."""
+    c = np.asarray(ctl, dtype=float)
+    if x < c.min():
+        return "lower"
+    if x > c.max():
+        return "higher"
+    return "as its controls"
+
+
+def cell(x: float, ctl: Sequence[float], gain: Optional[float] = None, d: Optional[float] = None,
+         d_ctl: Optional[Sequence[float]] = None) -> Dict:
+    """One cell before its reading: the raw label, whether the arm is beyond its gain arm in the
+    label's direction, and where its displacement D lies against the controls'."""
+    c = np.asarray(ctl, dtype=float)
+    out = {"value": x, "raw": label(x, c), "as_its_gain": False, "displacement": None,
+           "ctl": {"min": float(c.min()), "median": float(np.median(c)), "max": float(c.max())}}
+    if gain is not None:
+        out["gain"] = {"value": gain, "label": label(gain, c)}
+        out["as_its_gain"] = bool((out["raw"] == "lower" and not x < gain)
+                                  or (out["raw"] == "higher" and not x > gain))
+    if d is not None:
+        dc = np.asarray(d_ctl, dtype=float)
+        out["D"] = {"value": d, "ctl_min": float(dc.min()), "ctl_max": float(dc.max())}
+        out["displacement"] = "further" if d > dc.max() else "less" if d < dc.min() else "within"
+    return out
+
+
+def r1_read(c: Dict, guard: bool = False) -> Dict:
+    """R1's reading of a V cell. A label is read only beyond its gain arm. "Moved further" is
+    written beside, read (Blocked 88 (a), the user's: G2 and G3 showed the guard withholds planted
+    effects); ``guard=True`` is the frozen one-sided guard (Blocked 87 (a)), which withheld *lower*.
+    ``counts``: read *lower* with V ≤ 7."""
+    lab, read = c["raw"], True
+    if c["as_its_gain"]:
+        lab, read = f"{lab}, as its gain", False
+    elif c["displacement"] in ("further", "less"):
+        lab = f"{lab}, moved {c['displacement']}"
+        read = not (guard and c["raw"] == "lower" and c["displacement"] == "further")
+    return {"label": lab, "read": read, "counts": bool(read and c["raw"] == "lower" and c["value"] <= V_PLACED)}
+
+
+def r2_read(c: Dict, g_base: float, guard: bool = False) -> Dict:
+    """R2's reading of a G cell: *survives* (G ≥ 0.5 G_base, not read *lower*), *lost* (read
+    *lower*, G < 0.5 G_base), else *weakened*. "As its gain" is not read; "moved further" is written
+    beside, read (Blocked 88 (a)); ``guard=True``, the frozen guard, withheld *lost* and *weakened*."""
+    lower = c["raw"] == "lower" and not c["as_its_gain"]
+    half = c["value"] >= G_HALF * g_base
+    out = "survives" if half and not lower else "lost" if lower and not half else "weakened"
+    lab, read = out, True
+    if c["as_its_gain"]:
+        lab, read = f"{out}, as its gain", False
+    elif c["displacement"] in ("further", "less"):
+        lab = f"{out}, moved {c['displacement']}"
+        read = not (guard and out != "survives" and c["displacement"] == "further")
+    return {"label": lab, "read": read, "outcome": out}
+
+
+def g2_draws(n: int = N_CTL) -> List[List[Tuple[int, int]]]:
+    """G2's null (the user's, 2026-10-21; the frozen doubly matched one is only the zeroing itself):
+    per draw, each member stands in for a non-member of its own layer, drawn without replacement
+    within the draw. The same draws at every step."""
+    from trackB_circuit.b2a import parse_head
+    members = [parse_head(m) for m in G2_MEMBERS]
+    out = []
+    for i in range(n):
+        rng = np.random.default_rng(seed_for("s2-g2", i))
+        taken: set = set(members)
+        row = []
+        for l, _ in members:
+            h = int(rng.choice([h for h in range(N_HEADS) if (l, h) not in taken]))
+            taken.add((l, h))
+            row.append((l, h))
+        out.append(row)
+    return out
+
+
+def zeroed(cores: Sequence[np.ndarray], lh: Sequence[Tuple[int, int]]) -> List[np.ndarray]:
+    """``cores`` with the heads ``lh``'s K set to 0 (their constant and write along 1 kept, as in
+    every arm)."""
+    out = [c.copy() for c in cores]
+    for l, h in lh:
+        out[l][h] = 0
+    return out
+
+
+def g3p_frame(f_s: Dict[str, np.ndarray], f_t: Dict[str, np.ndarray]):
+    """G3′'s per-head frame: Q4 (d × 4k) spans both steps' write and read spaces, so K_s (as the
+    frame's ``K``) and the step-128 K_t are both cores in it; the controls' span is the two write
+    spaces against the two read spaces. Returns ``(frame, K_t's core, span)``."""
+    Bs, Cs = f_s["Q"] @ f_s["Bq"], f_s["Q"] @ f_s["Cq"]
+    Bt, Ct = f_t["Q"] @ f_t["Bq"], f_t["Q"] @ f_t["Cq"]
+    Q4 = np.linalg.qr(np.hstack([Bs, Cs, Bt, Ct]))[0]
+    bs, cs, bt, ct = (Q4.T @ X for X in (Bs, Cs, Bt, Ct))
+    span = (np.linalg.qr(np.hstack([bs, bt]))[0], np.linalg.qr(np.hstack([cs, ct]))[0])
+    return {"Q": Q4, "Bq": bs, "Cq": cs, "K": bs @ cs.T}, bt @ ct.T, span
+
+
+# ---------------------------------------------------------------- unit 2: the passes (GPU)
+
+def load_cpu(step: int):
+    """A checkpoint on the CPU in float32 (G3's target, G3′'s frames)."""
+    import torch
+    from transformers import AutoModelForCausalLM
+    from core.lm_loading import resolve_lm_entry
+    from core.models import from_pretrained_eager
+    e = resolve_lm_entry(f"pythia-410m-step{step}")
+    return from_pretrained_eager(AutoModelForCausalLM, e["repo_id"], revision=e["revision"],
+                                 torch_dtype=torch.float32).eval()
+
+
+def perturb(model, orig: Dict[str, object], dnorm: Dict[str, float], t: float, seed: int) -> None:
+    """G3's control: every parameter W := W_s + N, N Gaussian of norm t ‖W_128 − W_s‖ (per tensor)."""
+    import torch
+    g = torch.Generator(device="cuda").manual_seed(seed)
+    with torch.no_grad():
+        for n, p in model.named_parameters():
+            w = orig[n].to(p.device)
+            if dnorm[n] > 0:
+                z = torch.randn(p.shape, generator=g, device=p.device, dtype=p.dtype)
+                w = w + z * (t * dnorm[n] / z.norm())
+            p.copy_(w)
+
+
+def _resume(path: Path, rec: Dict) -> Dict:
+    if path.exists():                          # resume (`LESSONS.md` 11)
+        prev = json.loads(path.read_text())
+        if prev["code"] != rec["code"]:
+            raise S2Error(f"{path} was written by code {prev['code']}; not resuming")
+        return prev
+    return rec
+
+
+class _Pass:
+    """One step's hooked configurations against its base, saved as they come."""
+
+    def __init__(self, path: Path, rec: Dict, model, inp: Inputs, hook: Hook, t0: float):
+        self.path, self.rec, self.model, self.inp, self.hook, self.t0 = path, rec, model, inp, hook, t0
+        base = run_config(model, inp, keep_hs=True)
+        self.base_hs = base.pop("_hs")
+        check_populated(base, f"step {rec['step']} base")
+        old = rec["configs"].get("base")
+        if old is not None and (old["V"] != base["V"] or abs(old["G"] - base["G"]) > 1e-6 * abs(base["G"])):
+            raise S2Error(f"step {rec['step']}: the base moved since the record (V {old['V']} → {base['V']})")
+        rec["configs"]["base"] = base
+        print(f"step {rec['step']}: base populated, V {base['V']}, G {base['G']:.3f}", flush=True)
+
+    def has(self, name: str) -> bool:
+        return name in self.rec["configs"]
+
+    def run(self, name: str, cores=None, sz: Optional[Dict] = None, hooked: bool = True) -> Dict:
+        if hooked:
+            self.hook.set(cores)
+        r = run_config(self.model, self.inp, base_hs=self.base_hs)
+        check_populated(r, f"step {self.rec['step']} {name}")
+        self.rec["configs"][name] = r
+        if sz is not None:
+            self.rec["sizes"][name] = size_record(sz)
+        n = len(self.rec["configs"])
+        if n % 20 == 0 or not ("_ctl_" in name or name.startswith("ctl_")):
+            print(f"step {self.rec['step']} {name}: V {r['V']}, G {r['G']:.3f}, D {r['D']:.3f} "
+                  f"({n} configs, {time.time() - self.t0:.0f}s)", flush=True)
+            _save(self.path, self.rec)
+        return r
+
+
+def gates(out: Path) -> None:
+    """Unit 2's gate pass (design "The gate"), before any arm is run: at the 7 steps the base, the
+    gain arms and 41 doubly matched controls per arm (draw 40 is G1's); G2 at 512 and R2's steps;
+    G3′ and G3 at the scored steps. Arms a, b and b-eig are not computed here."""
+    import gc
+    import torch
+    out.mkdir(parents=True, exist_ok=True)
+    _save(out / "plan.json", {**run_meta(), "steps": UNIT2_STEPS, "g2_members": G2_MEMBERS,
+                              "g2_draws": g2_draws()})
+    t0 = time.time()
+    m128 = load_cpu(G3_STEP)
+    h128 = Heads(m128)
+    target = {n: p.detach().clone() for n, p in m128.named_parameters()}
+    del m128
+    for step in UNIT2_STEPS:
+        path = out / f"gates_{step}.json"
+        rec = _resume(path, {"code": code_sha(), "step": step, "configs": {}, "sizes": {}})
+        if rec.get("done"):
+            continue
+        model, tok = load(step)
+        heads = Heads(model)
+        inp = Inputs(tok, "cuda")
+        hook = Hook(model, heads)
+        ps = _Pass(path, rec, model, inp, hook, t0)
+        names = [f"g_{a}" for a in ARMS] + [f"ctl_{a}_{i}" for a in ARMS for i in range(N_CTL + 1)]
+        for name in names:
+            if ps.has(name):
+                continue
+            if name.startswith("ctl_"):
+                _, a, i = name.split("_")
+                cores, sz = heads.cores(f"ctl_{a}", draw=int(i), step=step)
+            else:
+                cores, sz = heads.cores(name, step=step)
+            ps.run(name, cores, sz)
+        if step in G2_STEPS:
+            from trackB_circuit.b2a import parse_head
+            base_cores = heads.cores("base")[0]
+            if not ps.has("g2"):
+                ps.run("g2", zeroed(base_cores, [parse_head(m) for m in G2_MEMBERS]))
+            for i, row in enumerate(g2_draws()):
+                if not ps.has(f"g2_ctl_{i}"):
+                    ps.run(f"g2_ctl_{i}", zeroed(base_cores, row))
+        if step in SCORED_STEPS:
+            fr = [[g3p_frame(f, h128.frames[l][h]) for h, f in enumerate(row)]
+                  for l, row in enumerate(heads.frames)]
+            hook.set_frame([np.stack([x[0]["Q"] for x in row]) for row in fr])
+            if not ps.has("g3p_base"):
+                ps.run("g3p_base", [np.stack([x[0]["K"] for x in row]) for row in fr])
+            check_g3p_base(step, ps.rec["configs"])
+            if not ps.has("g3p"):
+                ps.run("g3p", [np.stack([x[1] for x in row]) for row in fr],
+                       {"edit": [sizes(x[0]["K"], x[1])[0] for row in fr for x in row],
+                        "norm": [sizes(x[0]["K"], x[1])[1] for row in fr for x in row], "info": []})
+            for i in range(N_CTL):
+                if not ps.has(f"g3p_ctl_{i}"):
+                    ps.run(f"g3p_ctl_{i}", [np.stack([
+                        control_core(x[0], x[1], x[2], np.random.default_rng(seed_for("s2-g3p", step, i, l, h)))
+                        for h, x in enumerate(row)]) for l, row in enumerate(fr)])
+            hook.set_frame(None)
+            if not ps.has("g3p_gain"):
+                ps.run("g3p_gain", [np.stack([gain_core(f, fr[l][h][1]) for h, f in enumerate(row)])
+                                    for l, row in enumerate(heads.frames)])
+            del fr
+        hook.close()
+        if step in SCORED_STEPS:                   # the whole model: no hook
+            orig = {n: p.detach().cpu().clone() for n, p in model.named_parameters()}
+            dnorm = {n: float((target[n] - orig[n]).norm()) for n in orig}
+            for t in G3_T:
+                if not ps.has(f"g3_{t}"):
+                    interpolate(model, target, orig, t)
+                    ps.run(f"g3_{t}", hooked=False)
+                for i in range(N_CTL):
+                    if not ps.has(f"g3_{t}_ctl_{i}"):
+                        perturb(model, orig, dnorm, t, seed_for("s2-g3", step, t, i))
+                        ps.run(f"g3_{t}_ctl_{i}", hooked=False)
+            interpolate(model, target, orig, 0.0)
+            del orig
+        rec["done"] = True
+        _save(path, rec)
+        print(f"step {step}: gates done, {len(rec['configs'])} configs ({time.time() - t0:.0f}s)", flush=True)
+        del model, heads, inp, hook, ps
+        gc.collect()
+        torch.cuda.empty_cache()
+    print(f"gates done ({time.time() - t0:.0f}s)", flush=True)
+
+
+def _records(out: Path, kind: str) -> Tuple[Dict[int, Dict], Dict[str, str]]:
+    recs, shas = {}, {}
+    for s in UNIT2_STEPS:
+        p = out / f"{kind}_{s}.json"
+        if not p.exists():
+            raise S2Error(f"{p} missing")
+        body = p.read_bytes()
+        recs[s] = json.loads(body)
+        if not recs[s].get("done"):
+            raise S2Error(f"{p} not done")
+        shas[p.name] = hashlib.sha256(body).hexdigest()[:12]
+    return recs, shas
+
+
+def _ctl(c: Dict, prefix: str, key: str) -> List[float]:
+    return [c[f"{prefix}{i}"][key] for i in range(N_CTL)]
+
+
+def gate_read(out: Path) -> None:
+    """G1, G1′, G2, G3, G3′ from the gate pass (design "The gate", unit 2; no GPU)."""
+    g, shas = _records(out, "gates")
+    res = {"code": code_sha(), "records": shas}
+    g1 = {"R1": {}, "R2": {}}
+    g1p = {"V": {}, "G": {}}
+    for a in ARMS:
+        for s in UNIT2_STEPS:
+            c = g[s]["configs"]
+            for key, cells in (("V", "R1"), ("G", "R2")):
+                ctl = _ctl(c, f"ctl_{a}_", key)
+                g1p[key][f"{a}@{s}"] = cell(c[f"g_{a}"][key], ctl)
+                if s in (SCORED_STEPS if key == "V" else R2_STEPS):
+                    g1[cells][f"{a}@{s}"] = label(c[f"ctl_{a}_{N_CTL}"][key], ctl)
+    n1 = {k: sum(v != "as its controls" for v in g1[k].values()) for k in g1}
+    res["G1"] = {**g1, "labelled": n1, "pass": n1["R1"] <= 2 and n1["R2"] <= 2}
+    res["G1p"] = g1p
+    g2 = {}
+    for s in G2_STEPS:
+        c = g[s]["configs"]
+        cl = cell(c["g2"]["G"], _ctl(c, "g2_ctl_", "G"), d=c["g2"]["D"], d_ctl=_ctl(c, "g2_ctl_", "D"))
+        g2[str(s)] = {**cl, "G_base": c["base"]["G"], **r2_read(cl, c["base"]["G"]),
+                      "frozen_guard": r2_read(cl, c["base"]["G"], guard=True)}
+    lost = sum(g2[str(s)]["read"] and g2[str(s)]["outcome"] == "lost" for s in R2_STEPS)
+    lost0 = sum(g2[str(s)]["frozen_guard"]["read"] and g2[str(s)]["outcome"] == "lost" for s in R2_STEPS)
+    res["G2"] = {"cells": g2, "lost": lost, "pass": lost >= 3, "frozen_guard": {"lost": lost0, "pass": lost0 >= 3}}
+    g3 = {}
+    for s in SCORED_STEPS:
+        c = g[s]["configs"]
+        for t in G3_T:
+            pre = f"g3_{t}_ctl_"
+            cl = cell(c[f"g3_{t}"]["V"], _ctl(c, pre, "V"), d=c[f"g3_{t}"]["D"], d_ctl=_ctl(c, pre, "D"))
+            g3[f"{t}@{s}"] = {**cl, **r1_read(cl), "G": c[f"g3_{t}"]["G"], "frozen_guard": r1_read(cl, guard=True)}
+    n3 = sum(g3[f"1.0@{s}"]["counts"] for s in SCORED_STEPS)
+    n30 = sum(g3[f"1.0@{s}"]["frozen_guard"]["counts"] for s in SCORED_STEPS)
+    mono = {str(s): g3[f"1.0@{s}"]["ctl"]["median"] <= V_PLACED for s in SCORED_STEPS}
+    res["G3"] = {"cells": g3, "counts_at_1": n3, "pass": n3 >= 4, "controls_monotone_at_1": mono,
+                 "frozen_guard": {"counts_at_1": n30, "pass": n30 >= 4}}
+    g3p = {}
+    for s in SCORED_STEPS:
+        c = g[s]["configs"]
+        cl = cell(c["g3p"]["V"], _ctl(c, "g3p_ctl_", "V"), gain=c["g3p_gain"]["V"], d=c["g3p"]["D"],
+                  d_ctl=_ctl(c, "g3p_ctl_", "D"))
+        g3p[str(s)] = {**cl, **r1_read(cl), "frozen_guard": r1_read(cl, guard=True), "G": c["g3p"]["G"],
+                       "base_D": check_g3p_base(s, c),
+                       "sizes": g[s]["sizes"].get("g3p")}
+    n3p = sum(v["counts"] for v in g3p.values())
+    res["G3p"] = {"cells": g3p, "counts": n3p, "in_reach": n3p >= 4}
+    _save(out / "gate_read.json", res)
+    print(f"G1 labelled {n1} (pass {res['G1']['pass']}); G2 lost at {lost} of 4 (pass {res['G2']['pass']}); "
+          f"G3 at t 1 counts {n3} of 5 (pass {res['G3']['pass']}); G3′ counts {n3p} of 5", flush=True)
+    for k, v in g3.items():
+        print(f"  G3 {k}: V {v['value']} ctl [{v['ctl']['min']:.0f}, {v['ctl']['median']:.0f}, "
+              f"{v['ctl']['max']:.0f}] D {v['displacement']} → {v['label']}", flush=True)
+    for k, v in g3p.items():
+        print(f"  G3′ {k}: V {v['value']} ctl [{v['ctl']['min']:.0f}, {v['ctl']['max']:.0f}] gain "
+              f"{v['gain']['value']} D {v['displacement']} → {v['label']}", flush=True)
+    for k, v in g2.items():
+        print(f"  G2 {k}: G {v['value']:.2f} (base {v['G_base']:.2f}) ctl [{v['ctl']['min']:.2f}, "
+              f"{v['ctl']['max']:.2f}] D {v['displacement']} → {v['label']}", flush=True)
+
+
+def arms(out: Path) -> None:
+    """Unit 2's arms a, b (and b-eig beside) at the 7 steps, after the gates are read (design: G1–G3,
+    then R1 and R2). The base is re-run and must equal the gate pass's."""
+    import gc
+    import torch
+    if not (out / "gate_read.json").exists():
+        raise SystemExit(f"refusing: {out / 'gate_read.json'} missing (the gates are read before any arm)")
+    gates_rec, _ = _records(out, "gates")
+    t0 = time.time()
+    for step in UNIT2_STEPS:
+        path = out / f"arms_{step}.json"
+        rec = _resume(path, {"code": code_sha(), "step": step, "meta": run_meta(), "configs": {}, "sizes": {}})
+        if rec.get("done"):
+            continue
+        rec["configs"].setdefault("base", gates_rec[step]["configs"]["base"])
+        model, tok = load(step)
+        heads = Heads(model)
+        inp = Inputs(tok, "cuda")
+        hook = Hook(model, heads)
+        ps = _Pass(path, rec, model, inp, hook, t0)
+        for name in ("a", "b", "b_eig"):
+            if not ps.has(name):
+                cores, sz = heads.cores(name, step=step)
+                ps.run(name, cores, sz)
+        hook.close()
+        rec["done"] = True
+        _save(path, rec)
+        del model, heads, inp, hook, ps
+        gc.collect()
+        torch.cuda.empty_cache()
+    print(f"arms done ({time.time() - t0:.0f}s)", flush=True)
+
+
+def check_g3p_base(step: int, configs: Dict) -> float:
+    """G3′'s frame at K_s must reproduce the base (D ≤ G3P_BASE_TOL) or G3′ refuses; checked on the
+    stored record, so a resumed pass and the reading refuse too (CodeRabbit on #248)."""
+    d = configs["g3p_base"]["D"]
+    if d > G3P_BASE_TOL:
+        raise S2Error(f"step {step}: G3′'s frame at K_s is not the base (D {d:.1e})")
+    return d
+
+
+def gate_refusals(gr: Dict) -> Dict:
+    """What the gates leave readable (design "Pre-authorised fallbacks"; enforced after `/challenge-pr`
+    on #248): G1 failing refuses R1 and R2 (its fallback is a re-gate with 100 controls); G2 failing
+    refuses R2; G3 failing refuses R1, unless every failing step's controls have median V ≤ 7, when
+    only cells whose controls' median V ≤ 7 are refused (``g3_mono``)."""
+    r1 = r2 = None
+    if not gr["G1"]["pass"]:
+        r1 = r2 = "G1 failed: re-gate with 100 controls first"
+    if r2 is None and not gr["G2"]["pass"]:
+        r2 = "G2 failed"
+    g3_mono = False
+    if r1 is None and not gr["G3"]["pass"]:
+        failing = [s for s in SCORED_STEPS if not gr["G3"]["cells"][f"1.0@{s}"]["counts"]]
+        if all(gr["G3"]["controls_monotone_at_1"][str(s)] for s in failing):
+            g3_mono = True
+        else:
+            r1 = "G3 failed"
+    return {"R1": r1, "R2": r2, "g3_mono": g3_mono}
+
+
+def read(out: Path) -> None:
+    """R1 and R2 (design "Readings", frozen by Blocked 87 (a); the guard as description, Blocked 88
+    (a)): each arm against its 40 controls and its gain arm, D beside; R2 read under arm b only (a as
+    description); the gates' refusals applied (``gate_refusals``). Steps 0 and 256, 512's R2 and
+    (b-eig) beside."""
+    gr = json.loads((out / "gate_read.json").read_text())
+    g, gshas = _records(out, "gates")
+    ar, ashas = _records(out, "arms")
+    ref = gate_refusals(gr)
+    res = {"code": code_sha(), "records": {**gshas, **ashas},
+           "gates": {k: gr[k]["pass"] for k in ("G1", "G2", "G3")}, "G3p_in_reach": gr["G3p"]["in_reach"],
+           "refusals": ref, "R1": {}, "R2": {}, "beside": {}}
+    g3_mono = ref["g3_mono"]
+    for a in ARMS:
+        cells = {}
+        for s in UNIT2_STEPS:
+            c, x = g[s]["configs"], ar[s]["configs"][a]
+            cl = cell(x["V"], _ctl(c, f"ctl_{a}_", "V"), gain=c[f"g_{a}"]["V"], d=x["D"],
+                      d_ctl=_ctl(c, f"ctl_{a}_", "D"))
+            rr = r1_read(cl)
+            if ref["R1"]:
+                rr = {"label": f"{rr['label']} (refused: {ref['R1']})", "read": False, "counts": False}
+            elif g3_mono and cl["ctl"]["median"] <= V_PLACED:
+                rr = {"label": f"refused (G3: controls' median V ≤ {V_PLACED})", "read": False, "counts": False}
+            cells[str(s)] = {**cl, **rr, "scored": s in SCORED_STEPS}
+        n = sum(cells[str(s)]["counts"] for s in SCORED_STEPS)
+        res["R1"][a] = {"cells": cells, "counts": n,
+                        "answer": f"refused ({ref['R1']})" if ref["R1"] else
+                        "the break goes with it" if n >= 4 else "not shown"}
+    for a in ARMS:
+        cells = {}
+        for s in UNIT2_STEPS:
+            c, x = g[s]["configs"], ar[s]["configs"][a]
+            cl = cell(x["G"], _ctl(c, f"ctl_{a}_", "G"), gain=c[f"g_{a}"]["G"], d=x["D"],
+                      d_ctl=_ctl(c, f"ctl_{a}_", "D"))
+            rr = r2_read(cl, c["base"]["G"])
+            if a == "a":
+                rr = {**rr, "read": False, "label": f"{rr['label']} (description: Blocked 87 (a))"}
+            elif ref["R2"]:
+                rr = {**rr, "read": False, "label": f"{rr['label']} (refused: {ref['R2']})"}
+            cells[str(s)] = {**cl, **rr, "G_base": c["base"]["G"], "scored": s in R2_STEPS}
+        res["R2"][a] = {"cells": cells}
+    for s in UNIT2_STEPS:
+        x = ar[s]["configs"]["b_eig"]
+        res["beside"][str(s)] = {"b_eig": {k: x[k] for k in ("V", "G", "D")},
+                                 "sizes": {k: ar[s]["sizes"][k] for k in ("a", "b", "b_eig")}}
+    _save(out / "readings.json", res)
+    for a in ARMS:
+        print(f"R1 {a}: {res['R1'][a]['answer']} ({res['R1'][a]['counts']} of 5)", flush=True)
+        for s, v in res["R1"][a]["cells"].items():
+            print(f"  {s}: V {v['value']} ctl [{v['ctl']['min']:.0f}, {v['ctl']['median']:.0f}, {v['ctl']['max']:.0f}]"
+                  f" gain {v['gain']['value']} D {v['D']['value']:.3f} [{v['D']['ctl_min']:.3f}, "
+                  f"{v['D']['ctl_max']:.3f}] → {v['label']}", flush=True)
+    for a in ARMS:
+        for s, v in res["R2"][a]["cells"].items():
+            print(f"R2 {a} {s}: G {v['value']:.2f} (base {v['G_base']:.2f}) ctl [{v['ctl']['min']:.2f}, "
+                  f"{v['ctl']['max']:.2f}] gain {v['gain']['value']:.2f} → {v['label']}", flush=True)
+
+
 # ---------------------------------------------------------------- R1b, R2 (weights only, beside)
 
 def overlap(U: np.ndarray, W: np.ndarray) -> float:
@@ -951,10 +1426,12 @@ def beside(out: Path) -> None:
 
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", choices=("g0", "preflight", "preflight-tool", "beside"))
+    ap.add_argument("cmd", choices=("g0", "preflight", "preflight-tool", "beside", "gates", "gate-read",
+                                    "arms", "read"))
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
-    {"g0": g0, "preflight": preflight, "preflight-tool": preflight_tool, "beside": beside}[a.cmd](a.out)
+    {"g0": g0, "preflight": preflight, "preflight-tool": preflight_tool, "beside": beside, "gates": gates,
+     "gate-read": gate_read, "arms": arms, "read": read}[a.cmd](a.out)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@
   - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
   - Unit 3 (Blocked 83–85 (a), the user's): QK's heads leave the null at 256 with `ov_write` and `ov_cplx`, keep concentrating through 4000, and are the most concentrated of the 7 from 2000 on (`ov_write` is at 512–1000); inside each family's 10 most shared directions the radial sign reads S at no step from 512 (inside random subspaces' range at 512, and at 1000–4000 random subspaces hold no attractive part in 18–20 of 24 layers, so only "less repulsive" can show); the OV families' S is drawn from the heads it compresses, a bias of unknown size, so QK's readings are the clean ones; collapsible negative pairs are rarer than random in QK's S at 1000–4000; no shared space is the residual stream's top variance, and at 143000 the write, negative and complex ones are partly the massive-activation coordinates — `trackS_subspace/status-S.md` "S1 unit 3, QK's ρ, R3 and the residual check (2026-10-21)"
   - S1 closed 2026-10-21 at its revised exit (3 units + close-out): the shared spaces are described against an exact null, never counted or calibrated on the effect side — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - S2 unit 2 (Blocked 87 (a) and 88 (a), the user's): neither symmetrising every head's OV nor removing its rotation in the Schur planes takes the energy break back toward monotone at any scored step (R1 "not shown" under both; the symmetric part raises the violations beyond random edits of its size at 512 and 143000), and the one OV-only edit tried with a known destination does not either (every head given its step-128 map halves the violations at 512 and 1000 but leaves 29–61); in-context copying survives the rotation's removal at all four steps; the displacement guard was made description for R1 and R2 after it refused both planted effects (R3's guard is Blocked 89) — `trackS_subspace/status-S.md` "S2 unit 2"
   - S2 unit 1 (Blocked 86 (a) and (i), the user's: arm b in Schur planes, 3 units): the hook is the model at its base core and every arm's read-back is exact; at 8000, off the grid, both arms move the residual stream further than all 40 of their size-matched random edits, so the frozen displacement guard would leave their cells unread; arm a's random edits alone break most in-context copying; removing rotation in the Schur planes changes about a tenth of each head's map; the shared write space meets the shared read and key spaces from 512; the freeze is Blocked 87 — `trackS_subspace/status-S.md` "S2 unit 1"
   - S2 opened 2026-10-21 (Blocked 86 since decided (a) and (i)): every head's OV edited at once, (a) to its symmetric part and (b) with its rotation removed (recommended: in an orthonormal basis of each invariant plane, since λ → Re λ in the eigenbasis edits a head by 1.6× its size at 512), each against 40 random edits matched in size and in the edited head's norm, and read only beyond the gain change alone; reading the energy break, in-context copying and S1's shared rotation; no theorem predicts "monotone" for (a) — `trackS_subspace/design-S2.md`
 - **Superseded / wrong:** none
@@ -19,10 +20,10 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); S2's freeze (Blocked 87); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - A leave-the-layer-out S for OV's R3 (S2 unit 3; R1b and R2 done in S2 unit 1, description; `design-S2.md` "Carried in from S1"); arm a's displacement at 143000 (11.9 against 1.0–1.1, S2 unit 2, Parked); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-21 · body `e2cc49f7a3`
+- **Reviewed:** 2026-10-22 · body `3b6dba2f0f`
 <!-- /phase-card -->
 
 ## Units
@@ -36,7 +37,7 @@
 | close-out | **done 2026-10-21** (writing only; 85 (a)) | "S1 on one page" below |
 | S2 0. scan, design, `sympy` check | **done 2026-10-21; Blocked 86 decided (a) and (i), the user's** | `lit-S2.md`, `design-S2.md`, `tools/math_checks/s2_ov_arms.py` (24 of 24 after `/challenge-pr` on #246) |
 | S2 1. code, G0, the preflight at 8000; R1b, R2 beside; then the freeze | **done 2026-10-21: G0 passes (its (b) read-back revised); the preflight's refusals argued; both arms move the stream further than every control at 8000; the freeze is Blocked 87** | "S2 unit 1" below; `s2.py g0`, `preflight`, `beside` |
-| S2 2. G1–G3 at the design points; R1, R2 | not started | `design-S2.md` "The gate", "Readings" |
+| S2 2. G1–G3 at the design points; R1, R2 | **done 2026-10-21: Blocked 87 (a) and 88 (a), the user's; the gates pass with the guard as description; R1 "not shown" under both arms; R2 under b "survives" at 4 of 4** | "S2 unit 2" below; `s2.py gates`, `gate-read`, `arms`, `read` |
 | S2 3. R3 on S₋ₗ; S1's R3 on S₋ₗ beside | not started | `design-S2.md` "The arms" |
 | S2 close-out | not started | — |
 
@@ -594,3 +595,114 @@ the step's 384: step 0 reads none, sharing within layers beyond the step's globa
 from 256 to 2000–4000 (up to 22 of 24 layers in QK and `ov_cplx`) and falls back by 143000 (5–8).
 Not established: anything these overlaps do (S2's arms, S5); R2 is description only (S1's preflight
 refused it as a verdict for QK).
+
+## S2 unit 2, the gates, R1 and R2 (2026-10-21)
+
+Blocked 87 decided (a), the user's: the design frozen as revised (the one-sided guard; R2 under arm
+a description). Two changes before any arm was run, both the user's: **G2's null** (the frozen
+doubly matched one was infeasible for a zeroing: every control equalled the arm) became zeroing 10
+non-members, each from its member's layer; and **Blocked 88 (a)**, after the gates: the
+displacement guard as description (`design-S2.md` "Unit 2: fixed in code"). Tier 1, one rung.
+
+**Run.** From `../Mets-work`, `HF_HOME` the main tree's `data/hf`, under `systemd-inhibit`; RTX 3080,
+float32, TF32 off; transformers 4.44.2. Records `data/trackS/s2/2026-10-21-u2/` (main tree):
+
+| job | code (file sha) | records (sha256, 12) | time |
+|---|---|---|---|
+| `s2.py gates` (the `runner` agent) | `13e7454e0d1a` (`e5a5b98`) | `gates_{0,256,512,1000,2000,4000,143000}.json` `a33b70ee784d`, `c731487dba9f`, `2eaabe00e9a8`, `5d075fe8fab7`, `fb767b05a802`, `355ad8011730`, `1842ddd4bc62`: 85, 85, then 292 configurations each | 1,752 s |
+| `s2.py gate-read` | `5ffab7b163ab` (`455050c`; the readers only differ from `e5a5b98`) | `gate_read.json` `4e03ca7c7a92` | — |
+| `s2.py arms` | `5ffab7b163ab` | `arms_{step}.json` (base re-run equal to the gate pass's at every step) | 63 s |
+| `s2.py read` | `5ffab7b163ab`; re-run at `37a2d6a9046d` after `/challenge-pr` on #248 (the gates' refusals enforced; every label the same) | `readings.json` `da8567dcac9c`, then `c5ecf6863def` | — |
+| read-back at 143000 (`/challenge-pr` on #248, question 3; a scratch script calling `s2.readbacks`) | `b87b9405b7f2` | `readback_143000.json`: G0's read-backs on 20 heads pass (worst 4.7e-8 of ‖K‖); arm a's read-back equals sym K on all 384 heads to 4.3e-8 | — |
+
+After the runs, one comment in `s2.py` (a threshold's provenance label) moved its sha to
+`b87b9405b7f2`; no line that computes changed. After CodeRabbit on #248, G3′'s base check
+(`check_g3p_base`, D ≤ `G3P_BASE_TOL`) runs on the stored record, so a resumed gates pass and
+`gate-read` refuse too (before, a resume skipped it); `abf4db781a29`. The five recorded `base_D`
+are 4.8e-7 to 1.6e-6; `gate-read` re-run at `abf4db781a29` on a scratch copy of the gate records
+equals `gate_read.json` but for its code field. Base V at the 7 steps: 0, 19, 56, 56, 61, 57, 70 (the panel's). Base G: ≈ 0 at 0–512, 8.21 at
+1000, 11.89, 12.44, 12.13 after.
+
+**The gates (`gate_read.json`; under the frozen guard beside).**
+
+| gate | reading | frozen guard | revised (88 (a)) |
+|---|---|---|---|
+| G1, a 41st control read as the arm | 0 of 10 R1 cells, 0 of 8 R2 cells labelled | pass | pass |
+| G2, the 10 members' OV zeroed, G (controls: 10 other heads of the same layers) | 1000: 1.06 against [7.68, 8.30]; 2000: 1.62 against [11.19, 12.02]; 4000: 1.90 against [11.74, 12.53]; 143000: 2.57 against [11.08, 12.55]. D further than every control at 1000–4000 | "lost" 1 of 4: **fails** | 4 of 4: pass |
+| G3, the model toward step 128, V at t = 1 (controls: Gaussian, same per-tensor norm) | 0 at every step, against [53, 59], [47, 60], [38, 61], [19, 40], [0, 11]; D further at 512–2000, less at 4000 and 143000 | 1 of 5 (4000): **fails** | 4 of 5 (512–4000; 143000 as its controls, median 0): pass |
+| G3′, every head's K set to its step-128 K, V | 29, 31, 56, 44, 61 at 512 … 143000 (controls [50, 66], [38, 58], [33, 51], [36, 52], [54, 66]; gain arm 54, 46, 33, 32, 68) | never ≤ 7 | never ≤ 7: **the one OV-only edit with a known destination does not reach R1's positive answer**; it halves V at 512 and 1000, beyond its controls and gain arm |
+
+G3 at t = 0.25: *lower* at 512–4000 (V 36–45); at 0.5: *lower* at 512 and 1000 (V 36, 26), as its
+controls at 2000 and 4000 (V 57); both *higher* at 143000 (V 36–45 against Gaussian controls at 2–31: random edits of that size already
+make E₁ nearly monotone at the end). G3′ at 512 and 1000 is *lower* beyond its gain arm (V 29, 31),
+moved further: step 128's OV maps alone halve the violations there, without reaching 7.
+
+**G1′, the gain arms against the controls (description).** g_b is as its controls everywhere. g_a
+(each head scaled to ‖sym K‖, ≈ 0.71) is *higher* in V at 2000, 4000, 143000 (V 50, 46, 63 against
+medians 35, 33, 37) and far *higher* in G from 1000 (7.5–11.3 against 0.4–4.5): arm a's random
+edits break copying, the gain change alone barely does.
+
+**R1, V (no cell counts).**
+
+| step | arm a: V; controls [min, median, max]; gain; D (controls) → label | arm b: same |
+|---|---|---|
+| 0 (beside) | 11; [0, 6, 17]; 9; 0.480 (0.469–0.503) → as its controls | 0; [0, 0, 2]; 0; 0.095 → as its controls |
+| 256 (beside) | 30; [9, 11, 17]; 15; 0.343 (0.306–0.321) → higher, moved further | 18; [17, 19, 23]; 18; 0.050 → as its controls |
+| 512 | 60; [45, 49, 55]; 50; 0.406 (0.332–0.348) → **higher**, moved further | 54; [54, 55, 58]; 54; 0.050 (0.045–0.049) → as its controls, moved further |
+| 1000 | 41; [40, 46, 54]; 49; 0.519 → as its controls, moved further | 56; [54, 57, 60]; 57 → as its controls, moved further |
+| 2000 | 29; [29, 35, 41]; 50; 0.628 → as its controls (a tie at the minimum), moved further | 61; [57, 60, 62]; 60 → as its controls, moved further |
+| 4000 | 36; [27, 33, 38]; 46; 0.697 → as its controls, moved further | 54; [52, 56, 60]; 57 → as its controls, moved further |
+| 143000 | 65; [23, 37, 51]; 63; **11.93** (1.03–1.14) → **higher**, moved further | 61; [56, 65, 70]; 70; 0.316 → as its controls |
+
+**R1: "not shown" under both arms** (0 of 5 each). Under arm a the symmetric part never lowers V
+beyond its controls at a scored step and raises it at 512 and 143000 (both moved further); at 8000
+(the preflight) it was below them (21 against 30–39), so the sign varies along training. Under arm
+b removing rotation in the Schur planes (≈ 0.1 ‖K‖) moves V no more than random edits of its size.
+With G3′ never at V ≤ 7, "not shown" cannot be told from "out of an OV edit's reach" (G3′ is one
+edit, so that reach is not established either).
+
+**R2, G (read under arm b only).**
+
+| step | arm b: G (base); controls; gain → label | arm a (description): G; controls; gain |
+|---|---|---|
+| 1000 | 8.19 (8.21); [8.16, 8.22]; 8.22 → **survives**, moved further | 4.01; [4.38, 4.62]; 7.47 (below every control, beyond its gain) |
+| 2000 | 11.87 (11.89); [11.81, 11.91]; 11.89 → **survives**, moved further | 3.19; [3.68, 4.20]; 9.50 (likewise) |
+| 4000 | 12.41 (12.44); [12.36, 12.45]; 12.43 → **survives**, moved further | 2.33; [2.84, 3.40]; 10.35 (likewise) |
+| 143000 | 12.34 (12.13); [11.58, 12.52]; 12.12 → **survives** | 0.05; [−0.11, 0.74]; 11.33 (as its controls) |
+
+**R2 under b: copying survives the rotation's removal at 4 of 4 steps** (also under the frozen
+guard: "survives" was never withheld). At 0–512 G ≈ 0 (no copying yet), so the half-of-base rule
+is degenerate there (beside). Under a (description), the symmetric part takes copying below every
+random edit of its size at 1000–4000.
+
+**(b-eig), beside, no label:** V 0, 17, 59, 54, 49, 43, 61; G 0.0, −0.07, −0.12, 2.41, 1.95, 0.98,
+0.89; D 0.63–1.53 (it edits each head by 0.48–1.74 ‖K‖): λ → Re λ in the eigenbasis breaks most copying.
+
+**Not established.** That the break is not OV's antisymmetric part or rotation: the one OV edit
+tried with a known destination (G3′) does not reach the monotone regime, so R1 was unlikely to
+answer yes. That no OV-only edit can. That copying needs
+no rotation in general: (b-schur) edits only the diagonal blocks' skew parts, about 1 % of ‖K‖²
+(unit 1), and 88 % of a head's map reads outside its write space and is kept. Any reading under arm
+a beyond description: its controls are damaged models (G 0.4–4.6). The "moved further" cells
+(most of them) cannot be told from moving further (OV1's hazard, kept as description by 88 (a)).
+
+**Parked.**
+- Arm a's D at 143000 is 11.9 against its controls' 1.0–1.1 (at 4000, 0.70 against 0.66): symmetrising
+  the end-state heads moves the stream an order of magnitude further than random edits of the same
+  size. Not the hook: arm a's read-back at 143000 equals sym K on every head (4.3e-8). Why: likely
+  the massive-activation coordinates S1 found at 143000. Cost: one pass of D per
+  coordinate on the records' configuration (minutes). Could change: whether R1's 143000 *higher*
+  under a is about energy or about those coordinates. *Carried to S3* (with the massive
+  coordinates, S1's Parked item).
+
+**After `/challenge-pr` on #248** (accept with changes): (1) Blocked 88 changed no unit-2 label (no
+R1 cell is raw *lower*; every scored R2 cell under b survives); only the gates' pass flags moved,
+so under the frozen rules R1 and R2 would have been refused on the same numbers. Its effect
+lands on R3, where both sides are structured edits: R3's guard is Blocked 89, before unit 3. (2)
+`read` now enforces G1 and G3, not only G2 (`s2.gate_refusals`, tested), re-run with the same
+labels. (3) The design's guard text marked superseded where 88 replaced it. (4) "Out of reach of an
+OV-only edit" narrowed to the one edit tried, its halving at 512 and 1000 stated.
+
+**Re-run.** `s2.py gates --out <dir>` (≈ 30 min), `gate-read`, `arms` (refuses without
+`gate_read.json`), `read`, each `--out` the same directory.
+
