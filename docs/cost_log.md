@@ -475,3 +475,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-22 | C2 unit 3s (centred count on seeds) (#256), after /challenge-pr (accept with changes; 1-4 taken: no near-floor or every-seed size claims, K1/K2 one reading, per-seed cosine and margins post hoc) · subagents: general-purpose opus-5-5 1.9M, runner haiku-5-5 186k · runner batches, main calls: 6 (haiku-5-5) | 98 | 228k | 15.1M | 49k | #256 |
   Over 2× the running median (7.0M): as the row before it, plus the review's 1.9M and one post-hoc read of the records
 | 2026-10-22 | C2 unit 3b (#257), before /challenge-pr | 75 | 216k | 11.1M | 46k | #257 |
+| 2026-10-22 | C2 unit 3b (#257), after /challenge-pr (accept with changes; 1-4 taken: 70m's E1 date fragile both ways, joint unchanged without it; post-hoc lean of the two counts; 3.68 heading; 8 of 10) · subagents: general-purpose opus-5-5 1.2M | 82 | 224k | 12.7M | 47k | #257 |
