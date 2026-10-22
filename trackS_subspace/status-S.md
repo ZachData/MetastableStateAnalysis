@@ -21,7 +21,9 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - A matched R3 (Blocked 90; S2 unit 3, Parked); arm a's displacement at 143000 (11.9 against 1.0–1.1, S2 unit 2, Parked); the massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
+  - A matched R3 (Blocked 90, Parked) — `trackS_subspace/status-S.md` "S2 unit 3"
+  - Arm a's displacement at 143000 (11.9 against 1.0–1.1, Parked, carried to S3) — `trackS_subspace/status-S.md` "S2 unit 2"
+  - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
 - **Reviewed:** 2026-10-22 · body `4aeddf0783`
