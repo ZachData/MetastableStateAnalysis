@@ -30,6 +30,9 @@ Tier 1: exploratory, unregistered.
     python -m trackS_subspace.s2 r3 --out <dir>           # unit 3: S₋ₗ, the pairs, bS, g_bS, 41 bR
     python -m trackS_subspace.s2 r3-read --out <dir>      # R3 (no GPU)
     python -m trackS_subspace.s2 s1-r3-loo --out <dir>    # S1's R3 on S₋ₗ, beside (weights only)
+    python -m trackS_subspace.s2 r3m-select --out <dir>   # unit 4: the top-m pairs, weights only (CPU)
+    python -m trackS_subspace.s2 r3m --out <dir>          # unit 4: bS, g_bS, 41 bR matched in edit size
+    python -m trackS_subspace.s2 r3m-read --out <dir>     # the matched R3, description (no GPU)
 """
 
 from __future__ import annotations
@@ -1644,25 +1647,32 @@ def r3_cells(recs: Dict[int, Dict]) -> Dict:
     return out
 
 
-def r3_read_all(out: Path) -> None:
-    """R3 (design "Readings"; guard Blocked 89 (a)) from `r3_{step}.json` (no GPU)."""
+def r3_read_all(out: Path, prefix: str = "r3") -> None:
+    """R3 (design "Readings"; guard Blocked 89 (a)) from `{prefix}_{step}.json` (no GPU). ``prefix``
+    "r3m" is unit 4's matched R3, description (Blocked 90 (b))."""
     recs, shas = {}, {}
     for s in R3_STEPS:
-        p = out / f"r3_{s}.json"
+        p = out / f"{prefix}_{s}.json"
         body = p.read_bytes()
         recs[s] = json.loads(body)
         if not recs[s].get("done"):
             raise S2Error(f"{p} not done")
         shas[p.name] = hashlib.sha256(body).hexdigest()[:12]
     res = {"code": code_sha(), "records": shas, **r3_cells(recs), "selection": {}, "sizes": {}}
+    if prefix == "r3m":
+        res["description"] = "Blocked 90 (b), the user's: the matched R3 is description; its answers are not readings"
     for s, r in recs.items():
-        res["selection"][str(s)] = {k: v for k, v in r["selection"].items() if k != "sel"}
+        res["selection"][str(s)] = {k: v for k, v in r["selection"].items() if k not in ("sel", "per_head")}
         if not r.get("refused"):
             res["sizes"][str(s)] = {"bS": r["sizes"]["bS"],
                                     "bR_edit_median": size_summary([r["sizes"][f"bR_{i}"]["edit"]["median"]
                                                                     for i in range(N_CTL)]),
                                     "short_max": max(r["short"].values())}
-    _save(out / "r3_readings.json", res)
+            if "matching" in r:
+                res["sizes"][str(s)]["matching"] = {
+                    "unmatched_heads_max": max(v["unmatched_heads"] for v in r["matching"].values()),
+                    "ratio_median": size_summary([v["ratio"]["median"] for v in r["matching"].values()])}
+    _save(out / f"{prefix}_readings.json", res)
     print(f"R3's G1: {res['G1']['labelled']} labelled (pass {res['G1']['pass']}); "
           f"V: {res['V']['answer']} ({res['V']['counts']} of 5); G: {res['G']['answer']} ({res['G']['counts']} of 4)",
           flush=True)
@@ -1674,6 +1684,176 @@ def r3_read_all(out: Path) -> None:
               f"{v['ctl']['max']:.3g}] gain {v['gain']['value']:.3g} D {v['D']['value']:.3f} "
               f"[{v['D']['ctl_min']:.3f}, {v['D']['ctl_max']:.3f}] → {v['label']}"
               + ("" if v["scored"] else " (beside)"), flush=True)
+
+
+# ---------------------------------------------------------------- unit 4: the matched R3 (Blocked 90 (b))
+
+R3M_M = 2                                                  # placed (unit 4): each head's top m pairs by share
+R3M_TOL = 0.10                                             # placed (unit 4): bR's edit within 10 % of bS's, per head
+R3M_NULL_N = 2000                                          # random planes per head in its write space
+R3M_MAX_UNMATCHED = 0.10                                   # more heads outside R3M_TOL: the step refused
+
+
+def pair_skews(sp: Dict) -> List[float]:
+    """Each block's edit under arm b, ‖sym(blk) − blk‖ = |b − c| / √2 (UV is orthonormal, so the
+    edits of disjoint blocks add in squares)."""
+    S = sp["S"]
+    return [float(abs(S[i, i + 1] - S[i + 1, i]) / np.sqrt(2)) for i in sp["starts"]]
+
+
+def write_plane_null(f: Dict[str, np.ndarray], US: np.ndarray, n_draw: int, seed: int) -> np.ndarray:
+    """The share in S of ``n_draw`` random 2-planes in the head's own write space col(Q U), the space
+    every pair's plane lies in (`/challenge-pr` on #249, finding 1: the right null for "in S").
+    Its mean is tr(P_S P_W) / k."""
+    U = np.linalg.qr(f["Bq"])[0]
+    A = US.T @ f["Q"] @ U                                    # (width, k)
+    G = np.linalg.qr(np.random.default_rng(seed).standard_normal((n_draw, U.shape[1], 2)))[0]
+    return np.sum(np.einsum("wk,nkj->nwj", A, G) ** 2, axis=(1, 2)) / 2
+
+
+def top_pairs(heads: Heads, S_loo: Sequence[np.ndarray], step: int, m: int = R3M_M) -> Dict:
+    """Per head: its ``m`` blocks with the largest share in S₋ₗ (bS), the rest (bR's pool), each
+    block's share and edit, and the head's write-space 99th percentile (description: how many of the
+    selected and of all blocks are above it)."""
+    sel, pool, sps, per = {}, {}, {}, {}
+    for l, h, f in heads.each():
+        sp = schur_pairs(f)
+        sh, sk = np.array(pair_shares(f, sp, S_loo[l])), np.array(pair_skews(sp))
+        if len(sh) < 2 * m:
+            raise S2Error(f"L{l}H{h}: {len(sh)} pairs < 2m = {2 * m}")
+        thr = float(np.quantile(write_plane_null(f, S_loo[l], R3M_NULL_N, seed_for("s2-r3m-null", step, l, h)), R3_Q))
+        o = np.argsort(-sh, kind="stable")
+        st = np.asarray(sp["starts"])
+        sel[(l, h)] = sorted(int(i) for i in st[o[:m]])
+        pool[(l, h)] = sorted(int(i) for i in st[o[m:]])
+        sps[(l, h)] = sp
+        per[(l, h)] = {"share": dict(zip(map(int, st), sh.tolist())), "edit": dict(zip(map(int, st), sk.tolist())),
+                       "thr": thr, "n": int(len(sh)), "above": int((sh >= thr).sum()), "knorm": float(np.linalg.norm(f["K"])),
+                       "sel_above": int((sh[o[:m]] >= thr).sum())}
+    return {"sel": sel, "pool": pool, "sp": sps, "per": per}
+
+
+def matched_draw(sel: List[int], pool: List[int], edit: Dict[int, float], seed: int,
+                 tol: float = R3M_TOL) -> Tuple[List[int], float, int]:
+    """One head's bR: ``len(sel)`` blocks of ``pool``, drawn uniformly among the subsets whose edit
+    (√Σ edit²) is within ``tol`` of bS's; if none, the subset nearest it, the same in every draw.
+    Returns the blocks, the ratio of edits and the number of candidate subsets (0: unmatched)."""
+    from itertools import combinations
+    e_s = np.sqrt(sum(edit[i] ** 2 for i in sel))
+    subs = list(combinations(pool, len(sel)))
+    ratio = np.array([np.sqrt(sum(edit[i] ** 2 for i in c)) for c in subs]) / e_s
+    ok = np.flatnonzero(np.abs(ratio - 1) <= tol)
+    j = int(np.random.default_rng(seed).choice(ok)) if len(ok) else int(np.argmin(np.abs(ratio - 1)))
+    return sorted(subs[j]), float(ratio[j]), int(len(ok))
+
+
+def r3m_draw(tp: Dict, step: int, draw: int) -> Tuple[Dict, Dict]:
+    """bR's draw over the model, and its matching: the heads outside ``R3M_TOL`` and the ratios."""
+    out, ratios, unmatched = {}, [], 0
+    for (l, h), s in tp["sel"].items():
+        ch, r, n_ok = matched_draw(s, tp["pool"][(l, h)], tp["per"][(l, h)]["edit"],
+                                   seed_for("s2-r3m-bR", step, draw, l, h))
+        out[(l, h)] = ch
+        ratios.append(r)
+        unmatched += n_ok == 0
+    return out, {"unmatched_heads": unmatched, "ratio": size_summary(ratios)}
+
+
+def r3m_selection(tp: Dict) -> Dict:
+    """The selection's record (written before any forward pass): counts, the write-space test, the
+    candidate subsets per head."""
+    per = tp["per"]
+    n_all = sum(v["n"] for v in per.values())
+    n_sel = sum(len(v) for v in tp["sel"].values())
+    n_ok = np.array([matched_draw(s, tp["pool"][k], per[k]["edit"], 0)[2] for k, s in tp["sel"].items()])
+    return {"m": R3M_M, "pairs_total": n_all, "pairs_in_S": n_sel, "fraction": n_sel / n_all,
+            "above_write_q99_all": sum(v["above"] for v in per.values()) / n_all,
+            "above_write_q99_selected": sum(v["sel_above"] for v in per.values()) / n_sel,
+            "heads_with_any_above": sum(v["above"] > 0 for v in per.values()),
+            "unmatched_heads": int((n_ok == 0).sum()),
+            "candidates_per_head": {"median": float(np.median(n_ok)), "min": int(n_ok.min())},
+            "bS_edit_median": float(np.median([np.sqrt(sum(per[k]["edit"][i] ** 2 for i in s)) / per[k]["knorm"]
+                                               for k, s in tp["sel"].items()])),        # of ‖K‖
+            "share_median": float(np.median([x for v in per.values() for x in v["share"].values()])),
+            "sel": {f"L{l}H{h}": v for (l, h), v in tp["sel"].items()},
+            "per_head": {f"L{l}H{h}": {k: v[k] for k in ("thr", "n", "above", "sel_above")}
+                         for (l, h), v in per.items()}}
+
+
+def r3m_select(out: Path) -> None:
+    """Unit 4's selection, weights only (CPU): `select_{step}.json` per scored step, quoted in the
+    design before `r3m` runs ("its selected fraction stated before the run")."""
+    from trackS_subspace import s1
+    out.mkdir(parents=True, exist_ok=True)
+    for step in R3_STEPS:
+        S_loo = loo_spaces([x["ov_cplx"] for x in s1.step_bases(step)], s1.S_WIDTH)
+        sel = r3m_selection(top_pairs(Heads(load_cpu(step)), S_loo, step))
+        _save(out / f"select_{step}.json", {"code": code_sha(), "s1_code": s1.code_sha(), "step": step, **sel})
+        print(f"step {step}: {sel['pairs_in_S']} of {sel['pairs_total']} ({sel['fraction']:.3f}); above the write-space "
+              f"q99: all {sel['above_write_q99_all']:.3f}, selected {sel['above_write_q99_selected']:.3f}; unmatched "
+              f"heads {sel['unmatched_heads']}; candidates median {sel['candidates_per_head']['median']:.0f}, "
+              f"min {sel['candidates_per_head']['min']}; bS edit median {sel['bS_edit_median']:.4f}", flush=True)
+
+
+def r3m(out: Path) -> None:
+    """Unit 4's pass: per scored step the top-m pairs, then base, bS, g_bS and 41 matched bR draws
+    (draw 40 is R3's G1). Refuses without `select_{step}.json` (the selection quoted first) or when
+    the selection moved since."""
+    import gc
+    import torch
+    from trackS_subspace import s1
+    out.mkdir(parents=True, exist_ok=True)
+    _save(out / "plan.json", {**run_meta(), "steps": R3_STEPS, "s1_code": s1.code_sha(), "s_width": s1.S_WIDTH,
+                              "m": R3M_M, "tol": R3M_TOL, "null_n": R3M_NULL_N, "q": R3_Q})
+    t0 = time.time()
+    for step in R3_STEPS:
+        path, pre = out / f"r3m_{step}.json", out / f"select_{step}.json"
+        if not pre.exists():
+            raise S2Error(f"{pre} missing: run r3m-select and quote it in the design first")
+        rec = _resume(path, {"code": code_sha(), "step": step, "configs": {}, "sizes": {}, "short": {},
+                             "matching": {}})
+        if rec.get("done"):
+            continue
+        S_loo = loo_spaces([x["ov_cplx"] for x in s1.step_bases(step)], s1.S_WIDTH)
+        model, tok = load(step)
+        heads = Heads(model)
+        tp = top_pairs(heads, S_loo, step)
+        rec["selection"] = r3m_selection(tp)
+        if rec["selection"]["sel"] != json.loads(pre.read_text())["sel"]:
+            raise S2Error(f"step {step}: the selection differs from {pre.name}")
+        print(f"step {step}: {rec['selection']['pairs_in_S']} pairs in S of {rec['selection']['pairs_total']}",
+              flush=True)
+        if rec["selection"]["unmatched_heads"] > R3M_MAX_UNMATCHED * N_LAYERS * N_HEADS:
+            rec["refused"] = f"{rec['selection']['unmatched_heads']} heads unmatched > {R3M_MAX_UNMATCHED:.0%}"
+            rec["done"] = True
+            _save(path, rec)
+            del model, heads, tp
+            continue
+        inp = Inputs(tok, "cuda")
+        hook = Hook(model, heads)
+        ps = _Pass(path, rec, model, inp, hook, t0)
+        cores_s, sz_s = pair_cores(heads, tp["sp"], tp["sel"])
+        if not ps.has("bS"):
+            ps.run("bS", cores_s, sz_s)
+        if not ps.has("g_bS"):
+            ps.run("g_bS", [np.stack([gain_core(f, cores_s[l][h]) for h, f in enumerate(row)])
+                            for l, row in enumerate(heads.frames)])
+        for i in range(N_CTL + 1):
+            if ps.has(f"bR_{i}"):
+                continue
+            ch, mt = r3m_draw(tp, step, i)
+            rec["short"][str(i)] = 0                       # bR has bS's count in every head (m ≤ n / 2)
+            rec["matching"][str(i)] = mt
+            cores, sz = pair_cores(heads, tp["sp"], ch)
+            ps.run(f"bR_{i}", cores, sz)
+        hook.close()
+        rec["done"] = True
+        _save(path, rec)
+        print(f"step {step}: done ({time.time() - t0:.0f}s)", flush=True)
+        del model, heads, inp, hook, ps, tp
+        gc.collect()
+        torch.cuda.empty_cache()
+    print(f"r3m done ({time.time() - t0:.0f}s)", flush=True)
 
 
 def s1_r3_loo(out: Path) -> None:
@@ -1712,12 +1892,13 @@ def s1_r3_loo(out: Path) -> None:
 def main(argv=None) -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=("g0", "preflight", "preflight-tool", "beside", "gates", "gate-read",
-                                    "arms", "read", "r3", "r3-read", "s1-r3-loo"))
+                                    "arms", "read", "r3", "r3-read", "s1-r3-loo", "r3m-select", "r3m", "r3m-read"))
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
     {"g0": g0, "preflight": preflight, "preflight-tool": preflight_tool, "beside": beside, "gates": gates,
      "gate-read": gate_read, "arms": arms, "read": read, "r3": r3, "r3-read": r3_read_all,
-     "s1-r3-loo": s1_r3_loo}[a.cmd](a.out)
+     "s1-r3-loo": s1_r3_loo, "r3m-select": r3m_select, "r3m": r3m,
+     "r3m-read": lambda o: r3_read_all(o, "r3m")}[a.cmd](a.out)
 
 
 if __name__ == "__main__":

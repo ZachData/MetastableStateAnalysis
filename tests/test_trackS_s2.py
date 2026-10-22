@@ -313,3 +313,38 @@ def test_r3_refuses_a_step_where_br_is_short():
         recs[s]["short"] = {"0": 3}
     r = s2.r3_cells(recs)
     assert r["V"]["answer"] == r["G"]["answer"] == "refused as frozen (unmatched: bR short at every step)"
+
+
+# ---------------------------------------------------------------- unit 4: the matched R3
+
+def test_pair_skews_are_arm_b_edits():
+    for seed in range(4):
+        *_, f = _frame(seed)
+        sp = s2.schur_pairs(f)
+        sk = s2.pair_skews(sp)
+        for i, e in zip(sp["starts"], sk):
+            assert np.isclose(np.linalg.norm(s2.arm_b_pairs(f, sp, [i]) - f["K"]), e)
+        assert np.isclose(np.linalg.norm(s2.arm_b_pairs(f, sp, sp["starts"]) - f["K"]),
+                          np.sqrt(np.sum(np.square(sk))))
+
+
+def test_write_plane_null_mean():
+    *_, f = _frame(5)
+    US = np.linalg.qr(np.random.default_rng(1).standard_normal((D, 6)))[0]
+    W = f["Q"] @ np.linalg.qr(f["Bq"])[0]
+    want = np.trace(US @ US.T @ W @ W.T) / K
+    x = s2.write_plane_null(f, US, 20_000, 2)
+    assert abs(x.mean() - want) < 0.01 * want + 1e-3 and x.min() >= 0 and x.max() <= 1 + 1e-12
+
+
+def test_matched_draw_matches_edit_and_stays_outside():
+    edit = {0: 1.0, 2: 0.9, 4: 0.2, 6: 1.05, 8: 0.95, 10: 0.1, 12: 3.0}
+    sel, pool = [0, 2], [4, 6, 8, 10, 12]
+    seen = set()
+    for seed in range(30):
+        ch, r, n_ok = s2.matched_draw(sel, pool, edit, seed)
+        assert set(ch) <= set(pool) and len(ch) == 2 and abs(r - 1) <= s2.R3M_TOL and n_ok == 1
+        seen.add(tuple(ch))
+    assert seen == {(6, 8)}
+    ch, r, n_ok = s2.matched_draw([12, 0], [4, 10, 2], edit, 0)          # nothing within 10 %
+    assert n_ok == 0 and ch == [2, 4] and r < 0.5
