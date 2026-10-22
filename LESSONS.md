@@ -1496,6 +1496,19 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   tolerance reads a planted change alike through both at two or more doses; if none does, read
   each count on its own scale (a date, a half-rise), and give the matching criteria as arms, not
   one choice**.
+- 2026-10-22 (C2 unit 3b, caught before any record, twice): 92 (iii)'s rule, frozen at unit 0,
+  read "the same step on all three sizes" as "step-locked" and "earlier on the higher-LR sizes"
+  as "dose-ordered". Computing each hypothesis's prediction on Pythia's grid showed they overlap:
+  a break that waits for a cumulative LR dose moves 70m's crossing from 410m's (128, 512] to
+  (70, 280], which the grid reads as 128, 256 or 512, and every date step-locked predicts,
+  cumulative predicts too. The rule was re-cut as the schedules consistent with each date
+  (Blocked 99 (a)). Then unit 3s's gate, moved to 70m unchanged, refused every arm: its plant was
+  sized in token norms, and 70m's layers move about 5× more than 410m's, so the plant was small
+  against them (Blocked 100 (a): the dose set where the reference count sees it). Rule: **a rule
+  that labels outcomes by hypothesis is frozen with each hypothesis's predicted outcomes on the
+  real grid (a check script), and an outcome two hypotheses both predict is labelled with both;
+  a plant moved to a new model is sized against that model's own per-unit scale, not carried
+  over in absolute units**.
 
 ## 7. Literature found after the construction was built
 
