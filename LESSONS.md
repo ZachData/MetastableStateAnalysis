@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-22 (C2 unit 3c): `lit-C2-unit1.md` §5 recorded GPT-2 small's warmup as "4000 steps,
+  linear" from the trainer config ([R]), and §5's prediction table was built on it. The logged LR
+  in every seed's `trainer_state.json` is logarithmic (DeepSpeed's default warmup type; half the
+  peak by step 100). The config names the warmup's length, not its shape. Caught before the
+  freeze, because the design re-derived the predictions from the log; it moved the dose's E₁
+  band from (303, 605] to (29, 119]. In the same session the start hook printed the main tree's
+  `STATE.md` (2026-10-20) while `origin/main` was at #257 (2026-10-22). Rule: **a schedule an
+  analysis maps through is read from the run's own log, not its config**.
 - 2026-10-22 (C2 unit 3s): unit 3's Parked 2 and Blocked 96 (b) costed the seeds unit as "a
   re-download of about 160 checkpoints (the seed checkpoints are no longer in the HF cache)".
   All 162 (9 seeds × 18 steps) are in `HDD_1TB/mets_data/hf`, where A5 put them and where

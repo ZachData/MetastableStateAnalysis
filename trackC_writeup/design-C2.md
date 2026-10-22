@@ -41,7 +41,7 @@ Each is written into the draft beside the line it limits, not only in a limits s
 
 | # | fence | why | source |
 |---|---|---|---|
-| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1); 3b (70m, 160m): consistent with step and cumulative LR, an LR level excluded, step against cumulative not told apart on the grid (`status-C.md` "C2 unit 3b") | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
+| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1); 3b (70m, 160m): consistent with step and cumulative LR, an LR level excluded, step against cumulative not told apart on the grid (`status-C.md` "C2 unit 3b"); 3c (GPT-2 small, a log warmup): E₁'s break consistent with step only, at the frozen plateau window, with a first stage in the dose's band; no centred date (`status-C.md` "C2 unit 3c") | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
 | F2 | "Break, then induction, then the OV phase" is not shown, in either reading of the OV phase (its fall starts with the break; its bottom ties induction at 1000) | A3 reading 5 | A3 on one page |
 | F3 | The break is neither shown OV's nor shown not OV's (one OV-only edit with a known destination; V 29–61 against ≤ 7) | G3′'s reach | S2 on one page, "Parked and open at close" |
 | F4 | 410m only; v1's 7 prompts (the Pile's validation split for the n-gram rows); nothing between grid steps (no checkpoint between 512 and 1000) | the rung policy and the grid | `CLAUDE.md` "Name the family"; A3 "Not established" |
@@ -61,7 +61,7 @@ Each is written into the draft beside the line it limits, not only in a limits s
 | 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | drafted (unit 2) |
 | 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | drafted (unit 2) |
 | 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | to write (unit 4; 94 (a)) |
-| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | after unit 3c (3, 3s, 3b done) |
+| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | to write (unit 4; 3, 3s, 3b, 3c done) |
 | 8 | Related work | F8, F9 | drafted (unit 1, `draft-C2.md`) |
 | A | Appendix: the shared subspaces (L5) | L5 | to write (unit 4; 94 (a)) |
 | B | Appendix: the gates (A3's locator, A5's gate on seed 0, S2's G0–G3) and why each null is the one used | — | to write |
