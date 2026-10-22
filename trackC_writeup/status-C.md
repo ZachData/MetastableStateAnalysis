@@ -4,10 +4,10 @@
 <!-- phase-card -->
 ## Card
 
-- **Question:** When, along `pythia-410m`'s training, does the tokens' interaction energy stop being non-increasing in depth, as the identity-weight particle picture predicts, is that step the run's or the recipe's, and where does it fall against the model's known developmental order (n-gram stages, previous-token and induction heads, the OV maps turning repulsive)?
+- **Question:** When, along `pythia-410m`'s training, does the tokens' interaction energy stop being non-decreasing in depth, as the identity-weight particle picture predicts, is that step the run's or the recipe's, and where does it fall against the model's known developmental order (n-gram stages, previous-token and induction heads, the OV maps turning repulsive)?
 - **Inputs:** none run under C's name; C2 reads Track A's and Track S's records (`trackC_writeup/design-C2.md` "What the record supports")
 - **Results:**
-  - C2 opened 2026-10-22 with a proposed design: seven lines the record supports, nine fences the draft may not go past, an outline, a render step so every number comes from a record, 5 units + close-out; four decisions are the user's (headline, new runs, form, S1 and S2's place) — `trackC_writeup/design-C2.md` "Decisions (each yours; recommendation first)"
+  - C2 opened 2026-10-22 with a proposed design: seven lines the record supports, nine fences the draft may not go past, an outline, a render step so every number comes from a record, 4 units plus one per new run + close-out (revised after `/challenge-pr` on #252: the energy's sign, the LR-dose arm, the anisotropy rule, the tracked numbers table); four decisions are the user's (headline, new runs, form, S1 and S2's place) — `trackC_writeup/design-C2.md` "Decisions (each yours; recommendation first)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@6b6559eb1a, S@e7ac5c3113

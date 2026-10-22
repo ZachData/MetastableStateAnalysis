@@ -1953,6 +1953,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   choice comes from a tracked command with its record's sha; a sentence about a selection's
   purity is read off the record in both directions (what share of the selection passes, what
   share of the passing is selected).
+- 2026-10-22, C2 unit 0 (found by `/challenge-pr` on #252, findings 1 and 3): the design's
+  opening sentence, the card's question and the generated phase table said the energy is
+  "non-increasing in depth"; the repo counts a *drop* as a violation (`core/metrics.py`
+  `energy_violation_severity`) and the oracle test expects a rise, so the paper's first line would
+  have stated the prediction backwards. The same design quoted "≤ 8" step-0 violations, a bound
+  its source gives for steps 0–4 (step 0's is 1–6). Both were written from memory of the one-pages,
+  not from the definition or the record. Rule: a write-up's statement of the theory's prediction is
+  checked against the code that counts its violations; a quoted bound names the steps it covers.
 
 ## 12. Deleted, then needed
 
