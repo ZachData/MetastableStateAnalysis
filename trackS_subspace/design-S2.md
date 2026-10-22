@@ -45,6 +45,8 @@ gate cannot pass after its fallbacks. **Budget: 3 units + a writing-only close-o
 code, G0, the preflight at 8000 and the carried weights-only items, then the freeze (the user's).
 Unit 2: G1–G3 at the design points, then R1 and R2. Unit 3: R3, its leave-the-layer-out S and
 any matched-distance fallback. The ROADMAP estimated 2; the third is S1's carried items and Q3.
+**Extended to 4 units by Blocked 90 (b), the user's, 2026-10-22:** unit 4 is a matched R3, as
+description ("Unit 4" below); then the close-out.
 At the budget S2 closes at what it knows.
 
 ## The arms (`tools/math_checks/s2_ov_arms.py`)
@@ -306,6 +308,40 @@ further" and not read; every other label is read with D beside.
 | S1's R3, beside | `s2.py s1-r3-loo`: S1's 8 steps, the five OV families, layer l's compression S₋ₗᵀ V_l S₋ₗ against S1's own 100 Haar draws (S1's seeds), S1's `r3_summary` | "Carried in from S1"; description |
 | *after `/challenge-pr` on #249* | a step where bR is short (any head with more pairs in S than out) is refused, its labels kept as description (`s2.r3_cells`). The Haar threshold was the wrong null: a pair's plane lies in its head's write space, which overlaps S, and a random plane there sits as high as the pairs (`status-S.md` "S2 unit 3") | refuse rather than degrade; the shortfall was 577–5,609 pairs at every step |
 | the matched-distance fallback | not run in this unit unless a cell is withheld by the guard and the budget allows; if run, it names its null and passes a planted null at matched D first | as frozen (87 (a)) |
+
+## Unit 4: the matched R3 (2026-10-22, fixed before any V or G output)
+
+**Blocked 90 decided (b), the user's, 2026-10-22: one more unit, a matched R3 as description,
+then the close-out.** Unit 3's R3 was refused as frozen because its threshold took 37–69 % of
+pairs and bR could not match the count. Unit 4 asks the question again with each head's count
+fixed and bR matched in edit size. **Everything it labels is description.** The frozen rule's
+answer ("carries it" at ≥ 4 of 5 in V, ≥ 3 of 4 in G) is computed and is not a reading.
+
+| item | fixed as | why |
+|---|---|---|
+| S₋ₗ, a pair's plane, its share | as unit 3 (`s2.loo_spaces`, `schur_pairs`, `pair_shares`) | unchanged |
+| bS | per head, its **m = 2** blocks with the largest share in S₋ₗ (`s2.top_pairs`); 768 pairs over the model, 7.1–7.4 % of all | every head has ≥ 20 pairs, so any m ≤ 10 can match in count. m = 2 is the largest m at which at least 40 % of the selected pairs pass the write-space test below at every step (m = 1: 58–74 %, bS edit about 0.015 ‖K‖; m = 3: 30–44 %; a weights-only scratch check, before this design). *After `/challenge-pr` on #250 (finding 3) the check has a tracked producer, `s2.py r3m-msweep` (`msweep.json` `07f4d745e930`, code `08a7d72d9d64`). It reproduces these fractions and adds one fact the scratch check missed: at m = 1, 43–63 heads are unmatched (over 10 %), so m = 1 would have been refused at every step. m = 2 is also the smallest m not refused* |
+| the write-space test (description) | per head, the 99th percentile of the share of 2,000 random 2-planes in the head's own write space col(Q U) (`s2.write_plane_null`, `seed_for("s2-r3m-null", step, l, h)`); the fraction of all pairs and of bS's pairs at or above it is recorded | the right null for "in S" (`/challenge-pr` on #249, finding 1). If every pair's plane were a random plane of the write space, 1 % would pass. Schur planes are not random, so any excess is description |
+| bR | per head, 2 of its other blocks, drawn uniformly among the 2-subsets whose edit √(Σ ‖skew‖²) is within 10 % of bS's (`s2.matched_draw`, `seed_for("s2-r3m-bR", step, draw, l, h)`). A head with no such subset takes the nearest one, the same in every draw, and is counted as unmatched. More than 10 % of heads unmatched refuses the step | "bR matched in edit size". The edits of disjoint blocks add in squares (tested), so the match is exact in this sum. The pool keeps any other pair above the write-space threshold (at most a few per head) |
+| gain arm, G1, the guard, steps | as unit 3: g_bS; bR's 41st draw against draws 0–39 (≤ 2 of 9 labelled); the one-sided guard of 89 (a); the 5 scored steps, G at 512 beside | unchanged |
+| order | `s2.py r3m-select` (weights only, CPU) → its numbers quoted here → `r3m` (refuses without the select records, or if the selection has moved since) → `r3m-read` | "its selected fraction stated before the run" |
+| not fixed | the Schur form's block order still decides each pair's plane (unit 3, finding 5); m = 2 is one choice among m ≤ 10 | stated as limits |
+
+**The selection, before the run** (`r3m-select`, code `1345c1e2b1d3`; records
+`data/trackS/s2/2026-10-22-u4/select_{step}.json`, main tree: 512 `25ee077184ae`, 1000
+`10e425270aa6`, 2000 `74dfe67cdf8b`, 4000 `7a967abed477`, 143000 `cf603961ed6a`):
+
+| step | bS / all pairs | all pairs above the write-space q99 | bS's pairs above it | heads unmatched | subsets within 10 %, median | bS edit, median (‖K‖) |
+|---|---|---|---|---|---|---|
+| 512 | 768 / 10,819 | 3.7 % | 48.6 % | 5 | 49 | 0.029 |
+| 1000 | 768 / 10,645 | 3.5 % | 43.8 % | 7 | 47 | 0.025 |
+| 2000 | 768 / 10,450 | 5.0 % | 57.6 % | 10 | 44 | 0.024 |
+| 4000 | 768 / 10,485 | 3.4 % | 42.4 % | 9 | 40 | 0.026 |
+| 143000 | 768 / 10,390 | 3.4 % | 40.9 % | 15 | 40 | 0.025 |
+
+No step is refused (at most 15 of 384 heads unmatched, under 4 %). Against the write-space null,
+3.4–5.0 % of pairs pass where 1 % would by chance. So some planes do lean into S, though unit 3's
+median pair does not. bS's edit is about a third of unit 3's bS (0.068–0.077 ‖K‖).
 
 ## Revised after review (`/challenge-pr` on #246, 2026-10-21, at `719eb50`)
 
