@@ -2895,22 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
-## 3.72 The mean whose falls V counts at the break is not the massive-activation coordinates; projecting them out keeps both dates (2026-10-23)
+## 3.72 Massive activations arrive at step 16000, long after the break; the mean whose falls V counts at the break is not theirs (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C5 unit 1"** holds the numbers; this section says why it is
 project-wide.
 
 - §3.70 left open which coordinates carry the tokens' mean ‖m‖², whose falls V at β = 1 nearly
-  counts. On the ten 410m seeds, each seed's massive-activation coordinates (2–3 per seed, at
-  ≥ 100× the median coordinate's max at some grid step) carry none of those falls at 256–1000
-  (their share of Δ‖m‖² above ½ at no violating transition on any seed) and at most 1 % of ‖m‖²
-  there; they reach 100× only at step 16000 (32000 on one seed), long after both events.
+  counts. On the ten 410m seeds, nothing is massive at the break: at 128–1000 the largest
+  coordinate of any seed is at most 2.4× the median coordinate's (max |x| over tokens). Each
+  seed's massive-activation coordinates (2–3 per seed, ≥ 100× at some grid step) reach 100× only
+  at step 16000 (32000 on one seed), long after both events; at the break they hold ≤ 1 % of
+  ‖m‖², at the random sets' level, and none of its falls (share above ½ at no violating
+  transition on any seed).
 - Projected out of every token, the break's date is kept on 7 of 9 scored seeds (the other two
   move one grid step at one tolerance, a single violation across the half line, which random
-  coordinate sets also produce) and the centred event's on 9 of 9; a magnitude-matched set and 20
-  random sets per seed keep their dates. Frozen before output (`design-C5.md`); tier 1.
+  coordinate sets also produce) and the centred event's on 9 of 9. That is what removing 2–3
+  ordinary coordinates predicts, so "kept" is a check, not a test that could have moved
+  (`/challenge-pr` on #264). Frozen before output (`design-C5.md`); tier 1.
 - So the break (§3.62) and the centred event (§3.66, §3.67) are not the massive activations'
-  arrival, on this statistic. A read-out, not an intervention: it does not say the model does
+  arrival, on this statistic. Whether ‖m‖² sits in a few other coordinates at the break (the
+  referee's "outlier dimensions") is not tested (`STATE.md` Blocked 105). A read-out, not an intervention: it does not say the model does
   not need them. A published date for massive activations on 410m ("around step 1k",
   2510.06477) reads a different statistic and is not tested here.
 

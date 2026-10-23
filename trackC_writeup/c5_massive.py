@@ -604,7 +604,17 @@ def seed_reading(recs, sel: dict, ref_c: dict) -> dict:
              / cs.scale(np.concatenate([c.rel_drops(recs[(s, p)]["eu"]["none"]) for p in V1])) for s in STEPS}
     precision = {f"{t:g}": [int(x) for x in vser(recs, "eu", "none", t) - vser(recs, "e1", None, t)]
                  for t in P1_FIXED}
+    # beside, post hoc (`/challenge-pr` on #264, finding 4): every random set dated at every arm
+
+    def tally_cmp(xs):
+        return {v: xs.count(v) for v in ("kept", "earlier", "later", "unreadable")}
+
+    rand_arms = {"P1": {k: tally_cmp([compare(date(vser(recs, "eu", r, tp)), ref_u[k]) for r in rand])
+                        for k, (tp, _) in {**p1_arms, "scale": (TAU_P, REL_TOL)}.items()},
+                 "P2": {k: tally_cmp([compare(date(vser(recs, "ec", r, t)), ref_c2[k]) for r in rand])
+                        for k, t in zip(ref_c2, TAU_C)}}
     return {"P1": p1, "P2": p2, "R0": r0, "R0prime": r0p, "R0b_step": sel["R0b_step"],
+            "random_by_arm_post_hoc": rand_arms,
             "S": sel["S"], "M": sel["M"], "S_max_ratio_by_step": sel["S_max_ratio_by_step"],
             "s_p_over_s_u_by_step": ratio, "precision_V_none_minus_e1": precision}
 
@@ -627,6 +637,9 @@ def read(a) -> int:
             raise M2Refused(f"seed {seed}: V from e1 is not A5's ({vu.tolist()})")
         ref_c = (r3s["per_seed"][str(seed)] if seed else r3s["seed0_development"])["arms"]
         per[seed] = seed_reading(recs, sel, ref_c)
+        # beside (`/challenge-pr` on #264, finding 1): the largest r over every coordinate, states 0–23
+        per[seed]["max_ratio_all_by_step"] = {str(s): float(ratios(np.load(_p1_path(out, seed, s))["all"]).max())
+                                              for s in STEPS}
     if len({tuple(v) for v in codes.values()}) != 1:
         raise M2Refused(f"records from more than one code version: {codes}")
     dev = per.pop(0, None)

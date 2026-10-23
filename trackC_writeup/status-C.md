@@ -19,19 +19,19 @@
   - Unit 5b, the referee's readings from records (Blocked 102 (a), the user's; budget extended to 9 units + close-out; no forward pass; description): by E₁ = ½ + ½‖m‖² + R, E₁ and ‖m‖² change in the same direction at 0.96–1.00 of transitions at every step, so V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, along all of training (post hoc, after `/challenge-pr` on #261 corrected the base rate); at each of the 1224 drops at 128–1000 ‖m‖² falls and its term is more than half of all but one (exact split, not a separation: R's higher terms carry the mean too). No date moves: the frame-changing transitions hold none of the drops at 256–1000, a later plateau moves only seed 9 (256 → 512), 65 of 70 per-prompt series break in the window; E₁ rises first-to-last on every series; figure 5 and appendix C; (b), (c) to ROADMAP C5, C4 — `trackC_writeup/status-C.md` "C2 unit 5b"
   - **C2 closed 2026-10-23 at its exit** (9 units + close-out, as extended by Blocked 102 (a)): a complete draft, every number rendered from a record, a fresh-context referee read answered. It establishes a dated, reproduced break in E₁'s monotonicity (the registered seed count), a second event after it in the token-centred cloud (at 1000), and that V at β = 1 nearly counts falls in the tokens' mean norm; it does not separate either date from the LR warmup. Every Parked item carried (C4, C5, C2p, the draft's posting thread) or dropped (GPT-2 medium, token-drift, an aligned-pair null); what happens to the draft was Blocked 103, decided (a), the user's: C5's M2 first, then C2p; nothing posted to arXiv by Claude — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - C5 opened 2026-10-23 on M2 only (Blocked 103 (a); writing only): a scan and a proposed design that projects each seed's massive-activation coordinates (read at its own step 143000) out of every token and recounts both C2 counts against 20 random coordinate sets; the scan found a Pythia-410m anisotropy-type statistic dated "around step 1k" (2510.06477) that C2's §8 and F9 do not cite (carried to C2p); the set and scope are Blocked 104, the user's — `trackC_writeup/status-C.md` "C5 unit 0"
-  - C5 unit 1, M2 (Blocked 104 (a), the user's; tier 1, description): each seed's massive-activation coordinates (2–3 per seed, ≥ 100× the median coordinate's max at some grid step) projected out of every token on the ten 410m seeds; the break's date kept on 7 of 9 seeds (the other two cross the half line by one violation at one arm, as random sets also do) and the centred event's on 9 of 9; the coordinates carry none of the falls V counts at 256–1000 (their share above ½ at 0 transitions) and reach 100× only at step 16000 (32000 on one seed), so the mean whose falls V counts at the break is not theirs; the lean from 2510.06477 ("around 1k") did not hold for this statistic — `trackC_writeup/status-C.md` "C5 unit 1"
+  - C5 unit 1, M2 (Blocked 104 (a), the user's; tier 1, description): each seed's massive-activation coordinates (2–3 per seed, ≥ 100× the median coordinate's max at some grid step) are ordinary at the break (no coordinate of any seed above 2.4× the median's at 128–1000) and reach 100× only at step 16000 (32000 on one seed), long after both events; they carry none of the falls V counts (their share above ½ at 0 transitions), so the mean whose falls V counts at the break is not theirs; projected out, the break's date is kept on 7 of 9 seeds (two cross the half line by one violation at one arm, as random sets also do) and the centred event's on 9 of 9, as expected when nothing large is removed; the lean from 2510.06477 ("around 1k") did not hold for this statistic; whether ‖m‖² sits in a few other coordinates is Blocked 105 — `trackC_writeup/status-C.md` "C5 unit 1"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - M2 read (unit 1); its close-out (writing only: what it established, its Parked items carried or dropped) is next, then C2p — `trackC_writeup/status-C.md` "C5 unit 1"
+  - M2's other half, whether ‖m‖² at the break sits in a few other coordinates (a set chosen by the mean): Blocked 105, the user's (one more unit, or close M2 and carry it); then the close-out, then C2p — `trackC_writeup/status-C.md` "C5 unit 1"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's revision, second fresh-context read and LaTeX: ROADMAP C2p, after M2; posting is the user's — `trackC_writeup/status-C.md` "C5 unit 0"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `6d479ca731`
+- **Reviewed:** 2026-10-23 · body `b67ec96371`
 <!-- /phase-card -->
 
 ## Units
@@ -74,21 +74,34 @@ Records `data/trackC/c5/2026-10-23-u1/` (main tree): `seed{0..9}/pass1/` (18 eac
 every seed, each seed's own coordinates (seed 0: 130, 357, 966, S1's). M is the next 2–3 by
 largest r (26–100×).
 
+**Read first: nothing is massive at the break** (`/challenge-pr` on #264, finding 1; producer
+`reading.json` `max_ratio_all_by_step`, from pass 1). At 128–1000 the largest ratio over *every*
+coordinate at any state 0–23 is 1.6–2.4× the median coordinate's on every seed (6.8× at 2000 on
+seed 0, 3.9–10.5× across seeds). So the projection at the break removes 2–3 ordinary
+coordinates: their share of ‖m‖² and of its falls is at the random sets' level, the energy's
+scale does not change (s_p / s_u 0.98–1.02), and every control keeps its dates too. P1 and P2
+"kept" are what that predicts. They read as a check that nothing large enough to matter is
+removed, not as a test that could have moved; the informative reading is R0b, when these
+coordinates become massive.
+
 | reading | result |
 |---|---|
-| **R0′, the set's share of ‖m‖²'s falls** (reported first) | at every violating transition at 256, 512 and 1000 (14–58 per seed and step; none at 128), the median signed share Δ‖m_S‖² / Δ‖m‖² is between −0.008 and 0.016 on every seed, and the fraction above ½ is **0 on all 10 seeds at every step**. M's share is as small (−0.009 to 0.027). The falls V counts at the break are not in these coordinates |
-| R0, the level | q = ‖m_S‖² / ‖m‖² at its largest state: 0.003–0.007 at 512 and 0.004–0.010 at 1000 on every seed, against 0.002–0.004 for the random sets' mean; 0.016–0.048 at 4000; 0.19–0.73 at 16000; at 143000 0.12–0.61, except seed 4 (0.006) |
+| **R0′, the set's share of ‖m‖²'s falls** (reported first) | at every violating transition at 128–1000 (1–2 per seed at 128 on six seeds, none on four; 14–58 per seed and step at 256–1000), the median signed share Δ‖m_S‖² / Δ‖m‖² is between −0.008 and 0.016 at 256–1000 (−0.048 to 0.061 on 128's few), and the fraction above ½ is **0 on all 10 seeds at every step**. M's share is as small (−0.009 to 0.027 at 256–1000). The falls V counts at the break are not in these coordinates, which at that step are not massive (above) |
+| R0, the level | q = ‖m_S‖² / ‖m‖² at its largest state: 0.003–0.007 at 512 and 0.004–0.010 at 1000 on every seed, against 0.002–0.004 for the random sets' mean (at chance); 0.016–0.048 at 4000; 0.19–0.73 at 16000; at 143000 0.12–0.61, except seed 4 (0.006) |
 | R0b, the coordinates' own date | **16000 on 9 of 10 seeds, 32000 on seed 6.** At 512 S's largest ratio is 1.1–1.5× the median coordinate's (not massive); at 1000, 1.3–2.3×; it grows from 2000 (4–10×) through 4000 (19–35×) and 8000 (50–88×) |
-| **P1, the break projected** | **kept on 7 of 9 seeds: "kept"** (≥ 7, none to spare). Seeds 2, 3, 5–9 keep their date at all four arms (1e-4, 1e-3, 1e-2, τ_p 1.15e-3). Seed 1 reads mixed: at 1e-3 the projected date is 256 against 512 (earlier; at 256 the count is 23 against 22, the half line 22.5); seed 4 reads mixed: at 1e-2 1000 against 512 (the plateau 25 against 23, the count at 512 12 against 13). Both are one violation across the half line at one arm; the random sets cross it there too (2 of 20 earlier on seed 1 at 1e-3, the frozen random arm; 1 of 20 later on seed 4 at 1e-2, read post hoc at that arm). Seed 0 (development): kept |
+| **P1, the break projected** | **kept on 7 of 9 seeds: "kept"** (≥ 7, none to spare). Seeds 2, 3, 5–9 keep their date at all four arms (1e-4, 1e-3, 1e-2, τ_p 1.15e-3). Seed 1 reads mixed: at 1e-3 the projected date is 256 against 512 (earlier; at 256 the count is 23 against 22, the half line 22.5); seed 4 reads mixed: at 1e-2 1000 against 512 (the plateau 25 against 23, the count at 512 12 against 13). Both are one violation across the half line at one arm; the random sets cross it there too (`reading.json` `random_by_arm_post_hoc`, every random set dated at every arm, added after `/challenge-pr` on #264: 2 of 20 earlier on seed 1 at 1e-3; 1 of 20 later on seed 4 at 1e-2; seed 0's 2 of 20 earlier at 1e-4; no other random set moves at any P1 or P2 arm on any seed). Seed 0 (development): kept |
 | **P2, the centred event projected** | **kept on 9 of 9: "kept"**, every arm, against unit 3s's dates (1000 at every arm, except seed 6's 512 at 3e-4, kept). Seed 0: kept |
 | controls | M keeps its dates at every arm of P1 and P2 on every seed; at the frozen random arms (P1 1e-3, P2 7.58e-4) 20 of 20 random sets keep theirs on every seed but seed 1's P1 (18). "Specific" is moot: nothing moved |
 | scale | s_p / s_u, the projected uncentred energy's own scale over the unprojected one's: 0.98–1.02 at 256–1000 on every seed (the projection leaves the break's relative drops their size, so the scale arm is a check, not a correction there); 1.09–2.71 at 16000, where the coordinates are large |
 
-**What it changes (the design's table, fixed before output).** P1 kept and P2 kept: C2p writes
-in §4.1 that projecting out each seed's massive-activation coordinates leaves the break's date on
-7 of 9 seeds (the other two move by one grid step at one arm, at the half line, as random sets
-also do) and the centred event's on 9 of 9; R0′ beside: the coordinates carry none of the falls
-V counts at 256–1000; R0b: they reach 100× at 16000, long after both events.
+**What it changes** (the design's table, fixed before output, with the order changed after
+`/challenge-pr` on #264, finding 1). P1 kept and P2 kept, but C2p leads with the date: §4.1 says
+the coordinates that end training massive are ordinary at the break (no coordinate of any seed
+above 2.4× the median's at 128–1000) and reach 100× only at 16000, long after both events, so
+the mean whose falls V counts at the break is not theirs; projecting them out leaves the break's
+date on 7 of 9 seeds (the other two move by one grid step at one arm, at the half line, as random
+sets also do) and the centred event's on 9 of 9, as expected when nothing large is removed.
+Whether ‖m‖² sits in a few *other* coordinates is not tested (Blocked 105).
 
 **The lean was wrong.** Stated before output from 2510.06477 ("around step 1k"): R0b reads 16000
 (at 100×). The paper reads σ₁²/‖X‖²_F, dominated by the first token's row; this reads each
@@ -97,7 +110,11 @@ tests the paper's.
 
 **Not established.** That the model does not need the coordinates at the break (projection is a
 read-out, not an intervention); anything at other β or on other rungs; whether the falls V counts
-sit in some other small set of coordinates (R0′ reads only S and M).
+sit in some other small set of coordinates (R0′ reads only S and M; the referee's M2 also named
+"outlier dimensions", a set chosen by the mean, which the design did not consider: Blocked 105).
+The code hash (`code_sha`) covers the C5, C2 and A5 modules, not `core/metrics.py` or
+`core/models.py` (finding 5): the known answers (e1 equal to A5's, e1c to unit 3s's) pin their
+behaviour on these records, and the hash is not changed after the run.
 
 **Parked** (discoveries; not followed):
 - The carriers change late on 2 of 10 seeds: seed 3's set at 143000 (409, 524) is not its
