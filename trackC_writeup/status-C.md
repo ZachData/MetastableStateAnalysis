@@ -26,7 +26,7 @@
   - Why ‖m‖² falls mid-stack at the break (massive activations, sinks), E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set (ROADMAP C5) and the schedule intervention (C4, the first post-C2 candidate): runs, not in C2 — `trackC_writeup/status-C.md` "C2 unit 5b"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `916c66b909`
+- **Reviewed:** 2026-10-23 · body `ec82d16aea`
 <!-- /phase-card -->
 
 ## Units
@@ -84,7 +84,7 @@ layers at which the tokens' mean norm falls, along the whole training axis. The 
 those falls start, mid-stack; the drops at the break are no exception to the rule, not a special
 property of the break (first written as one, against the wrong base rate; `/challenge-pr` on
 #261). The split is exact but not a separation: R's higher terms carry the mean too (R is not
-mean-free; the centred count is). With unit 3s's centred date (1000): the mean's norm starts to
+mean-free; the centred count nearly is). With unit 3s's centred date (1000): the mean's norm starts to
 fall mid-stack at 256–512; the tokens' arrangement around the mean starts to drop one grid step
 later.
 
@@ -99,6 +99,14 @@ in the record (R1–R5 and R6's frozen fields unchanged on the re-run); the abst
 the same-direction share; "all but one" stays in §1 and §4.1. (3) V_R's date taken out of the
 draft (above). (4) `readings.json` now records each seed's input sha256 and the code hash covers
 `a1a.py` and `a5_seeds.py`.
+
+**CodeRabbit on #261** (4 findings, each checked): `cos` is from a float64 normalisation of the
+same states and `e1` from a float32 one (both plain L2), so the split mixes precisions. **Not
+regenerated** (that is every forward pass again): 23 of the 30 240 transitions have a change below
+10⁻⁵ of E₁ in either term, and the smallest mean's-term change at any drop is 6.8 × 10⁻⁶ of E₁,
+against a float32 normalisation error near 10⁻⁷, so no share can move by more than 0.001. The
+abstract's exception (already fixed after `/challenge-pr`), "the centred cloud is mean-free"
+(now "nearly"), and §1's and §8's first-order coefficient (now ½‖m‖²): fixed.
 
 **Parked:** none new. Still carried: 3c's Parked 0 and `lit-C2-unit1.md` Parked 1, to the
 close-out.

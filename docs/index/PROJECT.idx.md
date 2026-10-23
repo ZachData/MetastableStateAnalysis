@@ -68,7 +68,7 @@ Indent marks depth: none = `##`, `·` = `###`, `··` = `####`; a bold **A.** ro
 | 2691 | 24 | 358 | · 3.14.3 Defects found this session, not yet fixed |
 | 2715 | 100 | 1.5k | 3.15 The ablation mode is not a detail (2026-09-11) |
 | 2815 | 83 | 1.2k | 3.16 The verified literature scan, and the phase-8 reframe (2026-09-12) |
-| 2898 | 23 | 369 | 3.70 V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, at every step (2026-10-23) |
+| 2898 | 23 | 371 | 3.70 V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, at every step (2026-10-23) |
 | 2921 | 19 | 306 | 3.69 On GPT-2 small's 5 seeds (a log warmup), E₁'s larger rise falls at the update count's band, a smaller one at the LR dose's; the frozen… |
 | 2940 | 20 | 310 | 3.68 On 70m and 160m (one seed each, size confounded), the dated events fit step or cumulative LR, not an LR level (2026-10-22) |
 | 2960 | 22 | 352 | 3.67 On the 9 PolyPythias seeds, both of §3.66's dated events reproduce (2026-10-22) |

@@ -55,8 +55,8 @@ the model's developmental order, and one negative result:
    {{a5.K}} of {{a5.n}}. The date is the recipe's, not one run's; with seeds that share the
    recipe this was the expected outcome, and the registration guards only against choosing the
    window after seeing them (§3.4).
-2. **The token-centred cloud breaks later (§4.1).** E₁'s first-order term is the squared norm of
-   the tokens' mean (§2.1). With each prompt's mean token removed before normalising, the centred
+2. **The token-centred cloud breaks later (§4.1).** E₁'s first-order term is half the squared
+   norm of the tokens' mean (§2.1). With each prompt's mean token removed before normalising, the centred
    count at 512 on seed 0 is {{c3s.s0_cfrac|range2}} of its own late level, where the uncentred
    count is at {{c3s.s0_ufrac|f2}} of its own; the centred cloud's break comes at
    {{c3s.s0_dates|uniq}}, on seed 0 and on {{c3s.K2|word}} of the nine seeds at every tolerance
@@ -127,7 +127,7 @@ identity-weight picture, and a drop in E_β between consecutive layers as a depa
 picture, not as the violation of a theorem. That a model at initialisation is (almost) monotone,
 and a trained one is not, is then an empirical fact about this model, which §4 dates.
 
-E_β sums over all pairs of tokens, so its first-order term is the tokens' mean. With
+E_β sums over all pairs of tokens, so its first-order term is set by the tokens' mean. With
 m = (1/n) Σᵢ xᵢ, expanding the exponential gives, exactly,
 
   E₁ = ½ + ½ ‖m‖² + Σ_{k≥2} (1 / 2n² k!) Σᵢ Σⱼ ⟨xᵢ, xⱼ⟩ᵏ,
@@ -361,7 +361,8 @@ mean's term is not always most of E₁'s change: on the rises at steps 16 and 32
 half at only {{rd.s_rises[16]|f2}} and {{rd.s_rises[32]|f2}} of them (from step 128 on, at most
 rises). The split is exact but it does not separate the mean from the rest: when the tokens share
 a direction every ⟨xᵢ,xⱼ⟩ is large, so R's higher terms carry the mean too, and R is not a
-mean-free energy (the centred cloud is). (Comparing these against R's own count of drops would
+mean-free energy (the centred cloud nearly is, up to the small mean that re-normalising leaves).
+(Comparing these against R's own count of drops would
 need a tolerance on R's scale, which shrinks along training, and none is calibrated; it is not
 read.)
 
@@ -612,8 +613,8 @@ Billa [2026] finds task representations' RankMe collapsing from step 0 to steps 
 Pythia 160m and 410m and partly recovering by about step 1000. Cheng et al. [2024] follow
 intrinsic dimension by layer from step 512, and Razzhigaev et al. [2023] report intrinsic
 dimension rising and then falling over training. A non-monotone geometric arc along training
-is therefore not new, and neither is the statistic in kind: at β = 1, E₁'s first-order term is the
-anisotropy measure ‖m‖² (§2.1). What is new here is reading the particle picture's prediction,
+is therefore not new, and neither is the statistic in kind: at β = 1, E₁'s first-order term is
+½‖m‖², half the anisotropy measure ‖m‖² (§2.1). What is new here is reading the particle picture's prediction,
 E_β monotone in depth, along a real training axis: the step at which it breaks, that step's
 reproduction across seeds, and its place on the developmental order.
 

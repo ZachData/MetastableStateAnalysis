@@ -2909,7 +2909,7 @@ project-wide.
   the break's 1224 drops (128–1000) ‖m‖² falls at every one and ½Δ‖m‖² is more than half of all
   but one.
 - The split is exact but not a separation (R's higher terms carry the mean), so it does not say
-  the mean *causes* the break; the token-centred count (§3.66, §3.67) is the mean-free reading and
+  the mean *causes* the break; the token-centred count (§3.66, §3.67) is the nearly mean-free reading and
   breaks one grid step later. Which coordinates carry ‖m‖² (massive activations, sinks) is a run
   (ROADMAP C5).
 - None of the registered or read dates moves: the frame-changing transitions hold no drop at

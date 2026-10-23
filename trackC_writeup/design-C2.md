@@ -451,7 +451,7 @@ window is D5 (a)'s, {256, 512}.
 measured" sentences become numbers), a new figure 5, figure 4's right panel. **Not** any date
 already read: R3's, R5's and R6 (c)'s dates sit beside the registered break, never in its place.
 V_R is E₁ without its first-order term, not a mean-free energy (R's k ≥ 2 terms still carry the
-mean); the centred count (unit 3s) is the mean-free one.
+mean); the centred count (unit 3s) is the nearly mean-free one (re-normalising after centring leaves a small mean).
 
 **Exit:** every reading above in a record (`data/trackC/c2u5b/2026-10-23/readings.json`), quoted
 through `numbers.py` keys, the draft and figures re-rendered, `check` passing.
