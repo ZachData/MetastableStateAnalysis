@@ -2,7 +2,7 @@
 # Track C — design: C5 opened on M2, the massive-activation coordinates projected out
 
 Opened 2026-10-23 by Blocked 103 (a), the user's ("C5's M2 first, then C2p"; nothing posted
-online: posting stays the user's). Row: `docs/ROADMAP.md` §8 C5. Scan: `trackC_writeup/lit-C5.md`
+to arXiv by Claude: posting stays the user's). Row: `docs/ROADMAP.md` §8 C5. Scan: `trackC_writeup/lit-C5.md`
 (2026-10-23). Unit 0 (this) is writing only; nothing ran. **Proposed; not frozen.** It freezes
 when Blocked 104 is decided; the tolerances and gate are then frozen with a preflight report in
 unit 1, before any scored output (as `design-C2.md` "Unit 3s").
