@@ -20,6 +20,12 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-22 (C2 unit 4): a range typed by hand after `/challenge-pr` on #256, "the centred count
+  at the break is 0.17–0.50 of its own plateau", went into `status-C.md` (twice), `PROJECT.md`
+  §3.67 and the STATE line, and was reviewed and merged. Computing it from the record for the
+  draft gave 0.07–0.50: seed 4's B-matched arm (2 of 28) had been left out. No reading moved
+  ("below half on every seed but the tie" holds). Caught only because the draft renders every
+  number from its record; a post-hoc number typed into a status table had no such check.
 - 2026-10-22 (C2 unit 3c): `lit-C2-unit1.md` §5 recorded GPT-2 small's warmup as "4000 steps,
   linear" from the trainer config ([R]), and §5's prediction table was built on it. The logged LR
   in every seed's `trainer_state.json` is logarithmic (DeepSpeed's default warmup type; half the

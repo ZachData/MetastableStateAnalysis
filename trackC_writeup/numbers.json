@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "613cfadb0890",
+ "code": "ee21527fe399",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -14,7 +14,14 @@
   "repo:core/evalues.py": "6dece4e21837aa9b890206241a2a233cf79b296b4b93b1aff3af53394f102164",
   "data:trackC/configs/pythia-70m.yml": "0e0275b9be689b2cc063b5609937708a3e5fac8d3a27e8dbc7f308ebda5d0aac",
   "data:trackC/configs/pythia-160m.yml": "c6db6d26dccc7040089191600bc75cbce21313b55007adcb6dda277f80d712f3",
-  "data:trackC/configs/pythia-410m.yml": "ca164a903f2328bb77ffa4cf8e6932d44c25af0af0b12526a81b560e616ada82"
+  "data:trackC/configs/pythia-410m.yml": "ca164a903f2328bb77ffa4cf8e6932d44c25af0af0b12526a81b560e616ada82",
+  "data:trackC/c2u3/2026-10-22-run/reading.json": "46f7654c96ba5f6a0f0df7a7f3b5b94c6d8b6378c221212026c7a26e9e7740f3",
+  "data:trackC/c2u3s/2026-10-22-run/reading.json": "8d5ed734f665f6af5ec6aa7766a23e5f7101e5a47c2414f0e04de5e4e87a1cf5",
+  "data:trackC/c2u3b/2026-10-22-run/reading.json": "fd864233d350cf2e69a333e7d86d52518257b6caf33b3e6a062cd2eaf99c8b04",
+  "data:trackC/c2u3c/2026-10-22-run/reading.json": "76eefb1f26ab55fbb4dc5415a029a8eecc449deb3f210ee7418bfa92264c87c7",
+  "data:trackS/s1/2026-10-21-u2-r1/r1.json": "c54df0db84f8a8a2e5a5191e4d6e401a764430687faa09ecc7d1349c0e0387a9",
+  "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json": "f6985b2d6a263ccbd2d1ad2c61b327bfe32d339dd002d713aca120468ba942d2",
+  "repo:trackC_writeup/gpt2_small_lr_log.json": "03047566be381e2b2d537af585d6fcd6e2cb7d9e1fff4b6f55bfa1c80fa69530"
  },
  "keys": {
   "cfg.train_iters": {
@@ -1119,6 +1126,1185 @@
     }
    },
    "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.r1_answer": {
+   "value": {
+    "a": "not shown",
+    "b": "not shown"
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.r1_lower": {
+   "value": {
+    "a": 0,
+    "b": 0
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.n_scored": {
+   "value": 5,
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.r1a_higher": {
+   "value": [
+    512,
+    143000
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.r1b_raw": {
+   "value": [
+    "as its controls"
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.r2b_G": {
+   "value": [
+    8.194273471832275,
+    12.413268208503723
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.r2b_raw": {
+   "value": [
+    "as its controls"
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.n_r2": {
+   "value": 4,
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.b_edit": {
+   "value": [
+    0.08255741365416927,
+    0.10093772255849086
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/readings.json"
+  },
+  "s2.g3p_span": {
+   "value": [
+    29,
+    61
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g3p_raw": {
+   "value": {
+    "512": "lower",
+    "1000": "lower",
+    "2000": "higher",
+    "4000": "as its controls",
+    "143000": "as its controls"
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g3p_v": {
+   "value": {
+    "512": 29,
+    "1000": 31,
+    "2000": 56,
+    "4000": 44,
+    "143000": 61
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g3p_ctl": {
+   "value": {
+    "512": [
+     50.0,
+     66.0
+    ],
+    "1000": [
+     38.0,
+     58.0
+    ],
+    "2000": [
+     33.0,
+     51.0
+    ],
+    "4000": [
+     36.0,
+     52.0
+    ],
+    "143000": [
+     54.0,
+     66.0
+    ]
+   },
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g1_labelled": {
+   "value": 0,
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g2_lost": {
+   "value": 4,
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g2_G": {
+   "value": [
+    1.0566225051879883,
+    2.57169246673584
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g3_full": {
+   "value": [
+    0,
+    0
+   ],
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "s2.g3_counts": {
+   "value": 4,
+   "record": "data:trackS/s2/2026-10-21-u2/gate_read.json"
+  },
+  "c3.label": {
+   "value": "mostly removed",
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3.plateau_c": {
+   "value": 20.0,
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3.plateau_u": {
+   "value": 57.0,
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3.step": {
+   "value": 1000,
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3.early_max": {
+   "value": 0.0,
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3.matched_ratio": {
+   "value": 0.9649122807017544,
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3.e1_dev": {
+   "value": 0.0,
+   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
+  },
+  "c3s.K1": {
+   "value": 8,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.K2": {
+   "value": 8,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.n": {
+   "value": 9,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.events": {
+   "value": [
+    "reproduced",
+    "reproduced"
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.tau": {
+   "value": [
+    7.55e-05,
+    0.0001,
+    0.0003,
+    0.000758
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_dates": {
+   "value": [
+    1000
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_Vc": {
+   "value": [
+    5.0,
+    11.0
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_Vu": {
+   "value": 56.0,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_early": {
+   "value": 3.0,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_cfrac": {
+   "value": [
+    0.1864406779661017,
+    0.24390243902439024
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_ufrac": {
+   "value": 0.9824561403508771,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_lane": {
+   "value": {
+    "y": [
+     0.01818181818181818,
+     0.01818181818181818,
+     0.01818181818181818,
+     0.01818181818181818,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.01818181818181818,
+     0.2,
+     1.0,
+     1.018181818181818,
+     1.0,
+     1.0363636363636364,
+     1.018181818181818,
+     0.9272727272727272,
+     1.0545454545454545,
+     1.3636363636363635
+    ],
+    "step": 1000
+   },
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.cfrac512": {
+   "value": [
+    0.07142857142857142,
+    0.5
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.cfrac512_null": {
+   "value": [
+    0.1864406779661017,
+    0.4117647058823529
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.cfrac256": {
+   "value": [
+    0.0,
+    0.03508771929824561
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.off": {
+   "value": [
+    {
+     "seed": 6,
+     "tau": 0.0003,
+     "step": 512
+    }
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.miss": {
+   "value": [
+    6
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.n_cells": {
+   "value": 36,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3b.u": {
+   "value": {
+    "70m": 256,
+    "160m": 256
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.c": {
+   "value": {
+    "70m": [
+     1000
+    ],
+    "160m": [
+     1000
+    ]
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.plateau_u": {
+   "value": {
+    "70m": 6.0,
+    "160m": 16.0
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.label": {
+   "value": "consistent with step and cumulative",
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.survivors": {
+   "value": [
+    "step",
+    "cumulative"
+   ],
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.pred": {
+   "value": {
+    "70m": {
+     "uncentred": {
+      "step": [
+       256,
+       512
+      ],
+      "cumulative": [
+       128,
+       256,
+       512
+      ],
+      "instantaneous": [
+       64,
+       128,
+       256
+      ]
+     },
+     "centred": {
+      "step": [
+       512,
+       1000
+      ],
+      "cumulative": [
+       256,
+       512,
+       1000
+      ],
+      "instantaneous": [
+       128,
+       256,
+       512
+      ]
+     }
+    },
+    "160m": {
+     "uncentred": {
+      "step": [
+       256,
+       512
+      ],
+      "cumulative": [
+       128,
+       256,
+       512
+      ],
+      "instantaneous": [
+       128,
+       256
+      ]
+     },
+     "centred": {
+      "step": [
+       512,
+       1000
+      ],
+      "cumulative": [
+       256,
+       512,
+       1000
+      ],
+      "instantaneous": [
+       256,
+       512
+      ]
+     }
+    }
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.band_u": {
+   "value": {
+    "step": [
+     256,
+     512
+    ],
+    "cumulative": [
+     128,
+     512
+    ],
+    "instantaneous": [
+     128,
+     256
+    ]
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.band_c": {
+   "value": {
+    "step": [
+     512,
+     1000
+    ],
+    "cumulative": [
+     256,
+     1000
+    ],
+    "instantaneous": [
+     256,
+     512
+    ]
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.band_c70": {
+   "value": {
+    "step": [
+     512,
+     1000
+    ],
+    "cumulative": [
+     256,
+     1000
+    ],
+    "instantaneous": [
+     128,
+     512
+    ]
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.ref": {
+   "value": {
+    "u": [
+     256,
+     512
+    ],
+    "c": [
+     512,
+     1000
+    ]
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3b.V": {
+   "value": {
+    "70m": {
+     "u": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      3.0,
+      4.0,
+      8.0,
+      6.0,
+      6.0,
+      15.0,
+      15.0,
+      15.0,
+      14.0,
+      5.0
+     ],
+     "c": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      5.0,
+      14.0,
+      15.0,
+      18.0,
+      18.0,
+      19.0,
+      17.0,
+      16.0,
+      24.0
+     ],
+     "pu": 6.0,
+     "pc": 15.0
+    },
+    "160m": {
+     "u": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      18.0,
+      16.0,
+      16.0,
+      13.0,
+      18.0,
+      24.0,
+      32.0,
+      25.0,
+      22.0,
+      29.0
+     ],
+     "c": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      11.0,
+      22.0,
+      30.0,
+      27.0,
+      26.0,
+      26.0,
+      26.0,
+      26.0,
+      40.0
+     ],
+     "pu": 16.0,
+     "pc": 27.0
+    }
+   },
+   "record": "data:trackC/c2u3b/2026-10-22-run/reading.json"
+  },
+  "c3c.n": {
+   "value": 5,
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.grid": {
+   "value": [
+    0,
+    10,
+    20,
+    40,
+    60,
+    80,
+    100,
+    150,
+    200,
+    250,
+    350,
+    400,
+    450,
+    500,
+    550,
+    600,
+    700,
+    800,
+    900,
+    1000,
+    1100,
+    1200,
+    1400,
+    1600,
+    1800,
+    2000,
+    2400,
+    2800,
+    3200,
+    3600,
+    4000,
+    6000,
+    8000,
+    12000,
+    16000
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.breaks": {
+   "value": [
+    250,
+    350,
+    250,
+    350,
+    350
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.plateaus": {
+   "value": [
+    41.0,
+    53.0,
+    47.0,
+    47.0,
+    48.0
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.alt": {
+   "value": [
+    80,
+    200,
+    200,
+    80,
+    80
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.label": {
+   "value": "consistent with step",
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.survivors": {
+   "value": [
+    "step"
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.u_consistent": {
+   "value": [
+    "step"
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.c_span": {
+   "value": [
+    100,
+    2000
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.c_agree": {
+   "value": 0,
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.fixed": {
+   "value": [
+    100,
+    150
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.derived": {
+   "value": [
+    350,
+    2000
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.null_only": {
+   "value": 4,
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.pred_c": {
+   "value": {
+    "instantaneous": [
+     20,
+     40
+    ],
+    "cumulative": [
+     60,
+     350
+    ],
+    "step": [
+     350,
+     1100
+    ],
+    "fraction": [
+     800,
+     3200
+    ],
+    "tokens": [
+     1100,
+     4000
+    ]
+   },
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.pred": {
+   "value": {
+    "instantaneous": [
+     20,
+     40
+    ],
+    "cumulative": [
+     40,
+     150
+    ],
+    "step": [
+     150,
+     550
+    ],
+    "fraction": [
+     400,
+     1600
+    ],
+    "tokens": [
+     550,
+     2400
+    ]
+   },
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.V100": {
+   "value": [
+    14.0,
+    17.0
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.V350": {
+   "value": [
+    31.0,
+    39.0
+   ],
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.early_max": {
+   "value": 1.0,
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "c3c.Vu": {
+   "value": {
+    "alias": [
+     0.0,
+     0.0,
+     0.0,
+     1.0,
+     13.0,
+     15.0,
+     17.0,
+     14.0,
+     19.0,
+     31.0,
+     39.0,
+     38.0,
+     36.0,
+     34.0,
+     35.0,
+     35.0,
+     30.0,
+     24.0,
+     24.0,
+     21.0,
+     22.0,
+     21.0,
+     24.0,
+     25.0,
+     27.0,
+     27.0,
+     29.0,
+     32.0,
+     34.0,
+     34.0,
+     36.0,
+     41.0,
+     41.0,
+     48.0,
+     42.0
+    ],
+    "battlestar": [
+     0.0,
+     0.0,
+     0.0,
+     3.0,
+     16.0,
+     14.0,
+     14.0,
+     14.0,
+     19.0,
+     24.0,
+     38.0,
+     36.0,
+     40.0,
+     36.0,
+     34.0,
+     31.0,
+     26.0,
+     26.0,
+     28.0,
+     29.0,
+     29.0,
+     29.0,
+     29.0,
+     28.0,
+     33.0,
+     33.0,
+     37.0,
+     39.0,
+     39.0,
+     44.0,
+     48.0,
+     53.0,
+     53.0,
+     53.0,
+     50.0
+    ],
+    "caprica": [
+     1.0,
+     1.0,
+     0.0,
+     5.0,
+     13.0,
+     14.0,
+     14.0,
+     14.0,
+     20.0,
+     27.0,
+     31.0,
+     35.0,
+     28.0,
+     30.0,
+     31.0,
+     30.0,
+     30.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     29.0,
+     30.0,
+     31.0,
+     30.0,
+     36.0,
+     35.0,
+     47.0,
+     47.0,
+     48.0,
+     48.0
+    ],
+    "darkmatter": [
+     1.0,
+     1.0,
+     0.0,
+     0.0,
+     6.0,
+     15.0,
+     17.0,
+     16.0,
+     18.0,
+     21.0,
+     34.0,
+     37.0,
+     41.0,
+     35.0,
+     32.0,
+     31.0,
+     32.0,
+     26.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     28.0,
+     34.0,
+     34.0,
+     32.0,
+     37.0,
+     36.0,
+     48.0,
+     47.0,
+     48.0,
+     46.0
+    ],
+    "expanse": [
+     1.0,
+     1.0,
+     0.0,
+     8.0,
+     9.0,
+     17.0,
+     17.0,
+     17.0,
+     17.0,
+     22.0,
+     37.0,
+     37.0,
+     35.0,
+     36.0,
+     32.0,
+     32.0,
+     29.0,
+     30.0,
+     33.0,
+     31.0,
+     32.0,
+     33.0,
+     32.0,
+     32.0,
+     30.0,
+     29.0,
+     31.0,
+     33.0,
+     38.0,
+     37.0,
+     43.0,
+     48.0,
+     53.0,
+     51.0,
+     48.0
+    ]
+   },
+   "record": "data:trackC/c2u3c/2026-10-22-run/reading.json"
+  },
+  "gpt2.lr_peak": {
+   "value": 0.0005999545454545453,
+   "record": "repo:trackC_writeup/gpt2_small_lr_log.json"
+  },
+  "gpt2.warmup_end": {
+   "value": 4000,
+   "record": "repo:trackC_writeup/gpt2_small_lr_log.json"
+  },
+  "gpt2.lr_half": {
+   "value": 100,
+   "record": "repo:trackC_writeup/gpt2_small_lr_log.json"
+  },
+  "s1.leave_ov": {
+   "value": {
+    "ov_write": 256,
+    "ov_cplx": 256,
+    "ov_read": 512,
+    "ov_neg": 512,
+    "ov_pos": 512
+   },
+   "record": "data:trackS/s1/2026-10-21-u2-r1/r1.json"
+  },
+  "s1.leave_qk": {
+   "value": {
+    "qk_query": 256,
+    "qk_key": 256
+   },
+   "record": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json"
+  },
+  "s1.rho_end_ov": {
+   "value": [
+    0.6532244296446179,
+    0.8245721008646971
+   ],
+   "record": "data:trackS/s1/2026-10-21-u2-r1/r1.json"
+  },
+  "s1.rho_end_qk": {
+   "value": [
+    0.5125331351055933,
+    0.5250561114292578
+   ],
+   "record": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json"
+  },
+  "s1.rho_null_ov": {
+   "value": 0.0009352015020004378,
+   "record": "data:trackS/s1/2026-10-21-u2-r1/r1.json"
+  },
+  "s1.rho_null_qk": {
+   "value": 0.00044693916646876275,
+   "record": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json"
+  },
+  "s1.rho_write": {
+   "value": {
+    "0": 0.9997744384132111,
+    "128": 0.9993605060085401,
+    "256": 0.9935328995769306,
+    "512": 0.8888996929967766,
+    "1000": 0.6620838094953136,
+    "2000": 0.5860617752408702,
+    "4000": 0.734914299279999,
+    "143000": 0.6532244296446179
+   },
+   "record": "data:trackS/s1/2026-10-21-u2-r1/r1.json"
+  },
+  "s1.rho_query": {
+   "value": {
+    "0": 1.0004469391664688,
+    "128": 1.0004102760469629,
+    "256": 0.9956122714366745,
+    "512": 0.9382712852837982,
+    "1000": 0.7220215151059077,
+    "2000": 0.49778293508481963,
+    "4000": 0.4034710112247008,
+    "143000": 0.5250561114292578
+   },
+   "record": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json"
+  },
+  "s1.rho_ov": {
+   "value": {
+    "0": {
+     "ov_write": 0.9997744384132111,
+     "ov_cplx": 0.9999845530427126,
+     "ov_read": 1.000029208315981,
+     "ov_neg": 0.999329007062569,
+     "ov_pos": 1.0006598736807344
+    },
+    "128": {
+     "ov_write": 0.9993605060085401,
+     "ov_cplx": 0.9997470537686409,
+     "ov_read": 0.9999964534976633,
+     "ov_neg": 1.0003417931220187,
+     "ov_pos": 0.9990647984979996
+    },
+    "256": {
+     "ov_write": 0.9935328995769306,
+     "ov_cplx": 0.9974858170357663,
+     "ov_read": 0.9997771427781377,
+     "ov_neg": 0.999830812471914,
+     "ov_pos": 1.0002571137176313
+    },
+    "512": {
+     "ov_write": 0.8888996929967766,
+     "ov_cplx": 0.9354097917329927,
+     "ov_read": 0.9943141720442253,
+     "ov_neg": 0.9245831923441404,
+     "ov_pos": 0.9854813703436773
+    },
+    "1000": {
+     "ov_write": 0.6620838094953136,
+     "ov_cplx": 0.7607714587036597,
+     "ov_read": 0.9815676838159927,
+     "ov_neg": 0.7788720697727154,
+     "ov_pos": 0.9669255795065753
+    },
+    "2000": {
+     "ov_write": 0.5860617752408702,
+     "ov_cplx": 0.674867355138891,
+     "ov_read": 0.9511094585787455,
+     "ov_neg": 0.6857009568092626,
+     "ov_pos": 0.9103721475498993
+    },
+    "4000": {
+     "ov_write": 0.734914299279999,
+     "ov_cplx": 0.8215753884388316,
+     "ov_read": 0.8961352103263355,
+     "ov_neg": 0.8451171311969145,
+     "ov_pos": 0.8650943700210724
+    },
+    "143000": {
+     "ov_write": 0.6532244296446179,
+     "ov_cplx": 0.7933457703528659,
+     "ov_read": 0.813891757109915,
+     "ov_neg": 0.8245721008646971,
+     "ov_pos": 0.8095349813468717
+    }
+   },
+   "record": "data:trackS/s1/2026-10-21-u2-r1/r1.json"
+  },
+  "s1.rho_qk": {
+   "value": {
+    "0": {
+     "qk_query": 1.0004469391664688,
+     "qk_key": 1.0000692997977232
+    },
+    "128": {
+     "qk_query": 1.0004102760469629,
+     "qk_key": 0.9999201517216212
+    },
+    "256": {
+     "qk_query": 0.9956122714366745,
+     "qk_key": 0.996987640783925
+    },
+    "512": {
+     "qk_query": 0.9382712852837982,
+     "qk_key": 0.9726238361325049
+    },
+    "1000": {
+     "qk_query": 0.7220215151059077,
+     "qk_key": 0.8576196219561242
+    },
+    "2000": {
+     "qk_query": 0.49778293508481963,
+     "qk_key": 0.6597028409159134
+    },
+    "4000": {
+     "qk_query": 0.4034710112247008,
+     "qk_key": 0.5214198056690625
+    },
+    "143000": {
+     "qk_query": 0.5250561114292578,
+     "qk_key": 0.5125331351055933
+    }
+   },
+   "record": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json"
+  },
+  "a3.gate_rows": {
+   "value": [
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6b",
+    "E6b_full",
+    "E6u",
+    "E7",
+    "E8"
+   ],
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.gate_null_min": {
+   "value": 0.972,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.gate_effect_pass": {
+   "value": true,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a3.n_gate": {
+   "value": 1000,
+   "record": "data:trackA/a3/2026-10-20-A3u5/a3_rows.json"
+  },
+  "a5g.planted_ok": {
+   "value": [
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1000,
+    2000
+   ],
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.planted_off": {
+   "value": [
+    [
+     4000,
+     2000
+    ]
+   ],
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.inside_iff": {
+   "value": true,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.null_n": {
+   "value": 20000,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.null_maxz": {
+   "value": 2.3862120721435747,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.effect_step": {
+   "value": 1000,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.energy_tol": {
+   "value": 0.0001,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
+  },
+  "a5g.pass": {
+   "value": true,
+   "record": "data:trackA/a5/2026-10-20-u1/seed0/gate.json"
   }
  }
 }

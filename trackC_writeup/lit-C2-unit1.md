@@ -153,4 +153,6 @@ The design's numbers stand: the same warmup, the same tokens a step, the peak LR
    `math-1.md` §13.2's GPT-2-era "including under random weights" is the likeliest source, Blog 2
    unchecked; cost: one read of Blog 2; could change: §8's sentence and a later post's wording
    only). The attribution is corrected now (`/challenge-pr` on #253, finding 4); the source is
-   carried to unit 4.
+   carried to unit 4. *Done at unit 4: it is this project's GPT-2-era run record, "Theorem 3.4
+   falsified universally, including under random weights" (`p1_mstate_tracking/design-1.md`
+   line 97, `status-1.md`), not a blog; §8 does not use it.*

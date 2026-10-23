@@ -41,7 +41,7 @@ Each is written into the draft beside the line it limits, not only in a limits s
 
 | # | fence | why | source |
 |---|---|---|---|
-| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1); 3b (70m, 160m): consistent with step and cumulative LR, an LR level excluded, step against cumulative not told apart on the grid (`status-C.md` "C2 unit 3b"); 3c (GPT-2 small, a log warmup): E₁'s larger rise at step's band, a first stage at the dose's, no centred date; the frozen "consistent with step" turns on the plateau window and one re-init unit, so whether it narrows F1 is Blocked 101 (`status-C.md` "C2 unit 3c") | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
+| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1); 3b (70m, 160m): consistent with step and cumulative LR, an LR level excluded, step against cumulative not told apart on the grid (`status-C.md` "C2 unit 3b"); 3c (GPT-2 small, a log warmup): E₁'s larger rise at step's band, a first stage at the dose's, no centred date; the frozen "consistent with step" turns on the plateau window and one re-init unit, so it does not narrow F1 (Blocked 101 decided (a), the user's, 2026-10-22, against the outcome frozen in "Unit 3c"; `status-C.md` "C2 unit 3c", "C2 unit 4") | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
 | F2 | "Break, then induction, then the OV phase" is not shown, in either reading of the OV phase (its fall starts with the break; its bottom ties induction at 1000) | A3 reading 5 | A3 on one page |
 | F3 | The break is neither shown OV's nor shown not OV's (one OV-only edit with a known destination; V 29–61 against ≤ 7) | G3′'s reach | S2 on one page, "Parked and open at close" |
 | F4 | 410m only; v1's 7 prompts (the Pile's validation split for the n-gram rows); nothing between grid steps (no checkpoint between 512 and 1000) | the rung policy and the grid | `CLAUDE.md` "Name the family"; A3 "Not established" |
@@ -55,16 +55,16 @@ Each is written into the draft beside the line it limits, not only in a limits s
 
 | § | section | lines and fences | state |
 |---|---|---|---|
-| 1 | Introduction: the particle picture's prediction (E_β non-decreasing in depth: the identity-weight dynamics ascend it, and a drop between layers is a violation, `core/metrics.py` `energy_violation_severity`), what trained 410m does at step 143000, and the question "when does it stop?"; contributions L1–L3, L6 with F1 and F2 stated in the first page | L1–L3, L6; F1, F2 | to write (unit 4) |
+| 1 | Introduction: the particle picture's prediction (E_β non-decreasing in depth: the identity-weight dynamics ascend it, and a drop between layers is a violation, `core/metrics.py` `energy_violation_severity`), what trained 410m does at step 143000, and the question "when does it stop?"; contributions L1–L3, L6 with F1 and F2 stated in the first page | L1–L3, L6; F1, F2 | written (unit 4; headed on the two events, 98 (c)) |
 | 2 | Background: the energy and its monotonicity (exact hypotheses), the developmental stages (n-grams, previous-token, induction), Pythia's warmup | F5, F8 | drafted (unit 1, `draft-C2.md`) |
 | 3 | Setup: 410m and its 18 steps, the 9 PolyPythias seeds, the prompts, E_β and V, the half-rise statistic, the registration order (`P-A5` before the download) | F4 | drafted (unit 2, `draft-C2.src.md`) |
-| 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | drafted (unit 2) |
-| 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | drafted (unit 2) |
-| 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | to write (unit 4; 94 (a)) |
-| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | to write (unit 4; 3, 3s, 3b, 3c done) |
+| 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | drafted (unit 2); §4.1, the centred cloud and F9, added at unit 4 |
+| 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | drafted (unit 2); E1c added at unit 4 |
+| 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | written (unit 4; 94 (a)) |
+| 7 | What would separate the schedule from training (figure 4); the anisotropy control moved to §4.1 by 98 (c) | F1 | written (unit 4; 3b, 3c; F1 stands, Blocked 101 (a)) |
 | 8 | Related work | F8, F9 | drafted (unit 1, `draft-C2.md`) |
-| A | Appendix: the shared subspaces (L5) | L5 | to write (unit 4; 94 (a)) |
-| B | Appendix: the gates (A3's locator, A5's gate on seed 0, S2's G0–G3) and why each null is the one used | — | to write |
+| A | Appendix: the shared subspaces (L5) | L5 | written (unit 4; 94 (a)) |
+| B | Appendix: the gates (A3's locator, A5's gate on seed 0, S2's G0–G3) and why each null is the one used | — | written (unit 4; with the centred counts' arms) |
 
 ## Numbers and figures
 
