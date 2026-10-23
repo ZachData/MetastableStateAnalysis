@@ -56,6 +56,14 @@ RECORDS = {
     "cfg_70m": "data:trackC/configs/pythia-70m.yml",
     "cfg_160m": "data:trackC/configs/pythia-160m.yml",
     "cfg_410m": "data:trackC/configs/pythia-410m.yml",
+    # C2's own runs (units 3, 3s, 3b, 3c), S1's ρ, and GPT-2 small's logged LR (unit 4)
+    "c3": "data:trackC/c2u3/2026-10-22-run/reading.json",
+    "c3s": "data:trackC/c2u3s/2026-10-22-run/reading.json",
+    "c3b": "data:trackC/c2u3b/2026-10-22-run/reading.json",
+    "c3c": "data:trackC/c2u3c/2026-10-22-run/reading.json",
+    "s1_r1": "data:trackS/s1/2026-10-21-u2-r1/r1.json",
+    "s1_qk": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json",
+    "gpt2_lr": "repo:trackC_writeup/gpt2_small_lr_log.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -63,6 +71,15 @@ GRID = (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32
 S2_STEPS = ("0", "256", "512", "1000", "2000", "4000", "143000")
 #: The rows §5's table and figure 2 show, in the order of their dates.
 A3_ROWS = ("E5", "E6u", "E6b", "E1", "E2", "E8", "E3", "E4", "E10")
+#: S2's scored steps (R1's cells after the break) and R2's (the steps where copying exists).
+S2_SCORED = ("512", "1000", "2000", "4000", "143000")
+S2_R2 = ("1000", "2000", "4000", "143000")
+#: S1's families and steps (`design-S1.md`); QK's ρ is in its own record (S1 unit 3).
+S1_FAMILIES = ("qk_query", "qk_key", "ov_write", "ov_cplx", "ov_read", "ov_neg", "ov_pos")
+S1_STEPS = ("0", "128", "256", "512", "1000", "2000", "4000", "143000")
+#: 3c's seeds, and its two fixed centred arms (the other two are derived; `design-C2.md` "Unit 3c").
+C3C_SEEDS = ("alias", "battlestar", "caprica", "darkmatter", "expanse")
+C3C_FIXED = ("0.0001", "0.0003")
 
 
 class Refused(SystemExit):
@@ -193,6 +210,73 @@ def _g3p(rec: dict) -> dict:
     return {s: {"value": c["value"], **c["ctl"]} for s, c in rec["G3p"]["cells"].items()}
 
 
+def _span(xs) -> List[float]:
+    xs = list(xs)
+    return [min(xs), max(xs)]
+
+
+def _c3_matched(c3: dict) -> float:
+    """The centred plateau at the matched tolerance (1e-4, post hoc in unit 3) over the uncentred one."""
+    v = c3["beside"]["V_centred_at_tol"]["0.0001"]
+    plat = sorted(v[_i(s)] for s in (1000, 2000, 4000))[1]
+    return plat / c3["verdict"]["plateau_uncentred"]
+
+
+def _c3s_arms(c3s: dict):
+    """(seed, arm, the arm's row) over the 9 seeds and the four centred arms."""
+    for s in SEEDS:
+        for tau, arm in c3s["per_seed"][s]["arms"].items():
+            yield s, tau, arm
+
+
+def _cfrac(c3s: dict, brk: int, tau: Optional[float] = None) -> List[float]:
+    """The centred count at the uncentred break over its own plateau, on the seeds (0 included)
+    that break at `brk`, at every arm or at the one named."""
+    runs = [c3s["seed0_development"]] + [c3s["per_seed"][s] for s in SEEDS]
+    return [a["V_c_at_break"] / a["plateau_centred"] for r in runs if r["break_step"] == brk
+            for t, a in r["arms"].items() if tau is None or float(t) == tau]
+
+
+def _c3c_dates(c3c: dict, arms: Sequence[str]) -> List[int]:
+    return [c3c["per_seed"][s]["centred"]["arms"][a]["step"] for s in C3C_SEEDS for a in arms]
+
+
+def _c3c_step_arms(c3c: dict, seed: str) -> List[float]:
+    """The centred arms whose date falls in step's centred band, on one seed."""
+    band = c3c["predicted"]["centred"]["step"]
+    return [float(t) for t, a in c3c["per_seed"][seed]["centred"]["arms"].items() if a["step"] in band]
+
+
+def _c3c_at(c3c: dict, step: int) -> List[float]:
+    i = c3c["grid"].index(step)
+    return _span(c3c["beside"][s]["V_u"][i] for s in C3C_SEEDS)
+
+
+def _lr(log: dict) -> Dict[str, list]:
+    return {s: v["lr"] for s, v in log["seeds"].items()}
+
+
+def _s1_fams(rec: dict) -> List[str]:
+    """The families a record reads ρ for (S1 unit 2's record leaves QK's to unit 3's)."""
+    return [f for f in S1_FAMILIES if "PR" in rec["cells"].get(f"0|{f}", {})]
+
+
+def _s1_leaves(rec: dict) -> Dict[str, int]:
+    """Each family's first step whose participation ratio leaves the null's band (S1's reading)."""
+    out = {}
+    for f in _s1_fams(rec):
+        for s in S1_STEPS:
+            c = rec["cells"][f"{s}|{f}"]
+            if not c["band"]["PR_min"] <= c["PR"] <= c["band"]["PR_max"]:
+                out[f] = int(s)
+                break
+    return out
+
+
+def _s1_rho(rec: dict, step: str) -> Dict[str, float]:
+    return {f: rec["cells"][f"{step}|{f}"]["rho"] for f in _s1_fams(rec)}
+
+
 KEYS: Dict[str, tuple] = {
     # Pythia's released training configs (§2.3, §3)
     "cfg.train_iters": ("cfg_410m", lambda c: c["train-iters"]),
@@ -318,6 +402,123 @@ KEYS: Dict[str, tuple] = {
     "s2.a": ("s2_readings", lambda r: _s2_cells(r, "a")),
     "s2.b": ("s2_readings", lambda r: _s2_cells(r, "b")),
     "s2.g3p": ("s2_gates", _g3p),
+    # S2 in words (§6, appendix B)
+    "s2.r1_answer": ("s2_readings", lambda r: {a: r["R1"][a]["answer"] for a in "ab"}),
+    "s2.r1_lower": ("s2_readings", lambda r: {a: r["R1"][a]["counts"] for a in "ab"}),
+    "s2.n_scored": ("s2_readings", lambda r: len(S2_SCORED)),
+    "s2.r1a_higher": ("s2_readings", lambda r: [int(s) for s in S2_SCORED
+                                                if r["R1"]["a"]["cells"][s]["raw"] == "higher"]),
+    "s2.r1b_raw": ("s2_readings", lambda r: sorted({r["R1"]["b"]["cells"][s]["raw"] for s in S2_SCORED})),
+    "s2.r2b_G": ("s2_readings", lambda r: _span(r["R2"]["b"]["cells"][s]["value"] for s in S2_R2)),
+    "s2.r2b_raw": ("s2_readings", lambda r: sorted({r["R2"]["b"]["cells"][s]["raw"] for s in S2_R2})),
+    "s2.n_r2": ("s2_readings", lambda r: len(S2_R2)),
+    "s2.b_edit": ("s2_readings", lambda r: _span(r["beside"][s]["sizes"]["b"]["edit"]["median"]
+                                                 for s in S2_R2)),
+    "s2.g3p_span": ("s2_gates", lambda g: _span(g["G3p"]["cells"][s]["value"] for s in S2_SCORED)),
+    "s2.g3p_raw": ("s2_gates", lambda g: {s: g["G3p"]["cells"][s]["raw"] for s in S2_SCORED}),
+    "s2.g3p_v": ("s2_gates", lambda g: {s: g["G3p"]["cells"][s]["value"] for s in S2_SCORED}),
+    "s2.g3p_ctl": ("s2_gates", lambda g: {s: [g["G3p"]["cells"][s]["ctl"]["min"], g["G3p"]["cells"][s]["ctl"]["max"]]
+                                          for s in S2_SCORED}),
+    "s2.g1_labelled": ("s2_gates", lambda g: sum(g["G1"]["labelled"].values())),
+    "s2.g2_lost": ("s2_gates", lambda g: g["G2"]["lost"]),
+    "s2.g2_G": ("s2_gates", lambda g: _span(g["G2"]["cells"][s]["value"] for s in S2_R2)),
+    "s2.g3_full": ("s2_gates", lambda g: _span(g["G3"]["cells"][f"1.0@{s}"]["value"] for s in S2_SCORED[:-1])),
+    "s2.g3_counts": ("s2_gates", lambda g: g["G3"]["counts_at_1"]),
+    # the anisotropy control on seed 0 (§4; unit 3)
+    "c3.label": ("c3", lambda c: c["verdict"]["label"]),
+    "c3.plateau_c": ("c3", lambda c: c["verdict"]["plateau_centred"]),
+    "c3.plateau_u": ("c3", lambda c: c["verdict"]["plateau_uncentred"]),
+    "c3.step": ("c3", lambda c: c["verdict"]["step"]),
+    "c3.early_max": ("c3", lambda c: max(c["verdict"]["early_centred"].values())),
+    "c3.matched_ratio": ("c3", _c3_matched),
+    "c3.e1_dev": ("c3", lambda c: c["e1_max_dev_a5"]),
+    "c3.lane": ("c3", lambda c: {"y": [v / c["verdict"]["plateau_centred"] for v in c["V_centred"]],
+                                 "step": c["verdict"]["step"]}),
+    # the centred count on the seeds (§4; unit 3s)
+    "c3s.K1": ("c3s", lambda c: c["tally"]["K1"]),
+    "c3s.K2": ("c3s", lambda c: c["tally"]["K2"]),
+    "c3s.n": ("c3s", lambda c: c["tally"]["n"]),
+    "c3s.events": ("c3s", lambda c: [c["tally"]["event1"], c["tally"]["event2"]]),
+    "c3s.tau": ("c3s", lambda c: c["tau_arms"]),
+    "c3s.s0_dates": ("c3s", lambda c: sorted({a["centred_step"] for a in c["seed0_development"]["arms"].values()})),
+    "c3s.s0_Vc": ("c3s", lambda c: _span(a["V_c_at_break"] for a in c["seed0_development"]["arms"].values())),
+    "c3s.s0_Vu": ("c3s", lambda c: c["seed0_development"]["V_u_at_break"]),
+    "c3s.cfrac512": ("c3s", lambda c: _span(_cfrac(c, 512))),
+    "c3s.cfrac512_null": ("c3s", lambda c: _span(_cfrac(c, 512, c["tau_arms"][0]))),
+    "c3s.cfrac256": ("c3s", lambda c: _span(_cfrac(c, 256))),
+    "c3s.off": ("c3s", lambda c: [{"seed": int(s), "tau": float(t), "step": a["centred_step"]}
+                                  for s, t, a in _c3s_arms(c) if a["centred_step"] != 1000]),
+    "c3s.miss": ("c3s", lambda c: [int(s) for s in SEEDS if not c["per_seed"][s]["event1"]]),
+    "c3s.n_cells": ("c3s", lambda c: sum(1 for _ in _c3s_arms(c))),
+    # the LR-dose arm (§7; unit 3b)
+    "c3b.u": ("c3b", lambda c: {z: c["per_size"][z]["uncentred"]["step"] for z in ("70m", "160m")}),
+    "c3b.c": ("c3b", lambda c: {z: c["per_size"][z]["centred"]["dates"] for z in ("70m", "160m")}),
+    "c3b.plateau_u": ("c3b", lambda c: {z: c["per_size"][z]["uncentred"]["plateau"] for z in ("70m", "160m")}),
+    "c3b.label": ("c3b", lambda c: c["joint"]["label"]),
+    "c3b.survivors": ("c3b", lambda c: c["joint"]["survivors"]),
+    "c3b.pred": ("c3b", lambda c: {z: c["beside"][z]["predicted"] for z in ("70m", "160m")}),
+    "c3b.band_u": ("c3b", lambda c: {k: _span(v) for k, v in c["beside"]["160m"]["predicted"]["uncentred"].items()}),
+    "c3b.band_c": ("c3b", lambda c: {k: _span(v) for k, v in c["beside"]["160m"]["predicted"]["centred"].items()}),
+    "c3b.band_c70": ("c3b", lambda c: {k: _span(v) for k, v in c["beside"]["70m"]["predicted"]["centred"].items()}),
+    "c3b.ref": ("c3b", lambda c: c["ref"]),
+    "c3b.V": ("c3b", lambda c: {z: {"u": c["beside"][z]["V_u"], "c": c["beside"][z]["V_c"]["0.0001"],
+                                    "pu": c["per_size"][z]["uncentred"]["plateau"],
+                                    "pc": c["per_size"][z]["centred"]["arms"]["0.0001"]["plateau"]}
+                                for z in ("70m", "160m")}),
+    # the warmup arm (§7; unit 3c)
+    "c3c.n": ("c3c", lambda c: len(C3C_SEEDS)),
+    "c3c.grid": ("c3c", lambda c: c["grid"]),
+    "c3c.breaks": ("c3c", lambda c: [c["per_seed"][s]["uncentred"]["step"] for s in C3C_SEEDS]),
+    "c3c.plateaus": ("c3c", lambda c: [c["per_seed"][s]["uncentred"]["plateau"] for s in C3C_SEEDS]),
+    "c3c.alt": ("c3c", lambda c: [c["per_seed"][s]["uncentred"]["beside"]["half_rise_on_1000_4000"]["step"]
+                                  for s in C3C_SEEDS]),
+    "c3c.label": ("c3c", lambda c: c["joint"]["label"]),
+    "c3c.survivors": ("c3c", lambda c: c["joint"]["survivors"]),
+    "c3c.u_consistent": ("c3c", lambda c: sorted({x for s in C3C_SEEDS for x in c["per_seed"][s]["uncentred"]["consistent"]})),
+    "c3c.c_span": ("c3c", lambda c: _span(d for s in C3C_SEEDS for d in c["per_seed"][s]["centred"]["dates"])),
+    "c3c.c_agree": ("c3c", lambda c: sum(c["per_seed"][s]["centred"]["agree"] for s in C3C_SEEDS)),
+    "c3c.fixed": ("c3c", lambda c: _span(_c3c_dates(c, C3C_FIXED))),
+    "c3c.derived": ("c3c", lambda c: _span(_c3c_dates(c, [a for a in c["per_seed"]["alias"]["centred"]["arms"]
+                                                          if a not in C3C_FIXED]))),
+    "c3c.null_only": ("c3c", lambda c: sum(_c3c_step_arms(c, s) == [c["tau_arms"][0]] for s in C3C_SEEDS)),
+    "c3c.pred_c": ("c3c", lambda c: {k: _span(v) for k, v in c["predicted"]["centred"].items()}),
+    "c3c.pred": ("c3c", lambda c: {k: _span(v) for k, v in c["predicted"]["uncentred"].items()}),
+    "c3c.V100": ("c3c", lambda c: _c3c_at(c, 100)),
+    "c3c.V350": ("c3c", lambda c: _c3c_at(c, 350)),
+    "c3c.early_max": ("c3c", lambda c: max(max(v["uncentred"].values()) for v in c["early_first"].values())),
+    "c3c.Vu": ("c3c", lambda c: {s: c["beside"][s]["V_u"] for s in C3C_SEEDS}),
+    "gpt2.lr_peak": ("gpt2_lr", lambda g: max(lr for _, lr in _lr(g)["alias"])),
+    "gpt2.warmup_end": ("gpt2_lr", lambda g: max(next(t for t, lr in v if lr >= 0.999 * max(x for _, x in v))
+                                                 for v in _lr(g).values())),
+    "gpt2.lr_half": ("gpt2_lr", lambda g: max(next(t for t, lr in v if lr >= max(x for _, x in v) / 2)
+                                              for v in _lr(g).values())),
+    # S1, the shared subspaces (appendix A)
+    "s1.leave_ov": ("s1_r1", _s1_leaves),
+    "s1.leave_qk": ("s1_qk", _s1_leaves),
+    "s1.rho_end_ov": ("s1_r1", lambda r: _span(_s1_rho(r, "143000").values())),
+    "s1.rho_end_qk": ("s1_qk", lambda r: _span(_s1_rho(r, "143000").values())),
+    "s1.rho_null_ov": ("s1_r1", lambda r: max(abs(v - 1) for s in ("0", "128") for v in _s1_rho(r, s).values())),
+    "s1.rho_null_qk": ("s1_qk", lambda r: max(abs(v - 1) for s in ("0", "128") for v in _s1_rho(r, s).values())),
+    "s1.rho_write": ("s1_r1", lambda r: {s: r["cells"][f"{s}|ov_write"]["rho"] for s in S1_STEPS}),
+    "s1.rho_query": ("s1_qk", lambda r: {s: r["cells"][f"{s}|qk_query"]["rho"] for s in S1_STEPS}),
+    "s1.rho_ov": ("s1_r1", lambda r: {s: _s1_rho(r, s) for s in S1_STEPS}),
+    "s1.rho_qk": ("s1_qk", lambda r: {s: _s1_rho(r, s) for s in S1_STEPS}),
+    # the gates (appendix B)
+    "a3.gate_rows": ("a3", lambda a: sorted(r for r, g in a["gate"].items() if g.get("null_pass"))),
+    "a3.gate_null_min": ("a3", lambda a: min(g["null_no_change"] for g in a["gate"].values()
+                                             if g.get("null_no_change") is not None)),
+    "a3.gate_effect_pass": ("a3", lambda a: all(e["pass"] for g in a["gate"].values() for e in g.get("effect", []))),
+    "a3.n_gate": ("a3", lambda a: a["constants"]["N_GATE"]),
+    "a5g.planted_ok": ("a5_seed0", lambda g: [r["planted"] for r in g["planted_null"]["table"]
+                                              if r["reads"] == r["planted"]]),
+    "a5g.planted_off": ("a5_seed0", lambda g: [[r["planted"], r["reads"]] for r in g["planted_null"]["table"]
+                                               if r["reads"] != r["planted"]]),
+    "a5g.inside_iff": ("a5_seed0", lambda g: g["planted_null"]["inside_iff_window"]),
+    "a5g.null_n": ("a5_seed0", lambda g: g["planted_null"]["n"]),
+    "a5g.null_maxz": ("a5_seed0", lambda g: g["planted_null"]["max_z"]),
+    "a5g.effect_step": ("a5_seed0", lambda g: g["planted_effect"]["reading"]["step"]),
+    "a5g.energy_tol": ("a5_seed0", lambda g: g["known_answer"]["energy_tol"]),
+    "a5g.pass": ("a5_seed0", lambda g: g["pass"]),
 }
 
 
@@ -361,6 +562,67 @@ CLAIMS: List[tuple] = [
      and k["a5.d10_n"] + len(k["a5.d10_unlocated"]) == k["a5.n"]),
     ("§5 previous-token's share above induction's on the seeds that say so",
      lambda k: k["a5.d10_prev_share"][0] > k["a5.d10_ind_share"][1]),
+    # unit 4: §1, §4.1, §5's E1c, §6, §7, the appendices
+    ("§4.1 seed 0's centred date is 1000 at every arm, E1c's step, nothing early",
+     lambda k: k["c3s.s0_dates"] == [1000] == [k["c3.step"]] and k["c3.early_max"] == 0
+     and k["c3.e1_dev"] == 0 and k["c3.lane"]["step"] == 1000),
+    ("§4.1 the tally: K1 = K2, one seed off, at one arm, at its own break",
+     lambda k: k["c3s.K1"] == k["c3s.K2"] == k["c3s.n"] - 1 and len(k["c3s.miss"]) == 1
+     and [o["seed"] for o in k["c3s.off"]] == k["c3s.miss"]
+     and k["c3s.off"][0]["step"] == k["a5.steps"][k["c3s.miss"][0] - 1]
+     and k["c3s.events"] == ["reproduced", "reproduced"] and k["c3s.n_cells"] == 4 * k["c3s.n"]),
+    ("§4.1 below half at the break on every seed but the tie",
+     lambda k: k["c3s.cfrac512"][1] <= 0.5 and k["c3s.cfrac256"][1] < 0.5
+     and sorted(k["a5.at256"]) == [3, 9]),
+    ("§4.1 the size label withdrawn: matched ratio near 1, frozen ratio under half",
+     lambda k: k["c3.label"] == "mostly removed" and k["c3.plateau_c"] < k["c3.plateau_u"] / 2
+     and 0.9 <= k["c3.matched_ratio"] <= 1.1),
+    ("§5 E1c joins the 1000 tie", lambda k: k["c3.step"] == _st(k, "E3")),
+    ("§6 R1 not shown under both, (a) higher at 512 and 143000, (b) as its controls",
+     lambda k: k["s2.r1_answer"] == {"a": "not shown", "b": "not shown"}
+     and k["s2.r1_lower"] == {"a": 0, "b": 0} and k["s2.r1a_higher"] == [512, 143000]
+     and k["s2.r1b_raw"] == ["as its controls"]),
+    ("§6 (b) is about a tenth of a head's norm; copying survives it, far above G2's",
+     lambda k: 0.05 < k["s2.b_edit"][0] and k["s2.b_edit"][1] < 0.15
+     and k["s2.r2b_raw"] == ["as its controls"] and k["s2.r2b_G"][0] > 2 * k["s2.g2_G"][1]),
+    ("§6 G3′ lower at 512, 1000, higher at 2000, never near monotone; G3 reaches 0",
+     lambda k: k["s2.g3p_raw"]["512"] == k["s2.g3p_raw"]["1000"] == "lower"
+     and k["s2.g3p_raw"]["2000"] == "higher" and k["s2.g3p_span"][0] > 20
+     and k["s2.g3_full"] == [0, 0] and k["a3.E2_bottom"] == 1000),
+    ("§7 3b: both sizes' dates, the label, the bands",
+     lambda k: k["c3b.u"] == {"70m": 256, "160m": 256} and k["c3b.c"] == {"70m": [1000], "160m": [1000]}
+     and k["c3b.label"] == "consistent with step and cumulative"
+     and k["c3b.band_c"]["instantaneous"][1] < 1000 and k["c3b.band_c70"]["instantaneous"][1] < 1000
+     and k["c3b.band_c"]["step"][0] <= 1000 <= k["c3b.band_c"]["step"][1]
+     and k["c3b.band_c"]["cumulative"][0] <= 1000 <= k["c3b.band_c"]["cumulative"][1]
+     and all(k["c3b.band_u"][s][0] <= 256 <= k["c3b.band_u"][s][1] for s in ("step", "cumulative"))
+     and k["c3b.ref"] == {"u": [256, 512], "c": [512, 1000]}),
+    ("§7 3c: E₁ in step's band only on every seed; the two stages; the other window splits",
+     lambda k: k["c3c.u_consistent"] == ["step"] and k["c3c.label"] == "consistent with step"
+     and all(k["c3c.pred"]["step"][0] <= b <= k["c3c.pred"]["step"][1] for b in k["c3c.breaks"])
+     and k["c3c.pred"]["cumulative"][0] <= 100 <= k["c3c.pred"]["cumulative"][1]
+     and k["c3c.pred"]["step"][0] <= 350 <= k["c3c.pred"]["step"][1]
+     and len(set(k["c3c.alt"])) > 1 and min(k["c3c.alt"]) <= k["c3c.pred"]["cumulative"][1]),
+    ("§7 3c: no centred date; fixed arms in the cumulative band; step via the null arm only",
+     lambda k: k["c3c.c_agree"] == 0
+     and k["c3c.pred_c"]["cumulative"][0] <= k["c3c.fixed"][0] <= k["c3c.fixed"][1] <= k["c3c.pred_c"]["cumulative"][1]
+     and k["c3c.null_only"] == 4 and k["c3c.early_max"] <= 1),
+    ("§7 GPT-2 small's LR: half by 100, peak about 4000", lambda k: k["gpt2.lr_half"] == 100
+     and 3900 <= k["gpt2.warmup_end"] <= 4100),
+    ("A: the null to 128; who leaves at 256 and 512",
+     lambda k: max(k["s1.rho_null_ov"], k["s1.rho_null_qk"]) < 0.002
+     and k["s1.leave_qk"] == {"qk_query": 256, "qk_key": 256}
+     and k["s1.leave_ov"] == {"ov_write": 256, "ov_cplx": 256, "ov_read": 512, "ov_neg": 512, "ov_pos": 512}),
+    ("A: OV write most concentrated at 512 and 1000, query from 2000, QK from 4000",
+     lambda k: all(k["s1.rho_ov"][s]["ov_write"] == min(list(k["s1.rho_ov"][s].values()) + list(k["s1.rho_qk"][s].values()))
+                   for s in ("512", "1000"))
+     and k["s1.rho_qk"]["2000"]["qk_query"] == min(list(k["s1.rho_ov"]["2000"].values()) + list(k["s1.rho_qk"]["2000"].values()))
+     and all(max(k["s1.rho_qk"][s].values()) < min(k["s1.rho_ov"][s].values()) for s in ("4000", "143000"))),
+    ("B: the gates passed as written",
+     lambda k: k["a5g.pass"] is True and k["a5g.inside_iff"] is True and k["a5g.planted_off"] == [[4000, 2000]]
+     and k["a5g.effect_step"] == 1000 and k["s0.energy_rel_diff"] < k["a5g.energy_tol"]
+     and k["a3.gate_effect_pass"] is True and k["s2.g1_labelled"] == 0 and k["s2.g2_lost"] == 4
+     and k["s2.g3_counts"] == 4),
 ]
 
 
@@ -465,6 +727,8 @@ FORMATS: Dict[str, Callable] = {
     "sci": _sci, "int": _num, "str": str,
     "list": lambda v: ", ".join(_num(x) for x in v),
     "and": _and,
+    "ands": lambda v: _andstr(list(v)),
+    "or": lambda v: _and(sorted(set(v))).replace(" and ", " or "),
     "range": lambda v: f"{_num(v[0])}–{_num(v[1])}",
     "range2": lambda v: f"{v[0]:.2f}–{v[1]:.2f}",
     "range3": lambda v: f"{v[0]:.3f}–{v[1]:.3f}",
@@ -579,12 +843,13 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     out.append(_save(fig, "fig1_break.svg"))
     plt.close(fig)
 
-    # Figure 2: A3's rows on seed 0, one lane each
-    rows = list(A3_ROWS)
+    # Figure 2: A3's rows on seed 0, one lane each, with the centred cloud (unit 3) beside the 1000 tie
+    lanes = dict(k["a3.lanes"], E1c=k["c3.lane"])
+    rows = list(A3_ROWS[:-1]) + ["E1c", A3_ROWS[-1]]
     fig, axs = plt.subplots(len(rows), 1, figsize=(7.2, 0.62 * len(rows) + 0.6), sharex=True)
     for ax, r in zip(axs, rows):
-        lane, meta = k["a3.lanes"][r], k["a3.rows"][r]
-        ax.plot(x, lane["y"], color=SERIES[2] if r == "E10" else SERIES[0], lw=1.4)
+        lane = lanes[r]
+        ax.plot(x, lane["y"], color={"E10": SERIES[2], "E1c": SERIES[1]}.get(r, SERIES[0]), lw=1.4)
         if lane["step"] is not None:
             ax.plot([x[steps.index(lane["step"])]], [lane["y"][steps.index(lane["step"])]], "o",
                     ms=5, color=INK, zorder=4)
@@ -626,6 +891,36 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
                   loc="upper center", bbox_to_anchor=(0.5, -0.02), bbox_transform=fig.transFigure,
                   ncol=3, fontsize=8)
     out.append(_save(fig, "fig3_ov.svg"))
+    plt.close(fig)
+
+    # Figure 4: the other schedules (§7): Pythia 70m / 160m against seed 0, and GPT-2 small's E₁
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 2.8))
+    ax = axs[0]
+    ax.plot(x, [v / k["s0.plateau"] for v in k["s0.V"]], color=SERIES[0], lw=2.0, label="410m, seed 0")
+    for (size, col) in (("70m", SERIES[1]), ("160m", SERIES[2])):
+        r = k["c3b.V"][size]
+        ax.plot(x, [v / r["pu"] for v in r["u"]], color=col, lw=1.4, label=f"{size}, E₁")
+        ax.plot(x, [v / r["pc"] for v in r["c"]], color=col, lw=1.2, ls=(0, (3, 2)), label=f"{size}, centred")
+    ax.axhline(0.5, color=INK, lw=0.8, ls=(0, (1, 2)))
+    _xaxis(ax, steps, warmup)
+    ax.set_xlabel("training step (log scale)")
+    ax.set_ylabel("V / plateau median")
+    ax.legend(loc="upper left", fontsize=7)
+    ax = axs[1]
+    g = k["c3c.grid"]
+    gx = _xpos(g)
+    for lo_hi, col in ((k["c3c.pred"]["cumulative"], SERIES[1]), (k["c3c.pred"]["step"], SERIES[0])):
+        ax.axvspan(*_xpos(lo_hi), color=col, alpha=0.10, lw=0)
+    for s in sorted(k["c3c.Vu"]):
+        ax.plot(gx, k["c3c.Vu"][s], color="#6f6d68", lw=1.0)
+    ticks = [s for s in g if s in (0, 20, 100, 350, 1000, 4000, 16000)]
+    ax.set_xticks(_xpos(ticks), [_tick(s) for s in ticks])
+    ax.set_xlim(-0.3, _xpos([g[-1]])[0] + 0.3)
+    ax.text(_xpos([k["c3c.pred"]["cumulative"][0]])[0], ax.get_ylim()[1] * 0.92, "cumulative", fontsize=7, color=MUTED)
+    ax.text(_xpos([k["c3c.pred"]["step"][0]])[0], ax.get_ylim()[1] * 0.80, "step", fontsize=7, color=MUTED)
+    ax.set_xlabel("GPT-2 small training step (log scale)")
+    ax.set_ylabel("V, layer-to-layer drops in E₁")
+    out.append(_save(fig, "fig4_schedules.svg"))
     plt.close(fig)
     return out
 
