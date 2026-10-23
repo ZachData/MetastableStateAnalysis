@@ -30,7 +30,7 @@
   - The draft's revision, second fresh-context read and LaTeX: ROADMAP C2p, after M2; posting is the user's — `trackC_writeup/status-C.md` "C5 unit 0"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `a644a1c4f5`
+- **Reviewed:** 2026-10-23 · body `3025fffc42`
 <!-- /phase-card -->
 
 ## Units
@@ -73,13 +73,16 @@ construction and P2 is the reading that can move; (2) C2's §8 novelty sentence 
 set per seed; 2508.03616 (Sun's 1000× rule relaxed for small models) and 410m's end-state 140–350×
 put the threshold at 100×; 2607.09279's random-dimension control is M2's.
 
-**The design** (`design-C5.md`, proposed): per seed, S = the coordinates at ≥ 100× at any state at
-the seed's 143000, written before any other step is read; each token's S-coordinates zeroed, then
-normalised; R0, the set's share of ‖m‖² per step and state (description); R0b, the coordinates'
-own first step at 100× (description); P1, the projected uncentred half-rise at 1e-4, 1e-3, 1e-2
-("kept" / "moved" / "mixed"); P2, the projected centred half-rise at unit 3s's four arms, re-gated
-on the projected counts; each against 20 random sets of |S| coordinates; tallies of 9 at ≥ 7.
-What each outcome changes in §4.1 is fixed in the design. **Blocked 104, the user's:** (a) as
+**The design** (`design-C5.md`, proposed; revised after `/challenge-pr` on #263, accept with
+changes, findings 1–5 taken, the budget point answered): per seed, S = the coordinates at ≥ 100×
+at any of states 0–23 at any grid step (pass 1, written before any projected energy); each
+token's S-coordinates zeroed, then normalised; R0, the set's share of ‖m‖² (level); R0′, its
+signed share of ‖m‖²'s falls at each violating transition (what V counts); R0b, the coordinates'
+own first step at 100×; P1, the projected uncentred half-rise at 1e-4, 1e-3, 1e-2 and a
+scale-matched τ_p, each against the unprojected date at the same arm; P2, the projected centred
+half-rise at unit 3s's four arms (re-gated), each against its own unprojected date; "moved" is
+specific only if a magnitude-matched set (the next |S| coordinates by ratio) and ≥ 18 of 20
+random sets keep their dates; tallies of 9 at ≥ 7. What each outcome changes in §4.1 is fixed. **Blocked 104, the user's:** (a) as
 designed, recommended; (b) seed 0 only with S1's six; (c) a per-step set; (d) no M2.
 
 ## C2 on one page (closed 2026-10-23)

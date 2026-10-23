@@ -493,3 +493,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-23 | C2 close-out, with #261's deps red fixed (#262), before /challenge-pr | 46 | 159k | 5.0M | 50k | #262 |
 | 2026-10-23 | C2 close-out (#262), after /challenge-pr (accept with changes; all 5 taken: four missed deferrals homed, C2p row, 103 re-priced with a second read, 57 claims, 'after the break') · subagents: general-purpose opus-5-5 3.7M | 60 | 179k | 7.4M | 54k | #262 |
 | 2026-10-23 | C5 opened on M2 (Blocked 103 (a)): scan and design, before /challenge-pr | 39 | 169k | 4.7M | 50k | #263 |
+| 2026-10-23 | C5 opened on M2 (#263), after /challenge-pr (accept with changes; findings 1-5 taken: R0', the scale-matched arm and magnitude-matched control, own-arm dates, the union set, S1's states; budget answered) · subagents: general-purpose opus-5-5 1.4M | 57 | 195k | 7.9M | 54k | #263 |
