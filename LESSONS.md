@@ -54,6 +54,7 @@ world moves, nobody updates the line, and the next session acts on it.
   `origin/main` was at #225 (14 PRs on): the main tree is never pulled, and the hook reads it.
   Caught by Start step 1's check; read `STATE.md` from the fresh branch instead. Fix not made
   (the hook could print `git show origin/main:STATE.md`); parked here as the cheapest one.
+  2026-10-23 (C5 unit 0): again, at #239 with `origin/main` at #262 (124 commits behind).
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
@@ -1571,6 +1572,14 @@ that "no suite" came from listing Hub branches when the checkpoints were tags. R
 design line that leans on a cited claim names the claim's mark; a draft states an [A] row only
 for what its abstract says and an [S] row never; a paper whose source is in `docs/readings/` is
 read there, not through a fetch; "not available" is checked against every way a host stores it.
+2026-10-23 (C5 unit 0): C5's scan, the first to search "massive activations" × "Pythia checkpoints",
+found 2510.06477 (Oct 2025): σ₁²/‖X‖²_F, the BOS norm and the sink read on Pythia-410m's training
+checkpoints, "emerge together around step 1k". C2's scans (2026-10-18, and unit 1's delta) searched
+for anisotropy and the energy along training, not for massive activations or sinks, so C2's draft
+closed with F9 saying published anisotropy along Pythia starts at step 10 000 and a §8 that does
+not cite it. Found before anything was posted; carried to C2p. Rule: a scan for a statistic also
+searches the named mechanisms a referee or fence offers for it (here §8's own "massive
+activations and attention sinks"), each × the model family × "training checkpoints".
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).
