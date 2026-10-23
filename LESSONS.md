@@ -2059,7 +2059,11 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   diff in the context of its unit, not the whole document a stranger reads. Rule: a document
   meant for outside readers gets a whole-document read with no project context before it is
   called complete, and the statistic's simplest expansion is written down before the paper says
-  what is new about it.
+  what is new about it. The answers then repeated a stale belief: the draft said the ‖m‖² term
+  was "not read", but unit 3s had read its layer profile on every seed (post hoc, in prose only,
+  never saved as a record). `/challenge-pr` on #260 caught it. Rule: before answering "not
+  measured", grep the phase's status file for the quantity; a post-hoc reading quoted in prose is
+  saved as a record the same unit, or it gets lost.
 
 ## 12. Deleted, then needed
 

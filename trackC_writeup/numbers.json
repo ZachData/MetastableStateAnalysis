@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "d32860b2df6d",
+ "code": "55a0c3811769",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -21,7 +21,9 @@
   "data:trackC/c2u3c/2026-10-22-run/reading.json": "76eefb1f26ab55fbb4dc5415a029a8eecc449deb3f210ee7418bfa92264c87c7",
   "data:trackS/s1/2026-10-21-u2-r1/r1.json": "c54df0db84f8a8a2e5a5191e4d6e401a764430687faa09ecc7d1349c0e0387a9",
   "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json": "f6985b2d6a263ccbd2d1ad2c61b327bfe32d339dd002d713aca120468ba942d2",
-  "repo:trackC_writeup/gpt2_small_lr_log.json": "03047566be381e2b2d537af585d6fcd6e2cb7d9e1fff4b6f55bfa1c80fa69530"
+  "repo:trackC_writeup/gpt2_small_lr_log.json": "03047566be381e2b2d537af585d6fcd6e2cb7d9e1fff4b6f55bfa1c80fa69530",
+  "data:trackC/c2u5/2026-10-23-mean/profile.json": "e866f21aaf3e6534352ded2485fc0187abd3749587368d12a20339668baa18b5",
+  "repo:trackC_writeup/p_a5_push_record.json": "e62c59da156fadb113f6fff4588fe85a85c86402b434bb25a1ef12ca7e06f34d"
  },
  "keys": {
   "cfg.train_iters": {
@@ -290,6 +292,79 @@
   "reg.falsifier_p": {
    "value": 0.04802149221409338,
    "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "reg.pushed_at": {
+   "value": "2026-10-20T18:38:17+00:00",
+   "record": "repo:trackC_writeup/p_a5_push_record.json"
+  },
+  "reg.pushed_kind": {
+   "value": "branch_creation",
+   "record": "repo:trackC_writeup/p_a5_push_record.json"
+  },
+  "reg.pushed_has_commit": {
+   "value": true,
+   "record": "repo:trackC_writeup/p_a5_push_record.json"
+  },
+  "mean.falls": {
+   "value": {
+    "128": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "256": [
+     2,
+     1,
+     1,
+     3,
+     1,
+     1,
+     1,
+     0,
+     1,
+     6
+    ],
+    "512": [
+     10,
+     8,
+     6,
+     9,
+     10,
+     9,
+     10,
+     6,
+     10,
+     8
+    ],
+    "1000": [
+     8,
+     5,
+     7,
+     6,
+     5,
+     7,
+     6,
+     5,
+     7,
+     9
+    ]
+   },
+   "record": "data:trackC/c2u5/2026-10-23-mean/profile.json"
+  },
+  "mean.frame_falls": {
+   "value": 0,
+   "record": "data:trackC/c2u5/2026-10-23-mean/profile.json"
+  },
+  "mean.n_trans": {
+   "value": 24,
+   "record": "data:trackC/c2u5/2026-10-23-mean/profile.json"
   },
   "a5.K": {
    "value": 9,

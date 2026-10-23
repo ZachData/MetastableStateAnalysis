@@ -55,7 +55,8 @@ the model's developmental order, and one negative result:
 3. **The timeline (§5).** On seed 0 the break comes after the token cloud's rank collapse (step 8)
    and the unigram minimum (128); the bigram minimum (256), the fall in the OV maps' attractive
    share (512) and the previous-token and induction heads (1000) are each within one grid step of
-   it, which we count as aligned, not ordered. **"Break, then induction, then the OV maps'
+   it, which we count as aligned, not ordered, since these are different kinds of quantity dated
+   by different statistics (item 2's two counts are one statistic, §4.1). **"Break, then induction, then the OV maps'
    repulsive phase" is not shown:** in either reading of that phase it ties the break or induction
    on this grid.
 4. **One intervention, no reversal (§6).** Making every head's OV map symmetric, or removing its
@@ -231,7 +232,11 @@ fixed before any seed's intermediate checkpoint was seen.
 
 The registration commit (`c2eb9a7`) is dated 2026-10-20, 18:36 UTC; the
 first seed record was written at 18:39 UTC the same day, 3
-minutes later. Both are checkable in the project's git history. Every seed's first and last
+minutes later. Both times are written by us: a commit's date is set by its author, and the
+record's time by our code. The earliest time outside our control is GitHub's activity log, which
+records the creation of the branch carrying the registration commit at
+18:38 UTC, before the first seed record's 18:39; the log keeps
+such events for about 90 days, so a copy is kept with the code. Every seed's first and last
 checkpoints were already on disk, and earlier work of ours had read the first.
 
 ## 4. The break, dated and reproduced
@@ -285,9 +290,10 @@ nor that trained weights resist the clustering the particle picture describes.
 
 E₁'s first-order term is ½‖m‖², the squared norm of the tokens' mean (§2.1), so a direction all
 tokens share, growing or shrinking from layer to layer, moves E₁ with no change in how the tokens
-sit relative to one another (§8). To remove it we subtract each prompt's mean token at each state
-before normalising, and count the drops in E₁ of the centred cloud, V_c, with the same half-rise.
-(Normalising after centring leaves a small mean, so the centred cloud is not exactly mean-free.)
+sit relative to one another (§8). To remove it, at each state we take the unit token cloud,
+subtract the prompt's mean unit token and normalise each row again, and count the drops in E₁ of
+this centred cloud, V_c, with the same half-rise. (Normalising after centring leaves a small mean,
+so the centred cloud is not exactly mean-free.)
 The rule was fixed before any centred number was read. Centring changes E₁'s scale, so V_c is
 counted at four tolerances: 10⁻⁴ and 3 × 10⁻⁴, fixed, and
 7.6 × 10⁻⁵ and 7.6 × 10⁻⁴, derived from the uncentred count's behaviour, the
@@ -308,8 +314,17 @@ tie.
 So, by the half-rise, the break at its step is not seen once the mean token is removed: the
 centred cloud has not yet broken at 256 or 512, and it breaks at 1000, the step where §5 dates
 the previous-token and induction heads. This is a statement about dates. It does not say the
-break is anisotropy, and how much of the uncentred count the mean carries is not measured (the
-‖m‖² term of §2.1, counted on its own, would measure it; we have not read it). The rule fixed for
+break is anisotropy. The two counts are one statistic on the same states, dated by one rule fixed
+before the run, which reads a later grid step as later; §5's convention, under which a one-step
+gap between rows of different kinds counts as aligned, is not applied to them.
+
+*The mean's term by layer* (read after the dates; description). Averaged over the prompts,
+‖m‖² never falls from one state to the next at step 128 on any of the ten seeds; at 512 it falls
+at 6–10 of its 24 transitions on every seed, and at 256 the two
+seeds whose break is at 256 have the most falls. At steps 128 to 1000 the two frame-changing
+transitions hold none of the falls (later in training they do). So E₁'s first-order term stops rising with depth at the break, on every seed. That is the
+same break seen through one term of E₁, not separate evidence, and how much of V it carries (how
+often a drop in E₁ comes with a fall in ‖m‖²) is not measured. The rule fixed for
 seed 0 before its run carried a size label, "mostly removed" (centred plateau
 20 against 57, at that rule's tolerance 10⁻³), and we
 withdraw it: at the matched tolerance 10⁻⁴ the centred plateau is 0.96 of the
@@ -369,7 +384,7 @@ Shaded: the warmup, to step 1430. E7 and E11 are not drawn.*
 (256) < E1 = E2 (512) < E3 = E4 = E1c = E10 (1000), with
 E8 between the two groups: dated from step 0 it ties the second (1000), dated from
 its peak the first (512). The rank collapse and the unigram minimum come before the break; the
-break falls with the OV fall, one grid step after the bigram minimum and one before the
+break falls with the OV fall, within one grid step of the bigram minimum and of the
 previous-token and induction heads, which the centred cloud's break joins (on the seeds too, at
 1000 on eight of nine). E1c was added after the other rows were read and its
 pairs are not counted below. The 11 pairs fixed before the reading are the break with
@@ -554,18 +569,19 @@ Billa [2026] finds task representations' RankMe collapsing from step 0 to steps 
 Pythia 160m and 410m and partly recovering by about step 1000. Cheng et al. [2024] follow
 intrinsic dimension by layer from step 512, and Razzhigaev et al. [2023] report intrinsic
 dimension rising and then falling over training. A non-monotone geometric arc along training
-is therefore not new. What is new here is the interaction energy of the particle picture, its
-monotonicity in depth read along a real training axis, the step at which it breaks, and that
-step's reproduction across seeds. The statistic itself is not new in kind: at β = 1, E₁'s
-first-order term is the anisotropy measure ‖m‖² (§2.1). What the particle picture adds is the
-prediction, monotone in depth, against which a drop is read.
+is therefore not new, and neither is the statistic in kind: at β = 1, E₁'s first-order term is the
+anisotropy measure ‖m‖² (§2.1). What is new here is reading the particle picture's prediction,
+E_β monotone in depth, along a real training axis: the step at which it breaks, that step's
+reproduction across seeds, and its place on the developmental order.
 
 **Anisotropy, outlier dimensions and sinks.** E_β is a moment of the tokens' Gram matrix, so it
 moves with anisotropy, the tokens' shared direction. Contextual representations are anisotropic
 in every layer [Ethayarajh 2019]; a few rogue dimensions dominate similarity
 measures between them [Timkey and van Schijndel 2021]; trained transformers' representations are
 dominated by one principal direction [Ben-Artzy and Schwartz 2026], and decoders' anisotropy
-peaks in their middle layers [Razzhigaev et al. 2023]. Large language models carry a few
+peaks in their middle layers [Razzhigaev et al. 2023]; §4.1's profile of ‖m‖², rising with depth
+before the break and falling at several transitions after it, is compatible with such a peak
+forming at the break, though we did not locate the peak on the seeds. Large language models carry a few
 activations of very large magnitude that act as fixed biases [Sun et al. 2024], and attention
 concentrates on initial tokens that act as sinks [Xiao et al. 2023]; either could carry the mean
 direction §4.1 removes, and neither is examined here beyond appendix A's note on the massive

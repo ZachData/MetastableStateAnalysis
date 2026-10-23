@@ -8,9 +8,9 @@ M2  E_1 = 1/2 + |m|^2 / 2 + sum_{k>=2} (1 / (2 n^2 k!)) sum_ij <x_i, x_j>^k exac
     first-order term of E_1 is half the squared mean norm (sympy series of exp; numerical on
     random unit clouds to 40 terms).
 M3  On the token-centred cloud (each row minus the mean, then re-normalised), the mean is not
-    zero in general: re-normalising after centring leaves a mean whose norm is set by how the
-    rows' centred lengths differ (numerical: nonzero on a random cloud, zero when every centred
-    row has the same length).
+    zero in general: re-normalising after centring weights each row by its centred length, so the
+    mean survives when those lengths differ (numerical: nonzero on a random cloud; zero on a cloud
+    made symmetric, each centred row paired with its negative, which is what is tested).
 
 NOT proved: that a drop in E_1 between two layers of a real model is driven by |m|^2 (the higher
 terms are not small: |<x_i, x_j>| <= 1 and the diagonal terms are 1); anything about which term

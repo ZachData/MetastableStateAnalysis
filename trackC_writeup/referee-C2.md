@@ -157,7 +157,7 @@ The authors normalise each token's residual-stream state onto the unit sphere. A
 ## The answers
 
 Each answer is checked on the rendered draft (`python -m trackC_writeup.numbers check`); five new
-sentence claims pin the new statements (45 claims, 201 keys). Section numbers are the revised
+sentence claims pin the new statements (46 claims, 201 keys). Section numbers are the revised
 draft's.
 
 ### Major points
@@ -214,8 +214,9 @@ point answered, which the table does). Options:
 - **(a) One more unit, 5b, readings from records already on disk** (no forward pass, no
   download), each rule fixed before its output: on the ten seeds, per-prompt V, the layer × step
   map of drops, V without the two frame-changing transitions, E₁'s net first-to-last change, and
-  the dates under a later plateau (M8, m27); on seed 0, the ‖m‖² term's own drop count from
-  unit 3's per-state mean cosine (M1, M2); figure 4's right panel normalised with the half line
+  the dates under a later plateau (M8, m27); how often a drop in E₁ comes with a fall in ‖m‖²,
+  per prompt and transition (M1, M2; *the ‖m‖² profile itself is now reported, after
+  `/challenge-pr` on #260*); figure 4's right panel normalised with the half line
   and the centred counts (m16). About one unit; it can change §3.2's and §4.1's wording, not a
   date already read.
 - **(b) Runs** (forward passes or downloads): E_β at several β in the uncentred frame (M1); the
@@ -233,3 +234,16 @@ point answered, which the table does). Options:
 post-C2 candidate. (a) is cheap and answers the referee's most direct question (what does the
 count look like, and is it the mean?) without new data; (b) and (c) are new experiments that
 change what the paper can claim and deserve their own design and budget.
+
+## After `/challenge-pr` on #260 (accept with changes; reviewed `6af0635`)
+
+All five findings taken. The counts in the answers above ("46 claims, 201 keys") are the
+pre-review figures; after these fixes the table has **207 keys from 22 records and 49 claims**.
+
+| # | finding | done |
+|---|---|---|
+| 1 | §1 (abstract, item 2) said the centred count breaks "later" at 1000 against 512 while item 3 called one-step gaps "aligned, not ordered"; §5 still said "one grid step after / before" | §4.1 and §1 item 3 say why the two differ: the two counts are one statistic on the same states dated by one rule fixed before the run, which reads grid order (unit 3s's K1); §5's convention is for rows of different kinds. §5's sentence now reads "within one grid step of" |
+| 2 | "We have not read" the ‖m‖² term was false: units 3 and 3s read the layer-mean cosine profile on all ten seeds (post hoc), which fixes ‖m‖² per prompt, and the answer to M1/M2 withheld it | reported in §4.1 as post-hoc description from a record: `c2_mean_profile.py` (no forward pass; recomputes the per-transition counts from the per-seed records, since the 3s record kept only one mean per step) writes `data/trackC/c2u5/2026-10-23-mean/profile.json`; keys `mean.falls`, `mean.frame_falls`. ‖m‖² never falls at 128 on any seed, falls at 6–10 of 24 transitions at 512 on every seed, and the two 256 seeds fall most at 256 (it reproduces the counts unit 3s quoted). The frame-changing transitions hold none of the falls at 128–1000 but do later (8000 on), so the sentence says "at steps 128 to 1000". §8 ties it to Razzhigaev et al.'s mid-depth peak as "compatible with", the peak not located. Blocked 102 (a)'s item becomes the co-occurrence of the two counts' drops |
+| 3 | "Checkable in the project's git history" overclaims: commit dates and the record's time are self-written; the reviewer found GitHub's earliest event at 18:45:17Z, after the first record | GitHub's activity log also holds an earlier event: the **branch creation at 18:38:17Z** with tip `c337961`, which contains `c2eb9a7`, 60 s before the first record's 18:39:17Z. §3.4 now says both of our times are self-written and quotes this one as the earliest outside timestamp; the events are copied to `trackC_writeup/p_a5_push_record.json` (GitHub keeps them about 90 days); keys `reg.pushed_at`, `reg.pushed_kind`, `reg.pushed_has_commit`, and a claim that the event is a branch creation carrying the commit, before the first record |
+| 4 | §4.1 described the side-by-side centring (centre raw, then normalise), not the scored one | "take the unit token cloud, subtract the prompt's mean unit token and normalise each row again" (`c2_aniso.centred`, as `e1c`) |
+| 5 | §8 called the energy new and the statistic "not new in kind" in adjacent sentences; the math check's M3 docstring named one zero-mean condition and tested another | §8: the statistic is not new in kind; what is new is reading the prediction along a training axis. M3's docstring names the symmetric cloud it tests |
