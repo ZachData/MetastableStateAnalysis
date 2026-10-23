@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "9c37cfc0dd6e",
+ "code": "c0f0713c94f3",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -23,7 +23,7 @@
   "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json": "f6985b2d6a263ccbd2d1ad2c61b327bfe32d339dd002d713aca120468ba942d2",
   "repo:trackC_writeup/gpt2_small_lr_log.json": "03047566be381e2b2d537af585d6fcd6e2cb7d9e1fff4b6f55bfa1c80fa69530",
   "data:trackC/c2u5/2026-10-23-mean/profile.json": "e866f21aaf3e6534352ded2485fc0187abd3749587368d12a20339668baa18b5",
-  "data:trackC/c2u5b/2026-10-23/readings.json": "342b83edb222999d905a77656473a430426b16113dad5c076e5ef4e0d8c4610d",
+  "data:trackC/c2u5b/2026-10-23/readings.json": "8a127eb75b6bb12f1e4f1fae9d4c64757381b6afae8bee26fa91609b7e23e9fa",
   "repo:trackC_writeup/p_a5_push_record.json": "e62c59da156fadb113f6fff4588fe85a85c86402b434bb25a1ef12ca7e06f34d"
  },
  "keys": {
@@ -2119,13 +2119,6 @@
    },
    "record": "data:trackC/c2u5b/2026-10-23/readings.json"
   },
-  "rd.mfall_all": {
-   "value": [
-    0.20238095238095238,
-    0.3488095238095238
-   ],
-   "record": "data:trackC/c2u5b/2026-10-23/readings.json"
-  },
   "rd.mfall_late": {
    "value": 0.9806547619047619,
    "record": "data:trackC/c2u5b/2026-10-23/readings.json"
@@ -2152,30 +2145,29 @@
    ],
    "record": "data:trackC/c2u5b/2026-10-23/readings.json"
   },
-  "rd.vr_dates": {
+  "rd.same_dir": {
    "value": [
-    512,
-    512,
-    512,
-    512,
-    512,
-    512,
-    512,
-    512,
-    512,
-    512
+    0.955952380952381,
+    1.0
    ],
    "record": "data:trackC/c2u5b/2026-10-23/readings.json"
   },
-  "rd.vr_inside": {
-   "value": 10,
+  "rd.m_any_fall": {
+   "value": [
+    0.9640287769784173,
+    1.0
+   ],
    "record": "data:trackC/c2u5b/2026-10-23/readings.json"
   },
-  "rd.vr_at256": {
-   "value": [
-    2,
-    1
-   ],
+  "rd.s_rises": {
+   "value": {
+    "16": 0.30416666666666664,
+    "32": 0.4297619047619048
+   },
+   "record": "data:trackC/c2u5b/2026-10-23/readings.json"
+  },
+  "rd.s_rises_min_from128": {
+   "value": 0.8048780487804879,
    "record": "data:trackC/c2u5b/2026-10-23/readings.json"
   },
   "a5.K": {

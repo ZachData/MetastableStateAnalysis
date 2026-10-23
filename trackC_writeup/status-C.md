@@ -16,7 +16,7 @@
   - Unit 3c, the warmup arm on Mistral GPT-2 small's 5 seeds (tier 1, description): its warmup is logarithmic, not linear (unit 1 corrected before the freeze), so the LR dose predicts far earlier dates than step. E₁'s break falls at 250 or 350 on all 5 seeds (step's band), and the frozen joint reads **"consistent with step"**, but it turns on two choices: the plateau window (against 1000–4000, "neither") and, on 4 of 5 seeds, a centred arm whose tolerance is one re-init unit (at the next, "neither"; `/challenge-pr` on #258). The centred arms disagree from 100 to 2000, so no centred date; E₁ rises in two stages (a first at 60–100, in the dose's band) that neither schedule maps whole. Blocked 101 decided (a), the user's: F1 stands — `trackC_writeup/status-C.md` "C2 unit 3c"
   - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 200 keys, 40 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved; `/challenge-pr` on #259: accept with changes, all 7 findings taken (a wrong-record key, §1's 3b exclusion, sizes compared across counts, the frozen-rule departure disclosed) — `trackC_writeup/status-C.md` "C2 unit 4"
   - Unit 5, the referee read (writing only): a fresh agent given only the draft recommended major revision (9 major, 27 minor points); every point answered (`referee-C2.md`): the draft gains an abstract, a title that says what is found, E₁'s exact series (its first-order term is ½‖m‖², the anisotropy; sympy check), the centred section's conclusion as a date statement, the introduction's order language matched to the timeline's, the band rule, (b)'s construction, arm (a)'s step-0 and 256 cells, ten references; after `/challenge-pr` on #260 the ‖m‖² profile (read post hoc at 3s, unsaved) reported from a record (never falls at 128, 6–10 of 24 transitions at 512 on every seed) and the registration's outside timestamp quoted (GitHub's branch creation, 60 s before the first record); 207 keys, 49 claims; no reading moved. The readings and runs it asks for are Blocked 102 — `trackC_writeup/status-C.md` "C2 unit 5"
-  - Unit 5b, the referee's readings from records (Blocked 102 (a), the user's; budget extended to 9 units + close-out; no forward pass; description): at every one of the 1224 E₁ drops from step 128 to 1000, on every seed, ‖m‖² falls, and its term ½Δ‖m‖² is more than half the drop at all but one, so at the break V counts the tokens' mean shrinking between layers (exact split, not a separation: R's higher terms carry the mean too). No date moves: the frame-changing transitions hold none of the drops at 256–1000, a later plateau moves only seed 9 (256 → 512), 65 of 70 per-prompt series break in the window; E₁ rises first-to-last on every series; figure 5 and appendix C; (b), (c) to ROADMAP C5, C4 — `trackC_writeup/status-C.md` "C2 unit 5b"
+  - Unit 5b, the referee's readings from records (Blocked 102 (a), the user's; budget extended to 9 units + close-out; no forward pass; description): by E₁ = ½ + ½‖m‖² + R, E₁ and ‖m‖² change in the same direction at 0.96–1.00 of transitions at every step, so V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, along all of training (post hoc, after `/challenge-pr` on #261 corrected the base rate); at each of the 1224 drops at 128–1000 ‖m‖² falls and its term is more than half of all but one (exact split, not a separation: R's higher terms carry the mean too). No date moves: the frame-changing transitions hold none of the drops at 256–1000, a later plateau moves only seed 9 (256 → 512), 65 of 70 per-prompt series break in the window; E₁ rises first-to-last on every series; figure 5 and appendix C; (b), (c) to ROADMAP C5, C4 — `trackC_writeup/status-C.md` "C2 unit 5b"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -26,7 +26,7 @@
   - Why ‖m‖² falls mid-stack at the break (massive activations, sinks), E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set (ROADMAP C5) and the schedule intervention (C4, the first post-C2 candidate): runs, not in C2 — `trackC_writeup/status-C.md` "C2 unit 5b"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `ff8d5b53d3`
+- **Reviewed:** 2026-10-23 · body `916c66b909`
 <!-- /phase-card -->
 
 ## Units
@@ -42,7 +42,7 @@
 | C2 3c. warmup arm (Mistral GPT-2 small) | **done 2026-10-22: frozen before output (`0623dd9`); the warmup is logarithmic (unit 1 corrected); the frozen joint "consistent with step", turning on the plateau window and a one-unit centred arm; no centred date; revised after `/challenge-pr` on #258; Blocked 101** | `c2_warmup.py`, design "Unit 3c"; "C2 unit 3c" below |
 | C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 200 keys, 40 claims; revised after `/challenge-pr` on #259; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
 | C2 5. the referee read | **done 2026-10-23: a fresh agent, the draft only: major revision, 9 major and 27 minor points, every one answered; the draft revised (abstract, title, E₁'s series, §4.1 as dates, ten references); Blocked 102** | `referee-C2.md`; "C2 unit 5" below |
-| C2 5b. the referee's readings from records (102 (a)) | **done 2026-10-23: frozen before output (`9629d78`); no forward pass; R1–R8 description; ‖m‖² falls at every E₁ drop from 128 to 1000 and its term is most of the drop at all but 1 of 1224; the frame transitions, a later plateau and per-prompt counts move no date; figure 5, figure 4's right panel normalised** | `c2_readings.py`, design "Unit 5b"; "C2 unit 5b" below |
+| C2 5b. the referee's readings from records (102 (a)) | **done 2026-10-23: frozen before output (`9629d78`); no forward pass; R1–R8 description; E₁ and ‖m‖² move together at ≥ 0.96 of transitions at every step (post hoc, after `/challenge-pr` on #261), so V nearly counts the mean's falls; the mean's term is more than half of all but 1 of the 1224 drops at 128–1000; the frame transitions, a later plateau and per-prompt counts move no date; figure 5, figure 4's right panel normalised** | `c2_readings.py`, design "Unit 5b"; "C2 unit 5b" below |
 | C2 close-out | next | — |
 
 ## C2 unit 5b, the referee's readings from records (2026-10-23)
@@ -65,29 +65,40 @@ found). Code `c2_readings.py` (record code hash in `readings.json`); record
 | R3 | without t = 1, 24 | the frame transitions hold 0 drops at 256, 512, 1000 and 0.05 at 143000; V over 2..23 dates every seed exactly as V (10 of 10 in the window) |
 | R4 | net change, state 0 → 24 | > 0 on all 70 series at every step (median 1.02 at 128, 0.54 at 512, 0.36 at 1000, 0.41 at 143000); state 1 → 23 on all 70 before 8000, 39–63 of 70 from 8000 |
 | R5 | plateau at 8000–32000 | plateaus 59–74; every seed in the window; only seed 9 moves, 256 → 512 |
-| R6 (a) | ‖m‖² at the drops | falls at every drop at 128, 256, 512, 1000 (1224 drops); at all transitions it falls at 0.20–0.35 (256–1000); later steps ≥ 0.98 of drops |
+| R6 (a) | ‖m‖² at the drops | falls at every drop at 128, 256, 512, 1000 (1224 drops); later steps ≥ 0.98 of drops. *(The frozen comparison, ‖m‖² falling at 0.20–0.35 of all transitions, is the wrong base rate: most transitions are rises of E₁. Withdrawn; R6′.)* |
+| R6′ (post hoc, `/challenge-pr` on #261 finding 1) | the base rate over every move | E₁ and ‖m‖² change in the same direction at 0.96–1.00 of transitions at every step; at any fall of E₁, ‖m‖² falls at 0.96–1.00; on rises, the mean's term is > ½ at 0.30 and 0.43 of them at steps 16 and 32, ≥ 0.80 from 128 on |
 | R6 (b) | s = ½Δ‖m‖² / ΔE₁ | > ½ at all but 1 of the 1224 drops at 128–1000 (median 0.81–1.02 by step at 256–1000; above 1 means R rose); later 0.91–0.99 of drops |
-| R6 (c) | V_R, drops of R alone | half-rise at 512 on all 10 seeds; on seeds 3 and 9 (V's break at 256) V_R is 2 and 1 there |
+| R6 (c) | V_R, drops of R alone | half-rise at 512 on all 10 seeds; on seeds 3 and 9 (V's break at 256) V_R is 2 and 1 there. **Not quoted in the draft** (finding 3): the tolerance is 10⁻³ of E₁ while R is 3–5 % of E₁ and shrinks along training, so on R's own scale it tightens with the step; no tolerance on R's scale is calibrated |
 | R7 | E₁ by depth at 128, 512, 1000, 143000 | figure 5, right (no number) |
 | R8 | figure 4's right panel | normalised per seed, half line, centred per arm (seed median), LR / peak |
 
 **What it changes in the draft.** §3.2: the frame transitions and per-prompt sentences are
 numbers; §3.3: the later plateau is read; §4.1: "how much of V it carries is not measured"
-replaced by R6; the abstract and §1 item 2 say the mean's term falls at every drop and is most of
-it; a new appendix C with figure 5; figure 4's caption. 23 records, 241 keys, 56 claims (7 new).
-**No date already read moved.**
+replaced by R6 and R6′; the abstract and §1 item 2 say E₁ and ‖m‖² move together at ≥ 0.96 of
+transitions at every step, so V nearly counts the mean's falls; a new appendix C with figure 5;
+figure 4's caption. 23 records, 241 keys, 56 claims (7 new). **No date already read moved.**
 
-**What it means.** The referee's M1 was right in substance: at the break, V counts the tokens'
-mean shrinking between layers. Every drop V counts at 128–1000 is one at which ‖m‖² falls, and
-the mean's term is more than half of it. The split is exact but not a separation: R's higher
-terms carry the mean too (R is not mean-free; the centred count is), so V_R breaking at 512 does
-not say a second, mean-free break exists there. With unit 3s's centred date (1000), the reading
-is: the break at 256–512 is the mean's norm starting to fall mid-stack; the tokens' arrangement
-around the mean starts to fall one grid step later.
+**What it means.** The referee's M1 was right, more strongly than the draft first said: at β = 1
+E₁ moves with ‖m‖² at 0.96–1.00 of transitions at *every* step, so V is close to a count of the
+layers at which the tokens' mean norm falls, along the whole training axis. The break is when
+those falls start, mid-stack; the drops at the break are no exception to the rule, not a special
+property of the break (first written as one, against the wrong base rate; `/challenge-pr` on
+#261). The split is exact but not a separation: R's higher terms carry the mean too (R is not
+mean-free; the centred count is). With unit 3s's centred date (1000): the mean's norm starts to
+fall mid-stack at 256–512; the tokens' arrangement around the mean starts to drop one grid step
+later.
 
 **Not established.** Why ‖m‖² falls mid-stack (massive activations, sinks: C5's projection is the
-run that could say); whether V_R's 512 is the mean through R or something else; anything on a
-prompt set not chosen by hand.
+run that could say); whether R has a break of its own (no tolerance on R's scale is calibrated);
+anything on a prompt set not chosen by hand.
+
+**After `/challenge-pr` on #261** (accept with changes; reviewed `9594b02`; all four taken): (1)
+R6's base rate replaced by R6′, added to `c2_readings.py` after R6's output and marked post hoc
+in the record (R1–R5 and R6's frozen fields unchanged on the re-run); the abstract, §1 item 2,
+§4.1, `PROJECT.md` §3.70 and the claim reworded. (2) The abstract's "most of" every drop is now
+the same-direction share; "all but one" stays in §1 and §4.1. (3) V_R's date taken out of the
+draft (above). (4) `readings.json` now records each seed's input sha256 and the code hash covers
+`a1a.py` and `a5_seeds.py`.
 
 **Parked:** none new. Still carried: 3c's Parked 0 and `lit-C2-unit1.md` Parked 1, to the
 close-out.

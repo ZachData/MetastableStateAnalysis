@@ -2071,6 +2071,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   the abstract changed. Rule: when the statistic has an exact decomposition and the records hold
   its parts, the split is computed in the unit that first reads the statistic, before any sentence
   says how much one part carries.
+- 2026-10-23, C2 unit 5b (found by `/challenge-pr` on #261, finding 1): the frozen reading R6 (a)
+  compared "‖m‖² falls at every drop" with the share of *all* transitions at which ‖m‖² falls
+  (0.20–0.35). Most transitions are rises of E₁, so the comparison was selection on the outcome:
+  E₁ and ‖m‖² move together at 0.96–1.00 of transitions at every step. The draft first presented
+  a property of E₁ everywhere along training as a property of the break. Rule: a conditional
+  share ("X at every Y") is set beside the same share conditioned on not-Y, or on Y's complement
+  of the same kind (here, rises), never beside the unconditional rate.
 
 ## 12. Deleted, then needed
 

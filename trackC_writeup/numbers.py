@@ -403,17 +403,18 @@ KEYS: Dict[str, tuple] = {
     "rd.late_moved": ("c5b", lambda r: [s for s in range(len(r["R5"]["dates"]))
                                         if r["R5"]["dates"][s] != r["per_seed"][str(s)]["break"]]),
     "rd.mfall_at": ("c5b", lambda r: {s: r["R6"]["by_step"][s]["m_fall_share_at_drops"] for s in C5B_EARLY}),
-    "rd.mfall_all": ("c5b", lambda r: _span(r["R6"]["by_step"][s]["m_fall_share_all"] for s in C5B_EARLY[1:])),
     "rd.mfall_late": ("c5b", lambda r: min(r["R6"]["by_step"][s]["m_fall_share_at_drops"] for s in C5B_LATE)),
     "rd.drops_early": ("c5b", lambda r: sum(r["R6"]["by_step"][s]["drops"] for s in C5B_EARLY)),
     "rd.s_exc": ("c5b", _c5b_s_exc),
     "rd.s_median": ("c5b", lambda r: _span(r["R6"]["by_step"][s]["s_median"] for s in C5B_EARLY[1:])),
     "rd.s_late": ("c5b", lambda r: _span(r["R6"]["by_step"][s]["s_gt_half_share"] for s in C5B_LATE)),
-    "rd.vr_dates": ("c5b", lambda r: r["R6"]["V_R_dates"]),
-    "rd.vr_inside": ("c5b", lambda r: r["R6"]["V_R_inside"]),
-    "rd.vr_at256": ("c5b", lambda r: [r["per_seed"][str(s)]["R6"]["V_R"][GRID.index(256)]
-                                      for s in range(len(r["R6"]["V_R_dates"]))
-                                      if r["per_seed"][str(s)]["break"] == 256]),
+    # R6's base rate over every move (post hoc, `/challenge-pr` on #261 finding 1)
+    "rd.same_dir": ("c5b", lambda r: _span(v["same_direction_share"] for v in r["R6"]["by_step"].values())),
+    "rd.m_any_fall": ("c5b", lambda r: _span(v["m_fall_share_at_any_e_fall"] for v in r["R6"]["by_step"].values()
+                                             if v["m_fall_share_at_any_e_fall"] is not None)),
+    "rd.s_rises": ("c5b", lambda r: {s: r["R6"]["by_step"][s]["s_gt_half_share_rises"] for s in ("16", "32")}),
+    "rd.s_rises_min_from128": ("c5b", lambda r: min(r["R6"]["by_step"][s]["s_gt_half_share_rises"]
+                                                    for s in C5B_EARLY + C5B_LATE)),
     # the nine seeds (§4)
     "a5.K": ("a5_score", lambda s: s["K"]),
     "a5.n": ("a5_score", lambda s: s["n"]),
@@ -754,11 +755,13 @@ CLAIMS: List[tuple] = [
      and k["rd.net_inner_late"][1] < k["rd.net_n"]),
     ("§3.3 R5: under the later plateau every seed is in the window; only seed 9 moves, 256 to 512",
      lambda k: k["rd.late_inside"] == 10 and k["rd.late_moved"] == [9] and k["rd.late_dates"][9] == 512),
-    ("§4.1 R6: every drop at 128–1000 comes with a fall of ‖m‖², the base rate below half; the mean's term carries most of all but one",
-     lambda k: all(v == 1.0 for v in k["rd.mfall_at"].values()) and k["rd.mfall_all"][1] < 0.5
+    ("§4.1 R6: every drop at 128–1000 comes with a fall of ‖m‖²; the mean's term carries more than half of all but one",
+     lambda k: all(v == 1.0 for v in k["rd.mfall_at"].values())
      and k["rd.s_exc"] == 1 and k["rd.s_median"][0] > 0.5),
-    ("§4.1 R6 (c): V_R dates at 512 on all ten; on the 256 seeds it has at most 2 at 256",
-     lambda k: set(k["rd.vr_dates"]) == {512} and k["rd.vr_inside"] == 10 and max(k["rd.vr_at256"]) <= 2),
+    ("abstract, §1, §4.1 R6′: at every step E₁ and ‖m‖² move together at ≥ 0.95 of transitions; ‖m‖² falls at ≥ 0.95 of any fall",
+     lambda k: k["rd.same_dir"][0] > 0.95 and k["rd.m_any_fall"][0] > 0.95),
+    ("§4.1 R6′: the mean's term is not most of the rises at 16 and 32, but is at every step from 128",
+     lambda k: max(k["rd.s_rises"].values()) < 0.5 and k["rd.s_rises_min_from128"] > 0.5),
 ]
 
 

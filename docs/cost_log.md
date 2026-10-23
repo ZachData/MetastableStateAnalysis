@@ -488,3 +488,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-23 | C2 unit 5 (#260), after /challenge-pr (accept with changes; all 5 taken: §1's later/aligned, the ‖m‖² profile reported from a record, the registration's outside timestamp, the centring order, §8's novelty) · subagents: general-purpose opus-5-5 3.2M | 112 | 318k | 24.4M | 77k | #260 |
   Over 2× the running median: as the row before, plus the review's tokens, a new producer for the ‖m‖² profile and GitHub's activity log, in the same session
 | 2026-10-23 | C2 unit 5b, the referee's readings from records (#261), before /challenge-pr | 75 | 227k | 11.0M | 223k | #261 |
+| 2026-10-23 | C2 unit 5b (#261), after /challenge-pr (accept with changes; all 4 taken: R6's base rate (R6′, post hoc), the abstract's "most of", V_R out of the draft, input hashes) · subagents: general-purpose opus-5-5 1.8M | 99 | 266k | 17.0M | 229k | #261 |
+  Over 2× the running median (7.0M): the start hook's 50k plus STATE re-read from `origin/main` (the main tree lags), the draft's sections and `numbers.py` read to place 34 keys, and the review's fixes re-run in the same session

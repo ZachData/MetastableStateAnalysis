@@ -9,9 +9,10 @@ layer-to-layer drops in E₁ at 18 checkpoints of `pythia-410m` and of its nine 
 seeds, on seven prompts. The count is zero through step 128 on seed 0 and
 reaches half its early plateau at step 512; a prediction registered before the seeds'
 intermediate checkpoints were downloaded put each seed's break at 256 or 512, and it held on
-9 of 9. E₁'s first-order term is half the squared norm of the tokens' mean, and at
-every drop from step 128 to 1000 that term falls and is most of the drop. With each prompt's
-mean token removed, the count breaks later, at 1000 on
+9 of 9. E₁'s first-order term is half the squared norm of the tokens' mean, and E₁
+moves with it: at every checkpoint the two change in the same direction at 0.96
+or more of the layer-to-layer transitions, so the count is close to a count of the layers at
+which the mean's norm falls. With each prompt's mean token removed, the count breaks later, at 1000 on
 seed 0 and on eight of the nine seeds, the step at which the previous-token and
 induction heads are dated. Editing every head's OV map (its symmetric part, its rotation removed,
 or its step-128 map) does not undo the break. Every dated event falls inside the learning-rate
@@ -52,9 +53,10 @@ the model's developmental order, and one negative result:
    read: one grid step after the break on the seeds that break at 512, two on those that break at
    256. That is the step at which the previous-token and induction heads are dated. The two counts'
    sizes are not compared, only their dates. What the mean carries is read from E₁'s series
-   instead, after the dates: at each of the 1224 drops from step 128 to 1000, on
-   every seed, ‖m‖² falls, and its term is more than half the drop at all but
-   one.
+   instead, after the dates: at every checkpoint E₁ and ‖m‖² change in the same direction at
+   0.96 or more of the transitions, so V nearly counts the layers at which the
+   mean's norm falls, at the break (each of its 1224 drops from step 128 to
+   1000 is one) and everywhere else along training.
 3. **The timeline (§5).** On seed 0 the break comes after the token cloud's rank collapse (step 8)
    and the unigram minimum (128); the bigram minimum (256), the fall in the OV maps' attractive
    share (512) and the previous-token and induction heads (1000) are each within one grid step of
@@ -337,17 +339,21 @@ same break seen through one term of E₁, not separate evidence.
 
 *How much of V the mean's term carries* (read after the dates; description). Since E₁ = ½ +
 ½‖m‖² + R exactly, with R ≥ 0 the sum of the higher terms (§2.1; each is a squared norm), every
-drop splits as ΔE₁ = ½Δ‖m‖² + ΔR. From step 128 to 1000, on every seed and prompt, ‖m‖² falls at
-each of the 1224 drops, where it falls at only 0.20–0.35 of all
-transitions at 256–1000; and its term is more than half the drop at all but one
-of them (the median share is 0.81–1.02 by step; a share above 1 means R rose while
-the mean's term fell). Later in training the share is above half at 0.91–0.99 of the
-drops. So by this split the drops V counts at the break are, almost all of them, the tokens'
-mean shrinking from one layer to the next. The split is exact but it does not separate the mean
-from the rest: when the tokens share a direction every ⟨xᵢ,xⱼ⟩ is large, so R's higher terms
-carry the mean too, and R is not a mean-free energy (the centred cloud is). Counted alone at the
-same tolerance, the drops of R have their half-rise at 512 on all ten seeds; on
-the two seeds that break at 256 they number 2 and 1 there.
+change splits as ΔE₁ = ½Δ‖m‖² + ΔR. The two terms move together almost always, and not only at
+the break: at every checkpoint, on the ten seeds and seven prompts, E₁ and ‖m‖² change in the
+same direction at 0.96–1.00 of the transitions, and whenever E₁ falls by any
+amount ‖m‖² falls at 0.96–1.00 of them. So V, at β = 1, is close to a count of
+the layers at which the tokens' mean norm falls, at every step of training; the drops at the
+break are no exception (‖m‖² falls at each of the 1224 drops from step 128 to
+1000, and its term is more than half the drop at all but one, the median share
+0.81–1.02 by step; a share above 1 means R rose while the mean's term fell). The
+mean's term is not always most of E₁'s change: on the rises at steps 16 and 32 it is more than
+half at only 0.30 and 0.43 of them (from step 128 on, at most
+rises). The split is exact but it does not separate the mean from the rest: when the tokens share
+a direction every ⟨xᵢ,xⱼ⟩ is large, so R's higher terms carry the mean too, and R is not a
+mean-free energy (the centred cloud is). (Comparing these against R's own count of drops would
+need a tolerance on R's scale, which shrinks along training, and none is calibrated; it is not
+read.)
 
 The rule fixed for
 seed 0 before its run carried a size label, "mostly removed" (centred plateau

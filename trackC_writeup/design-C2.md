@@ -456,6 +456,13 @@ mean); the centred count (unit 3s) is the mean-free one.
 **Exit:** every reading above in a record (`data/trackC/c2u5b/2026-10-23/readings.json`), quoted
 through `numbers.py` keys, the draft and figures re-rendered, `check` passing.
 
+**Added after `/challenge-pr` on #261 (post hoc, after R6's output).** R6 (a)'s comparison, the
+share of *all* transitions at which ‖m‖² falls, is the wrong base rate (most transitions are
+rises of E₁); R6′ adds, per step, the share of transitions at which E₁ and ‖m‖² change in the
+same direction, the share of any fall of E₁ at which ‖m‖² falls, and s > ½ over all moves and
+over rises. R6 (c)'s V_R stays in the record but out of the draft: its tolerance is 10⁻³ of E₁,
+not of R, which tightens on R's scale along training.
+
 ## Worth challenging (for the PR)
 
 - **No fresh literature scan in unit 0.** The C2 scan is 4 days old and was made for this row;

@@ -2895,16 +2895,19 @@ cheap and would resolve it.**
 
 ---
 
-## 3.70 At the energy break, the drops V counts are the tokens' mean shrinking between layers (2026-10-23)
+## 3.70 V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, at every step (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 unit 5b"** holds the numbers; this section says why it is
 project-wide.
 
 - E₁ = ½ + ½‖m‖² + R exactly, R ≥ 0 (`tools/math_checks/c2_energy_moments.py`). On the ten
-  410m seeds (unit 3's and 3s's records, no forward pass), ‖m‖² falls at every one of the 1224
-  E₁ drops from step 128 to 1000, and ½Δ‖m‖² is more than half of all but one of them; later in
-  training it is still most of the drop at 0.91–0.99 of drops by step. So V at β = 1, the statistic behind §3.62 and
-  §3.66–§3.69, is close to a count of falls in the mean's norm with depth (C2's referee, M1).
+  410m seeds (unit 3's and 3s's records, no forward pass), E₁ and ‖m‖² change in the same
+  direction at 0.96–1.00 of layer-to-layer transitions at every one of the 18 steps (post hoc,
+  after `/challenge-pr` on #261 found the first comparison used the wrong base rate). So V, the
+  statistic behind §3.62 and §3.66–§3.69, is close to a count of falls in the mean's norm with
+  depth along all of training (C2's referee, M1); the break dates when those falls start. At
+  the break's 1224 drops (128–1000) ‖m‖² falls at every one and ½Δ‖m‖² is more than half of all
+  but one.
 - The split is exact but not a separation (R's higher terms carry the mean), so it does not say
   the mean *causes* the break; the token-centred count (§3.66, §3.67) is the mean-free reading and
   breaks one grid step later. Which coordinates carry ‖m‖² (massive activations, sinks) is a run

@@ -45,9 +45,18 @@ DEPTH_STEPS = (128, 512, 1000, 143000)      # R7
 
 def code_sha() -> str:
     h = hashlib.sha256()
-    for f in ("trackC_writeup/c2_readings.py", "trackC_writeup/c2_seeds.py", "trackA_force/a3.py"):
+    for f in ("trackC_writeup/c2_readings.py", "trackC_writeup/c2_seeds.py", "trackA_force/a3.py",
+              "trackA_force/a1a.py", "trackA_force/a5_seeds.py"):
         h.update((REPO / f).read_bytes())
     return h.hexdigest()[:12]
+
+
+def inputs_sha(d) -> str:
+    """sha256 over one seed's record files, in name order (`/challenge-pr` on #261, finding 4)."""
+    h = hashlib.sha256()
+    for f in sorted(d.glob("step*_*.json")):
+        h.update(f.name.encode() + f.read_bytes())
+    return h.hexdigest()
 
 
 # ---------------------------------------------------------------- pure
@@ -82,7 +91,11 @@ def one_series(r: dict) -> dict:
     de, dm, dr = np.diff(e), 0.5 * np.diff(m), np.diff(rest)
     return {"d": d, "net": float((e[-1] - e[0]) / e[0]), "net_inner": float((e[23] - e[1]) / e[1]),
             "m_fall": dm < 0, "s": np.where(d, dm / np.where(d, de, 1.0), np.nan),
-            "r_drop": (-dr / np.maximum(np.abs(e[:-1]), 1e-12)) > REL_TOL, "e": e}
+            "r_drop": (-dr / np.maximum(np.abs(e[:-1]), 1e-12)) > REL_TOL, "e": e,
+            # R6′, added after `/challenge-pr` on #261 (post hoc): the base rate over all moves
+            "same": np.sign(de) == np.sign(dm), "e_fall": de < 0,
+            "move": np.abs(de) / np.maximum(np.abs(e[:-1]), 1e-12) > REL_TOL,
+            "s_all": dm / np.where(de == 0, np.nan, de)}
 
 
 def a5_v(seed: int) -> List[float]:
@@ -111,6 +124,8 @@ def main() -> int:
     per_seed: Dict[str, dict] = {}
     drop_map = np.zeros((N_T, len(STEPS)), int)
     pooled = {st: {"drops": 0, "frame": 0, "m_fall_at": 0, "m_fall_all": 0, "trans": 0, "s": [],
+                   "same": 0, "e_fall": 0, "m_fall_e_fall": 0, "moves": 0, "s_gt_half_moves": 0,
+                   "rises": 0, "s_gt_half_rises": 0,
                    "net": [], "net_inner": []} for st in STEPS}
     depth = {}
     for seed in SEEDS:
@@ -134,6 +149,15 @@ def main() -> int:
                 q["m_fall_all"] += int(x["m_fall"].sum())
                 q["trans"] += N_T
                 q["s"] += x["s"][x["d"]].tolist()
+                big = x["s_all"] > 0.5
+                rise = x["move"] & ~x["d"]
+                q["same"] += int(x["same"].sum())
+                q["e_fall"] += int(x["e_fall"].sum())
+                q["m_fall_e_fall"] += int((x["e_fall"] & x["m_fall"]).sum())
+                q["moves"] += int(x["move"].sum())
+                q["s_gt_half_moves"] += int((x["move"] & big).sum())
+                q["rises"] += int(rise.sum())
+                q["s_gt_half_rises"] += int((rise & big).sum())
                 q["net"].append(x["net"])
                 q["net_inner"].append(x["net_inner"])
         at = [ser[(brk, p)] for p in V1]
@@ -165,7 +189,11 @@ def main() -> int:
             "s_median": (float(np.median(s)) if len(s) else None),
             "net_positive": int(sum(x > 0 for x in q["net"])), "net_median": float(np.median(q["net"])),
             "net_inner_positive": int(sum(x > 0 for x in q["net_inner"])),
-            "net_inner_median": float(np.median(q["net_inner"])), "series": len(q["net"])}
+            "net_inner_median": float(np.median(q["net_inner"])), "series": len(q["net"]),
+            "same_direction_share": _share(q["same"], q["trans"]),
+            "m_fall_share_at_any_e_fall": _share(q["m_fall_e_fall"], q["e_fall"]),
+            "moves": q["moves"], "s_gt_half_share_moves": _share(q["s_gt_half_moves"], q["moves"]),
+            "rises": q["rises"], "s_gt_half_share_rises": _share(q["s_gt_half_rises"], q["rises"])}
     map_read = {}
     for st in MAP_STEPS:
         col = drop_map[:, STEPS.index(st)]
@@ -176,7 +204,11 @@ def main() -> int:
     rec = {
         "code": code_sha(), "design": "trackC_writeup/design-C2.md \"Unit 5b\"",
         "inputs": {"seed0": str(C2U3) + "/records", "seeds1_9": "trackC/c2u3s/2026-10-22-run/seed<s>/records",
-                   "V_checked_against": [str(GATE0.relative_to(DATA)), A5_SEEDS + "/score.json"]},
+                   "V_checked_against": [str(GATE0.relative_to(DATA)), A5_SEEDS + "/score.json"],
+                   "sha256": {str(s): inputs_sha(DATA / C2U3 / "records" if s == 0 else RUN / f"seed{s}" / "records")
+                              for s in SEEDS}},
+        "post_hoc": "R6's same_direction, any-fall and moves/rises shares were added after `/challenge-pr` on #261 "
+                    "(finding 1), after R6's first output; description",
         "steps": list(STEPS), "prompts": list(V1), "window": list(WINDOW), "rel_tol": REL_TOL,
         "frame_t": [1, N_T], "late_plateau": list(LATE),
         "R1": {"series": len(r1_dates), "inside": sum(d in WINDOW for d in r1_dates),
@@ -194,7 +226,9 @@ def main() -> int:
                "inside": sum(_inside(per_seed[str(s)]["R5"]) for s in SEEDS)},
         "R6": {"by_step": {str(st): {k: by_step[str(st)][k] for k in
                                      ("drops", "m_fall_share_at_drops", "m_fall_share_all", "s_gt_half_share",
-                                      "s_median")} for st in STEPS},
+                                      "s_median", "same_direction_share", "m_fall_share_at_any_e_fall",
+                                      "moves", "s_gt_half_share_moves", "rises", "s_gt_half_share_rises")}
+                           for st in STEPS},
                "at_break": {str(s): {k: per_seed[str(s)]["R6"][k] for k in
                                      ("drops_at_break", "m_fall_share_at_break", "s_gt_half_at_break")}
                             for s in SEEDS},
