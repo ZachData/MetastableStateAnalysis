@@ -483,3 +483,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   Over 2× the running median (7.0M): six sections, two appendices and the references in one unit, with seven new records read into 95 keys; the 50k start hook (STATE plus the stale main-tree copy) and the records' structure dumps (137k of tool output) set the context early
 | 2026-10-22 | C2 unit 4 (#259), after /challenge-pr (accept with changes; all 7 taken: tier 3's figure test, a key from the wrong record, §1 over-reading 3b, sizes across counts, the frozen 3c rule's departure disclosed, E1c's tolerance, pointers for the span) · subagents: general-purpose opus-5-5 2.3M | 115 | 330k | 26.5M | 141k | #259 |
   Over 2× the running median: as the row before, plus the review's 2.3M and its seven fixes in the same session
+| 2026-10-23 | C2 unit 5, the referee read (#260), before /challenge-pr · subagents: general-purpose opus-5-5 842k | 78 | 271k | 14.4M | 71k | #260 |
+  Over 2× the running median (7.0M): the whole 7.6k-word draft and its source read once each to answer 36 points, the start hook's 50k (STATE twice: the main tree lags), and ~40 edits in one session
