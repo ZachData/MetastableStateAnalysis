@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "ee21527fe399",
+ "code": "d32860b2df6d",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -285,6 +285,10 @@
   },
   "reg.p0": {
    "value": "1/6",
+   "record": "data:trackA/a5/2026-10-20-u2/score.json"
+  },
+  "reg.falsifier_p": {
+   "value": 0.04802149221409338,
    "record": "data:trackA/a5/2026-10-20-u2/score.json"
   },
   "a5.K": {

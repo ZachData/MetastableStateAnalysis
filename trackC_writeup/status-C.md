@@ -15,16 +15,17 @@
   - Unit 3b, the LR-dose arm on `pythia-70m` and `pythia-160m` (tier 1, description; Blocked 99 (a), 100 (a)): both dates on both sizes, against three schedules' predictions on Pythia's grid. E₁'s break at 256 and the centred date at 1000 on both: **consistent with step and cumulative** (the same without 70m's fragile E₁ date), an LR level excluded on one seed per size; step against cumulative is not told apart on this grid, and size is confounded. F1 stands — `trackC_writeup/status-C.md` "C2 unit 3b"
   - Unit 3c, the warmup arm on Mistral GPT-2 small's 5 seeds (tier 1, description): its warmup is logarithmic, not linear (unit 1 corrected before the freeze), so the LR dose predicts far earlier dates than step. E₁'s break falls at 250 or 350 on all 5 seeds (step's band), and the frozen joint reads **"consistent with step"**, but it turns on two choices: the plateau window (against 1000–4000, "neither") and, on 4 of 5 seeds, a centred arm whose tolerance is one re-init unit (at the next, "neither"; `/challenge-pr` on #258). The centred arms disagree from 100 to 2000, so no centred date; E₁ rises in two stages (a first at 60–100, in the dose's band) that neither schedule maps whole. Blocked 101 decided (a), the user's: F1 stands — `trackC_writeup/status-C.md` "C2 unit 3c"
   - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 200 keys, 40 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved; `/challenge-pr` on #259: accept with changes, all 7 findings taken (a wrong-record key, §1's 3b exclusion, sizes compared across counts, the frozen-rule departure disclosed) — `trackC_writeup/status-C.md` "C2 unit 4"
+  - Unit 5, the referee read (writing only): a fresh agent given only the draft recommended major revision (9 major, 27 minor points); every point answered (`referee-C2.md`): the draft gains an abstract, a title that says what is found, E₁'s exact series (its first-order term is ½‖m‖², the anisotropy; sympy check), the centred section's conclusion as a date statement, the introduction's order language matched to the timeline's, the band rule, (b)'s construction, arm (a)'s step-0 and 256 cells, ten references; 201 keys, 45 claims; no reading moved. The readings and runs it asks for are Blocked 102 — `trackC_writeup/status-C.md` "C2 unit 5"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that could separate them, continued training from a pre-break checkpoint with a flat rate, is not in C2 — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - The draft's referee read (unit 5) — `trackC_writeup/status-C.md` "C2 unit 4"
+  - What the count looks like (per prompt, per layer, without the frame-changing transitions, at a later plateau) and how much of it is the mean's ‖m‖² term: readable from records on disk (Blocked 102 (a)); E_β at other β, component transplants, the small sizes' seeds and the schedule intervention are runs (102 (b), (c)) — `trackC_writeup/referee-C2.md` "Blocked 102"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `20d541b932`
+- **Reviewed:** 2026-10-23 · body `744673c3c9`
 <!-- /phase-card -->
 
 ## Units
@@ -39,7 +40,55 @@
 | C2 3b. LR-dose arm (70m, 160m) | **done 2026-10-22: 98 (c), 99 (a), 100 (a), the user's; frozen before output; "consistent with step and cumulative" (instantaneous excluded); F1 stands** | `c2_dose.py`, design "Unit 3b"; "C2 unit 3b" below |
 | C2 3c. warmup arm (Mistral GPT-2 small) | **done 2026-10-22: frozen before output (`0623dd9`); the warmup is logarithmic (unit 1 corrected); the frozen joint "consistent with step", turning on the plateau window and a one-unit centred arm; no centred date; revised after `/challenge-pr` on #258; Blocked 101** | `c2_warmup.py`, design "Unit 3c"; "C2 unit 3c" below |
 | C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 200 keys, 40 claims; revised after `/challenge-pr` on #259; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
-| C2 5, close-out | next: 5 (the referee read) | — |
+| C2 5. the referee read | **done 2026-10-23: a fresh agent, the draft only: major revision, 9 major and 27 minor points, every one answered; the draft revised (abstract, title, E₁'s series, §4.1 as dates, ten references); Blocked 102** | `referee-C2.md`; "C2 unit 5" below |
+| C2 close-out | next, after Blocked 102 | — |
+
+## C2 unit 5, the referee read (2026-10-23)
+
+Writing only; no run. The design's unit 5 is a fresh-context read of the whole draft as a
+reviewer would, answered point by point, then `/challenge-pr` on the unit's PR.
+
+**The read.** A fresh general-purpose agent (no conversation history) was given only
+`draft-C2.md` at `9840633` and its four figures, with a referee's brief and none of the
+project's reasoning. Report and answers: `trackC_writeup/referee-C2.md`. Recommendation **major
+revision**; the two reasons it gives: by the paper's own account the break is neither separated
+from the warmup nor attributed, and at β = 1 E₁ is close to a first-moment anisotropy statistic,
+so the framing oversells; and the experiments that would settle it are feasible and absent.
+
+**What changed in the draft** (each in the answers table with its point):
+
+| where | change |
+|---|---|
+| title, abstract | added; the title says what is found |
+| §2.1 | E₁ = ½ + ½‖m‖² + Σ_{k≥2}(1/2n²k!)Σᵢⱼ⟨xᵢ,xⱼ⟩ᵏ, exact, the higher terms not small (`tools/math_checks/c2_energy_moments.py`, 4 of 4; it does not prove which term moves at the break) |
+| §1, §4.1, §8 | the centred result as a date statement ("not seen once the mean is removed"; "does not say the break is anisotropy"); §8: the statistic is not new in kind, the prediction is what the picture adds |
+| §1 item 3 | one-step gaps "aligned, not ordered", as §5 counts them |
+| §3.4 | the window chosen after seed 0, its step at the right edge; the falsifier's level 0.048 (key `reg.falsifier_p`); times in UTC; the expected outcome stated |
+| §4, §5 | E₃.₅ differs from E₁ on seeds 3 and 9; the 11 pairs defined; no null for the aligned count; E5's climb back past its start (512–1000) and E3's fall after 1000 described |
+| §6 | (b)'s Schur construction; the controls' double matching; arm (a)'s step-0 (11, inside 0–17) and 256 (30, above 9–17) cells; G3 as a reach check; MLPs and other components never moved |
+| §7 | the band rule as `c2_dose.predicted` computes it; each band's model named; GPT-2's spacing and LR source; the tokens mapping |
+| figures | figure 1's legend names the seven grey seeds; figure 3's third panel retitled; captions for 2–4 say what is and is not drawn (unit 4's Parked 1, 70m's plateau of 6, closed in figure 4's caption) |
+| §8, references | ten papers the referee named (massive activations, sinks, anisotropy, rank collapse, warmup, sudden drops, induction formation), titles from the arXiv API, cited for their abstracts (`lit-C2-unit1.md` §7) |
+
+`numbers.py`: one key (`reg.falsifier_p`), formats `utc`, `v`, `span`, five claims (E₃.₅ against
+E₁ on the 256 seeds; E5's reversal; E3's peak; which lanes run below figure 2's cut; arm (a)'s two
+cells): 201 keys, 45 claims; `produce` needed no `--reread`.
+
+**Not done here, and why:** the readings the referee asks for that the records allow (per-prompt
+V, the layer × step map, the frame-changing transitions, the net change, a later plateau, the ‖m‖²
+count on seed 0, figure 4's right panel normalised) and the runs it asks for (other β, the
+massive coordinates removed, component transplants, the small sizes' seeds, a sampled prompt set,
+the schedule intervention) are past C2's budget: **Blocked 102**, the user's. The registration
+cannot be made public, nor the prompt texts given, without the release decision (Blocked 93).
+
+**Not established here:** anything new; whether the readings of 102 (a) change §3.2's or §4.1's
+wording.
+
+**Parked:** none new. Unit 4's Parked 1 closed (figure 4's caption). Still carried: 3c's Parked 0
+and `lit-C2-unit1.md` Parked 1, to the close-out.
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.numbers produce`, then `render`,
+`figures`, `check`; `python3 tools/math_checks/c2_energy_moments.py`.
 
 ## C2 unit 4, the rest of the draft (2026-10-22)
 

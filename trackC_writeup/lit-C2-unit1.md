@@ -139,6 +139,19 @@ under the log form), and 3c separates steps from the LR dose too; the table that
 
 The design's numbers stand: the same warmup, the same tokens a step, the peak LR the dose.
 
+## 7. Added at unit 5, from the referee read (m18) [A]
+
+Ten papers the fresh-context referee named, each read as its arXiv abstract (API, 2026-10-23) and
+cited in §8 only for what the abstract says: Ethayarajh 2019 (1909.00512, representations not
+isotropic in any layer), Timkey and van Schijndel 2021 (2109.04404, 1–3 rogue dimensions dominate
+similarity), Sun et al. 2024 (2402.17762, massive activations constant across inputs, acting as
+bias terms), Xiao et al. 2023 (2309.17453, attention sinks on initial tokens), Dong et al. 2021
+(2103.03404, pure attention loses rank), Noci et al. 2022 (2206.03126, rank collapse at
+initialisation hinders training), Liu et al. 2019 (1908.03265, warmup and the adaptive rate's
+variance), Kalra and Barkeshli 2024 (2406.09405, warmup and tolerating larger rates), Chen et al.
+2023 (2309.07311, abrupt syntactic attention structure with a steep loss drop, MLMs), Singh et
+al. 2024 (2404.07129, how induction heads form). None was read in full; none moves a reading.
+
 ## Parked
 
 1. **Mistral GPT-2 medium's checkpoints off the Hub** (why: medium has 410m's shape, 24 × 1024,

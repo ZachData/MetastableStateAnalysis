@@ -2049,6 +2049,17 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   was wrong, and no check looked at the "<". Rule: a rendered draft also checks what its sentences
   assert (orders, "every", "none", margins) against the same table (`numbers.CLAIMS`), and an
   order copied from a record is written with the date that placed each row.
+- 2026-10-23, C2 unit 5 (the fresh-context referee read, `trackC_writeup/referee-C2.md`): six
+  `/challenge-pr` rounds, each on one unit's diff, had passed the draft. A reader given only the
+  draft found 9 major and 27 minor points. Among them: E₁'s first-order term is exactly ½‖m‖², the
+  anisotropy the paper treats as a separate control, and no section said so. §1 called one-step
+  gaps "after/before" while §5 counted them "aligned". "Nine other measured changes" did not
+  match the table's rows. "The second energy agrees" hid that it differs on 2 of 9 seeds. Internal
+  labels (tier 1, A3, v1, G3′) were never defined. Each passed review because each reviewer saw a
+  diff in the context of its unit, not the whole document a stranger reads. Rule: a document
+  meant for outside readers gets a whole-document read with no project context before it is
+  called complete, and the statistic's simplest expansion is written down before the paper says
+  what is new about it.
 
 ## 12. Deleted, then needed
 
