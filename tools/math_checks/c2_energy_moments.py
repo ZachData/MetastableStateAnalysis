@@ -11,6 +11,10 @@ M3  On the token-centred cloud (each row minus the mean, then re-normalised), th
     zero in general: re-normalising after centring weights each row by its centred length, so the
     mean survives when those lengths differ (numerical: nonzero on a random cloud; zero on a cloud
     made symmetric, each centred row paired with its negative, which is what is tested).
+M4  sum_ij <x_i, x_j>^k = |sum_i x_i^(tensor k)|^2 for k = 2, 3 (sympy, symbolic rows), so every
+    higher term is >= 0 and R = E_1 - 1/2 - |m|^2 / 2 >= 0 (unit 5b's decomposition).
+M5  |m|^2 = (1 + (n - 1) cos) / n, cos the mean off-diagonal cosine (numerical; the records'
+    `cos` field).
 
 NOT proved: that a drop in E_1 between two layers of a real model is driven by |m|^2 (the higher
 terms are not small: |<x_i, x_j>| <= 1 and the diagonal terms are 1); anything about which term
@@ -73,6 +77,21 @@ V /= np.linalg.norm(V, axis=1, keepdims=True)
 m_sym = np.linalg.norm(V.mean(axis=0))
 record("M3 centring then re-normalising leaves a mean (nonzero in general, zero by symmetry)",
        m_c > 1e-3 and m_sym < 1e-12, f"|m_c| {m_c:.3f} on a random cloud; {m_sym:.1e} when symmetric")
+
+# M4 (unit 5b): each higher term is a squared norm, so R = E_1 - 1/2 - |m|^2/2 >= 0.
+for k in (2, 3):
+    lhs = sum(((X.row(i) * X.row(j).T)[0]) ** k for i in range(n) for j in range(n))
+    tens = [sum(sp.prod([X[i, a] for a in idx]) for i in range(n))
+            for idx in __import__("itertools").product(range(d), repeat=k)]
+    record(f"M4 sum_ij <x_i,x_j>^{k} = |sum_i x_i^(tensor {k})|^2",
+           sp.expand(lhs - sum(c**2 for c in tens)) == 0)
+
+# M5 (unit 5b): |m|^2 from the records' mean off-diagonal cosine, |m|^2 = (1 + (n - 1) cos) / n.
+U = rng.standard_normal((30, 8)) + 0.7
+U /= np.linalg.norm(U, axis=1, keepdims=True)
+G = U @ U.T
+cos = (G.sum() - 30) / (30 * 29)
+record("M5 |m|^2 = (1 + (n-1) cos) / n", abs(U.mean(axis=0) @ U.mean(axis=0) - (1 + 29 * cos) / 30) < 1e-12)
 
 print(f"\n{sum(results)} of {len(results)} passed")
 raise SystemExit(0 if all(results) else 1)
