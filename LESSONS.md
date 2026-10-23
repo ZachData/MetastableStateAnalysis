@@ -362,6 +362,13 @@ others wrong. `PROJECT.md` grew to 485 KB (~120k tokens) — too big to read, so
 it got skimmed, so errors survived. The update was a thing the user had to ask
 for ("update all the MD files"), and which files was never defined.
 
+2026-10-23: **C2's close-out claimed "every Parked item carried or dropped" and missed four.**
+The sweep grepped for "Parked"; three deferrals lived in `referee-C2.md`'s answers as "at the
+close-out" (m15, m19, m25), one as "C5 or C2's close-out" (M5), and `lit-C2-unit1.md` Parked 2
+had been sent to unit 3b, which never picked it up. Found by `/challenge-pr` on #262. Rule: a
+close-out sweeps for every deferral form (`grep -n "close-out\|carried to\|Parked"` over the
+phase's files) and checks that each item sent to a unit was closed there.
+
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
 point to it. Updating it is step 1 of the stop protocol, not a request.

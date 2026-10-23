@@ -6,6 +6,9 @@ Opened 2026-10-22 by `docs/ROADMAP.md` §9 row 6 (… → S1 → S2 → **C2's d
 Parked 1 and 3 are unit 1's). **Frozen 2026-10-22: Blocked 91–94 decided as recommended, left to Claude by the user ("Blocked 91–94: <your picks>"): 91 (a), 92 (i) and (iii) and (ii) if unit 1 finds a suite, 93 (a), 94 (a)** ("Decided 2026-10-22" below). Revised after `/challenge-pr` on #252 (accept with changes, findings 1–5 taken: the energy's sign, 92's LR-dose and continued-training options, L1's step-0 count, the tracked numbers table, the anisotropy rule). Unit 0
 (this) is writing only; nothing ran. Every reading C2 quotes is tier 1 on 410m except `P-A5`,
 the one adjudicated row (`claims/adjudications/P-A5.json`).
+**Closed 2026-10-23 at its exit** (9 units + close-out): `status-C.md` "C2 on one page (closed
+2026-10-23)". 93 (a)'s LaTeX conversion was not done at the close-out: it waits on Blocked 103
+(where to post), since the venue decides the format.
 
 ## What C2 is for
 
