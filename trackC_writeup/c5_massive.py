@@ -55,8 +55,8 @@ MIN_NORM = c.MIN_NORM
 P1_FIXED = (1e-4, 1e-3, 1e-2)                   # A5's D2 arms
 TAU_C = cs.TAU_ARMS                             # unit 3s's centred arms
 RAND_P2 = 7.58e-4                               # the B-matched arm: the random sets' P2 arm
-TAU_P: Optional[float] = None                   # 1e-3 × s_p / s_u at seed 0's 7000 (preflight)
-TAU_M: Optional[float] = None                   # 1e-3 × s_M / s_u, likewise
+TAU_P: Optional[float] = 1.15e-3                # 1e-3 × s_p / s_u at seed 0's 7000 (preflight, 3 s.f.)
+TAU_M: Optional[float] = 1.02e-3                # 1e-3 × s_M / s_u, likewise
 EARLY = c.EARLY
 SHARE_STEPS = (128, 256, 512, 1000)             # R0′
 KEPT = 7                                        # tally: ≥ 7 of 9
@@ -324,7 +324,7 @@ def select(a) -> int:
     out = Path(a.out)
     ka = known_answer_s1(out)
     print(f"S1's known answer at seed 0's 143000: met (max rel dev {ka['max_rel_dev']:.1e})", flush=True)
-    for seed in ALL_SEEDS:
+    for seed in a.seeds:
         f = _seed_dir(out, seed) / "set.json"
         if f.exists():
             continue
@@ -646,7 +646,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for cmd in ("pass1", "select", "preflight", "pass2", "read"):
         sp = sub.add_parser(cmd)
         sp.add_argument("--out", required=True)
-        if cmd in ("pass1", "pass2"):
+        if cmd in ("pass1", "select", "pass2"):
             sp.add_argument("--seeds", type=int, nargs="+", default=list(ALL_SEEDS))
     a = ap.parse_args(argv)
     return {"pass1": pass1, "select": select, "preflight": preflight, "pass2": pass2, "read": read}[a.cmd](a)

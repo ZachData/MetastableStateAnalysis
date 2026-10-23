@@ -104,6 +104,7 @@ What the table above leaves open, fixed in `trackC_writeup/c5_massive.py` before
 | P1's arms on the re-inits | the projected uncentred counts' re-init violation rates at 1e-4, 1e-3, 1e-2, τ_p, beside (A5's D2 arms were not gated either) |
 | unreadable | an unprojected centred arm unreadable on unit 3s's rule (seed 6 ties on one arm): that seed's P2 reads mixed, flagged |
 | R0′ | at a transition with \|Δ‖m‖²\| < 1e-12 the share is not taken (counted) |
+| **frozen by the preflight** (2026-10-23, before any pass-2 record) | seed 0's S = {130, 357, 966} (S1's known answer met, max deviation 0), M = {421, 550, 752}. At step 7000 s_u 0.0141, s_p 0.0161, s_M 0.0144: **τ_p = 1.15e-3, τ_M = 1.02e-3** (projection makes the relative changes larger there, not smaller). The gate passes at all four centred arms (re-init rate ≤ 0.016, B 0.46–0.94, A in S 0: its largest shift 7e-16, the projection's check). `tools/design_preflight` report sha256 `c308803892bf` refuses on its floor, as unit 3s's did: it prices an e-value this design never takes (dates only). Code `c91bfe321bda`; records `data/trackC/c5/2026-10-23-u1/preflight/` (main tree) |
 
 ## Decisions (each yours; recommendation first)
 
