@@ -2895,6 +2895,23 @@ cheap and would resolve it.**
 
 ---
 
+## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
+
+**`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
+section says why it is project-wide.
+
+- The project's first write-up: `trackC_writeup/draft-C2.md`, rendered from records by
+  `numbers.py` (23 records, 241 keys, 56 sentence claims checked in CI), read by a fresh-context
+  referee (major revision) and answered point by point. It reports a dated break in E₁'s
+  layer-monotonicity reproduced on 9 seeds (§3.62, the one registered reading), a second event in
+  the token-centred cloud one grid step later (§3.66, §3.67), and that V at β = 1 nearly counts
+  falls in the tokens' mean norm (§3.70).
+- It does not separate either date from the LR warmup (§3.68, §3.69); that run is ROADMAP C4,
+  and the referee's other runs are C5.
+- Where and whether it is posted is the user's (`STATE.md` Blocked 103).
+
+---
+
 ## 3.70 V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, at every step (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 unit 5b"** holds the numbers; this section says why it is

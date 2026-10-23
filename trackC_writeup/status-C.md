@@ -17,16 +17,18 @@
   - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 200 keys, 40 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved; `/challenge-pr` on #259: accept with changes, all 7 findings taken (a wrong-record key, §1's 3b exclusion, sizes compared across counts, the frozen-rule departure disclosed) — `trackC_writeup/status-C.md` "C2 unit 4"
   - Unit 5, the referee read (writing only): a fresh agent given only the draft recommended major revision (9 major, 27 minor points); every point answered (`referee-C2.md`): the draft gains an abstract, a title that says what is found, E₁'s exact series (its first-order term is ½‖m‖², the anisotropy; sympy check), the centred section's conclusion as a date statement, the introduction's order language matched to the timeline's, the band rule, (b)'s construction, arm (a)'s step-0 and 256 cells, ten references; after `/challenge-pr` on #260 the ‖m‖² profile (read post hoc at 3s, unsaved) reported from a record (never falls at 128, 6–10 of 24 transitions at 512 on every seed) and the registration's outside timestamp quoted (GitHub's branch creation, 60 s before the first record); 207 keys, 49 claims; no reading moved. The readings and runs it asks for are Blocked 102 — `trackC_writeup/status-C.md` "C2 unit 5"
   - Unit 5b, the referee's readings from records (Blocked 102 (a), the user's; budget extended to 9 units + close-out; no forward pass; description): by E₁ = ½ + ½‖m‖² + R, E₁ and ‖m‖² change in the same direction at 0.96–1.00 of transitions at every step, so V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, along all of training (post hoc, after `/challenge-pr` on #261 corrected the base rate); at each of the 1224 drops at 128–1000 ‖m‖² falls and its term is more than half of all but one (exact split, not a separation: R's higher terms carry the mean too). No date moves: the frame-changing transitions hold none of the drops at 256–1000, a later plateau moves only seed 9 (256 → 512), 65 of 70 per-prompt series break in the window; E₁ rises first-to-last on every series; figure 5 and appendix C; (b), (c) to ROADMAP C5, C4 — `trackC_writeup/status-C.md` "C2 unit 5b"
+  - **C2 closed 2026-10-23 at its exit** (9 units + close-out, as extended by Blocked 102 (a)): a complete draft, every number rendered from a record, a fresh-context referee read answered. It establishes a dated, reproduced break in E₁'s monotonicity (the registered seed count), a second event one grid step later in the token-centred cloud, and that V at β = 1 nearly counts falls in the tokens' mean norm; it does not separate either date from the LR warmup. Every Parked item carried (C4, C5, the next `numbers.py` edit) or dropped (GPT-2 medium); what happens to the draft is Blocked 103, the user's — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
-  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that could separate them, continued training from a pre-break checkpoint with a flat rate, is not in C2 — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - Why ‖m‖² falls mid-stack at the break (massive activations, sinks), E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set (ROADMAP C5) and the schedule intervention (C4, the first post-C2 candidate): runs, not in C2 — `trackC_writeup/status-C.md` "C2 unit 5b"
+  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
+  - Why ‖m‖² falls mid-stack at the break (massive activations, sinks), whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5 — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
+  - What happens to the draft (venue, LaTeX, a LessWrong post, the records' release): Blocked 103, the user's — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `ec82d16aea`
+- **Reviewed:** 2026-10-23 · body `dd10c893c9`
 <!-- /phase-card -->
 
 ## Units
@@ -43,7 +45,96 @@
 | C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 200 keys, 40 claims; revised after `/challenge-pr` on #259; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
 | C2 5. the referee read | **done 2026-10-23: a fresh agent, the draft only: major revision, 9 major and 27 minor points, every one answered; the draft revised (abstract, title, E₁'s series, §4.1 as dates, ten references); Blocked 102** | `referee-C2.md`; "C2 unit 5" below |
 | C2 5b. the referee's readings from records (102 (a)) | **done 2026-10-23: frozen before output (`9629d78`); no forward pass; R1–R8 description; E₁ and ‖m‖² move together at ≥ 0.96 of transitions at every step (post hoc, after `/challenge-pr` on #261), so V nearly counts the mean's falls; the mean's term is more than half of all but 1 of the 1224 drops at 128–1000; the frame transitions, a later plateau and per-prompt counts move no date; figure 5, figure 4's right panel normalised** | `c2_readings.py`, design "Unit 5b"; "C2 unit 5b" below |
-| C2 close-out | next | — |
+| C2 close-out | **done 2026-10-23: writing only; exit met at 9 units + close-out; every Parked item carried or dropped; where to post is Blocked 103** | "C2 on one page" below |
+
+## C2 on one page (closed 2026-10-23)
+
+**Asked** (`design-C2.md` "What C2 is for"): one paper on E_β (β = 1) read layer by layer along
+`pythia-410m`'s training: the break in its layer-monotonicity dated, reproduced on the 9
+PolyPythias seeds and laid on the developmental order, complete enough for the user to decide
+whether and where to post it. **Exit met** (budget extended on the record to 9 units + close-out
+by Blocked 102 (a); #252–#261 and this): every section of the outline written; every number
+rendered from a record by one command (`numbers.py`: 23 records, 241 keys, 56 sentence claims
+checked in `produce` and CI) and every figure (1–5) drawn by it; each fence F1–F9 beside the
+line it limits; a fresh-context referee read answered point by point (`referee-C2.md`). Writing
+only here. The draft: `trackC_writeup/draft-C2.md` (rendered from `draft-C2.src.md`).
+
+**Established** (exploratory except the registered seed count; 410m; v1's 7 prompts; numbers in
+the unit sections below and `numbers.json`):
+
+1. **The break is dated and is the recipe's.** V = 0 through step 128 on seed 0, half its plateau
+   at 512; `P-A5`, registered before the seeds' intermediate steps were downloaded, put each
+   seed's break at 256 or 512 and held on 9 of 9 (adjudicated by A5; F7 beside it).
+2. **A second event, one grid step later.** With each prompt's mean token removed, the count
+   breaks at 1000 on seed 0 and on 8 of 9 seeds, the step at which the previous-token and
+   induction heads are dated; at 512 the uncentred break is mostly the common direction's (unit
+   3; seeds, unit 3s). Dates only: no size comparison between the two counts is calibrated.
+3. **V at β = 1 nearly counts the layers where the tokens' mean norm falls.** E₁ = ½ + ½‖m‖² + R
+   exactly (R ≥ 0, sympy); E₁ and ‖m‖² change in the same direction at 0.96–1.00 of transitions
+   at every step, and the mean's term is more than half of all but 1 of the 1224 drops at
+   128–1000 (unit 5b). An exact split, not a separation; the referee's sharpest point (M1), so
+   §8 says the statistic is not new in kind.
+4. **The dates are robust to how V is read:** neither the frame-changing transitions, a later
+   plateau (one seed moves one step inside the window) nor per-prompt counts (65 of 70 series in
+   the window) move a date (unit 5b).
+5. **The schedule is not separated (F1 stands, Blocked 101 (a)).** On 70m and 160m (higher peak
+   LR, the same warmup) E₁ breaks at 256 and the centred count at 1000: consistent with step and
+   cumulative LR, an LR level excluded (3b). On Mistral GPT-2 small (a logarithmic warmup) E₁'s
+   larger rise falls at step's band, a first stage at the dose's; the frozen "consistent with
+   step" turns on the plateau window and one re-init unit; no centred date (3c).
+6. **Carried in and fenced:** A3's order (L3, with F2: "break, then induction, then the OV phase"
+   not shown) and S2's negative (L6, with F3: the break neither shown OV's nor shown not OV's).
+
+**Not established:** anything that separates the dates from the LR warmup (F1; the run is C4);
+why ‖m‖² falls mid-stack (massive activations, sinks; C5's projection); whether R breaks on its
+own (no tolerance on R's scale is calibrated); how much of the break each frame carries; E_β at
+other β; any causal statement about components (F6); a prompt set not chosen by hand; any rung
+but 410m for the registered claim; anything between 512 and 1000.
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 0. design | #252 | frozen; 91–94 as recommended (left to Claude) |
+| 1. reading | #253 | F5 worded, F9 narrowed, the GPT-2 small suite found (3c) |
+| 2. `numbers.py`, §3–§5, figures 1–3 | #254 | every number from a record, checked in CI |
+| 3. anisotropy control (seed 0) | #255 | "mostly removed" as frozen, a scale effect; centred date 1000 (Blocked 96) |
+| 3s. the centred count on the seeds | #256 | K1 = K2 = 8 of 9; the draft heads on two events (98 (c)) |
+| 3b. LR-dose arm (70m, 160m) | #257 | consistent with step and cumulative; F1 stands |
+| 3c. warmup arm (GPT-2 small) | #258 | "consistent with step", fragile; no centred date (101 (a)) |
+| 4. the rest of the draft | #259 | every section written; references from arXiv |
+| 5. referee read | #260 | major revision, 9 major and 27 minor, every one answered (Blocked 102) |
+| 5b. readings from records | #261 | V nearly counts the mean's falls; no date moves |
+| close-out | this | writing only |
+
+**Parked and open at close:**
+
+| item | fate |
+|---|---|
+| 3c's Parked 0 (a refusal in `c2_seeds.null_matched_tol` when the null's uncentred rate is 0) | carried to C4 (ROADMAP §8): it reads the centred count, so it derives a centred arm and adds the refusal before its freeze; C5 likewise if it runs first |
+| 3b's Parked 1 (PolyPythias' 70m and 160m seeds) | carried to C5, already there as the referee's M7 |
+| `lit-C2-unit1.md` Parked 1 (Mistral GPT-2 medium's checkpoints, by email) | dropped: it removes only 3c's shape confound in an arm that is description either way, and C4 varies the schedule inside one model, which is the test F1 needs |
+| unit 5b's R6 (c), whether R breaks on its own | carried to C5 beside M1 and M2: it needs a tolerance gated on R's own scale, and M2's projection changes R |
+| the referee's M1 (other β), M2, M6, M7, M8's sampled prompts; M3 | carried to C5 and C4 (Blocked 102 (b), (c)) |
+| `numbers.py`'s module docstring names figures 1–3 (5 exist) | carried to the next unit that edits `numbers.py`: the file's own hash is in `numbers.json`, so a docstring fix re-runs `produce` |
+| Blocked 93's remainder: where to post, a LessWrong post, the records' release, the LaTeX conversion | Blocked 103, the user's (below). *93 (a) put LaTeX at this close-out; it is held for 103, since a LessWrong post needs none and the venue decides the format* |
+
+**Blocked 103 (yours): what happens to the draft.** (a) **One more run first, then arXiv:** C5's
+M2 (the massive-activation coordinates projected out, V and the centred count recounted on seed
+0 and the seeds; cached checkpoints, about one unit), then the LaTeX conversion (one unit) and
+an arXiv preprint (cs.LG), the quoted records released beside it; C4 later, as its own paper or
+a v2. (b) arXiv now, as the draft stands; M2 and C4 later. (c) Hold the draft for C4, the
+schedule intervention (a new training harness, GPU-days; weeks), and post with F1 answered.
+(d) A LessWrong / Alignment Forum post first (updating Blog 1), arXiv later. **Recommendation:
+(a).** Unit 5b made ‖m‖² the paper's centre, and which coordinates carry it is the first
+question a reader of §4.1 asks; M2 is one unit on cached checkpoints and the mid-December target
+leaves room. (b) posts a §4.1 the next run could rewrite; (c) trades weeks for the one fence a
+reader will accept as stated; (d) is cheap and can follow any of them. Posting is public, so it
+is yours whichever is taken.
+
+**Re-run** (the draft from the tracked table, any checkout): `python -m trackC_writeup.numbers
+render`, `figures`, `check`; from the records: `METS_DATA=<main>/data python -m
+trackC_writeup.numbers produce` first.
 
 ## C2 unit 5b, the referee's readings from records (2026-10-23)
 
