@@ -2901,14 +2901,15 @@ cheap and would resolve it.**
 section says why it is project-wide.
 
 - The project's first write-up: `trackC_writeup/draft-C2.md`, rendered from records by
-  `numbers.py` (23 records, 241 keys, 56 sentence claims checked in CI), read by a fresh-context
+  `numbers.py` (23 records, 241 keys, 57 sentence claims checked in CI), read by a fresh-context
   referee (major revision) and answered point by point. It reports a dated break in E₁'s
   layer-monotonicity reproduced on 9 seeds (§3.62, the one registered reading), a second event in
   the token-centred cloud one grid step later (§3.66, §3.67), and that V at β = 1 nearly counts
   falls in the tokens' mean norm (§3.70).
 - It does not separate either date from the LR warmup (§3.68, §3.69); that run is ROADMAP C4,
   and the referee's other runs are C5.
-- Where and whether it is posted is the user's (`STATE.md` Blocked 103).
+- Where and whether it is posted is the user's (`STATE.md` Blocked 103); edits to the draft after
+  the close, a second fresh-context read among them, belong to ROADMAP C2p.
 
 ---
 
