@@ -855,6 +855,13 @@ the user asked why PR CI was so fast. The tests passed once run (770 passed,
 `ci.yml` on every push, the nightly step runs `!cancelled()`, `status.sh`
 falls back to the public API and exits 1 when it cannot see.
 
+2026-10-23: **#261 was red in the deps tier from its first push, through `/challenge-pr` and
+CodeRabbit.** Unit 5b added `fig5_count.svg`; `tests/test_trackC_figures.py` (marked `deps`)
+still listed four figures. `./scripts/check.sh` deselects `deps`, so it passed locally, and the
+user saw only "exit code 1". Fixed by adding the figure to the test. Rule: read `gh pr checks`
+before Stop step 9, and a unit that adds an output its `deps` tests enumerate runs
+`pytest -m deps` on those tests before pushing.
+
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋
 `CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection
