@@ -487,3 +487,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   Over 2× the running median (7.0M): the whole 7.6k-word draft and its source read once each to answer 36 points, the start hook's 50k (STATE twice: the main tree lags), and ~40 edits in one session
 | 2026-10-23 | C2 unit 5 (#260), after /challenge-pr (accept with changes; all 5 taken: §1's later/aligned, the ‖m‖² profile reported from a record, the registration's outside timestamp, the centring order, §8's novelty) · subagents: general-purpose opus-5-5 3.2M | 112 | 318k | 24.4M | 77k | #260 |
   Over 2× the running median: as the row before, plus the review's tokens, a new producer for the ‖m‖² profile and GitHub's activity log, in the same session
+| 2026-10-23 | C2 unit 5b, the referee's readings from records (#261), before /challenge-pr | 75 | 227k | 11.0M | 223k | #261 |

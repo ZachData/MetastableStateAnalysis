@@ -247,3 +247,18 @@ pre-review figures; after these fixes the table has **207 keys from 22 records a
 | 3 | "Checkable in the project's git history" overclaims: commit dates and the record's time are self-written; the reviewer found GitHub's earliest event at 18:45:17Z, after the first record | GitHub's activity log also holds an earlier event: the **branch creation at 18:38:17Z** with tip `c337961`, which contains `c2eb9a7`, 60 s before the first record's 18:39:17Z. §3.4 now says both of our times are self-written and quotes this one as the earliest outside timestamp; the events are copied to `trackC_writeup/p_a5_push_record.json` (GitHub keeps them about 90 days); keys `reg.pushed_at`, `reg.pushed_kind`, `reg.pushed_has_commit`, and a claim that the event is a branch creation carrying the commit, before the first record |
 | 4 | §4.1 described the side-by-side centring (centre raw, then normalise), not the scored one | "take the unit token cloud, subtract the prompt's mean unit token and normalise each row again" (`c2_aniso.centred`, as `e1c`) |
 | 5 | §8 called the energy new and the statistic "not new in kind" in adjacent sentences; the math check's M3 docstring named one zero-mean condition and tested another | §8: the statistic is not new in kind; what is new is reading the prediction along a training axis. M3's docstring names the symmetric cloud it tests |
+
+## Blocked 102 decided (a), and unit 5b's readings (2026-10-23)
+
+The user took (a): unit 5b, readings from records on disk, rules frozen before output
+(`design-C2.md` "Unit 5b", committed `9629d78`); budget extended on the record to 9 units +
+close-out. (b) and (c) are `docs/ROADMAP.md` rows C5 and C4. Numbers: `status-C.md` "C2 unit 5b".
+The points left open above now read:
+
+| point | was | now |
+|---|---|---|
+| M1, M2 (how much of V the mean carries) | "not measured" | **read** (R6): ‖m‖² falls at every one of the 1224 drops at 128–1000 and its term is more than half of all but one; V_R (R's drops alone) breaks at 512 on all ten. §4.1, the abstract, §1 item 2. The split is exact, not a separation (R carries the mean too). β, the massive-coordinate projection: C5 |
+| M5 (rows on the nine seeds, nulls, reversals) | carried | still carried: no record holds A3's other rows on the seeds; the aligned-pair null is a new statistic (C5 or C2's close-out names it as a limit) |
+| M8 (the layer × step map, E₁ by depth, per-prompt V, without the frame transitions, net change) | "readable from records" | **read** (R1–R4, R7): appendix C, figure 5, §3.2. No date moves. A sampled prompt set: C5 |
+| m16 (figure 4's right panel) | carried | **fixed** (R8): normalised, half line, centred arms, LR / peak |
+| m27 (a later plateau) | "not read here" | **read** (R5): every seed stays in the window; only seed 9 moves, 256 → 512. §3.3 |

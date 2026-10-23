@@ -2895,6 +2895,26 @@ cheap and would resolve it.**
 
 ---
 
+## 3.70 At the energy break, the drops V counts are the tokens' mean shrinking between layers (2026-10-23)
+
+**`trackC_writeup/status-C.md` "C2 unit 5b"** holds the numbers; this section says why it is
+project-wide.
+
+- E₁ = ½ + ½‖m‖² + R exactly, R ≥ 0 (`tools/math_checks/c2_energy_moments.py`). On the ten
+  410m seeds (unit 3's and 3s's records, no forward pass), ‖m‖² falls at every one of the 1224
+  E₁ drops from step 128 to 1000, and ½Δ‖m‖² is more than half of all but one of them; later in
+  training it is still most of the drop at 0.91–0.99 of drops by step. So V at β = 1, the statistic behind §3.62 and
+  §3.66–§3.69, is close to a count of falls in the mean's norm with depth (C2's referee, M1).
+- The split is exact but not a separation (R's higher terms carry the mean), so it does not say
+  the mean *causes* the break; the token-centred count (§3.66, §3.67) is the mean-free reading and
+  breaks one grid step later. Which coordinates carry ‖m‖² (massive activations, sinks) is a run
+  (ROADMAP C5).
+- None of the registered or read dates moves: the frame-changing transitions hold no drop at
+  256–1000, a later plateau moves one seed by one step inside the window, and 65 of 70 per-prompt
+  series break in the window.
+
+---
+
 ## 3.69 On GPT-2 small's 5 seeds (a log warmup), E₁'s larger rise falls at the update count's band, a smaller one at the LR dose's; the frozen "step" label is fragile; no centred date (2026-10-22)
 
 **`trackC_writeup/status-C.md` "C2 unit 3c"** holds the numbers; this section says why it is

@@ -2064,6 +2064,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   never saved as a record). `/challenge-pr` on #260 caught it. Rule: before answering "not
   measured", grep the phase's status file for the quantity; a post-hoc reading quoted in prose is
   saved as a record the same unit, or it gets lost.
+- 2026-10-23, C2 unit 5b (follow-on to the instance above): the share of each E₁ drop that the
+  mean's term carries was exact arithmetic on fields saved at unit 3 (`e1` and `cos` per state).
+  Four units of text said "not measured", and the referee read listed it as a run past budget.
+  One script with no forward pass read it: the mean's term is most of every drop at the break, and
+  the abstract changed. Rule: when the statistic has an exact decomposition and the records hold
+  its parts, the split is computed in the unit that first reads the statistic, before any sentence
+  says how much one part carries.
 
 ## 12. Deleted, then needed
 

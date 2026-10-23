@@ -16,16 +16,17 @@
   - Unit 3c, the warmup arm on Mistral GPT-2 small's 5 seeds (tier 1, description): its warmup is logarithmic, not linear (unit 1 corrected before the freeze), so the LR dose predicts far earlier dates than step. E₁'s break falls at 250 or 350 on all 5 seeds (step's band), and the frozen joint reads **"consistent with step"**, but it turns on two choices: the plateau window (against 1000–4000, "neither") and, on 4 of 5 seeds, a centred arm whose tolerance is one re-init unit (at the next, "neither"; `/challenge-pr` on #258). The centred arms disagree from 100 to 2000, so no centred date; E₁ rises in two stages (a first at 60–100, in the dose's band) that neither schedule maps whole. Blocked 101 decided (a), the user's: F1 stands — `trackC_writeup/status-C.md` "C2 unit 3c"
   - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 200 keys, 40 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved; `/challenge-pr` on #259: accept with changes, all 7 findings taken (a wrong-record key, §1's 3b exclusion, sizes compared across counts, the frozen-rule departure disclosed) — `trackC_writeup/status-C.md` "C2 unit 4"
   - Unit 5, the referee read (writing only): a fresh agent given only the draft recommended major revision (9 major, 27 minor points); every point answered (`referee-C2.md`): the draft gains an abstract, a title that says what is found, E₁'s exact series (its first-order term is ½‖m‖², the anisotropy; sympy check), the centred section's conclusion as a date statement, the introduction's order language matched to the timeline's, the band rule, (b)'s construction, arm (a)'s step-0 and 256 cells, ten references; after `/challenge-pr` on #260 the ‖m‖² profile (read post hoc at 3s, unsaved) reported from a record (never falls at 128, 6–10 of 24 transitions at 512 on every seed) and the registration's outside timestamp quoted (GitHub's branch creation, 60 s before the first record); 207 keys, 49 claims; no reading moved. The readings and runs it asks for are Blocked 102 — `trackC_writeup/status-C.md` "C2 unit 5"
+  - Unit 5b, the referee's readings from records (Blocked 102 (a), the user's; budget extended to 9 units + close-out; no forward pass; description): at every one of the 1224 E₁ drops from step 128 to 1000, on every seed, ‖m‖² falls, and its term ½Δ‖m‖² is more than half the drop at all but one, so at the break V counts the tokens' mean shrinking between layers (exact split, not a separation: R's higher terms carry the mean too). No date moves: the frame-changing transitions hold none of the drops at 256–1000, a later plateau moves only seed 9 (256 → 512), 65 of 70 per-prompt series break in the window; E₁ rises first-to-last on every series; figure 5 and appendix C; (b), (c) to ROADMAP C5, C4 — `trackC_writeup/status-C.md` "C2 unit 5b"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that could separate them, continued training from a pre-break checkpoint with a flat rate, is not in C2 — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - What the count looks like (per prompt, per layer, without the frame-changing transitions, at a later plateau) and how much of it is the mean's ‖m‖² term: readable from records on disk (Blocked 102 (a)); E_β at other β, component transplants, the small sizes' seeds and the schedule intervention are runs (102 (b), (c)) — `trackC_writeup/referee-C2.md` "Blocked 102"
+  - Why ‖m‖² falls mid-stack at the break (massive activations, sinks), E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set (ROADMAP C5) and the schedule intervention (C4, the first post-C2 candidate): runs, not in C2 — `trackC_writeup/status-C.md` "C2 unit 5b"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `95b02b94bd`
+- **Reviewed:** 2026-10-23 · body `ff8d5b53d3`
 <!-- /phase-card -->
 
 ## Units
@@ -41,7 +42,59 @@
 | C2 3c. warmup arm (Mistral GPT-2 small) | **done 2026-10-22: frozen before output (`0623dd9`); the warmup is logarithmic (unit 1 corrected); the frozen joint "consistent with step", turning on the plateau window and a one-unit centred arm; no centred date; revised after `/challenge-pr` on #258; Blocked 101** | `c2_warmup.py`, design "Unit 3c"; "C2 unit 3c" below |
 | C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 200 keys, 40 claims; revised after `/challenge-pr` on #259; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
 | C2 5. the referee read | **done 2026-10-23: a fresh agent, the draft only: major revision, 9 major and 27 minor points, every one answered; the draft revised (abstract, title, E₁'s series, §4.1 as dates, ten references); Blocked 102** | `referee-C2.md`; "C2 unit 5" below |
-| C2 close-out | next, after Blocked 102 | — |
+| C2 5b. the referee's readings from records (102 (a)) | **done 2026-10-23: frozen before output (`9629d78`); no forward pass; R1–R8 description; ‖m‖² falls at every E₁ drop from 128 to 1000 and its term is most of the drop at all but 1 of 1224; the frame transitions, a later plateau and per-prompt counts move no date; figure 5, figure 4's right panel normalised** | `c2_readings.py`, design "Unit 5b"; "C2 unit 5b" below |
+| C2 close-out | next | — |
+
+## C2 unit 5b, the referee's readings from records (2026-10-23)
+
+Blocked 102 decided (a), the user's: one more unit, readings from records already on disk, then
+the close-out; **the budget is extended on the record to 9 units + close-out**; (b) and (c) are
+ROADMAP rows C5 and C4 (C4 the first post-C2 candidate). The rules (R1–R8, all description) were
+frozen in `design-C2.md` "Unit 5b" and committed with the code (`9629d78`) before the first run.
+
+**Input.** Unit 3's (seed 0) and unit 3s's (seeds 1–9) records, `e1` and `cos` at the 25 states
+per step and prompt; each seed's V from them equals A5's at every step (the refusal check). E₁ =
+½ + ½‖m‖² + R with R ≥ 0 (math check M4, M5, 7 of 7; the code refuses on any R < −10⁻⁹, none
+found). Code `c2_readings.py` (record code hash in `readings.json`); record
+`data/trackC/c2u5b/2026-10-23/readings.json`.
+
+| # | reading | result (keys `rd.*` in `numbers.json`) |
+|---|---|---|
+| R1 | per-prompt V, each dated on its own plateau | 65 of 70 series in the window (32 at 256, 33 at 512); the other 5 are one prompt (Camus) at 1000 on five seeds; at each seed's break one prompt holds at most 0.17–0.24 of V (even split 0.14) |
+| R2 | the layer × step map | the median drop at transition 12 (256), 11 (512), 9 (1000); most at 10–13 at 256 and 512, at 5, 7, 10 at 1000; late in training a band at 20–24 (figure 5) |
+| R3 | without t = 1, 24 | the frame transitions hold 0 drops at 256, 512, 1000 and 0.05 at 143000; V over 2..23 dates every seed exactly as V (10 of 10 in the window) |
+| R4 | net change, state 0 → 24 | > 0 on all 70 series at every step (median 1.02 at 128, 0.54 at 512, 0.36 at 1000, 0.41 at 143000); state 1 → 23 on all 70 before 8000, 39–63 of 70 from 8000 |
+| R5 | plateau at 8000–32000 | plateaus 59–74; every seed in the window; only seed 9 moves, 256 → 512 |
+| R6 (a) | ‖m‖² at the drops | falls at every drop at 128, 256, 512, 1000 (1224 drops); at all transitions it falls at 0.20–0.35 (256–1000); later steps ≥ 0.98 of drops |
+| R6 (b) | s = ½Δ‖m‖² / ΔE₁ | > ½ at all but 1 of the 1224 drops at 128–1000 (median 0.81–1.02 by step at 256–1000; above 1 means R rose); later 0.91–0.99 of drops |
+| R6 (c) | V_R, drops of R alone | half-rise at 512 on all 10 seeds; on seeds 3 and 9 (V's break at 256) V_R is 2 and 1 there |
+| R7 | E₁ by depth at 128, 512, 1000, 143000 | figure 5, right (no number) |
+| R8 | figure 4's right panel | normalised per seed, half line, centred per arm (seed median), LR / peak |
+
+**What it changes in the draft.** §3.2: the frame transitions and per-prompt sentences are
+numbers; §3.3: the later plateau is read; §4.1: "how much of V it carries is not measured"
+replaced by R6; the abstract and §1 item 2 say the mean's term falls at every drop and is most of
+it; a new appendix C with figure 5; figure 4's caption. 23 records, 241 keys, 56 claims (7 new).
+**No date already read moved.**
+
+**What it means.** The referee's M1 was right in substance: at the break, V counts the tokens'
+mean shrinking between layers. Every drop V counts at 128–1000 is one at which ‖m‖² falls, and
+the mean's term is more than half of it. The split is exact but not a separation: R's higher
+terms carry the mean too (R is not mean-free; the centred count is), so V_R breaking at 512 does
+not say a second, mean-free break exists there. With unit 3s's centred date (1000), the reading
+is: the break at 256–512 is the mean's norm starting to fall mid-stack; the tokens' arrangement
+around the mean starts to fall one grid step later.
+
+**Not established.** Why ‖m‖² falls mid-stack (massive activations, sinks: C5's projection is the
+run that could say); whether V_R's 512 is the mean through R or something else; anything on a
+prompt set not chosen by hand.
+
+**Parked:** none new. Still carried: 3c's Parked 0 and `lit-C2-unit1.md` Parked 1, to the
+close-out.
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c2_readings`, then
+`python -m trackC_writeup.numbers produce`, `render`, `figures`, `check`;
+`python3 tools/math_checks/c2_energy_moments.py`.
 
 ## C2 unit 5, the referee read (2026-10-23)
 
