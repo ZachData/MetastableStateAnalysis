@@ -41,7 +41,7 @@ Each is written into the draft beside the line it limits, not only in a limits s
 
 | # | fence | why | source |
 |---|---|---|---|
-| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1); 3b (70m, 160m): consistent with step and cumulative LR, an LR level excluded, step against cumulative not told apart on the grid (`status-C.md` "C2 unit 3b") | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
+| F1 | Nothing separates a training event from the LR schedule: every dated row from 128 to 1000 sits inside the warmup (to about step 1430), and the seeds share it | the scan's named confound; 2509.23024 ties its own first phase to the warmup ([H], unit 1); 3b (70m, 160m): consistent with step and cumulative LR, an LR level excluded, step against cumulative not told apart on the grid (`status-C.md` "C2 unit 3b"); 3c (GPT-2 small, a log warmup): E₁'s larger rise at step's band, a first stage at the dose's, no centred date; the frozen "consistent with step" turns on the plateau window and one re-init unit, so whether it narrows F1 is Blocked 101 (`status-C.md` "C2 unit 3c") | `trackA_force/lit-C2.md` §3; A5 "Not established"; `lit-C2-unit1.md` §3 |
 | F2 | "Break, then induction, then the OV phase" is not shown, in either reading of the OV phase (its fall starts with the break; its bottom ties induction at 1000) | A3 reading 5 | A3 on one page |
 | F3 | The break is neither shown OV's nor shown not OV's (one OV-only edit with a known destination; V 29–61 against ≤ 7) | G3′'s reach | S2 on one page, "Parked and open at close" |
 | F4 | 410m only; v1's 7 prompts (the Pile's validation split for the n-gram rows); nothing between grid steps (no checkpoint between 512 and 1000) | the rung policy and the grid | `CLAUDE.md` "Name the family"; A3 "Not established" |
@@ -61,7 +61,7 @@ Each is written into the draft beside the line it limits, not only in a limits s
 | 4 | The break, dated and reproduced (figure 1: V by step, 10 seeds) | L1, L2; F1, F7 | drafted (unit 2) |
 | 5 | The timeline (figure 2: A3's rows by step; the table) | L3, L4; F1, F2 | drafted (unit 2) |
 | 6 | Is the break the OV maps'? (figure 3: S2's R1 and G3′ cells) | L6, L7; F3 | to write (unit 4; 94 (a)) |
-| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | after unit 3c (3, 3s, 3b done) |
+| 7 | What would separate the schedule from training, and the anisotropy control | F1, F9 | to write (unit 4; 3, 3s, 3b, 3c done) |
 | 8 | Related work | F8, F9 | drafted (unit 1, `draft-C2.md`) |
 | A | Appendix: the shared subspaces (L5) | L5 | to write (unit 4; 94 (a)) |
 | B | Appendix: the gates (A3's locator, A5's gate on seed 0, S2's G0–G3) and why each null is the one used | — | to write |
@@ -332,6 +332,88 @@ hashed in each size's directory). Refusals, each argued:
 repo (searched: `data/analysis` holds Phase 8's per-head readings of 70m, none an energy by
 step); nothing of either size was read before the freeze except the preflight's off-grid step 7000
 and re-inits.
+
+## Unit 3c: the warmup arm (frozen 2026-10-22, before any scored record)
+
+Code `trackC_writeup/c2_warmup.py`; pure tests `tests/test_trackC_warmup.py`; the predictions'
+check `tools/math_checks/c2_warmup_grid.py` (W1–W5, and what it does not prove); the logged LR
+`trackC_writeup/gpt2_small_lr_log.json`. The scored family is Stanford CRFM Mistral GPT-2 small's
+5 seeds (alias, battlestar, caprica, darkmatter, expanse) × the 35 tags of `GRID` × the 7 v1
+prompts (GPT-2's tokenizer, ≤ 512 tokens); 13 states, so 84 units a step. 410m enters only as its
+10 seeds' dates (`REF`, as 3b). Description throughout: model (12 × 768, 1/layer attention
+scaling), data (OpenWebText) and tokenizer all differ. Both dates primary (98 (c)).
+
+**The schedule is logarithmic, not linear (a correction to unit 1).** `lit-C2-unit1.md` §5 read
+the warmup as "4000 steps, linear" from the trainer config. Every seed's logged LR
+(`trainer_state.json` at `checkpoint-4100`) is 6e-4 · ln(n) / ln 4000 with n = t − K integer:
+DeepSpeed's log warmup, with K = 15–18 early fp16-overflow skips (W2: every logged LR from 50 to
+4000, all five seeds). At step 100 the LR is already 3.2e-4, half the peak. The batch is checked
+too: each seed's epoch count at 4100 gives 524 989 tokens a step against 512 × 1024 = 524 288
+(W2). So the dose schedules predict GPT-2's dates far earlier than step-locking does, and 3c can
+separate step from cumulative LR, which 3b could not.
+
+| item | fixed as | why |
+|---|---|---|
+| the schedules (`to_gpt2`) | **step**: t + K (equal updates applied); **cumulative**: equal summed LR (410m's p t² / 2W against GPT-2's p (n ln n − n + 1) / ln W); **instantaneous**: equal LR level (n = 4000^(t / 2860)); **fraction**: K + t · 4000 / 1430; **tokens**: 4 t | lit §5's four, plus instantaneous so 3c is read as 3b; W1, W3 |
+| 410m's dates (`REF`) | E₁'s break {256, 512}, centred {512, 1000}: 3b's union over 410m's 10 seeds and unit 3s's arms | the conservative band; 70m's and 160m's dates (3b) lie inside it |
+| a prediction | a GPT-2 grid date s stands for a crossing in (prev(s), s]; the GPT-2 grid steps whose interval meets a mapped 410m interval, the union over K = 15–18 (`predicted`) | where the skips fell in steps 1–50 is unknown; W5 checks it against a scan |
+| the grid | 0, 10, 20, 40–100 by 20, 150–600 by 50 (no 300), 700–1200 by 100, 1400–2000 by 200, 2400–4000 by 400, 6000, 8000, 12000, 16000; tags present on all five seeds (expanse lacks 30 and 300) | 50-step resolution where the schedules' bands meet (outcome table); 46 GB |
+| the plateau | median V over the grid steps in [4000, 16000] | 410m's 1000–4000 under tokens, the latest map; past every schedule's predicted date. Beside: the half-rise on [1000, 4000] (410m's window under step) |
+| unreadable | the plateau is 0, or V at step 0 or 10 is ≥ half of it | 92 (i)'s early check on the steps no schedule reaches (the earliest predicted crossing is at 16) |
+| per seed, per count | `half_rise` (D4 (a) on this grid); beside, the first step from which V stays ≥ half to 4000 (`sustained`) | one crossing on a dense grid can be a spike; the beside says so, it does not decide |
+| the centred arms | unit 3b's procedure on `alias`: null-matched and B-matched derived on 3 re-inits (HF's GPT-2 init, float16-rounded; their weight SDs set beside alias's step 0) and the off-grid step 20000, beside 1e-4 and 3e-4; each arm gated as 3b (re-init rate ≤ 5 %, plant B ≥ 0.4 at the smallest dose the uncentred count sees at 0.4, plant A at 0.5 ≤ 0.1); frozen into `TAU_ARMS`, the same arms on all five seeds | 3b's procedure transfers, not its numbers; one seed's preflight as 3s's |
+| the uncentred count | D2's 1e-3, as A5 and 3b; its preflight report cited | refuse rather than degrade on a new model |
+| the centred date | the dates of the gated, readable arms; a schedule is consistent if it predicts any of them | as 3b |
+| **the reading** (`joint`) | the schedules consistent with every readable date (5 seeds × 2 counts); all five → **"not told apart"**; none → **"neither"**; else **"consistent with …"**. Beside it, `with_3b`: the same less instantaneous (3b excluded it; on Pythia's sizes step, fraction and tokens are one prediction, 3b's "step") | one statistic, fixed before output |
+
+**What 3c can and cannot tell apart (the check's outcome table, fixed now).** Each GPT-2 date
+→ the schedules consistent with it (others: none):
+
+| count | dates |
+|---|---|
+| E₁'s break | 20 inst.; 40 inst., cum.; 60–100 cum.; 150 cum., step; 200–350 step; 400–500 step, frac.; 550 step, frac., tokens; 600–1600 frac., tokens; 1800–2400 tokens; else none |
+| centred | 20–40 inst.; 60–250 cum.; 350 cum., step; 400–700 step; 800–1000 step, frac.; 1100 step, frac., tokens; 1200–3200 frac., tokens; 3600–4000 tokens; else none |
+
+So 3c separates step from cumulative LR (E₁ at 200–350 or ≤ 100; centred at 400–700 or ≤ 250),
+and both from {fraction, tokens} (E₁ ≥ 600, centred ≥ 1200). It cannot split fraction from tokens
+(their bands overlap at 600–1600 and 1200–3200). With one seed's date outside every band the joint
+reads "neither": 5 seeds make that more likely than one; each seed's reading is reported.
+
+**What each outcome changes (fixed now).** "Consistent with step" (alone, or with fraction from
+E₁ at 400–500): §7 says the dates track the updates applied across a 4× change in tokens a step
+and a log warmup; F1 narrows to "a count of updates, not the LR's dose or shape, nor the tokens
+seen", description across models. Cumulative without step: the dates track the LR dose; F1
+narrows to "a dose". Fraction and / or tokens without step or cumulative: the warmup's timing or
+the data seen; F1 narrows to that pair. "Neither": the timing does not carry over to GPT-2 small
+under any of the five; F1 stands, the model and data named. "Not told apart" or unreadable: F1
+stands as written. Combined with 3b, `with_3b` is quoted.
+
+**The preflight** (`data/trackC/c2u3c/2026-10-22-preflight/`, main tree; code `15217ea3e56d`
+with `TAU_ARMS` unset; the frozen code refuses unless a re-run derives the same arms). On alias:
+3 re-inits (weight SDs 0.997–1.003 of step 0's, every matrix) and step 20000; 252 re-init and 84
+trained units. Plant B's dose is 0.5 (the uncentred count turns 0.67 at it; 0.25 does not reach
+0.4), as 70m's.
+
+| arm | re-init centred rate | B share | A at 0.5 | trained base rate | gate |
+|---|---|---|---|---|---|
+| 2.45e-3 null-matched | 0.004 | 0.83 | 0.09 | 0.36 | pass |
+| 1e-4 | 0.032 | 1.00 | 0 | 0.64 | pass |
+| 3e-4 | 0.020 | 1.00 | 0 | 0.63 | pass |
+| 3.42e-3 B-matched | 0 | 0.66 | 0.02 | 0.27 | pass |
+
+Uncentred at 1e-3: re-init rate 0, trained base rate 0.50, B at 0.5 0.67, A at 0.5 0.98 (the
+common direction is what it sees, as on 410m). The null-matched arm sits 25× above Pythia's
+(7.55e-5 to 1.25e-4) because the re-inits' uncentred rate at 1e-3 is 0 here, so matching it
+asks for a centred rate near 0; it is gated like the others. Reports
+(`tools/design_preflight.py`): centred `cfefbce5a851…`, uncentred `4645b68b24ac…` (inputs
+`1794a1d17f12…`, `93bdc8651099…`; `preflight_plants.json` `9e39d44b213e…`). The one refusal,
+argued: `floor` on both (E ≤ 7.95 < 20): C2 computes no E, and the reading is a date against a
+tolerance, as in units 3, 3s and 3b. No `band` or `power` refusal (the uncentred count's B at 0.5
+reaches p ≤ 0.05 against the re-inits in 83 % of draws).
+
+**No lean.** No record of any Mistral checkpoint exists in the repo (searched: no code names
+`stanford-crfm` or Mistral); before the freeze nothing of GPT-2 small was read but the logged LR,
+the configs, alias's step-0 weight SDs and the preflight's re-inits and step 20000.
 
 ## Worth challenging (for the PR)
 

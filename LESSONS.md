@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-22 (C2 unit 3c): `lit-C2-unit1.md` §5 recorded GPT-2 small's warmup as "4000 steps,
+  linear" from the trainer config ([R]), and §5's prediction table was built on it. The logged LR
+  in every seed's `trainer_state.json` is logarithmic (DeepSpeed's default warmup type; half the
+  peak by step 100). The config names the warmup's length, not its shape. Caught before the
+  freeze, because the design re-derived the predictions from the log; it moved the dose's E₁
+  band from (303, 605] to (29, 119]. In the same session the start hook printed the main tree's
+  `STATE.md` (2026-10-20) while `origin/main` was at #257 (2026-10-22). Rule: **a schedule an
+  analysis maps through is read from the run's own log, not its config**.
 - 2026-10-22 (C2 unit 3s): unit 3's Parked 2 and Blocked 96 (b) costed the seeds unit as "a
   re-download of about 160 checkpoints (the seed checkpoints are no longer in the HF cache)".
   All 162 (9 seeds × 18 steps) are in `HDD_1TB/mets_data/hf`, where A5 put them and where
@@ -849,6 +857,14 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-22, C2 unit 3c (a tolerance set by one null unit): the null-matched centred arm matches
+  the re-inits' uncentred violation rate at 1e-3. On GPT-2 small that rate is 0 (every re-init
+  drop is negative), so the arm became the single largest of 252 re-init centred drops, 3.3× the
+  next. The preflight gated it and it passed; the design table even noted it was "25× Pythia's".
+  On 4 of 5 seeds the frozen label "consistent with step" survived only through that arm; at the
+  next re-init value it reads "neither" (`/challenge-pr` on #258). Rule: **a tolerance matched to
+  a null rate refuses when that rate is 0 (or rests on fewer than a handful of units), and a
+  frozen widening rule is checked for which label it can hold up, not only which it keeps**.
 - 2026-10-21, S2 unit 2 (a frozen gate that could not be built, and a guard that refused its own
   positive controls): G2's planted effect zeroes 10 heads, and its frozen controls were "doubly
   matched": the only edit with ‖D‖ = ‖K‖ and ‖K + D‖ = 0 is −K, so all 40 controls were the arm

@@ -2895,6 +2895,25 @@ cheap and would resolve it.**
 
 ---
 
+## 3.69 On GPT-2 small's 5 seeds (a log warmup), E₁'s larger rise falls at the update count's band, a smaller one at the LR dose's; the frozen "step" label is fragile; no centred date (2026-10-22)
+
+**`trackC_writeup/status-C.md` "C2 unit 3c"** holds the numbers; this section says why it is
+project-wide.
+
+- Stanford CRFM Mistral GPT-2 small trains under a logarithmic 4000-step warmup (the logged LR,
+  all 5 seeds; `lit-C2-unit1.md` §5 had it linear) with 4× fewer tokens a step than Pythia, so
+  updates, the LR dose, the warmup's fraction and the tokens seen predict different steps for
+  410m's dates (`tools/math_checks/c2_warmup_grid.py`). Description across models, data and
+  tokenizers.
+- By the rule frozen before the run (`design-C2.md` "Unit 3c") the joint reads "consistent with
+  step", but it turns on the plateau window and, on 4 of 5 seeds, on a centred arm set by one
+  re-init unit; under either alternative it reads "neither" (`/challenge-pr` on #258). E₁ rises
+  in two stages that neither schedule maps whole.
+- The token-centred count gives no date (its arms disagree on every seed), so §3.67's second
+  event does not transfer as one date. Whether F1 narrows is the user's (Blocked 101).
+
+---
+
 ## 3.68 On 70m and 160m (one seed each, size confounded), the dated events fit step or cumulative LR, not an LR level (2026-10-22)
 
 **`trackC_writeup/status-C.md` "C2 unit 3b"** holds the numbers; this section says why it is
