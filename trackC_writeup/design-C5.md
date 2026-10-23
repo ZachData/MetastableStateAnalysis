@@ -83,7 +83,7 @@ the rest goes to the user as an extension, not a silent unit 1b.
 | unit | what | done when |
 |---|---|---|
 | 0 | the scan and this design (writing only) | Blocked 104 decided; the design frozen |
-| 1 | `trackC_writeup/c5_massive.py` and pure tests; the preflight (the projected centred counts re-gated per arm on unit 3s's re-inits and plants, plant A placed in S, plant B outside it; τ_p and s_p / s_u at step 7000); the tolerances frozen and pushed before any scored record; the run (10 seeds × 18 steps, pass 1 for S, pass 2 for the energies, cached checkpoints, `HF_HUB_OFFLINE`); R0–P2 read | every reading in the table above, or a refusal |
+| 1 (**done 2026-10-23**: P1 kept 7 of 9, P2 kept 9 of 9; `status-C.md` "C5 unit 1") | `trackC_writeup/c5_massive.py` and pure tests; the preflight (the projected centred counts re-gated per arm on unit 3s's re-inits and plants, plant A placed in S, plant B outside it; τ_p and s_p / s_u at step 7000); the tolerances frozen and pushed before any scored record; the run (10 seeds × 18 steps, pass 1 for S, pass 2 for the energies, cached checkpoints, `HF_HUB_OFFLINE`); R0–P2 read | every reading in the table above, or a refusal |
 | close-out | writing only: what M2 established, its Parked items carried (C2p) or dropped; the card current | the card current |
 
 ## Unit 1, fixed before any output (2026-10-23, with the freeze)
@@ -104,7 +104,7 @@ What the table above leaves open, fixed in `trackC_writeup/c5_massive.py` before
 | P1's arms on the re-inits | the projected uncentred counts' re-init violation rates at 1e-4, 1e-3, 1e-2, τ_p, beside (A5's D2 arms were not gated either) |
 | unreadable | an unprojected centred arm unreadable on unit 3s's rule (seed 6 ties on one arm): that seed's P2 reads mixed, flagged |
 | R0′ | at a transition with \|Δ‖m‖²\| < 1e-12 the share is not taken (counted) |
-| **frozen by the preflight** (2026-10-23, before any pass-2 record) | seed 0's S = {130, 357, 966} (S1's known answer met, max deviation 0), M = {421, 550, 752}. At step 7000 s_u 0.0141, s_p 0.0161, s_M 0.0144: **τ_p = 1.15e-3, τ_M = 1.02e-3** (projection makes the relative changes larger there, not smaller). The gate passes at all four centred arms (re-init rate ≤ 0.016, B 0.46–0.94, A in S 0: its largest shift 7e-16, the projection's check). `tools/design_preflight` report sha256 `c308803892bf` refuses on its floor, as unit 3s's did: it prices an e-value this design never takes (dates only). Code `c91bfe321bda`; records `data/trackC/c5/2026-10-23-u1/preflight/` (main tree) |
+| **frozen by the preflight** (2026-10-23, before any pass-2 record) | seed 0's S = {130, 357, 966} (S1's known answer met, max deviation 0), M = {421, 550, 752}. At step 7000 s_u 0.0141, s_p 0.0161, s_M 0.0144: **τ_p = 1.15e-3, τ_M = 1.02e-3** (projection makes the relative changes larger there, not smaller). The gate passes at all four centred arms (re-init rate ≤ 0.016, B 0.46–0.94, A in S 0: its largest shift 7e-16, the projection's check). `tools/design_preflight` report sha256 `c308803892bf` refuses on its floor, as unit 3s's did: it prices an e-value this design never takes (dates only). First derived under code `c91bfe321bda` (set aside with its pass 1 as `2026-10-23-u1-v0`: the records' hash labels were wrong, `LESSONS.md` 3); re-derived identically (the same input file, byte for byte) under the run's code `7e45858c218d` before pass 2; records `data/trackC/c5/2026-10-23-u1/preflight/` (main tree) |
 
 ## Decisions (each yours; recommendation first)
 
