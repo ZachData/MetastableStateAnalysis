@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "3b0c1c6684e9",
+ "code": "ee21527fe399",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -1288,32 +1288,6 @@
    "value": 0.0,
    "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
   },
-  "c3.lane": {
-   "value": {
-    "y": [
-     0.0,
-     0.0,
-     0.0,
-     0.0,
-     0.0,
-     0.0,
-     0.0,
-     0.0,
-     0.0,
-     0.2,
-     0.75,
-     1.0,
-     1.2,
-     1.3,
-     1.45,
-     1.6,
-     1.95,
-     2.95
-    ],
-    "step": 1000
-   },
-   "record": "data:trackC/c2u3/2026-10-22-run/reading.json"
-  },
   "c3s.K1": {
    "value": 8,
    "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
@@ -1357,6 +1331,47 @@
   },
   "c3s.s0_Vu": {
    "value": 56.0,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_early": {
+   "value": 3.0,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_cfrac": {
+   "value": [
+    0.1864406779661017,
+    0.24390243902439024
+   ],
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_ufrac": {
+   "value": 0.9824561403508771,
+   "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
+  },
+  "c3s.s0_lane": {
+   "value": {
+    "y": [
+     0.01818181818181818,
+     0.01818181818181818,
+     0.01818181818181818,
+     0.01818181818181818,
+     0.0,
+     0.0,
+     0.0,
+     0.0,
+     0.01818181818181818,
+     0.2,
+     1.0,
+     1.018181818181818,
+     1.0,
+     1.0363636363636364,
+     1.018181818181818,
+     0.9272727272727272,
+     1.0545454545454545,
+     1.3636363636363635
+    ],
+    "step": 1000
+   },
    "record": "data:trackC/c2u3s/2026-10-22-run/reading.json"
   },
   "c3s.cfrac512": {

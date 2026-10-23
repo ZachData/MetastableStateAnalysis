@@ -24,11 +24,12 @@ the model's developmental order, and one negative result:
    512. A prediction registered before any seed's intermediate checkpoints were
    downloaded put the break at 256 or 512 on each of nine PolyPythias seeds, and it falls there on
    **9 of 9**. The date is the recipe's, not one run's.
-2. **At its step, the break is in the tokens' common direction (§4).** With each prompt's mean
-   token removed before normalising, the count at 512 on seed 0 is 5–11 (against
-   56 uncentred), and the centred cloud's own break comes one grid step later, at
-   1000, on seed 0 and on eight of the nine seeds at every tolerance
-   read. That is the step at which the previous-token and induction heads are dated.
+2. **The token-centred cloud breaks one grid step later (§4.1).** With each prompt's mean token
+   removed before normalising, the centred count at 512 on seed 0 is 0.19–0.24 of its
+   own late level, where the uncentred count is at 0.98 of its own; the centred
+   cloud's break comes at 1000, on seed 0 and on eight of the nine seeds
+   at every tolerance read. That is the step at which the previous-token and induction heads are
+   dated. The two counts' sizes are not compared, only their dates.
 3. **The timeline (§5).** On seed 0 the break comes after the token cloud's rank collapse and the
    unigram and bigram minima, with the OV maps' attractive share falling, and one grid step before
    the previous-token and induction heads. **"Break, then induction, then the OV maps' repulsive
@@ -43,7 +44,8 @@ the model's developmental order, and one negative result:
 learning-rate warmup, which runs to step 1430 and which all ten runs share. Two
 further runs do not separate a training event from the schedule. On `pythia-70m` and
 `pythia-160m`, which warm up over the same steps at higher peak rates, both dates are consistent
-with the count of updates and with the cumulative learning rate, not with the rate itself. On
+with the count of updates and with the cumulative learning rate, and the centred date excludes
+the rate itself. On
 Mistral's GPT-2 small, whose warmup is logarithmic and longer, the break's larger rise falls where
 the count of updates predicts, after a smaller first rise where the cumulative rate does, and the
 label the frozen rule gives turns on two choices that rule made. So the dates are dates inside a
@@ -240,9 +242,9 @@ re-initialised models, and on a planted spread; appendix B). A centred date coun
 holds at all four. No single tolerance reads a planted change alike through both counts, so we
 compare their dates, never their sizes.
 
-**Seed 0.** V_c is 0 at every step through 128 and 5–11 at 512 across
-the four tolerances, against V = 56; its half-rise is at **1000** at
-each. **The nine seeds.** The centred half-rise falls after the seed's uncentred break on
+**Seed 0.** V_c is at most 3 at every step through 128 across the four tolerances.
+At 512, where V is 0.98 of its plateau, V_c is 0.19–0.24 of its own
+(5–11 drops); its half-rise is at **1000** at each tolerance. **The nine seeds.** The centred half-rise falls after the seed's uncentred break on
 eight of nine seeds, and at 1000 on eight; on seed 6
 one of the four tolerances dates it at the seed's own break. Read after the dates: at the
 uncentred break V_c is 0.07–0.50 of its own plateau on the seeds that break at 512
@@ -295,7 +297,7 @@ added after the other rows were read.*
 ![Figure 2](fig/fig2_timeline.svg)
 
 *Figure 2. Seed 0's rows by step, each as the share of its change (Δ over its reference; E1 as
-V over its plateau median, E1c as V_c at 10⁻³ over its own; the n-gram rows as the fall into
+V over its plateau median, E1c as V_c at 10⁻⁴ over its own; the n-gram rows as the fall into
 their minimum), cut at −1.2. Dot:
 the dated step. Shaded: the warmup, to step 1430.*
 
@@ -325,7 +327,8 @@ break or induction are tied on this grid, not ordered.
 512, the grid step before, orders the rows the half-point ties: the break
 0.98, the OV fall 0.81, previous-token
 0.35, induction 0.03; the schedule is
-0.36 done, beside previous-token. On the seeds, with each run's own
+0.36 done, beside previous-token, and the centred cloud (E1c) is
+0.19–0.24 done across its four tolerances, between induction and previous-token. On the seeds, with each run's own
 previous-token and induction heads picked by their scores at the last step, the two tie at
 1000 on 8 of the 8 seeds where both are located; previous-token is further
 along at 512 on 7 (shares 0.40–0.48 against
@@ -408,8 +411,8 @@ instantaneous rates reach 410m's earlier in steps. On both, E₁'s break is at 2
 and the centred date at 1000, the same at every tolerance (figure 4). On 160m's
 grid the centred date predicted under the instantaneous rate is 256–512
 (128–512 on 70m), so the rate itself is excluded; step
-(512–1000) and cumulative (256–1000) both contain 1000, and
-for the break both contain 256. The joint reading is **consistent with step and cumulative**, and it is the same
+(512–1000) and cumulative (256–1000) both contain 1000.
+E₁'s break at 256 excludes none of the three: all their bands contain it. The joint reading is **consistent with step and cumulative**, and it is the same
 without 70m's E₁ date, which rests on a plateau of 6 drops. Step against
 the cumulative dose is not told apart on Pythia's grid; size changes with the rate, and there is
 one seed per size.
@@ -421,7 +424,9 @@ peak at about step 4000 (the logged rate), so the cumulative dose predicts far
 earlier dates than step does, and here the schedules separate: for E₁'s break the cumulative
 band is 40–150, step's 150–550. E₁'s break falls at
 250 or 350 on all five seeds, in step's band only, and the frozen joint reading is
-**"consistent with step"**. We do not take it as separating the two, for three reasons:
+**"consistent with step"**. The rule fixed before the run said this label would narrow the claim that
+nothing separates the schedule from training. We decided after reading the run, and before
+writing this section, not to let it, for three reasons:
 
 - *E₁ rises in two stages* on every seed (figure 4): to 14–17 drops by step 100,
   inside the cumulative band, then to 31–39 by 350, inside step's. The frozen plateau

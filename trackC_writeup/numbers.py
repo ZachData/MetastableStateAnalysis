@@ -432,8 +432,6 @@ KEYS: Dict[str, tuple] = {
     "c3.early_max": ("c3", lambda c: max(c["verdict"]["early_centred"].values())),
     "c3.matched_ratio": ("c3", _c3_matched),
     "c3.e1_dev": ("c3", lambda c: c["e1_max_dev_a5"]),
-    "c3.lane": ("c3", lambda c: {"y": [v / c["verdict"]["plateau_centred"] for v in c["V_centred"]],
-                                 "step": c["verdict"]["step"]}),
     # the centred count on the seeds (§4; unit 3s)
     "c3s.K1": ("c3s", lambda c: c["tally"]["K1"]),
     "c3s.K2": ("c3s", lambda c: c["tally"]["K2"]),
@@ -443,6 +441,15 @@ KEYS: Dict[str, tuple] = {
     "c3s.s0_dates": ("c3s", lambda c: sorted({a["centred_step"] for a in c["seed0_development"]["arms"].values()})),
     "c3s.s0_Vc": ("c3s", lambda c: _span(a["V_c_at_break"] for a in c["seed0_development"]["arms"].values())),
     "c3s.s0_Vu": ("c3s", lambda c: c["seed0_development"]["V_u_at_break"]),
+    "c3s.s0_early": ("c3s", lambda c: max(v for a in c["seed0_development"]["arms"].values()
+                                          for v in a["early_centred"].values())),
+    "c3s.s0_cfrac": ("c3s", lambda c: _span(a["V_c_at_break"] / a["plateau_centred"]
+                                            for a in c["seed0_development"]["arms"].values())),
+    "c3s.s0_ufrac": ("c3s", lambda c: c["seed0_development"]["V_u_at_break"]
+                     / c["seed0_development"]["plateau_uncentred"]),
+    "c3s.s0_lane": ("c3s", lambda c: {"y": [v / c["seed0_development"]["arms"]["0.0001"]["plateau_centred"]
+                                            for v in c["beside"]["0"]["V_c"]["0.0001"]],
+                                      "step": c["seed0_development"]["arms"]["0.0001"]["centred_step"]}),
     "c3s.cfrac512": ("c3s", lambda c: _span(_cfrac(c, 512))),
     "c3s.cfrac512_null": ("c3s", lambda c: _span(_cfrac(c, 512, c["tau_arms"][0]))),
     "c3s.cfrac256": ("c3s", lambda c: _span(_cfrac(c, 256))),
@@ -564,8 +571,9 @@ CLAIMS: List[tuple] = [
      lambda k: k["a5.d10_prev_share"][0] > k["a5.d10_ind_share"][1]),
     # unit 4: §1, §4.1, §5's E1c, §6, §7, the appendices
     ("§4.1 seed 0's centred date is 1000 at every arm, E1c's step, nothing early",
-     lambda k: k["c3s.s0_dates"] == [1000] == [k["c3.step"]] and k["c3.early_max"] == 0
-     and k["c3.e1_dev"] == 0 and k["c3.lane"]["step"] == 1000),
+     lambda k: k["c3s.s0_dates"] == [1000] == [k["c3.step"]] and k["c3s.s0_early"] <= 3
+     and k["c3.e1_dev"] == 0 and k["c3s.s0_lane"]["step"] == 1000
+     and k["c3s.s0_ufrac"] > 0.9 and k["c3s.s0_cfrac"][1] < 0.5),
     ("§4.1 the tally: K1 = K2, one seed off, at one arm, at its own break",
      lambda k: k["c3s.K1"] == k["c3s.K2"] == k["c3s.n"] - 1 and len(k["c3s.miss"]) == 1
      and [o["seed"] for o in k["c3s.off"]] == k["c3s.miss"]
@@ -577,7 +585,9 @@ CLAIMS: List[tuple] = [
     ("§4.1 the size label withdrawn: matched ratio near 1, frozen ratio under half",
      lambda k: k["c3.label"] == "mostly removed" and k["c3.plateau_c"] < k["c3.plateau_u"] / 2
      and 0.9 <= k["c3.matched_ratio"] <= 1.1),
-    ("§5 E1c joins the 1000 tie", lambda k: k["c3.step"] == _st(k, "E3")),
+    ("§5 E1c joins the 1000 tie, its share at 512 between induction's and previous-token's",
+     lambda k: k["c3.step"] == _st(k, "E3")
+     and k["a3.share512"]["E3"] < k["c3s.s0_cfrac"][0] <= k["c3s.s0_cfrac"][1] < k["a3.share512"]["E4"]),
     ("§6 R1 not shown under both, (a) higher at 512 and 143000, (b) as its controls",
      lambda k: k["s2.r1_answer"] == {"a": "not shown", "b": "not shown"}
      and k["s2.r1_lower"] == {"a": 0, "b": 0} and k["s2.r1a_higher"] == [512, 143000]
@@ -589,6 +599,9 @@ CLAIMS: List[tuple] = [
      lambda k: k["s2.g3p_raw"]["512"] == k["s2.g3p_raw"]["1000"] == "lower"
      and k["s2.g3p_raw"]["2000"] == "higher" and k["s2.g3p_span"][0] > 20
      and k["s2.g3_full"] == [0, 0] and k["a3.E2_bottom"] == 1000),
+    ("§1, §7 3b: only the centred date excludes the instantaneous rate; E₁'s 256 sits in all three bands",
+     lambda k: all(k["c3b.band_u"][s][0] <= 256 <= k["c3b.band_u"][s][1] for s in ("step", "cumulative", "instantaneous"))
+     and k["c3b.pred"]["70m"]["uncentred"]["instantaneous"][0] <= 256 <= k["c3b.pred"]["70m"]["uncentred"]["instantaneous"][-1]),
     ("§7 3b: both sizes' dates, the label, the bands",
      lambda k: k["c3b.u"] == {"70m": 256, "160m": 256} and k["c3b.c"] == {"70m": [1000], "160m": [1000]}
      and k["c3b.label"] == "consistent with step and cumulative"
@@ -844,7 +857,7 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     plt.close(fig)
 
     # Figure 2: A3's rows on seed 0, one lane each, with the centred cloud (unit 3) beside the 1000 tie
-    lanes = dict(k["a3.lanes"], E1c=k["c3.lane"])
+    lanes = dict(k["a3.lanes"], E1c=k["c3s.s0_lane"])
     rows = list(A3_ROWS[:-1]) + ["E1c", A3_ROWS[-1]]
     fig, axs = plt.subplots(len(rows), 1, figsize=(7.2, 0.62 * len(rows) + 0.6), sharex=True)
     for ax, r in zip(axs, rows):

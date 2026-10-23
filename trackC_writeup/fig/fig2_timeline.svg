@@ -1875,54 +1875,54 @@ L 414.886614 313.905356
    <g id="matplotlib.axis_18">
     <g id="ytick_17">
      <g id="line2d_229">
-      <path d="M 19.92625 343.433492 
-L 421.68625 343.433492 
+      <path d="M 19.92625 341.192912 
+L 421.68625 341.192912 
 " clip-path="url(#p7209064265)" style="fill: none; stroke: #d8d7d2; stroke-width: 0.6; stroke-linecap: square"/>
      </g>
      <g id="line2d_230">
       <g>
-       <use xlink:href="#m6f535a30e7" x="19.92625" y="343.433492" style="fill: #52514e; stroke: #52514e; stroke-width: 0.8"/>
+       <use xlink:href="#m6f535a30e7" x="19.92625" y="341.192912" style="fill: #52514e; stroke: #52514e; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_25">
-      <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: end; fill: #52514e" x="12.92625" y="346.852788" transform="rotate(-0 12.92625 346.852788)">0</text>
+      <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: end; fill: #52514e" x="12.92625" y="344.612209" transform="rotate(-0 12.92625 344.612209)">0</text>
      </g>
     </g>
     <g id="ytick_18">
      <g id="line2d_231">
-      <path d="M 19.92625 333.752136 
-L 421.68625 333.752136 
+      <path d="M 19.92625 322.54924 
+L 421.68625 322.54924 
 " clip-path="url(#p7209064265)" style="fill: none; stroke: #d8d7d2; stroke-width: 0.6; stroke-linecap: square"/>
      </g>
      <g id="line2d_232">
       <g>
-       <use xlink:href="#m6f535a30e7" x="19.92625" y="333.752136" style="fill: #52514e; stroke: #52514e; stroke-width: 0.8"/>
+       <use xlink:href="#m6f535a30e7" x="19.92625" y="322.54924" style="fill: #52514e; stroke: #52514e; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_26">
-      <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: end; fill: #52514e" x="12.92625" y="337.171432" transform="rotate(-0 12.92625 337.171432)">1</text>
+      <text style="font-size: 9px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: end; fill: #52514e" x="12.92625" y="325.968537" transform="rotate(-0 12.92625 325.968537)">1</text>
      </g>
     </g>
    </g>
    <g id="line2d_233">
-    <path d="M 26.725886 343.433492 
-L 49.391338 343.433492 
-L 72.05679 343.433492 
-L 94.722242 343.433492 
-L 117.387694 343.433492 
-L 140.053147 343.433492 
-L 162.718599 343.433492 
-L 185.384051 343.433492 
-L 208.049503 343.433492 
-L 230.714955 341.49722 
-L 252.604893 336.172475 
-L 275.270345 333.752136 
-L 297.935797 331.815864 
-L 320.601249 330.847729 
-L 343.266702 329.395525 
-L 365.932154 327.943322 
-L 383.04202 324.554847 
-L 414.886614 314.873492 
+    <path d="M 26.725886 340.853937 
+L 49.391338 340.853937 
+L 72.05679 340.853937 
+L 94.722242 340.853937 
+L 117.387694 341.192912 
+L 140.053147 341.192912 
+L 162.718599 341.192912 
+L 185.384051 341.192912 
+L 208.049503 340.853937 
+L 230.714955 337.464178 
+L 252.604893 322.54924 
+L 275.270345 322.210264 
+L 297.935797 322.54924 
+L 320.601249 321.871289 
+L 343.266702 322.210264 
+L 365.932154 323.905144 
+L 383.04202 321.532313 
+L 414.886614 315.769723 
 " clip-path="url(#p7209064265)" style="fill: none; stroke: #eb6834; stroke-width: 1.4; stroke-linecap: square"/>
    </g>
    <g id="patch_36">
@@ -1940,7 +1940,7 @@ L 421.68625 345.853831
    </g>
    <g id="line2d_234">
     <g clip-path="url(#p7209064265)">
-     <use xlink:href="#m914f6177e7" x="252.604893" y="336.172475" style="fill: #0b0b0b; stroke: #0b0b0b"/>
+     <use xlink:href="#m914f6177e7" x="252.604893" y="322.54924" style="fill: #0b0b0b; stroke: #0b0b0b"/>
     </g>
    </g>
   </g>

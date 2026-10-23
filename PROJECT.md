@@ -2944,8 +2944,9 @@ project-wide.
   seed's uncentred break, on **8 of 9** seeds at each of four centred tolerances (one reading on
   this grid; seed 6 ties on one tolerance). So the break §3.61 dated and `P-A5` reproduced comes,
   on 8 of 9 seeds, before the token-centred cloud's break: at the break step the centred count
-  is below half of its own plateau (0.07–0.50 of it across the four tolerances; "0.17" corrected
-  at C2 unit 4, `trackC_writeup/status-C.md` "C2 unit 4"). The token-centred cloud breaks at the step
+  is below half of its own plateau on every seed but the tie (the span is the key `c3s.cfrac512`
+  in `trackC_writeup/numbers.json`; an earlier hand-typed span here was wrong, `status-C.md`
+  "C2 unit 4"). The token-centred cloud breaks at the step
   where D10 dates previous-token and induction on 8 seeds.
 - A single "matched" tolerance between the centred and uncentred counts was refused by its own
   gate: no tolerance reads a planted change alike through both. So no claim about how *much* of

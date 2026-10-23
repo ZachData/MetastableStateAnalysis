@@ -14,7 +14,7 @@
   - Unit 3s, the centred count on the 9 PolyPythias seeds (tier 1, description; Blocked 96 (b)): one centred tolerance on the centred energy's own scale failed its own gate, because no tolerance reads a planted change alike through both counts, so no size comparison between them is calibrated; the rule reads dates only at four centred tolerances (Blocked 97 (a)). The centred date reproduces: the centred half-rise is at 1000, one grid step after the uncentred break, on 8 of 9 seeds (K1 and K2 are one reading on this grid; seed 6 ties on one arm), so F9 is a finding on the seeds as a date (how much of the break is the common direction's is not calibrated), and the centred break shares 1000 with D10's heads; revised after `/challenge-pr` on #256 (findings 1–4); 91 goes to the user, decided (c) (Blocked 98): the draft heads on the two events — `trackC_writeup/status-C.md` "C2 unit 3s"
   - Unit 3b, the LR-dose arm on `pythia-70m` and `pythia-160m` (tier 1, description; Blocked 99 (a), 100 (a)): both dates on both sizes, against three schedules' predictions on Pythia's grid. E₁'s break at 256 and the centred date at 1000 on both: **consistent with step and cumulative** (the same without 70m's fragile E₁ date), an LR level excluded on one seed per size; step against cumulative is not told apart on this grid, and size is confounded. F1 stands — `trackC_writeup/status-C.md` "C2 unit 3b"
   - Unit 3c, the warmup arm on Mistral GPT-2 small's 5 seeds (tier 1, description): its warmup is logarithmic, not linear (unit 1 corrected before the freeze), so the LR dose predicts far earlier dates than step. E₁'s break falls at 250 or 350 on all 5 seeds (step's band), and the frozen joint reads **"consistent with step"**, but it turns on two choices: the plateau window (against 1000–4000, "neither") and, on 4 of 5 seeds, a centred arm whose tolerance is one re-init unit (at the next, "neither"; `/challenge-pr` on #258). The centred arms disagree from 100 to 2000, so no centred date; E₁ rises in two stages (a first at 60–100, in the dose's band) that neither schedule maps whole. Blocked 101 decided (a), the user's: F1 stands — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 197 keys, 39 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved — `trackC_writeup/status-C.md` "C2 unit 4"
+  - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 200 keys, 40 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved; `/challenge-pr` on #259: accept with changes, all 7 findings taken (a wrong-record key, §1's 3b exclusion, sizes compared across counts, the frozen-rule departure disclosed) — `trackC_writeup/status-C.md` "C2 unit 4"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -24,7 +24,7 @@
   - The draft's referee read (unit 5) — `trackC_writeup/status-C.md` "C2 unit 4"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-22 · body `6adea5e308`
+- **Reviewed:** 2026-10-22 · body `20d541b932`
 <!-- /phase-card -->
 
 ## Units
@@ -38,7 +38,7 @@
 | C2 3s. the centred count on the seeds (96 (b)) | **done 2026-10-22: 96 (b)'s tolerance refused by its gate; dates at four arms (97 (a), the user's); K1 = K2 = 8 of 9, "reproduced"; Blocked 98** | `c2_seeds.py`, design "Unit 3s"; "C2 unit 3s" below |
 | C2 3b. LR-dose arm (70m, 160m) | **done 2026-10-22: 98 (c), 99 (a), 100 (a), the user's; frozen before output; "consistent with step and cumulative" (instantaneous excluded); F1 stands** | `c2_dose.py`, design "Unit 3b"; "C2 unit 3b" below |
 | C2 3c. warmup arm (Mistral GPT-2 small) | **done 2026-10-22: frozen before output (`0623dd9`); the warmup is logarithmic (unit 1 corrected); the frozen joint "consistent with step", turning on the plateau window and a one-unit centred arm; no centred date; revised after `/challenge-pr` on #258; Blocked 101** | `c2_warmup.py`, design "Unit 3c"; "C2 unit 3c" below |
-| C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 197 keys, 39 claims; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
+| C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 200 keys, 40 claims; revised after `/challenge-pr` on #259; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
 | C2 5, close-out | next: 5 (the referee read) | — |
 
 ## C2 unit 4, the rest of the draft (2026-10-22)
@@ -94,8 +94,23 @@ line 97 and `status-1.md` "Reverses", not Blog 1; §8 does not use it). Still ca
 Parked 0 (a refusal in `c2_seeds.null_matched_tol`, to the next unit that derives a centred
 arm); `lit-C2-unit1.md` Parked 1 (GPT-2 medium, to the close-out).
 
+**After `/challenge-pr` on #259** (accept with changes; all 7 findings taken):
+
+| # | finding | done |
+|---|---|---|
+| 1 | tier 3 red: `tests/test_trackC_figures.py` listed three figures | figure 4 added to the list; tier 3 was not in the default `check.sh` run |
+| 2 | §4.1's "V_c is 0 through 128" came from unit 3's one tolerance (10⁻³), not 3s's four (1–3 there at the small arms on seed 0) | key `c3s.s0_early` from 3s's record; the sentence reads "at most 3" |
+| 3 | §1 said both 3b dates exclude the rate itself; E₁'s 256 lies in all three bands | §1 and §7 say only the centred date excludes it; a claim pins E₁'s 256 inside all three |
+| 4 | §1 item 2 and §4.1 set 5–11 beside 56, a size comparison across counts | each count stated as a share of its own plateau (0.98 against 0.19–0.24), "only dates compared" said in §1 |
+| 5 | §7 did not disclose that the frozen rule said "consistent with step" narrows F1, or when the decision was made | one sentence: the rule said so; decided after the run, before §7 was written |
+| 6 | figure 2's E1c lane at 10⁻³, not one of the four tolerances; §5's tie paragraph left E1c out | the lane from 3s's seed-0 series at 10⁻⁴; E1c's share at 512 (0.19–0.24) placed between induction's and previous-token's, with a claim |
+| 7 | the corrected span hand-typed in `status-C.md`, `PROJECT.md`, STATE (how "0.17" spread) | `PROJECT.md` and STATE point to the key `c3s.cfrac512`; `status-C.md`'s post-hoc row is the one typed copy, the rest point to it |
+
+`numbers.py`: 200 keys, 40 claims; `c3.lane` removed (its record's tolerance was not one of
+the four).
+
 **Not established here:** anything new; the draft's argument has not had a fresh-context read
-(unit 5).
+as a reviewer would (unit 5).
 
 **Parked:** (1) Figure 4's left panel shows 70m's E₁ over a plateau of 6 drops, reaching 2.5;
 whether to clip it or say so in the caption (why: legibility; cost: one line; could change:
@@ -312,7 +327,8 @@ for a seed whose centred date was 2000 or 4000, and none was.*
 10 with seed 0) at every arm, the token-centred count reaches half its own plateau at 1000, one
 grid step after E₁'s break (512 on 7 seeds, 256 on 2), the step where D10 dates previous-token and
 induction on 8 seeds. At the break step itself the centred count has not yet reached half of its
-own plateau (0.07–0.50 of it; corrected at unit 4), and the layer-mean cosine turns from rising with depth at the break
+own plateau (the span is the key `c3s.cfrac512` in `numbers.json`; the row above, corrected at
+unit 4), and the layer-mean cosine turns from rising with depth at the break
 on every seed. F9 is a finding on the seeds, as a date: the break comes before the centred
 cloud's. How *much* of the break is the common direction's is not calibrated (the gate). 91's
 headline goes back to the user as Blocked 98: (a) or (c).
