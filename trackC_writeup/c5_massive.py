@@ -28,6 +28,7 @@ Tier 1, description (nothing here is registered).
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import os
@@ -71,7 +72,10 @@ class M2Refused(RuntimeError):
     pass
 
 
+@functools.lru_cache(maxsize=None)
 def code_sha() -> str:
+    """The hash of the code this process loaded: taken once, so an edit to the files during a run
+    cannot relabel its later records (unit 1's first pass 1 did; `LESSONS.md`)."""
     h = hashlib.sha256()
     for f in ("trackC_writeup/c5_massive.py", "trackC_writeup/c2_seeds.py", "trackC_writeup/c2_aniso.py",
               "trackA_force/a5_seeds.py", "trackA_force/a3.py"):
