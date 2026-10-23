@@ -64,6 +64,8 @@ RECORDS = {
     "s1_r1": "data:trackS/s1/2026-10-21-u2-r1/r1.json",
     "s1_qk": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json",
     "gpt2_lr": "repo:trackC_writeup/gpt2_small_lr_log.json",
+    "c5mean": "data:trackC/c2u5/2026-10-23-mean/profile.json",
+    "push": "repo:trackC_writeup/p_a5_push_record.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -179,6 +181,19 @@ def _d10_pairs(score: dict) -> Dict[str, dict]:
         if p.get("tie") is not None:
             out[s] = p
     return out
+
+
+FALSIFIER_K = 3        # P-A5's registered falsifier, K <= 3; a claim checks it against the registry
+
+
+def _binom_tail(n: int, p: float, k: int) -> float:
+    """P(Bin(n, p) >= k), exact."""
+    from math import comb
+    return sum(comb(n, j) * p ** j * (1 - p) ** (n - j) for j in range(k, n + 1))
+
+
+def _lane_at(k: dict, row: str, step: int) -> float:
+    return k["a3.lanes"][row]["y"][k["grid.steps"].index(step)]
 
 
 def _utc(iso: str):
@@ -334,6 +349,16 @@ KEYS: Dict[str, tuple] = {
                                                  - _utc(a["order"]["registered_at"])).total_seconds() / 60)),
     "reg.falsifier_K": ("registry", lambda r: int(re.search(r"K <= (\d+)", _p_a5(r)["falsifier"]).group(1))),
     "reg.p0": ("a5_score", lambda s: str(Fraction(s["p0"]).limit_denominator(100))),
+    "reg.falsifier_p": ("a5_score", lambda s: _binom_tail(s["n"], s["p0"], FALSIFIER_K + 1)),
+    "reg.pushed_at": ("push", lambda r: r["events"][0]["timestamp"].replace("Z", "+00:00")),
+    "reg.pushed_kind": ("push", lambda r: r["events"][0]["activity_type"]),
+    "reg.pushed_has_commit": ("push", lambda r: r["contained_in"][r["events"][0]["after"][:7]]),
+    # the mean's term ‖m‖² by layer, read after the dates (unit 5, c2_mean_profile.py)
+    "mean.falls": ("c5mean", lambda r: {st: [r["seeds_data"][s]["falls_all"][st] for s in map(str, r["seeds"])]
+                                        for st in ("128", "256", "512", "1000")}),
+    "mean.frame_falls": ("c5mean", lambda r: sum(d["falls_all"][st] - d["falls_inner"][st]
+                                                 for d in r["seeds_data"].values() for st in ("128", "256", "512", "1000"))),
+    "mean.n_trans": ("c5mean", lambda r: r["transitions_all"]),
     # the nine seeds (§4)
     "a5.K": ("a5_score", lambda s: s["K"]),
     "a5.n": ("a5_score", lambda s: s["n"]),
@@ -539,6 +564,25 @@ CLAIMS: List[tuple] = [
      and k["s0.tol_steps"][0] == k["s0.break"]),
     ("§3.3 the plateau is not the end", lambda k: k["s0.V_end"] != k["s0.plateau"]),
     ("§3.4 registered before the first record", lambda k: k["reg.first"] is True and k["reg.lag_min"] > 0),
+    ("§3.4 the falsifier's level is read at the registered K", lambda k: k["reg.falsifier_K"] == FALSIFIER_K),
+    ("§4 E₃.₅ dates 512 on every seed, so it differs from E₁ on the 256 seeds",
+     lambda k: k["a5.ln1_512"] == k["a5.n"] and len(k["a5.at256"]) > 0),
+    ("§5 E5 climbs back past its start between 512 and 1000",
+     lambda k: _lane_at(k, "E5", 512) > 0 > _lane_at(k, "E5", 1000)),
+    ("§5 E3 peaks at 1000 and falls after",
+     lambda k: max(k["a3.lanes"]["E3"]["y"]) == _lane_at(k, "E3", 1000) > k["a3.lanes"]["E3"]["y"][-1]),
+    ("§5 E5 and E6u run below the figure's cut, no other drawn row does",
+     lambda k: {r for r, l in k["a3.lanes"].items() if min(l["y"]) < LANE_FLOOR} == {"E5", "E6u"}),
+    ("§3.4 the branch GitHub first records holds the registration commit, before the first record",
+     lambda k: k["reg.pushed_has_commit"] is True and k["reg.pushed_kind"] == "branch_creation"
+     and _utc(k["reg.pushed_at"]) < _utc(k["reg.first_record"])),
+    ("§4.1 ‖m‖² never falls at 128; falls at 512 on every seed; the 256 seeds fall most at 256",
+     lambda k: max(k["mean.falls"]["128"]) == 0 and min(k["mean.falls"]["512"]) > 0
+     and set(sorted(range(10), key=lambda s: -k["mean.falls"]["256"][s])[:2]) == set(k["a5.at256"])),
+    ("§4.1 the frame-changing transitions hold no fall of ‖m‖² at 128–1000", lambda k: k["mean.frame_falls"] == 0),
+    ("§6 arm a: step 0 inside its controls, 256 above all 40",
+     lambda k: k["s2.a"]["0"]["min"] <= k["s2.a"]["0"]["value"] <= k["s2.a"]["0"]["max"]
+     and k["s2.a"]["256"]["value"] > k["s2.a"]["256"]["max"]),
     ("§3.1 seed 0 reproduces exactly", lambda k: k["s0.V_equal"] is True),
     ("§4 seed 0: no drop up to 128, the break at 512", lambda k: k["s0.Vmax_to128"] == 0 and k["s0.break"] == 512),
     ("§4 all seeds inside, K = n", lambda k: k["a5.K"] == k["a5.n"] and set(k["a5.steps"]) <= {256, 512}),
@@ -754,6 +798,10 @@ FORMATS: Dict[str, Callable] = {
     "step": lambda v: ("refused" if v["reading"].startswith("refused") else
                        f"censored at {_num(v['step'])}" if v["censored"] else _num(v["step"])),
     "time": lambda v: v[11:16],
+    "utc": lambda v: _utc(v).strftime("%H:%M"),
+    "v": lambda c: _num(c["value"]),
+    "span": lambda c: f"{_num(c['min'])}–{_num(c['max'])}",
+    "minmax": lambda v: f"{_num(min(v))}–{_num(max(v))}" if min(v) != max(v) else _num(v[0]),
 }
 WORDS = ("none", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
 SLOT = re.compile(r"\{\{([\w.]+)(?:\[(\w+)\])?(?:\|(\w+))?\}\}")
@@ -851,7 +899,8 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     from matplotlib.lines import Line2D
     axs[0].legend([Line2D([], [], color=SERIES[0], lw=2.2), Line2D([], [], color=SERIES[1], lw=1.4),
                    Line2D([], [], color="#9a9893", lw=1.0)],
-                  ["seed 0", f"seeds {_and(k['a5.at256'])} (dated {_num(256)})", "seeds 1–9, the rest"],
+                  ["seed 0", f"seeds {_and(k['a5.at256'])} (dated {_num(256)})",
+                   f"seeds {_and([int(s) for s in SEEDS if int(s) not in k['a5.at256']])}"],
                   loc="upper left", fontsize=8)
     out.append(_save(fig, "fig1_break.svg"))
     plt.close(fig)
@@ -878,7 +927,7 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
 
     # Figure 3: S2's R1 cells and G3′ against their 40 random edits, base V beside
     panels = (("s2.a", "a: symmetric part"), ("s2.b", "b: rotation removed"),
-              ("s2.g3p", "G3′: step-128 OV maps"))
+              ("s2.g3p", "every head's step-128 OV map"))
     fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.6), sharey=True)
     for ax, (key, title) in zip(axs, panels):
         cells = k[key]

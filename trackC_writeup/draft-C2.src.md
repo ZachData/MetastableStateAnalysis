@@ -4,12 +4,30 @@ draft-C2.md; edit this file, never the render. A number from this project's reco
 Pythia's released configs is a key; a number a paper reports is that paper's and carries its
 citation. State: §2 and §8 drafted at unit 1 (2026-10-22); §3–§5 and figures 1–3 at unit 2;
 §1, §4.1, §6, §7, the appendices, figure 4 and the references at unit 4 (2026-10-22), with §4 and
-§5 re-headed on the two events (Blocked 98 (c)). Each citation's mark ([H], [A], [R],
+§5 re-headed on the two events (Blocked 98 (c)); revised at unit 5 (2026-10-23) to answer the
+fresh-context referee read (`trackC_writeup/referee-C2.md`): an abstract, a new title, ten
+references. Each citation's mark ([H], [A], [R],
 [S]) is in `trackC_writeup/lit-C2-unit1.md` or `trackA_force/lit-C2.md`; a claim resting on an
 [S] row is not stated here, and an [A] row is cited only for what its abstract says. -->
 
 
-# The interaction energy along a language model's training
+# When a language model's interaction energy stops rising with depth
+
+**Abstract.** In the particle picture of self-attention, tokens are particles on a sphere and,
+under identity weights, their interaction energy E_β never decreases with depth. We count the
+layer-to-layer drops in E₁ at {{grid.n}} checkpoints of `pythia-410m` and of its nine PolyPythias
+seeds, on {{a5.n_prompts|word}} prompts. The count is zero through step 128 on seed 0 and
+reaches half its early plateau at step {{s0.break}}; a prediction registered before the seeds'
+intermediate checkpoints were downloaded put each seed's break at 256 or 512, and it held on
+{{a5.K}} of {{a5.n}}. Since E₁'s first-order term is the squared norm of the tokens' mean, we
+also count drops after removing each prompt's mean token: that count breaks later, at 1000 on
+seed 0 and on {{c3s.K2|word}} of the nine seeds, the step at which the previous-token and
+induction heads are dated. Editing every head's OV map (its symmetric part, its rotation removed,
+or its step-128 map) does not undo the break. Every dated event falls inside the learning-rate
+warmup, and neither a different peak rate (`pythia-70m`, `pythia-160m`) nor a different warmup
+(Mistral's GPT-2 small) separates the dates from the schedule. The results are exploratory except
+the registered seed count, on one model size, {{a5.n_prompts|word}} hand-picked prompts and a grid with no
+checkpoint between 512 and 1000.
 
 ## 1. Introduction
 
@@ -19,7 +37,8 @@ head with Q = K = V = I, the same in every layer) the particles attract and clus
 interaction energy E_β of §2.1 never decreases with depth. That picture organises a growing
 theory of clustering and metastability (§8). Trained language models do not follow it: at the
 end of its training, `pythia-410m`'s E₁ falls between consecutive layers {{s0.V_end}} times over
-our {{a5.n_prompts|word}} prompts. No theorem is broken, since none covers a trained model (§2.1),
+our {{a5.n_prompts|word}} prompts, out of {{cfg.layers}} × {{a5.n_prompts}} layer-to-layer
+transitions. No theorem is broken, since none covers a trained model (§2.1),
 but the picture's prediction fails, and nothing says when along training it starts to fail, or
 what else is changing then.
 
@@ -31,18 +50,25 @@ the model's developmental order, and one negative result:
    prompt (V = {{s0.Vmax_to128}} on seed 0); V reaches half its 1000–4000 level at step
    {{s0.break}}. A prediction registered before any seed's intermediate checkpoints were
    downloaded put the break at 256 or 512 on each of nine PolyPythias seeds, and it falls there on
-   **{{a5.K}} of {{a5.n}}**. The date is the recipe's, not one run's.
-2. **The token-centred cloud breaks one grid step later (§4.1).** With each prompt's mean token
-   removed before normalising, the centred count at 512 on seed 0 is {{c3s.s0_cfrac|range2}} of its
-   own late level, where the uncentred count is at {{c3s.s0_ufrac|f2}} of its own; the centred
-   cloud's break comes at {{c3s.s0_dates|uniq}}, on seed 0 and on {{c3s.K2|word}} of the nine seeds
-   at every tolerance read. That is the step at which the previous-token and induction heads are
-   dated. The two counts' sizes are not compared, only their dates.
-3. **The timeline (§5).** On seed 0 the break comes after the token cloud's rank collapse and the
-   unigram and bigram minima, with the OV maps' attractive share falling, and one grid step before
-   the previous-token and induction heads. **"Break, then induction, then the OV maps' repulsive
-   phase" is not shown:** in either reading of that phase it ties the break or induction on this
-   grid.
+   {{a5.K}} of {{a5.n}}. The date is the recipe's, not one run's; with seeds that share the
+   recipe this was the expected outcome, and the registration guards only against choosing the
+   window after seeing them (§3.4).
+2. **The token-centred cloud breaks later (§4.1).** E₁'s first-order term is the squared norm of
+   the tokens' mean (§2.1). With each prompt's mean token removed before normalising, the centred
+   count at 512 on seed 0 is {{c3s.s0_cfrac|range2}} of its own late level, where the uncentred
+   count is at {{c3s.s0_ufrac|f2}} of its own; the centred cloud's break comes at
+   {{c3s.s0_dates|uniq}}, on seed 0 and on {{c3s.K2|word}} of the nine seeds at every tolerance
+   read: one grid step after the break on the seeds that break at 512, two on those that break at
+   256. That is the step at which the previous-token and induction heads are dated. The two counts'
+   sizes are not compared, only their dates, and how much of the break the mean carries is not
+   measured.
+3. **The timeline (§5).** On seed 0 the break comes after the token cloud's rank collapse (step 8)
+   and the unigram minimum (128); the bigram minimum (256), the fall in the OV maps' attractive
+   share (512) and the previous-token and induction heads (1000) are each within one grid step of
+   it, which we count as aligned, not ordered, since these are different kinds of quantity dated
+   by different statistics (item 2's two counts are one statistic, §4.1). **"Break, then induction, then the OV maps'
+   repulsive phase" is not shown:** in either reading of that phase it ties the break or induction
+   on this grid.
 4. **One intervention, no reversal (§6).** Making every head's OV map symmetric, or removing its
    rotation, does not take the break back towards monotone at any step after it; giving every
    head its own step-128 OV map lowers V at 512 and 1000 but leaves it far from monotone. The
@@ -56,11 +82,12 @@ with the count of updates and with the cumulative learning rate, and the centred
 the rate itself. On
 Mistral's GPT-2 small, whose warmup is logarithmic and longer, the break's larger rise falls where
 the count of updates predicts, after a smaller first rise where the cumulative rate does, and the
-label the frozen rule gives turns on two choices that rule made. So the dates are dates inside a
-warmup, not training events told apart from it.
+label the rule fixed before that run gives turns on two of its choices (the plateau window and one
+tolerance of the centred count). So the dates are dates inside a warmup, not training events told
+apart from it.
 
-Everything here is tier 1 on one model size, {{a5.n_prompts|word}} hand-picked prompts and a grid
-with no checkpoint between 512 and 1000; only the seed count of §4 was registered. §2 gives the
+Everything here is exploratory, on one model size, {{a5.n_prompts|word}} hand-picked prompts and a
+grid with no checkpoint between 512 and 1000; only the seed count of §4 was registered. §2 gives the
 energy and the exact conditions under which it is monotone, §3 the setup, §8 related work;
 appendix A reads the heads' shared subspaces along the same steps, and appendix B the gate each
 reading passed before it was read.
@@ -73,12 +100,12 @@ Put each token's residual-stream state on the unit sphere, xᵢ ∈ S^{d−1}, i
 
   E_β(X) = (1 / 2βn²) Σᵢ Σⱼ exp(β ⟨xᵢ, xⱼ⟩).
 
-E_β is large when the tokens are close together and is maximised by a single cluster; on the
-sphere its minimiser is the uniform measure [Geshkovski et al. 2023, Prop. 3.4]. Read a
-transformer's depth as continuous time for an interacting-particle system, with self-attention
-the interaction. When every layer has the same single head with Q = K = V = I, the dynamics
-ascend E_β, so E_β is non-decreasing in depth [Geshkovski et al. 2023, §3.2]; with V = −I it is
-non-increasing. Wider hypotheses give monotonicity of a different, weighted energy, not of E_β:
+E_β is large when the tokens are close together and is maximised by a single cluster; over
+probability measures on the sphere its minimiser is the uniform one [Geshkovski et al. 2023,
+Prop. 3.4]. Read a transformer's depth as continuous time for an interacting-particle system,
+with self-attention the interaction. When every layer has the same single head with Q = K = V = I,
+the dynamics are a gradient ascent of E_β in a metric that reweights the tokens, so E_β is
+non-decreasing in depth [Geshkovski et al. 2023, §3.2]; with V = −I it is non-increasing. Wider hypotheses give monotonicity of a different, weighted energy, not of E_β:
 for one head whose score matrix QᵀK is symmetric and equal to V, the dynamics ascend
 (1/2β) Σᵢⱼ exp(β⟨Vxᵢ, xⱼ⟩) in a metric that weights each token by its attention normaliser
 [ibid., §3.4.1], and for many heads whose score matrices are each symmetric and equal (or close)
@@ -93,6 +120,15 @@ a randomly initialised one's should. We read monotonicity as the prediction of t
 identity-weight picture, and a drop in E_β between consecutive layers as a departure from that
 picture, not as the violation of a theorem. That a model at initialisation is (almost) monotone,
 and a trained one is not, is then an empirical fact about this model, which §4 dates.
+
+E_β sums over all pairs of tokens, so its first-order term is the tokens' mean. With
+m = (1/n) Σᵢ xᵢ, expanding the exponential gives, exactly,
+
+  E₁ = ½ + ½ ‖m‖² + Σ_{k≥2} (1 / 2n² k!) Σᵢ Σⱼ ⟨xᵢ, xⱼ⟩ᵏ,
+
+where ‖m‖², the squared norm of the mean, is a standard measure of anisotropy (§8). The higher
+terms are not small (|⟨xᵢ, xⱼ⟩| ≤ 1, and the n diagonal terms are 1), so E₁ is not ‖m‖², but a
+drop in E₁ between layers can come from the mean shrinking alone. §4.1 removes the mean.
 
 ### 2.2 The developmental order
 
@@ -113,9 +149,9 @@ The Pythia models are trained for {{cfg.train_iters}} steps of 1024 sequences of
 [Biderman et al. 2023], with the learning rate warmed up linearly over the first
 {{cfg.warmup_pct|int}} % of training ({{cfg.warmup_steps}} steps) and decayed by a cosine to
 {{cfg.lr_floor_ratio|f1}} of its peak; the peak is {{cfg.lr_410m|sci}} for `pythia-410m`,
-{{cfg.lr_160m|sci}} for `pythia-160m` and {{cfg.lr_70m|sci}} for `pythia-70m`, and the two
-smaller models warm up over the same number of steps ({{cfg.warmup_160m}} and
-{{cfg.warmup_70m}}) [the released configs]. The suite
+{{cfg.lr_160m|sci}} for `pythia-160m` and {{cfg.lr_70m|sci}} for `pythia-70m` [Biderman et al.
+2023], and the released training configs give the two smaller models the same warmup
+({{cfg.warmup_160m}} steps for 160m, {{cfg.warmup_70m}} for 70m). The suite
 releases checkpoints at steps {{cfg.early_saves|list}} and then every {{cfg.save_every}} steps. Every early event
 §4 and §5 date, the energy's break included, therefore falls inside the warmup, and nothing in
 one schedule separates a change caused by training from one caused by the schedule. Li et al.
@@ -129,11 +165,12 @@ schedule's (§7).
 ### 3.1 The model, the checkpoints and the prompts
 
 `pythia-410m` has {{cfg.layers}} layers of width {{cfg.width}}, each with {{cfg.heads}} attention
-heads ({{cfg.heads_total}} in all). We read {{grid.n}} of its checkpoints, steps
-{{grid.steps|list}}. Step 1 is left out: in our runs its outputs are identical to step 0's, so
-it adds no point. A grid step named as a place on the axis (512, 1000) is a label; a step that
-is a result is quoted from its record. There is no checkpoint between 512 and 1000, or between
-1000 and 2000, so nothing below dates a change more finely than the grid.
+heads ({{cfg.heads_total}} in all); each block adds its attention and its MLP to the residual
+stream in parallel, and positions enter through rotary embeddings [Biderman et al. 2023]. We read
+{{grid.n}} of its checkpoints, steps {{grid.steps|list}}. Step 1 is left out: in our runs its
+outputs are identical to step 0's (we did not compare the weights), so it adds no point. There is
+no checkpoint between 512 and 1000, or between 1000 and 2000, so nothing below dates a change more
+finely than the grid.
 
 PolyPythias [van der Wal et al. 2025] retrains `pythia-410m` from nine further random seeds,
 `pythia-410m-seed1` to `pythia-410m-seed9`, with the same code, data and schedule but a different
@@ -145,8 +182,9 @@ Every seed and step reads the same {{a5.n_prompts|word}} texts: a passage of Cam
 French, a method from the Python source of the HDBSCAN library, a passage of the *Iliad* in
 English translation, the source of a LaTeX document, a paragraph from a paper on transformers,
 Sullivan Ballou's 1861 letter to his wife, and a Wikipedia paragraph on Charlotte Brontë, each
-cut at {{a5.max_tokens}} tokens (prompt-set hash `{{a5.prompts_hash}}`). They are few and
-hand-picked, not sampled, and every count below is a count over these seven.
+cut at {{a5.max_tokens}} tokens (prompt-set hash `{{a5.prompts_hash}}`). They span two
+languages, prose, verse, code and markup, but they are few and were chosen by hand, not sampled,
+and every count below is a count over these seven.
 Forward passes run in {{a5.dtype}} with TF32 {{a5.tf32|onoff}}, on one GPU. On seed 0 the
 per-state energies reproduce an earlier CPU run of this project to a relative
 {{s0.energy_rel_diff|sci}}, and the counts of §3.2 exactly.
@@ -159,22 +197,28 @@ last block's output after the final layer norm. Each token's vector is normalise
 length, so a prompt's n tokens lie on the sphere, and E₁ of §2.1 (β = 1) is computed at each
 state, every position included. A step from one state to the next is a *drop* when E₁ falls by
 more than a fraction {{rel_tol|sci}} of its value. **V**, the statistic of everything below, is
-the number of drops at one checkpoint: over the {{cfg.layers}} steps of each prompt, summed over
-the {{a5.n_prompts}} prompts. In the identity-weight picture V is 0. A drop is a departure from
+the number of drops at one checkpoint: over the {{cfg.layers}} transitions of each prompt, summed
+over the {{a5.n_prompts}} prompts, so at most {{cfg.layers}} × {{a5.n_prompts}}. Two of the
+transitions change frame as well as layer (the embeddings into the first block's output, and the
+last block's output into the final layer norm); they are counted like the rest, and how many of
+the drops they hold is not reported here. In the identity-weight picture V is 0. A drop is a departure from
 that picture's prediction, not the violation of a theorem (§2.1). The tolerance keeps float
 noise out of the count; on seed 0 the break's date below is {{s0.tol_steps|uniq}} at each of the
 tolerances {{s0.tols|scis}}, and {{s0.loo_steps|uniq}} with any one prompt left out.
 
-β = 1 is the one setting seed 0 had been read at before the seeds were registered (§3.4). A
-second energy, E₃.₅ in each block's input frame (after its first layer norm, positions 1 to
-n − 1, blocks 0 to {{cfg.layers_m1}}), is read beside it in §4 and never counted.
+β = 1 is the one setting seed 0 had been read at before the seeds were registered (§3.4); no
+other β is read in this frame. A second energy, E₃.₅ in each block's input frame (after its
+first layer norm, positions 1 to n − 1, blocks 0 to {{cfg.layers_m1}}), is read beside it in §4
+and never counted; β = 3.5 is a value we fitted earlier to this model's attention scores, and
+the frame is the one attention reads.
 
 ### 3.3 Dating the break
 
 Let m be the median of V over steps 1000, 2000 and 4000. The break's step is the first grid
 step at which V ≥ m / 2, a *half-rise*. The plateau is early on purpose: V keeps moving late in
 training (on seed 0, {{s0.plateau}} on the plateau and {{s0.V_end}} at the last step), and a
-reference taken there would let a late rise move an early date. Two other rules were set aside
+reference taken there would let a late rise move an early date; how the dates move under a later
+plateau is not read here. Two other rules were set aside
 on seed 0 before the seeds were read: the first step with V > 0 moves with a single stray drop,
 and V's change-weighted centroid in log step lands at about {{a3.E1_centroid|f0}} on seed 0,
 pulled late by the rise between {{s0.late_rise[0]}} and {{s0.late_rise[1]}}.
@@ -183,18 +227,27 @@ pulled late by the rise between {{s0.late_rise[0]}} and {{s0.late_rise[1]}}.
 
 Before any seed's checkpoints between its first and last were downloaded, we committed a
 prediction, `P-A5`, to this project's registry of predictions, kept in its git history: on each
-of the nine seeds the break falls at 256 or 512, a window (128, 512] around seed 0's step. K
-counts the seeds inside. The registered falsifier was K ≤ {{reg.falsifier_K}}. The null puts each
+of the nine seeds the break falls at 256 or 512, a window (128, 512] chosen after seed 0 was
+read, with seed 0's step at its right edge. K counts the seeds inside. The registered falsifier
+was K ≤ {{reg.falsifier_K}}, so under the null below the prediction escapes its falsifier
+(K ≥ {{reg.falsifier_K}} + 1) with probability {{reg.falsifier_p|f3}}. The null puts each
 seed's step uniformly and independently on the {{grid.n_to4000}} non-zero grid steps up to 4000,
 so under it K ~ Bin(9, {{reg.p0}}); p = P(Bin(9, {{reg.p0}}) ≥ K), exact, and the e-value is
 E = κ p^(κ−1) with κ = {{kappa|f1}}, a p-to-e calibrator fixed before the run [Vovk and Wang
 2019]. Nobody holds that null. It says the step is the run's, scattered over the early grid; it
-is the alternative to "the step is the recipe's", and beating it says only that.
+is the alternative to "the step is the recipe's", and beating it says only that. PolyPythias
+already reports training dynamics highly consistent across seeds, and every seed shares the
+recipe, so {{a5.K}} of {{a5.n}} was the expected outcome; what the registration adds is that the window was
+fixed before any seed's intermediate checkpoint was seen.
 
-The registration commit (`{{reg.commit}}`) is dated {{reg.at|date}}, {{reg.at|time}} {{reg.at|tz}}; the
-first seed record was written at {{reg.first_record|time}} UTC the same day, {{reg.lag_min}}
-minutes later. Every seed's first and last checkpoints were already on disk, and an earlier
-phase of this project had read the first.
+The registration commit (`{{reg.commit}}`) is dated {{reg.at|date}}, {{reg.at|utc}} UTC; the
+first seed record was written at {{reg.first_record|utc}} UTC the same day, {{reg.lag_min}}
+minutes later. Both times are written by us: a commit's date is set by its author, and the
+record's time by our code. The earliest time outside our control is GitHub's activity log, which
+records the creation of the branch carrying the registration commit at
+{{reg.pushed_at|utc}} UTC, before the first seed record's {{reg.first_record|utc}}; the log keeps
+such events for about 90 days, so a copy is kept with the code. Every seed's first and last
+checkpoints were already on disk, and earlier work of ours had read the first.
 
 ## 4. The break, dated and reproduced
 
@@ -202,9 +255,11 @@ phase of this project had read the first.
 
 *Figure 1. V, the number of layer-to-layer drops in E₁ over the {{a5.n_prompts}} prompts, at each
 of the {{grid.n}} steps, for seed 0 (blue) and the nine PolyPythias seeds; seeds
-{{a5.at256|and}}, dated 256, in orange. Left, V; right, V over each run's 1000–4000 plateau
-median, with the half-rise line. Blue band: the registered window (128, 512]. Shaded: the
-learning-rate warmup, to step {{cfg.warmup_steps}}. Step 0 is drawn one octave left of step 2.*
+{{a5.at256|and}}, dated 256, in orange; the other seven in grey, not told apart (seed 4, the other
+outlier run, among them). Left, V; right, V over each run's 1000–4000 plateau median, with the
+half-rise line. Light blue band: the registered window (128, 512]. Grey shading: the
+learning-rate warmup, to step {{cfg.warmup_steps}}. Step 0 is drawn one octave left of step 2,
+where step 1 would be.*
 
 **Seed 0.** V is {{s0.Vmax_to128}} at every step up to 128: on no prompt does E₁ fall by more than
 the tolerance from one of its {{cfg.states}} states to the next. It is {{s0.V256}} at 256 and {{s0.V512}} at 512, against a plateau
@@ -235,20 +290,27 @@ nor that trained weights resist the clustering the particle picture describes.
   {{a5.early_max_step}} (seed {{a5.early_max_seed}}); V is {{a5.mid_max}} at steps 8 to 64 on every
   seed. Against plateaus of {{a5.plateau_min}}–{{a5.plateau_max}} these are small, but "monotone
   at initialisation" holds for seed 0 and {{a5.step0_clean|word}} of the nine seeds, not for all ten.
-- *The second energy agrees.* E₃.₅ in each block's input frame dates the break at 512 on
-  {{a5.ln1_512}} of the 9 seeds, and at {{s0.ln1_break}} on seed 0.
+  That the early drops are gone by step 8, the step the token cloud's rank collapse is dated (§5),
+  is seen, not read further.
+- *The second energy dates the break inside the window too.* E₃.₅ in each block's input frame
+  dates it at 512 on {{a5.ln1_512}} of the 9 seeds, and at {{s0.ln1_break}} on seed 0, so it
+  differs from E₁'s date on seeds {{a5.at256|and}}, which E₁ dates at 256.
 
 ### 4.1 The token-centred cloud
 
-E_β is a moment of the tokens' Gram matrix, so a direction all tokens share, growing or
-shrinking from layer to layer, moves it with no change in how the tokens sit relative to one
-another (§8). To remove it we subtract each prompt's mean token at each state before normalising,
-and count the drops in E₁ of the centred cloud, V_c, with the same half-rise. The rule was fixed
-before any centred number was read. Centring changes E₁'s scale, so V_c is counted at four
-tolerances, {{c3s.tau|scis}}: two fixed, and two matched to the uncentred count's behaviour (on
-re-initialised models, and on a planted spread; appendix B). A centred date counts only if it
-holds at all four. No single tolerance reads a planted change alike through both counts, so we
-compare their dates, never their sizes.
+E₁'s first-order term is ½‖m‖², the squared norm of the tokens' mean (§2.1), so a direction all
+tokens share, growing or shrinking from layer to layer, moves E₁ with no change in how the tokens
+sit relative to one another (§8). To remove it, at each state we take the unit token cloud,
+subtract the prompt's mean unit token and normalise each row again, and count the drops in E₁ of
+this centred cloud, V_c, with the same half-rise. (Normalising after centring leaves a small mean,
+so the centred cloud is not exactly mean-free.)
+The rule was fixed before any centred number was read. Centring changes E₁'s scale, so V_c is
+counted at four tolerances: {{c3s.tau[1]|sci}} and {{c3s.tau[2]|sci}}, fixed, and
+{{c3s.tau[0]|sci}} and {{c3s.tau[3]|sci}}, derived from the uncentred count's behaviour, the
+first so that the same architecture at random initialisation drops as often centred as
+uncentred, the second so that a planted spread of the tokens is seen alike by both counts
+(appendix B). A centred date counts only if it holds at all four. No single tolerance reads a
+planted change alike through both counts, so we compare their dates, never their sizes.
 
 **Seed 0.** V_c is at most {{c3s.s0_early}} at every step through 128 across the four tolerances.
 At 512, where V is {{c3s.s0_ufrac|f2}} of its plateau, V_c is {{c3s.s0_cfrac|range2}} of its own
@@ -259,18 +321,31 @@ uncentred break V_c is {{c3s.cfrac512|range2}} of its own plateau on the seeds t
 and {{c3s.cfrac256|range2}} on the two that break at 256, below half on every seed but the one
 tie.
 
-So at its step the break is the common direction's, by the half-rise: with the mean token
-removed the cloud has not yet broken at 256 or 512, and it breaks one grid step later, at the
-step where §5 dates the previous-token and induction heads. How much of the uncentred count the
-common direction carries is not measured. The rule frozen for seed 0 carried a size label, "mostly
-removed" (centred plateau {{c3.plateau_c|f0}} against {{c3.plateau_u|f0}}), and we withdraw it:
-at the matched tolerance 10⁻⁴ the centred plateau is {{c3.matched_ratio|f2}} of the uncentred
-one, so the label measured centring's change of scale, not a smaller break.
+So, by the half-rise, the break at its step is not seen once the mean token is removed: the
+centred cloud has not yet broken at 256 or 512, and it breaks at 1000, the step where §5 dates
+the previous-token and induction heads. This is a statement about dates. It does not say the
+break is anisotropy. The two counts are one statistic on the same states, dated by one rule fixed
+before the run, which reads a later grid step as later; §5's convention, under which a one-step
+gap between rows of different kinds counts as aligned, is not applied to them.
+
+*The mean's term by layer* (read after the dates; description). Averaged over the prompts,
+‖m‖² never falls from one state to the next at step 128 on any of the ten seeds; at 512 it falls
+at {{mean.falls[512]|minmax}} of its {{mean.n_trans}} transitions on every seed, and at 256 the two
+seeds whose break is at 256 have the most falls. At steps 128 to 1000 the two frame-changing
+transitions hold none of the falls (later in training they do). So E₁'s first-order term stops rising with depth at the break, on every seed. That is the
+same break seen through one term of E₁, not separate evidence, and how much of V it carries (how
+often a drop in E₁ comes with a fall in ‖m‖²) is not measured. The rule fixed for
+seed 0 before its run carried a size label, "mostly removed" (centred plateau
+{{c3.plateau_c|f0}} against {{c3.plateau_u|f0}}, at that rule's tolerance {{rel_tol|sci}}), and we
+withdraw it: at the matched tolerance 10⁻⁴ the centred plateau is {{c3.matched_ratio|f2}} of the
+uncentred one, so the label measured centring's change of scale, not a smaller break. That ratio
+is quoted only to withdraw the label; it is not a size reading.
 
 ## 5. The timeline
 
 Where does the break fall against what else the model learns? On seed 0's {{grid.n}} steps we
-dated the break among nine other measured changes with one locator (table 1, figure 2).
+dated the break among eight other changes measured on the model, the learning-rate schedule and
+a simulator's row, with one locator (table 1, figure 2).
 
 **The locator.** For a row x(s), signed so that its change is positive, let Δ(s) = x(s) − x(0).
 The reference is the largest Δ over steps up to 4000, and the row's step is the first at which
@@ -280,12 +355,17 @@ rows fall and then rise, and are dated at their minimum. The energy row E1 is da
 half-rise instead, and the learning-rate row E10 by the same half-point with no floor. Before
 any real row was dated, the locator was gated on null series and on changes planted in each gap
 of the grid; the first gate failed on four rows, whose spread grows by orders of magnitude over
-training, and the revised gate passes on every row dated here (appendix B).
+training, and the revised gate passes on every row dated here (appendix B). The locator dates a
+row's first move only; a row that later reverses is described, not dated again.
 
 *Table 1. Seed 0's rows, ordered by their dated step. All are on `pythia-410m`'s {{grid.n}}
-steps, v1's {{a5.n_prompts}} prompts, except the n-gram rows, read on {{a3.ngram_blocks}} held-out text blocks from
-the Pile's validation split. E1c, the centred cloud (§4.1), is dated by §3.3's half-rise and was
-added after the other rows were read.*
+steps and the {{a5.n_prompts}} prompts, except the n-gram rows, read on {{a3.ngram_blocks}}
+held-out text blocks from the Pile's validation split. E1c, the centred cloud (§4.1), is dated
+by §3.3's half-rise and was added after the other rows were read. Censored: the row's largest
+change up to 4000 is at 4000, still growing, so its date is a lower bound. Refused: E11 runs the
+identity-weight dynamics from each step's measured token cloud and reads one cluster in every
+cell, as theory requires at a long horizon, so it cannot date anything. E3's two heads, and E4's,
+were named in earlier work on this model, not chosen by the seeds' rule of the 1000 tie below.*
 
 | row | what changes | dated step |
 |---|---|---|
@@ -295,7 +375,7 @@ added after the other rows were read.*
 | E1 | the energy break (§4) | {{a3.rows[E1]|step}} |
 | E2 | the OV maps' attractive share: per head, the share of the OV map's squared eigenvalue mass on eigenvalues with positive real part, median over the {{cfg.heads_total}} heads, falls | {{a3.rows[E2]|step}} |
 | E8 | the weights' spectral tail exponent α [Martin and Mahoney 2019], median over matrix types and layers, falls | {{a3.rows[E8]|step}} ({{a3.E8_peak}} from its peak) |
-| E3 | induction: attention of two induction heads to the token after an earlier copy of the current one | {{a3.rows[E3]|step}} |
+| E3 | induction: attention of two induction heads (`L8H6`, `L11H14`) to the token after an earlier copy of the current one | {{a3.rows[E3]|step}} |
 | E4 | previous-token attention of head `L5H2` | {{a3.rows[E4]|step}} |
 | E1c | the token-centred cloud's break (§4.1), the same at each of its four tolerances | {{c3s.s0_dates|uniq}} |
 | E10 | the learning-rate schedule, its half-point | {{a3.rows[E10]|step}} |
@@ -306,21 +386,28 @@ added after the other rows were read.*
 
 *Figure 2. Seed 0's rows by step, each as the share of its change (Δ over its reference; E1 as
 V over its plateau median, E1c as V_c at 10⁻⁴ over its own; the n-gram rows as the fall into
-their minimum), cut at −1.2. Dot:
-the dated step. Shaded: the warmup, to step {{cfg.warmup_steps}}.*
+their minimum), each signed so that its dated change is upward (E5, E2 and E8 fall). The axes
+are cut at −1.2, and E5 and E6u run below the cut after their dates. Dot: the dated step.
+Shaded: the warmup, to step {{cfg.warmup_steps}}. E7 and E11 are not drawn.*
 
 **The order.** E5 ({{a3.rows[E5]|step}}) < E6u ({{a3.rows[E6u]|step}}) < E6b
 ({{a3.rows[E6b]|step}}) < E1 = E2 ({{a3.rows[E1]|step}}) < E3 = E4 = E1c = E10 ({{a3.rows[E3]|step}}), with
 E8 between the two groups: dated from step 0 it ties the second ({{a3.rows[E8]|step}}), dated from
 its peak the first ({{a3.E8_peak}}). The rank collapse and the unigram minimum come before the break; the
-break falls with the OV fall, one grid step after the bigram minimum and one before the
+break falls with the OV fall, within one grid step of the bigram minimum and of the
 previous-token and induction heads, which the centred cloud's break joins (on the seeds too, at
-1000 on {{c3s.K2|word}} of {{c3s.n|word}}). E1c is not one of A3's rows and its pairs are not
-counted below. Of the {{a3.n_pairs}} pairs read with the break and among the
-circuit rows, {{a3.n_aligned}} are aligned within one grid step, {{a3.n_misaligned}} are not (the
-rank collapse and the unigram minimum come first) and {{a3.n_unread}} are unread (E7 censored,
-E11 refused). That E1 and E2 align is not new: this project's earlier medians of the OV maps
-already put E2's fall at the same step.
+1000 on {{c3s.K2|word}} of {{c3s.n|word}}). E1c was added after the other rows were read and its
+pairs are not counted below. The {{a3.n_pairs}} pairs fixed before the reading are the break with
+each of the nine model and simulator rows, and two among the circuit rows (E4 with E3, E3 with
+E2). {{a3.n_aligned|Word}} are aligned within one grid step, {{a3.n_misaligned}} are not (the rank
+collapse and the unigram minimum come first) and {{a3.n_unread}} are unread (E7 censored, E11
+refused). A one-step gap counts as aligned, here and in §1. No null says how many pairs
+quantities driven by one ramp would align on this grid, so the count is description.
+
+Two rows reverse after their dates, beside the break. The token cloud's effective rank (E5), which
+falls by step 8, climbs back past its starting value between 512 and 1000, the step at which the
+centred cloud breaks; induction attention (E3) peaks at 1000 and falls after. Neither second move
+is dated.
 
 **Every aligned pair is inside the warmup.** The schedule's own row reads 1000 by construction
 (the learning rate reaches half its peak at step {{cfg.warmup_half}}, between grid steps), and inside a linear ramp "within one grid step" includes "driven by the same ramp". Nothing in
@@ -343,19 +430,26 @@ along at 512 on {{a5.d10_prev}} (shares {{a5.d10_prev_share|range2}} against
 {{a5.d10_ind_share|range3}}), seed {{a5.d10_other|and}} the other way, and on seed
 {{a5.d10_unlocated|and}} the induction head is not located. Previous-token attention is further
 along than induction at 512, the order the stagewise literature reports (§2.2); the grid cannot
-date the gap.
+date the gap. The shares compare quantities of different kinds (a count, an attention weight, a
+learning rate), each against its own reference, so they order the rows only as description.
 
 ## 6. Is the break the OV maps'?
 
 The monotonicity results of §2.1 need each head's value map tied to its symmetric scores, and
 the OV maps' attractive share falls at the break's step (§5). So the first suspect is the OV maps
 turning away from symmetric, attracting maps. On seed 0 we edited every head's OV map at once in
-the forward pass and counted V again, at step 0, 256 and the {{s2.n_scored|word}} steps from 512
-on. Two edits ask whether the break is the OV maps' asymmetry: (a) each map replaced by its
-symmetric part; (b) each map's rotation removed, in an orthonormal basis of each of its
-two-dimensional invariant planes, keeping its gain. Each is read against 40 random edits
-matched to it in size and in each head's norm: a cell is *lower* or *higher* only beyond all 40,
-and only beyond what the edit's change of gain alone does. In-context copying is read beside it,
+the forward pass and counted V again, at step 0, 256 and the {{s2.n_scored|word}} steps 512, 1000,
+2000, 4000 and 143 000; only the last five are labelled. Two edits ask whether the break is the
+OV maps' asymmetry: (a) each map replaced by its symmetric part; (b) each map's rotation removed,
+keeping its gain: restricted to the head's write space, the map's real Schur form
+W = U S Uᵀ (U orthogonal, S block upper-triangular) has each 2 × 2 diagonal block of S replaced
+by its symmetric part, so the rotation is removed plane by plane in an orthonormal basis even
+when the map is not normal. Each edit is read against 40 random edits matched to it twice: each
+control's change has the edit's norm, and each control's map has the edited map's norm, head by
+head.
+A cell is *lower* or *higher* only beyond all 40, and only beyond what the edit's change of gain
+alone does (the map rescaled to the edited norm, read beside and not drawn). The MLP blocks,
+which add to the stream in parallel with attention, are never edited. In-context copying is read beside it,
 as the repeat gain G of a probe of 16 sequences of 96 random tokens repeated once (the mean loss
 on the first copy's positions minus that on the second's), at the {{s2.n_r2|word}} steps from 1000,
 where copying exists.
@@ -364,15 +458,21 @@ where copying exists.
 
 *Figure 3. V on seed 0 under each edit (blue) at the steps read, the unedited model (grey) and
 the range of the 40 matched random edits (orange). Left, (a) each OV map's symmetric part;
-middle, (b) its rotation removed; right, every head given its own step-128 OV map. The steps are
-evenly spaced.*
+middle, (b) its rotation removed; right, every head given its own step-128 OV map, against random
+edits matched to that substitution as above. The steps are evenly spaced; the gain-only control
+is not drawn.*
 
 **Neither edit undoes the break** (figure 3). Under (a) V is lower than its controls at
-{{s2.r1_lower[a]|word}} of the {{s2.n_scored|word}} steps and higher at {{s2.r1a_higher|and}}; under
-(b) it is {{s2.r1b_raw|ands}} at every step. (b) is a small edit: removing the rotation changes a
-head's map by a median {{s2.b_edit|range2}} of its norm. Copying survives it: G is
-{{s2.r2b_G|range2}} at the four steps, {{s2.r2b_raw|ands}}, where zeroing the OV maps of ten
-induction heads takes it to {{s2.g2_G|range2}} (appendix B).
+{{s2.r1_lower[a]|word}} of the {{s2.n_scored|word}} labelled steps and higher at
+{{s2.r1a_higher|and}}; under (b) it is {{s2.r1b_raw|ands}} at every step. The controls show
+what (a) is: a large edit, random edits of its size alone moving V far from the unedited count
+and breaking most copying. Beside the labelled steps, (a) gives V = {{s2.a[0]|v}} at step 0,
+inside its controls' {{s2.a[0]|span}} (so a random edit of its size makes the initialised model
+non-monotone too), and {{s2.a[256]|v}} at 256, above all 40 ({{s2.a[256]|span}}). (b) is a small
+edit: removing the rotation changes a head's map by a median {{s2.b_edit|range2}} of its norm.
+Copying survives it: G is {{s2.r2b_G|range2}} at the four steps, {{s2.r2b_raw|ands}} and about the
+unedited model's, where zeroing the OV maps of ten induction heads takes it to
+{{s2.g2_G|range2}} (appendix B).
 
 **The one OV-only edit with a known destination does not reach it either.** Giving every head
 its own step-128 OV map, where V was 0, leaves V at {{s2.g3p_span|range}} across the five steps.
@@ -380,13 +480,15 @@ The edit is not inert: V is lower than every control at 512 ({{s2.g3p_v[512]}} a
 {{s2.g3p_ctl[512]|range}}) and at 1000 ({{s2.g3p_v[1000]}} against {{s2.g3p_ctl[1000]|range}}), and
 higher at 2000 ({{s2.g3p_v[2000]}} against {{s2.g3p_ctl[2000]|range}}), one grid step after the
 OV maps' attractive share reaches its lowest (§5). The whole model moved to its step-128 weights, by contrast,
-gives V = {{s2.g3_full|uniq}} at every step from 512 to 4000, so V does answer to a known
-destination; an OV-only edit does not take it there.
+gives V = {{s2.g3_full|uniq}} at every step from 512 to 4000. That is close to a tautology, since
+the step-128 model has V = 0 (§4); it is a check that the count can register a reversal when one
+is made, not evidence about the OV maps. An OV-only edit does not take V there.
 
 So the break is neither shown to be the OV maps' nor shown not to be. One OV-only edit with a
 known destination was tried, and it moves V in both directions without approaching monotone;
-the two structural edits show no reversal beyond random edits of their size. None of this is
-causal evidence about which components push the tokens apart.
+the two structural edits show no reversal beyond random edits of their size. No other component
+(the MLPs, the layer norms, the embeddings, QK) was moved to its step-128 weights, so none of
+this is causal evidence about which components push the tokens apart.
 
 ## 7. What would separate the schedule from training
 
@@ -402,33 +504,43 @@ under *step*, at the same count of updates; under the *cumulative* learning rate
 weights have received), where that run's summed rate reaches 410m's at the date; under the
 *instantaneous* rate, where its rate does. Each is mapped from 410m's dates on the ten seeds
 ({{c3b.ref[u]|range}} for the break, {{c3b.ref[c]|range}} for the centred date) onto the other
-run's grid as a band, and a run's dates keep the schedules whose bands contain them. The
-schedules are deterministic functions of the step, so a date consistent with one is not
-evidence that it causes anything.
+run's grid as a band. A date g on the grid stands for a crossing somewhere in (g′, g], g′ the grid
+step before it; inside a linear warmup each schedule carries a step t on 410m to f·t on the
+other run (f = 1 for step, √(p/p′) for the cumulative rate and p/p′ for the instantaneous one,
+p and p′ the two peak rates), and the band is every grid step s of the other run whose own
+interval (s′, s] meets (f·g′, f·g] for some date g in 410m's range. A run's dates keep the
+schedules whose bands contain them. The schedules are deterministic functions of the step, so a
+date consistent with one is not evidence that it causes anything.
 
 ![Figure 4](fig/fig4_schedules.svg)
 
 *Figure 4. Left, V over its plateau median on `pythia-70m` and `pythia-160m` (E₁ solid, the
-centred cloud at 10⁻⁴ dashed) and on seed 0 of `pythia-410m`, with the half line. Right, V on
-Mistral GPT-2 small's {{c3c.n|word}} seeds, with the bands where the cumulative rate (left) and
-the count of updates (right) put E₁'s break. Shaded on the left: Pythia's warmup.*
+centred cloud at 10⁻⁴ dashed) and on seed 0 of `pythia-410m`, with the half line; 70m's E₁ is
+over a plateau of only {{c3b.plateau_u[70m]|f0}} drops, which is why its curve reaches far above
+1. Right, raw V (not normalised) on Mistral GPT-2 small's {{c3c.n|word}} seeds, not told apart,
+with the bands where the cumulative rate (left) and the count of updates (right) put E₁'s break;
+its centred counts are not drawn. Shaded on the left: Pythia's warmup. Step 0 is drawn where
+step 1 would be.*
 
 **Pythia 70m and 160m.** They warm up over the same {{cfg.warmup_steps}} steps at peak rates of
 {{cfg.lr_70m|sci}} and {{cfg.lr_160m|sci}}, against {{cfg.lr_410m|sci}} for 410m, so the cumulative and
 instantaneous rates reach 410m's earlier in steps. On both, E₁'s break is at {{c3b.u[70m]}}
-and the centred date at {{c3b.c[160m]|uniq}}, the same at every tolerance (figure 4). On 160m's
-grid the centred date predicted under the instantaneous rate is {{c3b.band_c[instantaneous]|range}}
-({{c3b.band_c70[instantaneous]|range}} on 70m), so the rate itself is excluded; step
-({{c3b.band_c[step]|range}}) and cumulative ({{c3b.band_c[cumulative]|range}}) both contain 1000.
-E₁'s break at 256 excludes none of the three: all their bands contain it. The joint reading is **{{c3b.label}}**, and it is the same
-without 70m's E₁ date, which rests on a plateau of {{c3b.plateau_u[70m]|f0}} drops. Step against
-the cumulative dose is not told apart on Pythia's grid; size changes with the rate, and there is
-one seed per size.
+and the centred date at {{c3b.c[160m]|uniq}}, the same at every tolerance (figure 4). Under the
+instantaneous rate the centred date is predicted at {{c3b.band_c[instantaneous]|range}} on 160m
+and {{c3b.band_c70[instantaneous]|range}} on 70m, so the rate itself is excluded; on 160m step
+predicts {{c3b.band_c[step]|range}} and the cumulative rate {{c3b.band_c[cumulative]|range}}, both
+containing 1000. E₁'s break at 256 excludes none of the three: all their bands contain it. The
+joint reading is **{{c3b.label}}**, and it is the same without 70m's E₁ date, which rests on a
+plateau of {{c3b.plateau_u[70m]|f0}} drops, so a few drops move it. Step against the cumulative dose is
+not told apart on Pythia's grid; size changes with the rate, and there is one seed per size
+(PolyPythias also releases seeds of 70m and 160m, not read here).
 
-**Mistral GPT-2 small.** Stanford CRFM's Mistral trained {{c3c.n|word}} seeds of a GPT-2 small with
-checkpoints every 50 steps to 2000 [Stanford CRFM]. Its learning rate rises
-logarithmically, reaching half its peak of {{gpt2.lr_peak|sci}} by step {{gpt2.lr_half}} and the
-peak at about step {{gpt2.warmup_end}} (the logged rate), so the cumulative dose predicts far
+**Mistral GPT-2 small.** Stanford CRFM's Mistral trained {{c3c.n|word}} seeds of a GPT-2 small
+(its states taken as for Pythia: the embeddings, each block's output, the last after the final
+layer norm) with checkpoints every 10 steps to 100, every 50
+to 2000 and more sparsely after [Stanford CRFM]. Its learning rate rises logarithmically,
+reaching half its peak of {{gpt2.lr_peak|sci}} by step {{gpt2.lr_half}} and the peak at about step
+{{gpt2.warmup_end}}, as logged in each seed's released trainer state, so the cumulative dose predicts far
 earlier dates than step does, and here the schedules separate: for E₁'s break the cumulative
 band is {{c3c.pred[cumulative]|range}}, step's {{c3c.pred[step]|range}}. E₁'s break falls at
 {{c3c.breaks|or}} on all five seeds, in step's band only, and the frozen joint reading is
@@ -438,7 +550,8 @@ writing this section, not to let it, for three reasons:
 
 - *E₁ rises in two stages* on every seed (figure 4): to {{c3c.V100|range}} drops by step 100,
   inside the cumulative band, then to {{c3c.V350|range}} by 350, inside step's. The frozen plateau
-  (the median over 4000–16 000, 410m's window mapped under tokens) puts its half between the
+  (the median over 4000–16 000: 410m's window carried by tokens seen, since a GPT-2 small step
+  sees a quarter of a Pythia step's tokens) puts its half between the
   stages; against 410m's own window, 1000–4000, the half-rise reads {{c3c.alt|or}}, and the
   joint would read "neither". The label holds for the larger stage and depends on the window.
 - *The centred count gives no date.* Each seed's four tolerances disagree, from
@@ -466,22 +579,41 @@ Billa [2026] finds task representations' RankMe collapsing from step 0 to steps 
 Pythia 160m and 410m and partly recovering by about step 1000. Cheng et al. [2024] follow
 intrinsic dimension by layer from step 512, and Razzhigaev et al. [2023] report intrinsic
 dimension rising and then falling over training. A non-monotone geometric arc along training
-is therefore not new. What is new here is the interaction energy of the particle picture, its
-monotonicity in depth read along a real training axis, the step at which it breaks, and that
-step's reproduction across seeds.
+is therefore not new, and neither is the statistic in kind: at β = 1, E₁'s first-order term is the
+anisotropy measure ‖m‖² (§2.1). What is new here is reading the particle picture's prediction,
+E_β monotone in depth, along a real training axis: the step at which it breaks, that step's
+reproduction across seeds, and its place on the developmental order.
 
-**Anisotropy.** E_β is a moment of the tokens' Gram matrix, so it moves with anisotropy, the
-tokens' shared direction. Trained transformers' representations are dominated by one principal
-direction [Ben-Artzy and Schwartz 2026], and decoders' anisotropy peaks in their middle layers
-[Razzhigaev et al. 2023]. Along Pythia's training, Bernas et al. [2026] study anisotropy chiefly
-through the gradients, with activations read from step 10 000 on; we found no reviewed
-measurement of activation anisotropy inside the break's window. §4.1 reports the energy on
-token-centred clouds, the control this calls for.
+**Anisotropy, outlier dimensions and sinks.** E_β is a moment of the tokens' Gram matrix, so it
+moves with anisotropy, the tokens' shared direction. Contextual representations are anisotropic
+in every layer [Ethayarajh 2019]; a few rogue dimensions dominate similarity
+measures between them [Timkey and van Schijndel 2021]; trained transformers' representations are
+dominated by one principal direction [Ben-Artzy and Schwartz 2026], and decoders' anisotropy
+peaks in their middle layers [Razzhigaev et al. 2023]; §4.1's profile of ‖m‖², rising with depth
+before the break and falling at several transitions after it, is compatible with such a peak
+forming at the break, though we did not locate the peak on the seeds. Large language models carry a few
+activations of very large magnitude that act as fixed biases [Sun et al. 2024], and attention
+concentrates on initial tokens that act as sinks [Xiao et al. 2023]; either could carry the mean
+direction §4.1 removes, and neither is examined here beyond appendix A's note on the massive
+coordinates. Along Pythia's training, Bernas et al. [2026] study anisotropy chiefly through the
+gradients, with activations read from step 10 000 on; we found no reviewed measurement of
+activation anisotropy inside the break's window. §4.1 reports the energy on token-centred clouds,
+the control this calls for. Pure attention loses rank with depth [Dong et al. 2021], and rank
+collapse at initialisation hinders training [Noci et al. 2022]; our row E5 reads the token
+cloud's rank along training.
+
+**Warmup.** The warmup is commonly explained as controlling the adaptive optimiser's early
+variance [Liu et al. 2019] or as moving the model to regions that tolerate larger learning rates
+[Kalra and Barkeshli 2024]. Both make the schedule a plausible cause of any event inside it,
+which is why §7 does not separate the two.
 
 **Developmental interpretability.** The stagewise picture of §2.2 comes from the local learning
 coefficient [Hoogland et al. 2024], refined per head [Wang et al. 2024], and from
 susceptibilities [Wang et al. 2025]; induction heads [Olsson et al. 2022] and the function-vector
-heads many of them become [Yin and Steinhardt 2025] are its best-studied circuit. PolyPythias
+heads many of them become [Yin and Steinhardt 2025] are its best-studied circuit, and how an
+induction head forms has been studied mechanistically [Singh et al. 2024]. Abrupt structure
+formation during training, with a sudden drop in the loss, is reported in masked language models
+[Chen et al. 2023]. PolyPythias
 [van der Wal et al. 2025] reports training dynamics highly consistent across seeds, with outlier
 runs; §4's seeds include two such runs.
 
@@ -505,12 +637,14 @@ and the OV map's invariant subspaces with negative real, positive real and compl
 we average the heads' orthogonal projectors and take the participation ratio PR of the mean.
 Under a null that rotates each head's subspace by an independent Haar rotation PR has an exact
 expected value PR₀, and ρ = PR / PR₀ is 1 under it and falls as the heads concentrate on shared
-directions. Each step's PR is read against the null's range over its draws. The null, a
-norm-matched Gaussian draw of the weights and step 0 are one law, and the instrument passes it
-at every step. ρ is a description: a count of shared directions cannot be calibrated on a
-trained pool, and neither can ρ's effect side (the spectrum is dense at the null's edge, and a
-planted effect that adds dimensions measures only its own dilution). Weights only; the
-residual-stream check below used v1's prompts.
+directions. Each step's PR is read against the null's range over its draws. The Haar null, a
+Gaussian draw of the weights matched in norm, and the step-0 weights give the same distribution
+of PR, and every step is read against it. ρ is a description: a count of shared directions
+cannot be calibrated on a trained pool, and neither can ρ's effect side, because a planted shared
+direction added to the pool lowers ρ mostly by diluting the pool's own concentration, so a
+planted effect's size says nothing about a real one. The readings use the weights only, except
+the comparison with the residual stream's top-variance directions below, which uses the
+{{a5.n_prompts|word}} prompts. ρ by family and step is not tabulated here.
 
 Through step 128 every family reads the null (|ρ − 1| at most {{s1.rho_null_ov|sci}} in the OV
 families and {{s1.rho_null_qk|sci}} in QK). The query and key families leave it at
@@ -544,7 +678,8 @@ each grid step is read at that step for {{a5g.planted_ok|list}}; one planted at 
 plateau's last step, reads 2000, since the plateau then contains the rise; a series is read
 inside the window exactly when its break was planted there. *Planted null:* {{a5g.null_n|int}}
 draws of the nine seeds' steps from the uniform-location null, through the scorer, reproduce
-Bin(9, {{reg.p0}}) for K (largest standardised gap {{a5g.null_maxz|f1}}). *Planted effect:* seed 0's
+Bin(9, {{reg.p0}}) for K (largest standardised gap {{a5g.null_maxz|f1}}); this checks the scorer,
+and the planted breaks check the half-rise rule. *Planted effect:* seed 0's
 series moved one grid step later reads {{a5g.effect_step}}, outside the window. *Sensitivity:* the
 date is the same at every tolerance and with any one prompt left out (§3.2). *Why this null:*
 it is the alternative to "the recipe sets the step", scattering each run's step over the early
@@ -564,7 +699,8 @@ controls (G1: {{s2.g1_labelled}} labels). Zeroing ten induction heads' OV maps l
 weights lowers V below its controls at {{s2.g3_counts|word}} steps at full dose, to V =
 {{s2.g3_full|uniq}} (G3), so the count can see a reversal when one is made. A displacement guard,
 meant to leave unread any cell whose edit moves the residual stream further than its controls,
-refused both planted effects, and was made description before any arm was read. *Why random
+refused both planted effects, and was made description before any arm was read; it is not
+reported here. *Why random
 edits matched in size and in each head's norm:* a structured edit has to be told from what any
 edit of its size does, and the gain change alone is read beside, because the scale of a head's
 map moves V by itself.
@@ -572,7 +708,9 @@ map moves V by itself.
 **The centred counts (§4.1, §7).** The steps no schedule reaches (0–128 on Pythia, 0 and 10 on
 GPT-2 small) are read first, and a centred count there of half its plateau or more would refuse
 the control; none did. The two derived tolerances are fixed per model before its records:
-one so that the re-initialised models' centred drop rate matches their uncentred one, one so
+one so that the re-initialised models' centred drop rate matches their uncentred one (the same
+architecture with fresh random weights; on GPT-2 small this tolerance is set by a single
+largest drop of theirs), one so
 that a planted spread is seen by the centred count as by the uncentred one; each tolerance is
 gated on the re-initialised models and on two planted effects (a common vector added to every
 token, which the centred count must not see, and a spread, which it must). One tolerance on the
@@ -584,7 +722,7 @@ dose 0 and three doses; its refusals are fixed or argued in the design.
 
 ## References
 
-Titles and authors as on each paper's arXiv page (read 2026-10-22); the year is the first
+Titles and authors as on each paper's arXiv page (read 2026-10-22; the ten added at unit 5 read 2026-10-23); the year is the first
 arXiv version's.
 
 - Belrose, N., Pope, Q., Quirke, L., Mallen, A., Fern, X. (2024). Neural networks learn statistics of increasing complexity. arXiv:2402.04362.
@@ -593,23 +731,33 @@ arXiv version's.
 - Biderman, S., Schoelkopf, H., Anthony, Q., Bradley, H., O'Brien, K., Hallahan, E., Khan, M. A., Purohit, S., Prashanth, U. S., Raff, E., Skowron, A., Sutawika, L., van der Wal, O. (2023). Pythia: a suite for analyzing large language models across training and scaling. arXiv:2304.01373.
 - Billa, J. (2026). The geometric anatomy of capability acquisition in transformers. arXiv:2602.15997.
 - Bruno, G., Pasqualotto, F., Agazzi, A. (2024). Emergence of meta-stable clustering in mean-field transformer models. arXiv:2410.23228.
+- Chen, A., Shwartz-Ziv, R., Cho, K., Leavitt, M. L., Saphra, N. (2023). Sudden drops in the loss: syntax acquisition, phase transitions, and simplicity bias in MLMs. arXiv:2309.07311.
 - Cheng, E., Doimo, D., Kervadec, C., Macocco, I., Yu, J., Laio, A., Baroni, M. (2024). Emergence of a high-dimensional abstraction phase in language transformers. arXiv:2405.15471.
+- Dong, Y., Cordonnier, J.-B., Loukas, A. (2021). Attention is not all you need: pure attention loses rank doubly exponentially with depth. arXiv:2103.03404.
+- Ethayarajh, K. (2019). How contextual are contextualized word representations? Comparing the geometry of BERT, ELMo, and GPT-2 embeddings. arXiv:1909.00512.
 - Geshkovski, B., Letrouit, C., Polyanskiy, Y., Rigollet, P. (2023). A mathematical perspective on Transformers. arXiv:2312.10794.
 - Geshkovski, B., Koubbi, H., Polyanskiy, Y., Rigollet, P. (2024). Dynamic metastability in the self-attention model. arXiv:2410.06833.
 - Herty, M., Liu, H. (2026). A mean-field theory of transformers: well-posedness of the coupled data–parameter dynamics and global convergence of training. arXiv:2608.25055.
 - Hoogland, J., Wang, G., Farrugia-Roberts, M., Carroll, L., Wei, S., Murfet, D. (2024). Loss landscape degeneracy and stagewise development in transformers. arXiv:2402.02364.
 - Isobe, N., Inoue, D., Imaizumi, M. (2026). Training-induced escape from token clustering in a mean-field formulation of transformers. arXiv:2605.07772.
+- Kalra, D. S., Barkeshli, M. (2024). Why warmup the learning rate? Underlying mechanisms and improvements. arXiv:2406.09405.
 - Li, M. Z., Agrawal, K. K., Ghosh, A., Teru, K. K., Santoro, A., Lajoie, G., Richards, B. A. (2025). Tracing the representation geometry of language models from pretraining to post-training. arXiv:2509.23024.
+- Liu, L., Jiang, H., He, P., Chen, W., Liu, X., Gao, J., Han, J. (2019). On the variance of the adaptive learning rate and beyond. arXiv:1908.03265.
 - Martin, C. H., Mahoney, M. W. (2019). Traditional and heavy-tailed self regularization in neural network models. arXiv:1901.08276.
+- Noci, L., Anagnostidis, S., Biggio, L., Orvieto, A., Singh, S. P., Lucchi, A. (2022). Signal propagation in transformers: theoretical perspectives and the role of rank collapse. arXiv:2206.03126.
 - Olsson, C., Elhage, N., Nanda, N., Joseph, N., DasSarma, N., Henighan, T., Mann, B., Askell, A., Bai, Y., Chen, A., Conerly, T., Drain, D., Ganguli, D., Hatfield-Dodds, Z., Hernandez, D., Johnston, S., Jones, A., Kernion, J., Lovitt, L., Ndousse, K., Amodei, D., Brown, T., Clark, J., Kaplan, J., McCandlish, S., Olah, C. (2022). In-context learning and induction heads. arXiv:2209.11895.
 - Pendharkar, A. (2026). Gradient flow structure and quantitative dynamics of multi-head self-attention. arXiv:2605.04279.
 - Razzhigaev, A., Mikhalchuk, M., Goncharova, E., Oseledets, I., Dimitrov, D., Kuznetsov, A. (2023). The shape of learning: anisotropy and intrinsic dimensions in transformer-based models. arXiv:2311.05928.
 - Rigollet, P. (2025). The mean-field dynamics of transformers. arXiv:2512.01868.
 - Shaikh, K., Singh, A. K., Dsouza, R. C., Shiromani, S. (2026). Linear predictability of attention heads in large language models. arXiv:2603.13314.
+- Singh, A. K., Moskovitz, T., Hill, F., Chan, S. C. Y., Saxe, A. M. (2024). What needs to go right for an induction head? A mechanistic study of in-context learning circuits and their formation. arXiv:2404.07129.
 - Stanford CRFM. Mistral GPT-2 small checkpoints, `stanford-crfm/alias-gpt2-small-x21`, `battlestar-gpt2-small-x49`, `caprica-gpt2-small-x81`, `darkmatter-gpt2-small-x343`, `expanse-gpt2-small-x777`, the Hugging Face Hub (tags `checkpoint-N`; read 2026-10-22). No paper is cited for them.
+- Sun, M., Chen, X., Kolter, J. Z., Liu, Z. (2024). Massive activations in large language models. arXiv:2402.17762.
 - Tigges, C., Hanna, M., Yu, Q., Biderman, S. (2024). LLM circuit analyses are consistent across training and scale. arXiv:2407.10827.
+- Timkey, W., van Schijndel, M. (2021). All bark and no bite: rogue dimensions in transformer language models obscure representational quality. arXiv:2109.04404.
 - van der Wal, O., Lesci, P., Muller-Eberstein, M., Saphra, N., Schoelkopf, H., Zuidema, W., Biderman, S. (2025). PolyPythias: stability and outliers across fifty language model pre-training runs. arXiv:2503.09543.
 - Vovk, V., Wang, R. (2019). E-values: calibration, combination, and applications. arXiv:1912.06116.
 - Wang, G., Hoogland, J., van Wingerden, S., Furman, Z., Murfet, D. (2024). Differentiation and specialization of attention heads via the refined local learning coefficient. arXiv:2410.02984.
 - Wang, G., Baker, G., Gordon, A., Murfet, D. (2025). Embryology of a language model. arXiv:2508.00331.
+- Xiao, G., Tian, Y., Chen, B., Han, S., Lewis, M. (2023). Efficient streaming language models with attention sinks. arXiv:2309.17453.
 - Yin, K., Steinhardt, J. (2025). Which attention heads matter for in-context learning? arXiv:2502.14010.
