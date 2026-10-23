@@ -855,6 +855,13 @@ the user asked why PR CI was so fast. The tests passed once run (770 passed,
 `ci.yml` on every push, the nightly step runs `!cancelled()`, `status.sh`
 falls back to the public API and exits 1 when it cannot see.
 
+2026-10-23: **#261 was red in the deps tier from its first push, through `/challenge-pr` and
+CodeRabbit.** Unit 5b added `fig5_count.svg`; `tests/test_trackC_figures.py` (marked `deps`)
+still listed four figures. `./scripts/check.sh` deselects `deps`, so it passed locally, and the
+user saw only "exit code 1". Fixed by adding the figure to the test. Rule: read `gh pr checks`
+before Stop step 9, and a unit that adds an output its `deps` tests enumerate runs
+`pytest -m deps` on those tests before pushing.
+
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋
 `CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection
@@ -2064,6 +2071,20 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   never saved as a record). `/challenge-pr` on #260 caught it. Rule: before answering "not
   measured", grep the phase's status file for the quantity; a post-hoc reading quoted in prose is
   saved as a record the same unit, or it gets lost.
+- 2026-10-23, C2 unit 5b (follow-on to the instance above): the share of each E₁ drop that the
+  mean's term carries was exact arithmetic on fields saved at unit 3 (`e1` and `cos` per state).
+  Four units of text said "not measured", and the referee read listed it as a run past budget.
+  One script with no forward pass read it: the mean's term is most of every drop at the break, and
+  the abstract changed. Rule: when the statistic has an exact decomposition and the records hold
+  its parts, the split is computed in the unit that first reads the statistic, before any sentence
+  says how much one part carries.
+- 2026-10-23, C2 unit 5b (found by `/challenge-pr` on #261, finding 1): the frozen reading R6 (a)
+  compared "‖m‖² falls at every drop" with the share of *all* transitions at which ‖m‖² falls
+  (0.20–0.35). Most transitions are rises of E₁, so the comparison was selection on the outcome:
+  E₁ and ‖m‖² move together at 0.96–1.00 of transitions at every step. The draft first presented
+  a property of E₁ everywhere along training as a property of the break. Rule: a conditional
+  share ("X at every Y") is set beside the same share conditioned on not-Y, or on Y's complement
+  of the same kind (here, rises), never beside the unconditional rate.
 
 ## 12. Deleted, then needed
 

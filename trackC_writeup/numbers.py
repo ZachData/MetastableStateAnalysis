@@ -30,6 +30,7 @@ import re
 import sys
 from fractions import Fraction
 from pathlib import Path
+from statistics import median
 from typing import Callable, Dict, List, Optional, Sequence
 
 REPO = Path(os.environ.get("METS_REPO", str(Path(__file__).resolve().parents[1])))
@@ -65,6 +66,7 @@ RECORDS = {
     "s1_qk": "data:trackS/s1/2026-10-21-u3-r1qk/r1_qk.json",
     "gpt2_lr": "repo:trackC_writeup/gpt2_small_lr_log.json",
     "c5mean": "data:trackC/c2u5/2026-10-23-mean/profile.json",
+    "c5b": "data:trackC/c2u5b/2026-10-23/readings.json",
     "push": "repo:trackC_writeup/p_a5_push_record.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
@@ -292,6 +294,23 @@ def _s1_rho(rec: dict, step: str) -> Dict[str, float]:
     return {f: rec["cells"][f"{step}|{f}"]["rho"] for f in _s1_fams(rec)}
 
 
+#: Unit 5b's steps: the break's window and induction's step (R6), and the steps after (R6, late).
+C5B_EARLY = ("128", "256", "512", "1000")
+C5B_LATE = ("2000", "4000", "8000", "16000", "32000", "54000", "143000")
+
+
+def _r1_out(r: dict) -> List[tuple]:
+    """The (seed, prompt, date) series R1 dates outside the window."""
+    return [(int(s), p, d) for s, x in r["per_seed"].items() for p, d in x["R1"]["dates"].items()
+            if d not in r["window"]]
+
+
+def _c5b_s_exc(r: dict) -> int:
+    """Drops at 128–1000 where the mean's term carries half or less (from each step's share)."""
+    b = r["R6"]["by_step"]
+    return sum(round(b[s]["drops"] * (1 - b[s]["s_gt_half_share"])) for s in C5B_EARLY)
+
+
 KEYS: Dict[str, tuple] = {
     # Pythia's released training configs (§2.3, §3)
     "cfg.train_iters": ("cfg_410m", lambda c: c["train-iters"]),
@@ -359,6 +378,43 @@ KEYS: Dict[str, tuple] = {
     "mean.frame_falls": ("c5mean", lambda r: sum(d["falls_all"][st] - d["falls_inner"][st]
                                                  for d in r["seeds_data"].values() for st in ("128", "256", "512", "1000"))),
     "mean.n_trans": ("c5mean", lambda r: r["transitions_all"]),
+    # the referee's readings from records (unit 5b, c2_readings.py; design-C2.md "Unit 5b")
+    "rd.map": ("c5b", lambda r: r["R2"]["map"]),
+    "rd.depth": ("c5b", lambda r: r["R7"]["e1_prompt_mean"]),
+    "rd.r1_n": ("c5b", lambda r: r["R1"]["series"]),
+    "rd.r1_inside": ("c5b", lambda r: r["R1"]["inside"]),
+    "rd.r1_out_n": ("c5b", lambda r: len(_r1_out(r))),
+    "rd.r1_out_prompts": ("c5b", lambda r: sorted({p for _, p, _ in _r1_out(r)})),
+    "rd.r1_out_steps": ("c5b", lambda r: sorted({d for _, _, d in _r1_out(r)})),
+    "rd.r1_share": ("c5b", lambda r: _span(r["R1"]["max_prompt_share_at_break"])),
+    "rd.map_median": ("c5b", lambda r: {s: v["median_t"] for s, v in r["R2"]["at"].items()}),
+    "rd.map_top": ("c5b", lambda r: {s: sorted(t["t"] for t in v["top3"]) for s, v in r["R2"]["at"].items()}),
+    "rd.frame_share": ("c5b", lambda r: r["R3"]["frame_share"]),
+    "rd.inner_dates": ("c5b", lambda r: r["R3"]["dates"]),
+    "rd.inner_inside": ("c5b", lambda r: r["R3"]["inside"]),
+    "rd.net_n": ("c5b", lambda r: r["R4"]["0"]["series"]),
+    "rd.net_min_pos": ("c5b", lambda r: min(v["net_positive"] for v in r["R4"].values())),
+    "rd.net_median": ("c5b", lambda r: {s: r["R4"][s]["net_median"] for s in ("128", "512", "1000", "143000")}),
+    "rd.net_inner_late": ("c5b", lambda r: _span(r["R4"][s]["net_inner_positive"] for s in C5B_LATE[2:])),
+    "rd.net_inner_early": ("c5b", lambda r: min(r["R4"][str(s)]["net_inner_positive"] for s in GRID if s < 8000)),
+    "rd.late_dates": ("c5b", lambda r: r["R5"]["dates"]),
+    "rd.late_inside": ("c5b", lambda r: r["R5"]["inside"]),
+    "rd.late_plateaus": ("c5b", lambda r: _span(r["R5"]["plateaus"])),
+    "rd.late_moved": ("c5b", lambda r: [s for s in range(len(r["R5"]["dates"]))
+                                        if r["R5"]["dates"][s] != r["per_seed"][str(s)]["break"]]),
+    "rd.mfall_at": ("c5b", lambda r: {s: r["R6"]["by_step"][s]["m_fall_share_at_drops"] for s in C5B_EARLY}),
+    "rd.mfall_late": ("c5b", lambda r: min(r["R6"]["by_step"][s]["m_fall_share_at_drops"] for s in C5B_LATE)),
+    "rd.drops_early": ("c5b", lambda r: sum(r["R6"]["by_step"][s]["drops"] for s in C5B_EARLY)),
+    "rd.s_exc": ("c5b", _c5b_s_exc),
+    "rd.s_median": ("c5b", lambda r: _span(r["R6"]["by_step"][s]["s_median"] for s in C5B_EARLY[1:])),
+    "rd.s_late": ("c5b", lambda r: _span(r["R6"]["by_step"][s]["s_gt_half_share"] for s in C5B_LATE)),
+    # R6's base rate over every move (post hoc, `/challenge-pr` on #261 finding 1)
+    "rd.same_dir": ("c5b", lambda r: _span(v["same_direction_share"] for v in r["R6"]["by_step"].values())),
+    "rd.m_any_fall": ("c5b", lambda r: _span(v["m_fall_share_at_any_e_fall"] for v in r["R6"]["by_step"].values()
+                                             if v["m_fall_share_at_any_e_fall"] is not None)),
+    "rd.s_rises": ("c5b", lambda r: {s: r["R6"]["by_step"][s]["s_gt_half_share_rises"] for s in ("16", "32")}),
+    "rd.s_rises_min_from128": ("c5b", lambda r: min(r["R6"]["by_step"][s]["s_gt_half_share_rises"]
+                                                    for s in C5B_EARLY + C5B_LATE)),
     # the nine seeds (§4)
     "a5.K": ("a5_score", lambda s: s["K"]),
     "a5.n": ("a5_score", lambda s: s["n"]),
@@ -502,6 +558,10 @@ KEYS: Dict[str, tuple] = {
     "c3c.grid": ("c3c", lambda c: c["grid"]),
     "c3c.breaks": ("c3c", lambda c: [c["per_seed"][s]["uncentred"]["step"] for s in C3C_SEEDS]),
     "c3c.plateaus": ("c3c", lambda c: [c["per_seed"][s]["uncentred"]["plateau"] for s in C3C_SEEDS]),
+    # figure 4's right panel (unit 5b, R8): each centred arm's V_c over its own plateau, median over seeds
+    "c3c.Vc_med": ("c3c", lambda c: {a: [median(c["beside"][s]["V_c"][a][i] / c["per_seed"][s]["centred"]["arms"][a]["plateau"]
+                                                for s in C3C_SEEDS) for i in range(len(c["grid"]))]
+                                     for a in c["per_seed"][C3C_SEEDS[0]]["centred"]["arms"]}),
     "c3c.alt": ("c3c", lambda c: [c["per_seed"][s]["uncentred"]["beside"]["half_rise_on_1000_4000"]["step"]
                                   for s in C3C_SEEDS]),
     "c3c.label": ("c3c", lambda c: c["joint"]["label"]),
@@ -520,6 +580,7 @@ KEYS: Dict[str, tuple] = {
     "c3c.early_max": ("c3c", lambda c: max(max(v["uncentred"].values()) for v in c["early_first"].values())),
     "c3c.Vu": ("c3c", lambda c: {s: c["beside"][s]["V_u"] for s in C3C_SEEDS}),
     "gpt2.lr_peak": ("gpt2_lr", lambda g: max(lr for _, lr in _lr(g)["alias"])),
+    "gpt2.lr_frac": ("gpt2_lr", lambda g: [[t, lr / max(x for _, x in _lr(g)["alias"])] for t, lr in _lr(g)["alias"]]),
     "gpt2.warmup_end": ("gpt2_lr", lambda g: max(next(t for t, lr in v if lr >= 0.999 * max(x for _, x in v))
                                                  for v in _lr(g).values())),
     "gpt2.lr_half": ("gpt2_lr", lambda g: max(next(t for t, lr in v if lr >= max(x for _, x in v) / 2)
@@ -680,6 +741,27 @@ CLAIMS: List[tuple] = [
      and k["a5g.effect_step"] == 1000 and k["s0.energy_rel_diff"] < k["a5g.energy_tol"]
      and k["a3.gate_effect_pass"] is True and k["s2.g1_labelled"] == 0 and k["s2.g2_lost"] == 4
      and k["s2.g3_counts"] == 4),
+    # unit 5b (design-C2.md "Unit 5b")
+    ("§3.2 R1: every series outside the window is one prompt's, at 1000",
+     lambda k: k["rd.r1_out_prompts"] == ["camus_letranger"] and k["rd.r1_out_steps"] == [1000]
+     and k["rd.r1_inside"] + k["rd.r1_out_n"] == k["rd.r1_n"] == 70),
+    ("§3.2 R3: the frame transitions hold no drop at 256–1000; without them every seed dates as V",
+     lambda k: all(k["rd.frame_share"][s] == 0 for s in ("256", "512", "1000"))
+     and k["rd.inner_dates"] == [k["s0.break"]] + k["a5.steps"] and k["rd.inner_inside"] == 10),
+    ("§3.2 R2: the drops sit mid-depth at 256 and 512 and move shallower at 1000",
+     lambda k: k["rd.map_median"]["1000"] < k["rd.map_median"]["512"] <= k["rd.map_median"]["256"]),
+    ("§3.2, C R4: E₁ rises from first state to last on every series at every step; state 1 to 23 on all before 8000",
+     lambda k: k["rd.net_min_pos"] == k["rd.net_n"] and k["rd.net_inner_early"] == k["rd.net_n"]
+     and k["rd.net_inner_late"][1] < k["rd.net_n"]),
+    ("§3.3 R5: under the later plateau every seed is in the window; only seed 9 moves, 256 to 512",
+     lambda k: k["rd.late_inside"] == 10 and k["rd.late_moved"] == [9] and k["rd.late_dates"][9] == 512),
+    ("§4.1 R6: every drop at 128–1000 comes with a fall of ‖m‖²; the mean's term carries more than half of all but one",
+     lambda k: all(v == 1.0 for v in k["rd.mfall_at"].values())
+     and k["rd.s_exc"] == 1 and k["rd.s_median"][0] > 0.5),
+    ("abstract, §1, §4.1 R6′: at every step E₁ and ‖m‖² move together at ≥ 0.95 of transitions; ‖m‖² falls at ≥ 0.95 of any fall",
+     lambda k: k["rd.same_dir"][0] > 0.95 and k["rd.m_any_fall"][0] > 0.95),
+    ("§4.1 R6′: the mean's term is not most of the rises at 16 and 32, but is at every step from 128",
+     lambda k: max(k["rd.s_rises"].values()) < 0.5 and k["rd.s_rises_min_from128"] > 0.5),
 ]
 
 
@@ -973,16 +1055,57 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     gx = _xpos(g)
     for lo_hi, col in ((k["c3c.pred"]["cumulative"], SERIES[1]), (k["c3c.pred"]["step"], SERIES[0])):
         ax.axvspan(*_xpos(lo_hi), color=col, alpha=0.10, lw=0)
-    for s in sorted(k["c3c.Vu"]):
-        ax.plot(gx, k["c3c.Vu"][s], color="#6f6d68", lw=1.0)
+    for i, s in enumerate(C3C_SEEDS):          # unit 5b (R8): over each seed's frozen plateau
+        ax.plot(gx, [v / k["c3c.plateaus"][i] for v in k["c3c.Vu"][s]], color="#6f6d68", lw=1.0)
+    for ys in k["c3c.Vc_med"].values():
+        ax.plot(gx, ys, color=SERIES[1], lw=1.0, ls=(0, (3, 2)))
+    lr = k["gpt2.lr_frac"]
+    ax.plot(_xpos([t for t, _ in lr]), [f for _, f in lr], color=SERIES[2], lw=1.2)
+    ax.axhline(0.5, color=INK, lw=0.8, ls=(0, (1, 2)))
     ticks = [s for s in g if s in (0, 20, 100, 350, 1000, 4000, 16000)]
     ax.set_xticks(_xpos(ticks), [_tick(s) for s in ticks])
     ax.set_xlim(-0.3, _xpos([g[-1]])[0] + 0.3)
     ax.text(_xpos([k["c3c.pred"]["cumulative"][0]])[0], ax.get_ylim()[1] * 0.92, "cumulative", fontsize=7, color=MUTED)
     ax.text(_xpos([k["c3c.pred"]["step"][0]])[0], ax.get_ylim()[1] * 0.80, "step", fontsize=7, color=MUTED)
+    ax.legend([Line2D([], [], color="#6f6d68", lw=1.0), Line2D([], [], color=SERIES[1], lw=1.0, ls=(0, (3, 2))),
+               Line2D([], [], color=SERIES[2], lw=1.2)],
+              ["E₁, each seed", "centred, each tolerance (seed median)", "learning rate / peak"],
+              loc="center left", bbox_to_anchor=(0.0, 0.62), fontsize=6.5)
     ax.set_xlabel("GPT-2 small training step (log scale)")
-    ax.set_ylabel("V, layer-to-layer drops in E₁")
+    ax.set_ylabel("V / plateau median; LR / peak")
     out.append(_save(fig, "fig4_schedules.svg"))
+    plt.close(fig)
+
+    # Figure 5 (appendix C; unit 5b, R2 and R7): where the drops sit, and E₁ by depth
+    from matplotlib.colors import LinearSegmentedColormap
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 3.0), gridspec_kw={"width_ratios": [1.2, 1], "wspace": 0.5})
+    ax = axs[0]
+    seq = LinearSegmentedColormap.from_list("seq", ["#ffffff", SERIES[0], "#0d2f5c"])
+    im = ax.imshow(k["rd.map"], aspect="auto", cmap=seq, vmin=0, vmax=70, interpolation="nearest",
+                   extent=(-0.5, len(steps) - 0.5, len(k["rd.map"]) + 0.5, 0.5))
+    shown = [s for s in steps if s in (0, 8, 128, 512, 2000, 8000, 32000, 143000)]
+    ax.set_xticks([steps.index(s) for s in shown], [_tick(s) for s in shown], fontsize=7.5)
+    ax.set_yticks([1, 6, 12, 18, 24])
+    ax.grid(False)
+    ax.set_xlabel("training step (grid order)")
+    ax.set_ylabel("transition (1 = embeddings → block 0)")
+    cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.02)
+    cb.set_label("drops, of 70", fontsize=7.5)
+    cb.ax.tick_params(labelsize=7)
+    ax = axs[1]
+    ramp = ("#9cc3ee", "#5a9be0", SERIES[0], "#0d2f5c")    # one hue, light to dark with the step
+    depth = k["rd.depth"]
+    states = list(range(len(depth["0"]["128"])))
+    for col, st in zip(ramp, ("128", "512", "1000", "143000")):
+        others = [depth[s][st] for s in depth if s != "0"]
+        ax.fill_between(states, [min(c) for c in zip(*others)], [max(c) for c in zip(*others)],
+                        color=col, alpha=0.15, lw=0)
+        ax.plot(states, depth["0"][st], color=col, lw=1.6, label=f"step {_tick(int(st))}")
+    ax.set_xlabel("state (0 = embeddings)")
+    ax.set_ylabel("E₁, mean over prompts")
+    ax.set_xticks([0, 6, 12, 18, 24])
+    ax.legend(loc="upper left", fontsize=7)
+    out.append(_save(fig, "fig5_count.svg"))
     plt.close(fig)
     return out
 

@@ -415,6 +415,54 @@ reaches p ≤ 0.05 against the re-inits in 83 % of draws).
 `stanford-crfm` or Mistral); before the freeze nothing of GPT-2 small was read but the logged LR,
 the configs, alias's step-0 weight SDs and the preflight's re-inits and step 20000.
 
+## Unit 5b: the referee's readings from records (frozen 2026-10-23, before any 5b output)
+
+**Decided (a), 2026-10-23, the user's** (Blocked 102; `referee-C2.md` "Blocked 102"): one more
+unit, readings from records on disk, then the close-out. **The budget is extended on the record
+to 9 units + close-out.** (b), the runs, and (c), the schedule intervention, go to ROADMAP rows,
+(c) the first post-C2 candidate.
+
+**Inputs.** Seed 0: unit 3's records (`trackC/c2u3/2026-10-22-run/records`); seeds 1–9: unit
+3s's (`trackC/c2u3s/2026-10-22-run/seed<s>/records`); each holds, per step and prompt, `e1` and
+`cos` at the 25 states (`n` tokens). ‖m‖² = (1 + (n − 1) cos) / n exactly, and E₁ = ½ + ½‖m‖² +
+R with R ≥ 0, since each higher term is a squared norm, Σᵢⱼ⟨xᵢ,xⱼ⟩ᵏ = ‖Σᵢ xᵢ^⊗k‖²
+(`tools/math_checks/c2_energy_moments.py` M4, M5). **Refuse** unless each seed's V from these
+records equals A5's (`score.json` for 1–9, seed 0's gate record) at every step. Nothing is run
+on a model; no download. `trackC_writeup/c2_readings.py`, committed with this section before its
+first run.
+
+A *drop* at transition t (state t − 1 → t, t = 1..24) is D2 (a)'s: E₁ falls by more than 10⁻³ of
+its value. The *frame* transitions are t = 1 (embeddings → block 0) and t = 24 (block 23 → final
+LN); the *inner* ones are 2..23. Dates are D4 (a)'s half-rise (`a3.d4a`) unless stated; the
+window is D5 (a)'s, {256, 512}.
+
+| # | referee | reading (all description: nothing registered, no label, no threshold) |
+|---|---|---|
+| R1 | M8 | **per-prompt V**: V_p by step for the 70 (seed, prompt) series, each dated by the half-rise on its own 1000–4000 plateau ("no change" if that is 0). Reported: how many of the 70 are dated in the window, the dates' spread, and at each seed's break the largest share of V one prompt holds |
+| R2 | M8 | **the layer × step map**: drops at each t and step summed over 7 prompts and 10 seeds (at most 70), drawn as figure 5's left panel; reported, at 128, 256, 512 and 1000, the median t of the drops (pooled) and the three t holding most |
+| R3 | M8 | **without the frame transitions**: V_in over t = 2..23, dated per seed; reported, the dates, how many of 10 are in the window, and the frame transitions' share of V at 256, 512, 1000 and 143000 (pooled) |
+| R4 | M8 | **E₁'s net change**: (E₁ at state 24 − at state 0) / at state 0 per series; reported, at each step, how many of the 70 are > 0 and the median; the inner change (state 23 against 1) beside |
+| R5 | m27 | **a later plateau**: the half-rise on the median of V over 8000, 16000 and 32000 (the referee's 8k–32k); reported, each seed's date and plateau, and how many of 10 are in the window |
+| R6 | M1, M2 | **the mean's term at each drop**: for every drop, ΔE₁ = ½Δ‖m‖² + ΔR. Reported at each step, pooled over seeds and prompts: (a) the share of drops at which ‖m‖² falls, beside the share of *all* transitions at which it falls; (b) the share of drops with s = ½Δ‖m‖² / ΔE₁ > ½ (the mean's term carries most of that drop) and the median s; (c) V_R, the count of transitions at which R alone falls by more than 10⁻³ of E₁ (the drop E₁ would show with ‖m‖² held still), dated per seed. Per seed, (a) and (b) at the seed's own break step |
+| R7 | M8 | **E₁ by depth**: the prompt-mean E₁ at the 25 states at steps 128, 512, 1000 and 143000, seed 0 drawn and the other nine as a range; figure 5's right panel; no number reported from it |
+| R8 | m16 | **figure 4's right panel normalised**: each GPT-2 small seed's V over its frozen plateau (3c's record), the half line, the centred V at each of 3c's four arms (the median over seeds of V_c over its own plateau), and the logged LR over its peak; no number |
+
+**What it can change.** §3.2's, §3.3's and §4.1's wording (the "not reported" and "not
+measured" sentences become numbers), a new figure 5, figure 4's right panel. **Not** any date
+already read: R3's, R5's and R6 (c)'s dates sit beside the registered break, never in its place.
+V_R is E₁ without its first-order term, not a mean-free energy (R's k ≥ 2 terms still carry the
+mean); the centred count (unit 3s) is the nearly mean-free one (re-normalising after centring leaves a small mean).
+
+**Exit:** every reading above in a record (`data/trackC/c2u5b/2026-10-23/readings.json`), quoted
+through `numbers.py` keys, the draft and figures re-rendered, `check` passing.
+
+**Added after `/challenge-pr` on #261 (post hoc, after R6's output).** R6 (a)'s comparison, the
+share of *all* transitions at which ‖m‖² falls, is the wrong base rate (most transitions are
+rises of E₁); R6′ adds, per step, the share of transitions at which E₁ and ‖m‖² change in the
+same direction, the share of any fall of E₁ at which ‖m‖² falls, and s > ½ over all moves and
+over rises. R6 (c)'s V_R stays in the record but out of the draft: its tolerance is 10⁻³ of E₁,
+not of R, which tightens on R's scale along training.
+
 ## Worth challenging (for the PR)
 
 - **No fresh literature scan in unit 0.** The C2 scan is 4 days old and was made for this row;

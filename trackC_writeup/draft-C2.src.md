@@ -19,8 +19,10 @@ layer-to-layer drops in E₁ at {{grid.n}} checkpoints of `pythia-410m` and of i
 seeds, on {{a5.n_prompts|word}} prompts. The count is zero through step 128 on seed 0 and
 reaches half its early plateau at step {{s0.break}}; a prediction registered before the seeds'
 intermediate checkpoints were downloaded put each seed's break at 256 or 512, and it held on
-{{a5.K}} of {{a5.n}}. Since E₁'s first-order term is the squared norm of the tokens' mean, we
-also count drops after removing each prompt's mean token: that count breaks later, at 1000 on
+{{a5.K}} of {{a5.n}}. E₁'s first-order term is half the squared norm of the tokens' mean, and E₁
+moves with it: at every checkpoint the two change in the same direction at {{rd.same_dir[0]|f2}}
+or more of the layer-to-layer transitions, so the count is close to a count of the layers at
+which the mean's norm falls. With each prompt's mean token removed, the count breaks later, at 1000 on
 seed 0 and on {{c3s.K2|word}} of the nine seeds, the step at which the previous-token and
 induction heads are dated. Editing every head's OV map (its symmetric part, its rotation removed,
 or its step-128 map) does not undo the break. Every dated event falls inside the learning-rate
@@ -53,15 +55,18 @@ the model's developmental order, and one negative result:
    {{a5.K}} of {{a5.n}}. The date is the recipe's, not one run's; with seeds that share the
    recipe this was the expected outcome, and the registration guards only against choosing the
    window after seeing them (§3.4).
-2. **The token-centred cloud breaks later (§4.1).** E₁'s first-order term is the squared norm of
-   the tokens' mean (§2.1). With each prompt's mean token removed before normalising, the centred
+2. **The token-centred cloud breaks later (§4.1).** E₁'s first-order term is half the squared
+   norm of the tokens' mean (§2.1). With each prompt's mean token removed before normalising, the centred
    count at 512 on seed 0 is {{c3s.s0_cfrac|range2}} of its own late level, where the uncentred
    count is at {{c3s.s0_ufrac|f2}} of its own; the centred cloud's break comes at
    {{c3s.s0_dates|uniq}}, on seed 0 and on {{c3s.K2|word}} of the nine seeds at every tolerance
    read: one grid step after the break on the seeds that break at 512, two on those that break at
    256. That is the step at which the previous-token and induction heads are dated. The two counts'
-   sizes are not compared, only their dates, and how much of the break the mean carries is not
-   measured.
+   sizes are not compared, only their dates. What the mean carries is read from E₁'s series
+   instead, after the dates: at every checkpoint E₁ and ‖m‖² change in the same direction at
+   {{rd.same_dir[0]|f2}} or more of the transitions, so V nearly counts the layers at which the
+   mean's norm falls, at the break (each of its {{rd.drops_early|f0}} drops from step 128 to
+   1000 is one) and everywhere else along training.
 3. **The timeline (§5).** On seed 0 the break comes after the token cloud's rank collapse (step 8)
    and the unigram minimum (128); the bigram minimum (256), the fall in the OV maps' attractive
    share (512) and the previous-token and induction heads (1000) are each within one grid step of
@@ -89,8 +94,9 @@ apart from it.
 Everything here is exploratory, on one model size, {{a5.n_prompts|word}} hand-picked prompts and a
 grid with no checkpoint between 512 and 1000; only the seed count of §4 was registered. §2 gives the
 energy and the exact conditions under which it is monotone, §3 the setup, §8 related work;
-appendix A reads the heads' shared subspaces along the same steps, and appendix B the gate each
-reading passed before it was read.
+appendix A reads the heads' shared subspaces along the same steps, appendix B the gate each
+reading passed before it was read, and appendix C what the count is made of (by prompt, by
+layer, without the frame-changing transitions, and E₁'s net change).
 
 ## 2. Background
 
@@ -121,7 +127,7 @@ identity-weight picture, and a drop in E_β between consecutive layers as a depa
 picture, not as the violation of a theorem. That a model at initialisation is (almost) monotone,
 and a trained one is not, is then an empirical fact about this model, which §4 dates.
 
-E_β sums over all pairs of tokens, so its first-order term is the tokens' mean. With
+E_β sums over all pairs of tokens, so its first-order term is set by the tokens' mean. With
 m = (1/n) Σᵢ xᵢ, expanding the exponential gives, exactly,
 
   E₁ = ½ + ½ ‖m‖² + Σ_{k≥2} (1 / 2n² k!) Σᵢ Σⱼ ⟨xᵢ, xⱼ⟩ᵏ,
@@ -200,8 +206,12 @@ more than a fraction {{rel_tol|sci}} of its value. **V**, the statistic of every
 the number of drops at one checkpoint: over the {{cfg.layers}} transitions of each prompt, summed
 over the {{a5.n_prompts}} prompts, so at most {{cfg.layers}} × {{a5.n_prompts}}. Two of the
 transitions change frame as well as layer (the embeddings into the first block's output, and the
-last block's output into the final layer norm); they are counted like the rest, and how many of
-the drops they hold is not reported here. In the identity-weight picture V is 0. A drop is a departure from
+last block's output into the final layer norm); they are counted like the rest, they hold none of
+the drops from step 256 to 1000 on any seed, and V counted without them dates every seed's break
+at the same step (appendix C). V is not one prompt's: at each seed's break no prompt holds more
+than {{rd.r1_share[1]|f2}} of it (an even split is 0.14). And a drop is a dip, not a net fall: on
+every prompt, seed and step, E₁ is higher after the last state than at the embeddings (appendix
+C, with figure 5's map of where the drops sit). In the identity-weight picture V is 0. A drop is a departure from
 that picture's prediction, not the violation of a theorem (§2.1). The tolerance keeps float
 noise out of the count; on seed 0 the break's date below is {{s0.tol_steps|uniq}} at each of the
 tolerances {{s0.tols|scis}}, and {{s0.loo_steps|uniq}} with any one prompt left out.
@@ -217,8 +227,10 @@ the frame is the one attention reads.
 Let m be the median of V over steps 1000, 2000 and 4000. The break's step is the first grid
 step at which V ≥ m / 2, a *half-rise*. The plateau is early on purpose: V keeps moving late in
 training (on seed 0, {{s0.plateau}} on the plateau and {{s0.V_end}} at the last step), and a
-reference taken there would let a late rise move an early date; how the dates move under a later
-plateau is not read here. Two other rules were set aside
+reference taken there would let a late rise move an early date. Read after the dates with the
+plateau at 8000–32 000 instead (median {{rd.late_plateaus|range}} drops by seed), every seed's
+half-rise stays in (128, 512] and only seed {{rd.late_moved|and}} moves, from 256 to
+{{rd.late_dates[9]}} (appendix C). Two other rules were set aside
 on seed 0 before the seeds were read: the first step with V > 0 moves with a single stray drop,
 and V's change-weighted centroid in log step lands at about {{a3.E1_centroid|f0}} on seed 0,
 pulled late by the rise between {{s0.late_rise[0]}} and {{s0.late_rise[1]}}.
@@ -333,8 +345,28 @@ gap between rows of different kinds counts as aligned, is not applied to them.
 at {{mean.falls[512]|minmax}} of its {{mean.n_trans}} transitions on every seed, and at 256 the two
 seeds whose break is at 256 have the most falls. At steps 128 to 1000 the two frame-changing
 transitions hold none of the falls (later in training they do). So E₁'s first-order term stops rising with depth at the break, on every seed. That is the
-same break seen through one term of E₁, not separate evidence, and how much of V it carries (how
-often a drop in E₁ comes with a fall in ‖m‖²) is not measured. The rule fixed for
+same break seen through one term of E₁, not separate evidence.
+
+*How much of V the mean's term carries* (read after the dates; description). Since E₁ = ½ +
+½‖m‖² + R exactly, with R ≥ 0 the sum of the higher terms (§2.1; each is a squared norm), every
+change splits as ΔE₁ = ½Δ‖m‖² + ΔR. The two terms move together almost always, and not only at
+the break: at every checkpoint, on the ten seeds and seven prompts, E₁ and ‖m‖² change in the
+same direction at {{rd.same_dir|range2}} of the transitions, and whenever E₁ falls by any
+amount ‖m‖² falls at {{rd.m_any_fall|range2}} of them. So V, at β = 1, is close to a count of
+the layers at which the tokens' mean norm falls, at every step of training; the drops at the
+break are no exception (‖m‖² falls at each of the {{rd.drops_early|f0}} drops from step 128 to
+1000, and its term is more than half the drop at all but {{rd.s_exc|word}}, the median share
+{{rd.s_median|range2}} by step; a share above 1 means R rose while the mean's term fell). The
+mean's term is not always most of E₁'s change: on the rises at steps 16 and 32 it is more than
+half at only {{rd.s_rises[16]|f2}} and {{rd.s_rises[32]|f2}} of them (from step 128 on, at most
+rises). The split is exact but it does not separate the mean from the rest: when the tokens share
+a direction every ⟨xᵢ,xⱼ⟩ is large, so R's higher terms carry the mean too, and R is not a
+mean-free energy (the centred cloud nearly is, up to the small mean that re-normalising leaves).
+(Comparing these against R's own count of drops would
+need a tolerance on R's scale, which shrinks along training, and none is calibrated; it is not
+read.)
+
+The rule fixed for
 seed 0 before its run carried a size label, "mostly removed" (centred plateau
 {{c3.plateau_c|f0}} against {{c3.plateau_u|f0}}, at that rule's tolerance {{rel_tol|sci}}), and we
 withdraw it: at the matched tolerance 10⁻⁴ the centred plateau is {{c3.matched_ratio|f2}} of the
@@ -517,10 +549,12 @@ date consistent with one is not evidence that it causes anything.
 *Figure 4. Left, V over its plateau median on `pythia-70m` and `pythia-160m` (E₁ solid, the
 centred cloud at 10⁻⁴ dashed) and on seed 0 of `pythia-410m`, with the half line; 70m's E₁ is
 over a plateau of only {{c3b.plateau_u[70m]|f0}} drops, which is why its curve reaches far above
-1. Right, raw V (not normalised) on Mistral GPT-2 small's {{c3c.n|word}} seeds, not told apart,
-with the bands where the cumulative rate (left) and the count of updates (right) put E₁'s break;
-its centred counts are not drawn. Shaded on the left: Pythia's warmup. Step 0 is drawn where
-step 1 would be.*
+1. Right, on Mistral GPT-2 small's {{c3c.n|word}} seeds (grey, not told apart), V over each
+seed's plateau median as 3c's rule took it, with the half line; dashed, the centred count at each
+of its four tolerances, over its own plateau, the median over the seeds (they disagree, which is
+why no centred date is read); green, the logged learning rate over its peak (logged to step
+4100); shaded, the bands where the cumulative rate (left) and the count of updates (right) put
+E₁'s break. Shaded on the left: Pythia's warmup. Step 0 is drawn where step 1 would be.*
 
 **Pythia 70m and 160m.** They warm up over the same {{cfg.warmup_steps}} steps at peak rates of
 {{cfg.lr_70m|sci}} and {{cfg.lr_160m|sci}}, against {{cfg.lr_410m|sci}} for 410m, so the cumulative and
@@ -579,8 +613,8 @@ Billa [2026] finds task representations' RankMe collapsing from step 0 to steps 
 Pythia 160m and 410m and partly recovering by about step 1000. Cheng et al. [2024] follow
 intrinsic dimension by layer from step 512, and Razzhigaev et al. [2023] report intrinsic
 dimension rising and then falling over training. A non-monotone geometric arc along training
-is therefore not new, and neither is the statistic in kind: at β = 1, E₁'s first-order term is the
-anisotropy measure ‖m‖² (§2.1). What is new here is reading the particle picture's prediction,
+is therefore not new, and neither is the statistic in kind: at β = 1, E₁'s first-order term is
+½‖m‖², half the anisotropy measure ‖m‖² (§2.1). What is new here is reading the particle picture's prediction,
 E_β monotone in depth, along a real training axis: the step at which it breaks, that step's
 reproduction across seeds, and its place on the developmental order.
 
@@ -719,6 +753,46 @@ is why only dates are compared. The centred rules were frozen after a preflight
 (`tools.design_preflight`), which runs the statistic on step 0, a matched random
 initialisation, the trained population at a step off the scored grid, and a planted control at
 dose 0 and three doses; its refusals are fixed or argued in the design.
+
+## Appendix C. What the count is made of
+
+Read from the same records as §4 and §4.1 after every date there was read (description; no
+rule, no threshold; the readings were fixed before their output, and none replaces a date
+above).
+
+![Figure 5](fig/fig5_count.svg)
+
+*Figure 5. Left, the drops at each of the {{cfg.layers}} transitions (rows, 1 = embeddings into
+the first block, {{cfg.layers}} = into the final layer norm) and each step (columns), summed over
+the {{a5.n_prompts}} prompts and the ten seeds (at most 70 per cell). Right, E₁ by state,
+averaged over the prompts, at four steps: seed 0 as a line, the other nine seeds' range as a
+band.*
+
+**By prompt.** Each prompt's own count, dated by the same half-rise on its own 1000–4000 level,
+breaks inside (128, 512] on {{rd.r1_inside}} of the {{rd.r1_n}} prompt-and-seed series; the
+other {{rd.r1_out_n|word}} are one prompt, the Camus passage, at {{rd.r1_out_steps|uniq}}, each
+on a different seed. At each seed's break the largest share of V one prompt holds is
+{{rd.r1_share|range2}}.
+
+**By layer.** At 256 and 512 the drops sit in the middle of the stack: the median drop is at
+transition {{rd.map_median[256]|f0}} and {{rd.map_median[512]|f0}}, and most fall at
+transitions {{rd.map_top[512]|and}} at 512. At 1000 they spread shallower (median
+{{rd.map_median[1000]|f0}}; most at {{rd.map_top[1000]|and}}).
+
+**Without the frame-changing transitions.** The first and last transitions hold none of the
+drops at 256, 512 and 1000 and a share {{rd.frame_share[143000]|f2}} of them at 143 000. V
+counted over transitions 2 to {{cfg.layers_m1}} alone dates every seed's break at the same step
+as V does ({{rd.inner_dates|or}}), all ten inside the window.
+
+**Net change.** On all {{rd.net_n}} prompt-and-seed series at every step, E₁ after the last
+state is above E₁ at the embeddings; the median rise is {{rd.net_median[128]|f2}} of the
+starting value at 128, {{rd.net_median[512]|f2}} at 512, {{rd.net_median[1000]|f2}} at 1000 and
+{{rd.net_median[143000]|f2}} at 143 000. From state 1 to state 23 (leaving out both frame-changing transitions), the
+rise holds on {{rd.net_inner_late|range}} of the 70 from step 8000 on and on all 70 before.
+So a drop is a dip inside a net rise, not a fall of the whole profile.
+
+**A later plateau.** With the plateau taken at 8000, 16 000 and 32 000 the dates are
+{{rd.late_dates|uniq}}; only seed {{rd.late_moved|and}} moves, from 256 to 512.
 
 ## References
 
