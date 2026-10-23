@@ -17,18 +17,20 @@
   - Unit 4, the rest of the draft (writing only): the draft's introduction, its centred-cloud section, the OV and schedule sections, appendices A and B, figure 4 and the references written; the break and timeline sections re-headed on the two events (98 (c)); 20 records, 200 keys, 40 sentence claims checked; the unit-3s span "0.17–0.50" corrected to 0.07–0.50 from the record; no reading moved; `/challenge-pr` on #259: accept with changes, all 7 findings taken (a wrong-record key, §1's 3b exclusion, sizes compared across counts, the frozen-rule departure disclosed) — `trackC_writeup/status-C.md` "C2 unit 4"
   - Unit 5, the referee read (writing only): a fresh agent given only the draft recommended major revision (9 major, 27 minor points); every point answered (`referee-C2.md`): the draft gains an abstract, a title that says what is found, E₁'s exact series (its first-order term is ½‖m‖², the anisotropy; sympy check), the centred section's conclusion as a date statement, the introduction's order language matched to the timeline's, the band rule, (b)'s construction, arm (a)'s step-0 and 256 cells, ten references; after `/challenge-pr` on #260 the ‖m‖² profile (read post hoc at 3s, unsaved) reported from a record (never falls at 128, 6–10 of 24 transitions at 512 on every seed) and the registration's outside timestamp quoted (GitHub's branch creation, 60 s before the first record); 207 keys, 49 claims; no reading moved. The readings and runs it asks for are Blocked 102 — `trackC_writeup/status-C.md` "C2 unit 5"
   - Unit 5b, the referee's readings from records (Blocked 102 (a), the user's; budget extended to 9 units + close-out; no forward pass; description): by E₁ = ½ + ½‖m‖² + R, E₁ and ‖m‖² change in the same direction at 0.96–1.00 of transitions at every step, so V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, along all of training (post hoc, after `/challenge-pr` on #261 corrected the base rate); at each of the 1224 drops at 128–1000 ‖m‖² falls and its term is more than half of all but one (exact split, not a separation: R's higher terms carry the mean too). No date moves: the frame-changing transitions hold none of the drops at 256–1000, a later plateau moves only seed 9 (256 → 512), 65 of 70 per-prompt series break in the window; E₁ rises first-to-last on every series; figure 5 and appendix C; (b), (c) to ROADMAP C5, C4 — `trackC_writeup/status-C.md` "C2 unit 5b"
-  - **C2 closed 2026-10-23 at its exit** (9 units + close-out, as extended by Blocked 102 (a)): a complete draft, every number rendered from a record, a fresh-context referee read answered. It establishes a dated, reproduced break in E₁'s monotonicity (the registered seed count), a second event after it in the token-centred cloud (at 1000), and that V at β = 1 nearly counts falls in the tokens' mean norm; it does not separate either date from the LR warmup. Every Parked item carried (C4, C5, C2p, the draft's posting thread) or dropped (GPT-2 medium, token-drift, an aligned-pair null); what happens to the draft is Blocked 103, the user's, every option with a second fresh-context read — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
+  - **C2 closed 2026-10-23 at its exit** (9 units + close-out, as extended by Blocked 102 (a)): a complete draft, every number rendered from a record, a fresh-context referee read answered. It establishes a dated, reproduced break in E₁'s monotonicity (the registered seed count), a second event after it in the token-centred cloud (at 1000), and that V at β = 1 nearly counts falls in the tokens' mean norm; it does not separate either date from the LR warmup. Every Parked item carried (C4, C5, C2p, the draft's posting thread) or dropped (GPT-2 medium, token-drift, an aligned-pair null); what happens to the draft was Blocked 103, decided (a), the user's: C5's M2 first, then C2p; nothing posted online by Claude — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
+  - C5 opened 2026-10-23 on M2 only (Blocked 103 (a); writing only): a scan and a proposed design that projects each seed's massive-activation coordinates (read at its own step 143000) out of every token and recounts both C2 counts against 20 random coordinate sets; the scan found a Pythia-410m anisotropy-type statistic dated "around step 1k" (2510.06477) that C2's §8 and F9 do not cite (carried to C2p); the set and scope are Blocked 104, the user's — `trackC_writeup/status-C.md` "C5 unit 0"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - Why ‖m‖² falls mid-stack at the break (massive activations, sinks), whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5 — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - What happens to the draft (venue, LaTeX, a LessWrong post, the records' release): Blocked 103, the user's — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
+  - Whether the massive-activation coordinates carry the mean whose falls V counts (M2): C5, opened, its set and scope Blocked 104, the user's — `trackC_writeup/design-C5.md`
+  - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
+  - The draft's revision, second fresh-context read and LaTeX: ROADMAP C2p, after M2; posting is the user's — `trackC_writeup/status-C.md` "C5 unit 0"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `afc1d7a50d`
+- **Reviewed:** 2026-10-23 · body `4c01b726d1`
 <!-- /phase-card -->
 
 ## Units
@@ -45,7 +47,40 @@
 | C2 4. the rest of the draft | **done 2026-10-22: every section written; 20 records, 200 keys, 40 claims; revised after `/challenge-pr` on #259; figure 4; references from arXiv; Blocked 101 (a), the user's** | `draft-C2.src.md` → `draft-C2.md`, `numbers.py`, `fig/fig4_schedules.svg`; "C2 unit 4" below |
 | C2 5. the referee read | **done 2026-10-23: a fresh agent, the draft only: major revision, 9 major and 27 minor points, every one answered; the draft revised (abstract, title, E₁'s series, §4.1 as dates, ten references); Blocked 102** | `referee-C2.md`; "C2 unit 5" below |
 | C2 5b. the referee's readings from records (102 (a)) | **done 2026-10-23: frozen before output (`9629d78`); no forward pass; R1–R8 description; E₁ and ‖m‖² move together at ≥ 0.96 of transitions at every step (post hoc, after `/challenge-pr` on #261), so V nearly counts the mean's falls; the mean's term is more than half of all but 1 of the 1224 drops at 128–1000; the frame transitions, a later plateau and per-prompt counts move no date; figure 5, figure 4's right panel normalised** | `c2_readings.py`, design "Unit 5b"; "C2 unit 5b" below |
-| C2 close-out | **done 2026-10-23: writing only; exit met at 9 units + close-out; every Parked item carried or dropped; where to post is Blocked 103** | "C2 on one page" below |
+| C2 close-out | **done 2026-10-23: writing only; exit met at 9 units + close-out; every Parked item carried or dropped; where to post was Blocked 103, decided (a)** | "C2 on one page" below |
+| C5 0. M2's scan and design (writing only) | **done 2026-10-23: proposed; Blocked 104 (the set and scope)** | `lit-C5.md`, `design-C5.md`; "C5 unit 0" below |
+| C5 1. M2's preflight, run and reading | waits on 104 | `design-C5.md` "Exit condition and budget" |
+| C5 close-out (M2) | — | — |
+
+## C5 unit 0, M2's scan and design (2026-10-23)
+
+Blocked 103 decided (a), the user's, with "do not attempt to post anything online": C5 opens on
+M2 (2 units + close-out), then C2p prepares the draft and the user posts. Writing only; nothing
+ran. Inputs read: `referee-C2.md` M2 and its answers, S1's `massive.json` (seed 0 at 143000:
+357, 130, 966 at 100–350× the median coordinate's max at states 6–22, at position 0 and in the
+maximum over the rest; 278, 335, 914 at ≤ 21× at states 1–4), `design-C2.md` "Unit 3s",
+`c2_aniso.py` and `c2_seeds.py` (unit 1 reuses their passes, plants and arms).
+
+**The scan** (`lit-C5.md`; five searches, three abstracts, two HTML texts in part). Not refuted:
+no paper projects massive coordinates out and re-reads an energy or monotonicity count along
+training. Closest: **2510.06477** reads σ₁²/‖X‖²_F (uncentred, kin to ‖m‖²), the BOS norm and the
+sink on Pythia-410m's checkpoints, "all three emerge together around step 1k", the transition at
+layer 5. Its consequences: (1) a lean for M2, stated before any output: the coordinates may be
+born at C2's centred event (1000), after the break, so P1 would read "kept" nearly by
+construction and P2 is the reading that can move; (2) C2's §8 novelty sentence and F9's
+"published anisotropy along Pythia from step 10 000" are out of date (Parked 1, carried to C2p;
+`LESSONS.md` 7). 2610.00423 (the carriers differ by seed, stabilise early in a run) makes the
+set per seed; 2508.03616 (Sun's 1000× rule relaxed for small models) and 410m's end-state 140–350×
+put the threshold at 100×; 2607.09279's random-dimension control is M2's.
+
+**The design** (`design-C5.md`, proposed): per seed, S = the coordinates at ≥ 100× at any state at
+the seed's 143000, written before any other step is read; each token's S-coordinates zeroed, then
+normalised; R0, the set's share of ‖m‖² per step and state (description); R0b, the coordinates'
+own first step at 100× (description); P1, the projected uncentred half-rise at 1e-4, 1e-3, 1e-2
+("kept" / "moved" / "mixed"); P2, the projected centred half-rise at unit 3s's four arms, re-gated
+on the projected counts; each against 20 random sets of |S| coordinates; tallies of 9 at ≥ 7.
+What each outcome changes in §4.1 is fixed in the design. **Blocked 104, the user's:** (a) as
+designed, recommended; (b) seed 0 only with S1's six; (c) a per-step set; (d) no M2.
 
 ## C2 on one page (closed 2026-10-23)
 

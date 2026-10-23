@@ -492,3 +492,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   Over 2× the running median (7.0M): the start hook's 50k plus STATE re-read from `origin/main` (the main tree lags), the draft's sections and `numbers.py` read to place 34 keys, and the review's fixes re-run in the same session
 | 2026-10-23 | C2 close-out, with #261's deps red fixed (#262), before /challenge-pr | 46 | 159k | 5.0M | 50k | #262 |
 | 2026-10-23 | C2 close-out (#262), after /challenge-pr (accept with changes; all 5 taken: four missed deferrals homed, C2p row, 103 re-priced with a second read, 57 claims, 'after the break') · subagents: general-purpose opus-5-5 3.7M | 60 | 179k | 7.4M | 54k | #262 |
+| 2026-10-23 | C5 opened on M2 (Blocked 103 (a)): scan and design, before /challenge-pr | 39 | 169k | 4.7M | 50k | #263 |
