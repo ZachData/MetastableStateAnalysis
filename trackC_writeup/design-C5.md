@@ -84,6 +84,7 @@ the rest goes to the user as an extension, not a silent unit 1b.
 |---|---|---|
 | 0 | the scan and this design (writing only) | Blocked 104 decided; the design frozen |
 | 1 (**done 2026-10-23**: P1 kept 7 of 9, P2 kept 9 of 9; `status-C.md` "C5 unit 1") | `trackC_writeup/c5_massive.py` and pure tests; the preflight (the projected centred counts re-gated per arm on unit 3s's re-inits and plants, plant A placed in S, plant B outside it; τ_p and s_p / s_u at step 7000); the tolerances frozen and pushed before any scored record; the run (10 seeds × 18 steps, pass 1 for S, pass 2 for the energies, cached checkpoints, `HF_HUB_OFFLINE`); R0–P2 read | every reading in the table above, or a refusal |
+| 2 (Blocked 105 (a), the user's, 2026-10-24: **budget extended on the record to 3 units + close-out**) | M2's other half: whether ‖m‖²'s falls at the break sit in a few coordinates chosen by the mean (the referee's "outlier dimensions"); `trackC_writeup/c5_mean.py` and pure tests; the gate on seed 0's step 7000; one pass storing m per coordinate; Q1–Q3 read ("Unit 2" below) | every reading in "Unit 2", or a refusal |
 | close-out | writing only: what M2 established, its Parked items carried (C2p) or dropped; the card current | the card current |
 
 ## Unit 1, fixed before any output (2026-10-23, with the freeze)
@@ -106,10 +107,47 @@ What the table above leaves open, fixed in `trackC_writeup/c5_massive.py` before
 | R0′ | at a transition with \|Δ‖m‖²\| < 1e-12 the share is not taken (counted) |
 | **frozen by the preflight** (2026-10-23, before any pass-2 record) | seed 0's S = {130, 357, 966} (S1's known answer met, max deviation 0), M = {421, 550, 752}. At step 7000 s_u 0.0141, s_p 0.0161, s_M 0.0144: **τ_p = 1.15e-3, τ_M = 1.02e-3** (projection makes the relative changes larger there, not smaller). The gate passes at all four centred arms (re-init rate ≤ 0.016, B 0.46–0.94, A in S 0: its largest shift 7e-16, the projection's check). `tools/design_preflight` report sha256 `c308803892bf` refuses on its floor, as unit 3s's did: it prices an e-value this design never takes (dates only). First derived under code `c91bfe321bda` (set aside with its pass 1 as `2026-10-23-u1-v0`: the records' hash labels were wrong, `LESSONS.md` 3); re-derived identically (the same input file, byte for byte) under the run's code `7e45858c218d` before pass 2; records `data/trackC/c5/2026-10-23-u1/preflight/` (main tree) |
 
+## Unit 2, M2's other half, fixed before any output (2026-10-24)
+
+Blocked 105 (a), the user's (from `/challenge-pr` on #264, finding 2). Unit 1 showed the
+coordinates chosen by *magnitude* are ordinary at the break and carry none of ‖m‖²'s falls. The
+referee's M2 also named "outlier dimensions": a few coordinates chosen by the *mean*. Unit 1's
+records cannot answer it (m is not stored per coordinate). This unit asks one question: **at the
+break, does half of a fall in ‖m‖² sit in a few coordinates?** Tier 1, description. Nothing is
+projected and nothing is recounted. If the falls are in a few coordinates, projecting them out is
+a new unit and goes to the user (the budget is then spent).
+
+| item | fixed as |
+|---|---|
+| m | per (seed, step, v1 prompt, state 0–24), the token mean of the L2-normalised states, float64 from the float32 forward, as `c5_massive.state_quantities`; all 1024 coordinates stored (`c5_mean.py pass`, one npz per seed and step) |
+| known answers (pass) | per record: the tokens' hash equal to unit 1's; e1 (A5's path) equal to unit 1's record (≤ `c2_aniso.ENERGY_TOL` relative); Σᵢ mᵢ² equal to unit 1's `m2` and Σ_{i∈S} mᵢ² to its `m2_set["S"]` (≤ 1e-9 relative, 1e-15 absolute); else refuse |
+| the family | seeds 1–9 (0 the development set) × steps 128, 256, 512, 1000 × the 7 prompts × every transition ℓ → ℓ+1 (0–23) whose e1 drops by more than 1e-3 relative: unit 1's R0′ transitions, V's own. A transition with \|Δ‖m‖²\| < 1e-12, or with ‖m‖² not falling, is counted and not read |
+| **k½** (the statistic) | at a transition, δᵢ = m′ᵢ² − mᵢ² (Δ = Σδᵢ < 0); **k½ = the smallest k such that the k most negative δᵢ sum to ≤ ½Δ**: the fewest coordinates holding half the fall. Always exists and is ≥ 1 |
+| **a few** | k½ ≤ 16: unit 1's `MAX_S` (a set larger than 16 was already "not a few"), 1.6 % of 1024 |
+| the rotation null | 100 Haar rotations per seed (`scipy.stats.ortho_group`, `random_state` 20261024 + seed), each applied to both states of every family transition, k½ recomputed. A rotation keeps the two vectors and their fall and removes only the basis, which is what "chosen by the mean" asks of the coordinates. Per transition, **f_rot = the fraction of the 100 with k½ ≤ the observed** (small: more concentrated in coordinates than the same fall in a random basis). Rejected: the random coordinate sets Blocked 105 named; k random coordinates carry about k/1024 of any fall in any basis, so they test nothing about the mean's coordinates |
+| Q1 (**primary**, per seed) | the median k½ over the seed's family transitions (pooled over the four steps; per step beside). **"few"** if ≤ 16, **"spread"** if > 16 |
+| Q1 tally | of 9: ≥ 7 "few" → **"in a few coordinates"**; ≥ 7 "spread" → **"spread"**; else **"mixed"** (the count reported, the user decides) |
+| Q2 (beside) | per seed, the median f_rot and the fraction of transitions at f_rot ≤ 0.05: **"basis-aligned"** if that fraction ≥ ½. A fall can be spread (k½ > 16) and still more concentrated than a random basis would make it |
+| Q3 (beside) | the recurring coordinates: per seed, those inside the k½ set at ≥ ¼ of the family's transitions, with their overlap with unit 1's S and M. The level: per (seed, step, state), k½ of ‖m‖² itself (the fewest coordinates holding half of it) and the participation ratio (Σmᵢ²)² / Σmᵢ⁴, rotated values beside. Every step, step 0 included, as description |
+| **the gate** (before any grid-step pass) | seed 0's off-grid step 7000 (cached; trained, not scored), its transitions that drop at 1e-3. **Planted null:** each transition's pair turned by a fresh Haar rotation (`random_state` 20261025, not the null's): at most 0.05 read "few" and at most 0.10 at f_rot ≤ 0.05. **Planted effect:** after the turn, a fall of f · \|Δ\| added in 3 random coordinates (the before-state's coordinates raised, `default_rng(20261026)`), so the plant holds f / (1 + f) of the total: at f = 2 (two thirds) at least 0.9 read "few" and at least 0.9 at f_rot ≤ 0.05; f = 0, 0.5 and 1 beside (at f = 1 the plant holds exactly half). Failure on either side refuses the pass and goes to the user. The trained k½ at 7000, the planted null (the tool's null: seed 0's step 0 has no drops, A5) and the four doses go to `tools/design_preflight`; its report's sha256 is cited here before the pass. Code `trackC_writeup/c5_mean.py`, tests `tests/test_trackC_mean.py` (a turned fall at d = 512 needs 13–19 coordinates for half, about 12 % of d, from χ²₁'s tail: at 1024 the turned value is about 120, far from 16) |
+
+**What each outcome changes (fixed now).**
+
+| Q1 | §4.1 in C2p |
+|---|---|
+| spread | "the falls V counts at the break are not in a few coordinates: half of a fall in ‖m‖² takes a median of K of 1024 (K_rot when the same vectors are turned at random)", with Q2's reading beside |
+| in a few coordinates | Q3's recurring set per seed reported; whether to project it out and recount (a fourth unit) is a Blocked item for the user, before C2p edits §4.1 |
+| mixed | the counts reported; the user decides what §4.1 says |
+
+**A lean, stated before any output.** Unit 5b found the mean's term carries all but one of the
+1224 drops, and unit 1 found no coordinate above 2.4× the median at 128–1000: nothing large is
+there to hold a fall. The lean is "spread". It is a lean, not a reading.
+
 ## Decisions (each yours; recommendation first)
 
 | # | decision | options | recommendation |
 |---|---|---|---|
+| 105 | **decided (a), the user's, 2026-10-24** · M2's other half | (a) **one more unit** (budget 2 → 3 units + close-out): m per coordinate stored, the fewest coordinates holding half of each fall at 128–1000 read against a null. (b) close M2 now, the question carried to ROADMAP C5's row, §4.1 saying it is not tested | **(a)**: one GPU hour answers the referee's M2 whole |
 | 104 | **decided (a), the user's, 2026-10-23** · the coordinate set and the scope | (a) **as above**: per seed, S the union over the 18 grid steps of S1's ratio ≥ 100 at states 0–23 (seed 0's end state alone: 357, 130, 966), the 9 seeds scored and seed 0 the development set, 20 random sets and one magnitude-matched set per seed; 2 units + close-out. (b) **seed 0 only, S1's six** (357, 130, 966 and the early 278, 335, 914): 1 unit + close-out, no reproduction, three of the six never pass 21×. (c) **a per-step set**: S re-read at each (seed, step) by the same rule; follows the coordinates' birth, but the set changes with the step, so the projected count is a different statistic at each step and its date is not comparable with C2's. (d) **no M2**: 103 (b), C2p now | **(a).** It reads the seeds C2's claims rest on, it is per seed as the life-cycle paper requires, and it fixes one set per seed so the date is one statistic along training; (b) is cheaper by a unit and reproduces nothing; (c)'s question is R0b's, which (a) reports as description |
 
 ## Worth challenging (for the PR)
