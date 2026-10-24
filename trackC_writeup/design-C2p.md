@@ -27,7 +27,7 @@ record.
 |---|---|---|
 | 1 (**done 2026-10-24**: `status-C.md` "C2p unit 1") | the LaTeX conversion (`to_tex.py`, `tex/`), ten figures to cull from (five new, each from a record but figure 6, an illustration), `numbers.py`'s stale docstring | `tex/` compiles; the tracked `tex/` is the conversion of the draft (CI) |
 | 2 (**done 2026-10-24**: `status-C.md` "C2p unit 2"; 107 (a), 108 (a): the source is `paper/`; the read answered in `referee-C2p.md`; the cut and the read's framing points are Blocked 109) | the revisions, in the source Blocked 108 names: m15, m19, m25 (appendix A's ρ figure), M2's results in §4.1 (its lead is Blocked 107) and the late carriers' wording, §8 and F9 against 2510.06477, the figures the user keeps; the second fresh-context read and its answers | every item done or handed over; the read answered |
-| close-out | writing only: what C2p established, its Parked items carried or dropped; the card current | the card current |
+| close-out (**done 2026-10-24**: Blocked 109 (a), the user's: the cut and the read's framing points made in `paper/`; `status-C.md` "C2p on one page") | writing only: what C2p established, its Parked items carried or dropped; the card current | the card current |
 
 ## Not this thread
 
