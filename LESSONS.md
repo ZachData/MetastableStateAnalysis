@@ -878,6 +878,13 @@ user saw only "exit code 1". Fixed by adding the figure to the test. Rule: read 
 before Stop step 9, and a unit that adds an output its `deps` tests enumerate runs
 `pytest -m deps` on those tests before pushing.
 
+2026-10-24: **#267 red in the deps tier at its first push, again on that test** (five figures
+added; it listed five), and the rule above was not run before Stop step 9: `/challenge-pr` found
+it from CI. Worse, the test pointed `FIGDIR` at a temporary folder but not the new PDF folder, so
+running it overwrote the tracked `tex/fig/*.pdf`. Fixed: the test reads the figure list from the
+draft and sends both outputs to `tmp_path`. A list a test can derive from the tracked source is
+derived, not typed.
+
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋
 `CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection

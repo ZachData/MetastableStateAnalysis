@@ -126,6 +126,13 @@ where ‖m‖², the squared norm of the mean, is a standard measure of anisotro
 terms are not small (|⟨xᵢ, xⱼ⟩| ≤ 1, and the n diagonal terms are 1), so E₁ is not ‖m‖², but a
 drop in E₁ between layers can come from the mean shrinking alone. §4.1 removes the mean.
 
+![Figure 6](fig/fig6_picture.svg)
+
+*Figure 6. The identity-weight picture, as an illustration (a simulation, not a record): 40
+tokens on the sphere in three dimensions under ẋᵢ = P_{xᵢ}(Σⱼ softmaxⱼ(⟨xᵢ, xⱼ⟩) xⱼ), seen from
+one pole (open circles: the far hemisphere) at three depths; right, E₁ along the same run, which
+never falls. §4 counts the layers at which a trained model's E₁ does fall.*
+
 ### 2.2 The developmental order
 
 Language models acquire their internal structure in stages. In a small two-layer attention-only
@@ -330,6 +337,14 @@ break is anisotropy. The two counts are one statistic on the same states, dated 
 before the run, which reads a later grid step as later; §5's convention, under which a one-step
 gap between rows of different kinds counts as aligned, is not applied to them.
 
+![Figure 7](fig/fig7_events.svg)
+
+*Figure 7. The two events on the ten seeds. Left, V over each seed's plateau median (figure 1's
+right panel); right, the centred count V_c at tolerance 10⁻⁴ over its own plateau median. Dotted:
+steps 512 and 1000; dashed: half the plateau. By the four-tolerance rule the centred count's
+half-rise is at 1000 on eight of the nine seeds. Dates only: the two panels'
+heights are not comparable.*
+
 *The mean's term by layer* (read after the dates; description). Averaged over the prompts,
 ‖m‖² never falls from one state to the next at step 128 on any of the ten seeds; at 512 it falls
 at 6–10 of its 24 transitions on every seed, and at 256 the two
@@ -355,6 +370,14 @@ mean-free energy (the centred cloud nearly is, up to the small mean that re-norm
 (Comparing these against R's own count of drops would
 need a tolerance on R's scale, which shrinks along training, and none is calibrated; it is not
 read.)
+
+![Figure 8](fig/fig8_mean.svg)
+
+*Figure 8. Left, seed 0's E₁ by state at steps 512 and 1000 (solid) and its first two terms,
+½ + ½‖m‖² (dashed), each averaged over the 7 prompts; the gap between a pair is the
+average of R ≥ 0. Triangles mark the transitions at which the averaged E₁ falls (not V's
+per-prompt drops). Right, the share of layer-to-layer transitions (ten seeds, 7
+prompts, 24 transitions) at which E₁ and ‖m‖² change in the same direction, by step.*
 
 The rule fixed for
 seed 0 before its run carried a size label, "mostly removed" (centred plateau
@@ -783,6 +806,29 @@ So a drop is a dip inside a net rise, not a fall of the whole profile.
 
 **A later plateau.** With the plateau taken at 8000, 16 000 and 32 000 the dates are
 256 and 512; only seed 9 moves, from 256 to 512.
+
+**Which coordinates carry the mean** (read after every date; description; a read-out of the
+states, not an intervention). Each seed's massive-activation coordinates, those that reach
+100× the median coordinate's largest value at some step, are ordinary through the
+break: at 128–1000 none of any seed's exceeds 2.35× (figure 9), and they first
+reach 100× at 16 000–32 000. Nor is the mean held in a few other coordinates
+there: half of ‖m‖² takes 132–135 of the 1024 coordinates at 512 and
+1000, against 127–129 for the same means in random bases (figure 10). It falls
+below a random basis's count by 4000 (104–113) and into a handful of coordinates
+after, as the massive ones arrive.
+
+![Figure 9](fig/fig9_massive.svg)
+
+*Figure 9. For each seed, the largest of its massive-activation coordinates (one set per seed,
+fixed over the whole grid) over the median coordinate's, by step; seed 0 in black. Blue band:
+steps 128–1000, where both of §4's events fall. Dashed: the 100× threshold that
+defines the set.*
+
+![Figure 10](fig/fig10_level.svg)
+
+*Figure 10. How many of the 1024 coordinates hold half of ‖m‖² (median over the 25
+states), by step: each seed in the model's own coordinates, and in grey the range over the seeds
+of the same means in random bases.*
 
 ## References
 
