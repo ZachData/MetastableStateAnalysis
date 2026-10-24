@@ -507,3 +507,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   Over 2× the running median (7.0M): the 63 KB LaTeX source read whole for the revisions, a pdfLaTeX install (one route refused, one through a container), the C5 and 2510.06477 sources re-read to word §4.1 and §8 exactly, and a 26-point referee report answered with its fixes in the same session.
 | 2026-10-24 | C2p unit 2 (#268), after /challenge-pr (accept with changes; findings 1-5 taken) · subagents: general-purpose opus-5-5 3.7M | 127 | 316k | 24.3M | 172k | #268 |
   Over 2× the running median: as the row above, plus /challenge-pr's fork (2.1M) and its five fixes.
+| 2026-10-24 | C2p close-out (#269), before /challenge-pr | 69 | 191k | 9.7M | 113k | #269 |
