@@ -2920,21 +2920,25 @@ project-wide.
 
 ---
 
-## 3.73 At the break, the tokens' mean and its falls are spread over the coordinates, as in a random basis (2026-10-24)
+## 3.73 At the break, the tokens' mean and its falls are not concentrated in the model's coordinates (2026-10-24)
 
 **`trackC_writeup/status-C.md` "C5 unit 2"** holds the numbers; this section says why it is
 project-wide.
 
 - §3.72 showed the massive-activation coordinates carry none of ‖m‖²'s falls at the break; the
   referee's other candidate was a few "outlier dimensions" chosen by the mean. On the ten 410m
-  seeds, at every one of the 1224 falls V counts at 128–1000, the fewest coordinates holding half
-  of the fall are no fewer than when the same two vectors are turned to a random basis: **not
-  basis-aligned on 9 of 9 scored seeds** (0–2.2 % of a seed's falls at the rotation null's 5th
-  percentile); no coordinate recurs in a quarter of any seed's falls.
-- The mean itself is spread there: half of ‖m‖² takes about 130 of 1024 coordinates at 512 and
-  1000, as in a random basis, and concentrates into 2–3 only by 8000–16000, when §3.72's
-  coordinates become massive. So at the break E₁'s first-order term is a property of a direction,
-  not of a few coordinates of the residual stream.
+  seeds, over the 1224 falls V counts at 128–1000, the fewest coordinates holding half of a fall
+  are compared with the same two vectors turned to random bases: **not basis-aligned on 9 of 9
+  scored seeds** (0–2.2 % of a seed's falls below the rotation null's 5th percentile); post hoc,
+  the model's basis spreads the falls slightly *more* than a random one on every seed; no
+  coordinate recurs in a quarter of any seed's falls.
+- A few coordinates (5–8) hold half of each net fall in either basis, because a net fall is only
+  6–10 % of the coordinates' gross movement; so the finding is about the basis, not a count. The
+  mean itself is spread: half of ‖m‖² takes 132–135 of 1024 coordinates at 512 and 1000 (a random
+  basis 127–129), and concentrates into 2–3 only by 8000–16000, when §3.72's coordinates become
+  massive. So at the break E₁'s first-order term is a property of a direction, not of privileged
+  coordinates of the residual stream. The gate tested a 3-coordinate plant only (status "Not
+  established").
 - An absolute bar ("≤ 16 coordinates hold half") was frozen first and refused by its gate: net
   falls cancel across coordinates, so about 11 hold half in any basis (`LESSONS.md` 6); the
   rotation-relative reading was made the primary by the user (Blocked 106 (a)) before any scored

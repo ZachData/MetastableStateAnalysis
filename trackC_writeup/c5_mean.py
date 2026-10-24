@@ -378,7 +378,14 @@ def seed_reading(ms, e1s, seed: int) -> dict:
                          "k_half_median": float(np.median(kl)), "pr_median": float(np.median(pr)),
                          "rotated_k_half_median": float(klr), "rotated_pr_median": float(prr)}
     al = float(np.mean(fr <= F_ROT))
-    return {"n_transitions": int(len(k)), "skipped_small": fam["skipped_small"], "skipped_rise": fam["skipped_rise"],
+    # post hoc (`/challenge-pr` on #265, findings 1–2): ties apart, which way the model's basis leans
+    D, gross = (B * B - A * A).sum(axis=1), np.abs(B * B - A * A).sum(axis=1)
+    post = {"rot_more_concentrated": float((kr < k).mean()), "tie": float((kr == k).mean()),
+            "rot_less_concentrated": float((kr > k).mean()),
+            "frac_above_95_of_rotations": float(((kr < k).mean(axis=0) >= 0.95).mean()),
+            "frac_below_5_of_rotations": float(((kr > k).mean(axis=0) >= 0.95).mean()),
+            "net_over_gross_median": float(np.median(np.abs(D) / gross))}
+    return {"post_hoc_ties": post,"n_transitions": int(len(k)), "skipped_small": fam["skipped_small"], "skipped_rise": fam["skipped_rise"],
             "Q1": {"median_k_half": float(np.median(k)), "rotated_median_k_half": float(np.median(kr)),
                    "quartiles": np.percentile(k, [25, 75]).tolist(), "min": int(k.min()), "max": int(k.max()),
                    "frac_few": float(np.mean(k <= FEW)),
