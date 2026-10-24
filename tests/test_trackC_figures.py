@@ -17,3 +17,16 @@ def test_figures_draw_from_the_table(tmp_path, monkeypatch):
     assert sorted(p.name for p in paths) == sorted(in_draft)
     assert all(p.read_text().lstrip().startswith("<?xml") and "<svg" in p.read_text() for p in paths)
     assert sorted(p.name for p in (tmp_path / "pdf").iterdir()) == sorted(f.replace(".svg", ".pdf") for f in in_draft)
+
+
+def test_paper_figures_draw_what_paper_includes(tmp_path, monkeypatch):
+    """`paper-figures` writes only outside `paper/`; every figure `paper/` includes is one of the draft's or one of these."""
+    monkeypatch.setattr(n, "PAPERFIG", tmp_path)
+    paths = n.paper_figures(json.loads(n.TABLE.read_text())["keys"])
+    assert all(p.parent == tmp_path and p.read_bytes().startswith(b"%PDF") for p in paths)
+    tex = (n.HERE / "paper" / "main.tex").read_text()
+    included = set(re.findall(r"\\includegraphics(?:\[[^\]]*\])?\{fig/([\w-]+)\.pdf\}", tex))
+    drawn = {p.stem for p in paths} | {f.replace(".svg", "") for f in
+                                       re.findall(r"\(fig/([\w-]+\.svg)\)", n.DRAFT.read_text())}
+    assert included <= drawn
+    assert all((n.HERE / "paper" / "fig" / f"{s}.pdf").is_file() for s in included)

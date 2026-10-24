@@ -503,3 +503,7 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-24 | C5 close-out on M2 (#266), after /challenge-pr (accept with changes; findings 1-5 taken) · subagents: general-purpose opus-5-5 1.4M | 44 | 146k | 4.5M | 41k | #266 |
 | 2026-10-24 | C2p opened and unit 1, the LaTeX and ten figures (#267), after /challenge-pr (accept with changes; findings 1-5 taken); same session as #266, so the totals include it · subagents: general-purpose opus-5-5 3.0M | 137 | 322k | 27.6M | 458k | #267 |
   Over 2× the running median (7.0M): two units in one session at the user's request (C5's close-out and C2p unit 1), a converter written and iterated against compiled pages (each PDF page read back as an image), five figures drawn and inspected, and two /challenge-pr rounds with their fixes.
+| 2026-10-24 | C2p unit 2, before /challenge-pr · subagents: general-purpose opus-5-5 1.6M | 112 | 298k | 19.7M | 169k | #268 |
+  Over 2× the running median (7.0M): the 63 KB LaTeX source read whole for the revisions, a pdfLaTeX install (one route refused, one through a container), the C5 and 2510.06477 sources re-read to word §4.1 and §8 exactly, and a 26-point referee report answered with its fixes in the same session.
+| 2026-10-24 | C2p unit 2 (#268), after /challenge-pr (accept with changes; findings 1-5 taken) · subagents: general-purpose opus-5-5 3.7M | 127 | 316k | 24.3M | 172k | #268 |
+  Over 2× the running median: as the row above, plus /challenge-pr's fork (2.1M) and its five fixes.

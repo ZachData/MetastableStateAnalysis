@@ -1,0 +1,114 @@
+[
+ {
+  "slot": "{{f10.break_model|range}}",
+  "where": "§4.1 M2: half of ‖m‖² at 512 and 1000, the model's coordinates"
+ },
+ {
+  "slot": "{{f10.break_rot|range}}",
+  "where": "§4.1 M2: the same, random bases"
+ },
+ {
+  "slot": "{{m2.r0p_n}}",
+  "where": "§4.1 M2: the falls read (C2 unit 5b's family, 128–1000, ten seeds)"
+ },
+ {
+  "slot": "{{m2.n_rot}}",
+  "where": "§4.1 M2: the rotation null's draws per seed"
+ },
+ {
+  "slot": "{{m2.q2_not}}",
+  "where": "§4.1 M2: seeds read not basis-aligned"
+ },
+ {
+  "slot": "{{m2.q2_of}}",
+  "where": "§4.1 M2: seeds scored"
+ },
+ {
+  "slot": "{{m2.recurring}}",
+  "where": "§4.1 M2: recurring carriers (none; written as 'no coordinate')"
+ },
+ {
+  "slot": "{{m2.set_size|range}}",
+  "where": "§4.1 M2: massive coordinates per seed"
+ },
+ {
+  "slot": "{{f9.r_min|f0}}",
+  "where": "§4.1 M2, §8: the massive set's threshold"
+ },
+ {
+  "slot": "{{f9.window_max|f2}}",
+  "where": "§4.1 M2: the set's largest ratio at 128–1000"
+ },
+ {
+  "slot": "{{f9.r0b|range}}",
+  "where": "§1 item 2, §4.1 M2, §8: first step at 100×"
+ },
+ {
+  "slot": "{{m2.r0p_above_half}}",
+  "where": "§4.1 M2: falls with more than half in the massive set (none)"
+ },
+ {
+  "slot": "{{m2.p1_kept}}",
+  "where": "§4.1 M2: the break's date kept, projected"
+ },
+ {
+  "slot": "{{m2.n}}",
+  "where": "§4.1 M2: of the nine seeds"
+ },
+ {
+  "slot": "{{m2.p2_kept}}",
+  "where": "§4.1 M2: the centred date kept, projected"
+ },
+ {
+  "slot": "{{m2.n_plant}}",
+  "where": "§4.1 M2: the gate's plant, coordinates"
+ },
+ {
+  "slot": "{{m2.level_2000|range}}",
+  "where": "§4.1 M2: half of ‖m‖² at 2000"
+ },
+ {
+  "slot": "{{f10.at4000|range}}",
+  "where": "§4.1 M2: half of ‖m‖² at 4000"
+ },
+ {
+  "slot": "{{m2.level_16000|range}}",
+  "where": "§4.1 M2: half of ‖m‖² at 16 000"
+ },
+ {
+  "slot": "{{cfg.layers_70m}}",
+  "where": "§7: pythia-70m's layers (m19)"
+ },
+ {
+  "slot": "{{cfg.layers_160m}}",
+  "where": "§7: pythia-160m's layers (m19)"
+ },
+ {
+  "slot": "{{cfg.layers}}",
+  "where": "§7: pythia-410m's layers, V's maximum"
+ },
+ {
+  "slot": "{{s1.rho_null_ov|sci}}",
+  "where": "figure 11's caption: every family within 10⁻³ of 1 through 128 (OV)"
+ },
+ {
+  "slot": "{{s1.rho_null_qk|sci}}",
+  "where": "figure 11's caption: the same (QK)"
+ },
+ {
+  "slot": "{{cfg.warmup_steps}}",
+  "where": "figure 11's caption: the warmup"
+ },
+ {
+  "slot": "{{rd.same_dir[0]|f3}}",
+  "where": "abstract, §1 item 2: E₁ and ‖m‖² move together (the referee's m2: 0.956, not 0.96)"
+ },
+ {
+  "slot": "{{rd.same_dir|range3}}",
+  "where": "§4.1: the same, as a range"
+ },
+ {
+  "slot": "{{rd.m_any_fall|range2}}",
+  "where": "§1 item 2, §4.1: ‖m‖² falls wherever E₁ falls"
+ }
+]

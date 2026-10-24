@@ -1603,6 +1603,15 @@ closed with F9 saying published anisotropy along Pythia starts at step 10 000 an
 not cite it. Found before anything was posted; carried to C2p. Rule: a scan for a statistic also
 searches the named mechanisms a referee or fence offers for it (here §8's own "massive
 activations and attention sinks"), each × the model family × "training checkpoints".
+2026-10-24 (C2p unit 2): the same paper, one level down. `lit-C5.md` took its "around step 1k" as a
+date and C5 stated a lean from it ("about 1000, not 512") and then reported the lean wrong. Its
+appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … on one GSM8K prompt, so "around 1k" is the
+first checkpoint after step 1: a bound, (1, 1000], that contains both of C2's dates. Its training
+figure reads entropy, sink rate and the BOS norm; σ₁²/‖X‖²_F is read in depth only. Found by
+reading the paper's own checkpoint list before §8 cited it. In the same read a fetch summary said
+the row's quote "in more than one stage" was not in the paper; the raw HTML had it (it is about
+depth). Rule: a date taken from a paper names the paper's grid beside it; a fetch summary's
+"not found" is checked against the raw text before it is acted on.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).
@@ -1672,6 +1681,12 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   one parallel batch; the Edit failed (file not yet read), the commit landed without the
   pre-output note. Caught from the commit's stat before push, amended, then pushed. Rule: **a
   commit is never in the same batch as the edits it records**; check `git show --stat` first.
+- 2026-10-24 (C2p unit 2, #268): a new `trackC_writeup/paper_slots.json` that a new test reads was
+  never committed. The whitelist `.gitignore` drops any `.json` not named, and `git add -A
+  trackC_writeup/` said nothing; every local test passed on the untracked copy. `/challenge-pr`
+  found it by unpacking the commit. Rule: **a PR that adds a file type or a new non-`.py`/`.md`
+  file runs its new tests on `git archive HEAD | tar -x` before the PR opens**, and checks
+  `git status --short --ignored` for the new paths.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
