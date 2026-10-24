@@ -636,6 +636,14 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-10-23, C5 unit 1: `c5_massive.code_sha()` hashed the source files each time it was
+  called, and pass 1 (a 27-minute run) stamped each record with it. Freezing τ_p and adding a
+  `--seeds` flag mid-run changed the file, so the running process, still executing the code it
+  loaded, labelled its later records with newer hashes (180 files under three hashes).
+  `select`'s one-code check refused it, so no output was wrong; cost: the pass re-run under one
+  hash (the first set aside as `2026-10-23-u1-v0`). Every earlier `code_sha` in the repo has the
+  same shape (`c2_seeds`, `c2_aniso`, `a5_seeds`). Rule: **a run's code hash is taken once, when
+  the process starts** (`functools.lru_cache`), and nothing the run imports is edited while it runs.
 - 2026-10-20, `P-A5`'s registration: the first entry from a track directory. A5 unit 1 had
   taught `check_registry` the phase value `A` and written "accepted" in STATE, but two other
   readers of the registry still assumed every phase lives in `p<N>_*`: `check_registry`'s ID

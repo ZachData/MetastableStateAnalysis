@@ -3,11 +3,12 @@
 
 Opened 2026-10-23 by Blocked 103 (a), the user's ("C5's M2 first, then C2p"; nothing posted
 to arXiv by Claude: posting stays the user's). Row: `docs/ROADMAP.md` §8 C5. Scan: `trackC_writeup/lit-C5.md`
-(2026-10-23). Unit 0 (this) is writing only; nothing ran. **Proposed; not frozen**; revised after `/challenge-pr` on #263 (accept with changes: R0′ the
+(2026-10-23). Unit 0 was writing only; nothing ran. Revised after `/challenge-pr` on #263 (accept with changes: R0′ the
 share of the falls, P1's scale-matched arm and magnitude-matched control, each arm against its
-own unprojected date, the set as a union over the grid, S1's states). It freezes
-when Blocked 104 is decided; the tolerances and gate are then frozen with a preflight report in
-unit 1, before any scored output (as `design-C2.md` "Unit 3s").
+own unprojected date, the set as a union over the grid, S1's states). **Frozen 2026-10-23 on
+Blocked 104 (a), the user's**, with "Unit 1, fixed before any output" below; the tolerances and
+gate are frozen with a preflight report in unit 1, before any scored output (as `design-C2.md`
+"Unit 3s").
 
 ## What this opening of C5 is for
 
@@ -82,14 +83,34 @@ the rest goes to the user as an extension, not a silent unit 1b.
 | unit | what | done when |
 |---|---|---|
 | 0 | the scan and this design (writing only) | Blocked 104 decided; the design frozen |
-| 1 | `trackC_writeup/c5_massive.py` and pure tests; the preflight (the projected centred counts re-gated per arm on unit 3s's re-inits and plants, plant A placed in S, plant B outside it; τ_p and s_p / s_u at step 7000); the tolerances frozen and pushed before any scored record; the run (10 seeds × 18 steps, pass 1 for S, pass 2 for the energies, cached checkpoints, `HF_HUB_OFFLINE`); R0–P2 read | every reading in the table above, or a refusal |
+| 1 (**done 2026-10-23**: P1 kept 7 of 9, P2 kept 9 of 9; `status-C.md` "C5 unit 1") | `trackC_writeup/c5_massive.py` and pure tests; the preflight (the projected centred counts re-gated per arm on unit 3s's re-inits and plants, plant A placed in S, plant B outside it; τ_p and s_p / s_u at step 7000); the tolerances frozen and pushed before any scored record; the run (10 seeds × 18 steps, pass 1 for S, pass 2 for the energies, cached checkpoints, `HF_HUB_OFFLINE`); R0–P2 read | every reading in the table above, or a refusal |
 | close-out | writing only: what M2 established, its Parked items carried (C2p) or dropped; the card current | the card current |
+
+## Unit 1, fixed before any output (2026-10-23, with the freeze)
+
+What the table above leaves open, fixed in `trackC_writeup/c5_massive.py` before pass 1 runs.
+
+| item | fixed as |
+|---|---|
+| r's tokens | every token of every v1 prompt, position 0 included (S1 split position 0 from the rest; the design's "all tokens" is their union). Known answer: at seed 0's 143000, per state 0–23, S1's two top-3 lists (`massive.json`) are recomputed from the same pass, coordinates equal and ratios within 1e-3 relative, else refuse |
+| the passes | `pass1` per seed writes r (24 × 1024 per step); `select` writes `set.json` (S, M, the 20 random sets, R0b's inputs); `pass2` refuses unless `set.json` exists, and its first record is opened before the batch goes on |
+| the projection | computed from the raw float64 Gram by the rank-\|S\| correction (G − H_S H_Sᵀ, then the normalised and token-centred Grams from it): exact algebra, checked against the direct definition in the pure tests (≤ 1e-10) |
+| the known answers in pass 2 | the unprojected e1 against A5's records (≤ 1e-4 relative, as unit 3s) and the unprojected e1c against unit 3s's records (seed 0: unit 3's), ≤ 1e-4 relative, the tokens' hash equal, else refuse |
+| the unprojected references | P1: this pass's e1 (A5's float32 path; its V equal to A5's at every step, else refuse). P2: unit 3s's e1c records (seed 0: unit 3's). This pass's float64 unprojected counts beside, as a precision check on the projected path |
+| M and the random sets | written to `set.json` from pass 1 alone; the random sets drawn with `numpy.random.default_rng(20261023 + seed)` |
+| P1's scale-matched arm | the projected count at τ_p against the **unprojected count at 1e-3**; M at its own τ_M = 1e-3 × s_M / s_u from the same preflight; one τ_p and one τ_M, from seed 0's S on seed 0's step 7000, for every seed (only seed 0's 7000 is cached); every seed's s_p / s_u per grid step beside |
+| the random sets' arm | P1: 1e-3 (as above). P2: the B-matched 7.58e-4, the centred arm calibrated to see plant B as the uncentred count sees it at 1e-3 |
+| the preflight's plants | unit 3s's plants (`c2_seeds._plants`) on seed 0's S projected out: plant A's common vector placed in S (unit-normalised on S), so the projection removes it and its gate half checks the projection (share 0 up to rounding); plant B's spread zeroed on S; the gate as unit 3s (re-init rate ≤ 0.05, B at 0.25 ≥ 0.4, A at 0.5 ≤ 0.1) per arm; unit 3s's plant A (the full u) beside. A failed arm refuses the run and goes to the user |
+| P1's arms on the re-inits | the projected uncentred counts' re-init violation rates at 1e-4, 1e-3, 1e-2, τ_p, beside (A5's D2 arms were not gated either) |
+| unreadable | an unprojected centred arm unreadable on unit 3s's rule (seed 6 ties on one arm): that seed's P2 reads mixed, flagged |
+| R0′ | at a transition with \|Δ‖m‖²\| < 1e-12 the share is not taken (counted) |
+| **frozen by the preflight** (2026-10-23, before any pass-2 record) | seed 0's S = {130, 357, 966} (S1's known answer met, max deviation 0), M = {421, 550, 752}. At step 7000 s_u 0.0141, s_p 0.0161, s_M 0.0144: **τ_p = 1.15e-3, τ_M = 1.02e-3** (projection makes the relative changes larger there, not smaller). The gate passes at all four centred arms (re-init rate ≤ 0.016, B 0.46–0.94, A in S 0: its largest shift 7e-16, the projection's check). `tools/design_preflight` report sha256 `c308803892bf` refuses on its floor, as unit 3s's did: it prices an e-value this design never takes (dates only). First derived under code `c91bfe321bda` (set aside with its pass 1 as `2026-10-23-u1-v0`: the records' hash labels were wrong, `LESSONS.md` 3); re-derived identically (the same input file, byte for byte) under the run's code `7e45858c218d` before pass 2; records `data/trackC/c5/2026-10-23-u1/preflight/` (main tree) |
 
 ## Decisions (each yours; recommendation first)
 
 | # | decision | options | recommendation |
 |---|---|---|---|
-| 104 | the coordinate set and the scope | (a) **as above**: per seed, S the union over the 18 grid steps of S1's ratio ≥ 100 at states 0–23 (seed 0's end state alone: 357, 130, 966), the 9 seeds scored and seed 0 the development set, 20 random sets and one magnitude-matched set per seed; 2 units + close-out. (b) **seed 0 only, S1's six** (357, 130, 966 and the early 278, 335, 914): 1 unit + close-out, no reproduction, three of the six never pass 21×. (c) **a per-step set**: S re-read at each (seed, step) by the same rule; follows the coordinates' birth, but the set changes with the step, so the projected count is a different statistic at each step and its date is not comparable with C2's. (d) **no M2**: 103 (b), C2p now | **(a).** It reads the seeds C2's claims rest on, it is per seed as the life-cycle paper requires, and it fixes one set per seed so the date is one statistic along training; (b) is cheaper by a unit and reproduces nothing; (c)'s question is R0b's, which (a) reports as description |
+| 104 | **decided (a), the user's, 2026-10-23** · the coordinate set and the scope | (a) **as above**: per seed, S the union over the 18 grid steps of S1's ratio ≥ 100 at states 0–23 (seed 0's end state alone: 357, 130, 966), the 9 seeds scored and seed 0 the development set, 20 random sets and one magnitude-matched set per seed; 2 units + close-out. (b) **seed 0 only, S1's six** (357, 130, 966 and the early 278, 335, 914): 1 unit + close-out, no reproduction, three of the six never pass 21×. (c) **a per-step set**: S re-read at each (seed, step) by the same rule; follows the coordinates' birth, but the set changes with the step, so the projected count is a different statistic at each step and its date is not comparable with C2's. (d) **no M2**: 103 (b), C2p now | **(a).** It reads the seeds C2's claims rest on, it is per seed as the life-cycle paper requires, and it fixes one set per seed so the date is one statistic along training; (b) is cheaper by a unit and reproduces nothing; (c)'s question is R0b's, which (a) reports as description |
 
 ## Worth challenging (for the PR)
 
