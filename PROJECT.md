@@ -2920,6 +2920,28 @@ project-wide.
 
 ---
 
+## 3.73 At the break, the tokens' mean and its falls are spread over the coordinates, as in a random basis (2026-10-24)
+
+**`trackC_writeup/status-C.md` "C5 unit 2"** holds the numbers; this section says why it is
+project-wide.
+
+- §3.72 showed the massive-activation coordinates carry none of ‖m‖²'s falls at the break; the
+  referee's other candidate was a few "outlier dimensions" chosen by the mean. On the ten 410m
+  seeds, at every one of the 1224 falls V counts at 128–1000, the fewest coordinates holding half
+  of the fall are no fewer than when the same two vectors are turned to a random basis: **not
+  basis-aligned on 9 of 9 scored seeds** (0–2.2 % of a seed's falls at the rotation null's 5th
+  percentile); no coordinate recurs in a quarter of any seed's falls.
+- The mean itself is spread there: half of ‖m‖² takes about 130 of 1024 coordinates at 512 and
+  1000, as in a random basis, and concentrates into 2–3 only by 8000–16000, when §3.72's
+  coordinates become massive. So at the break E₁'s first-order term is a property of a direction,
+  not of a few coordinates of the residual stream.
+- An absolute bar ("≤ 16 coordinates hold half") was frozen first and refused by its gate: net
+  falls cancel across coordinates, so about 11 hold half in any basis (`LESSONS.md` 6); the
+  rotation-relative reading was made the primary by the user (Blocked 106 (a)) before any scored
+  record. Tier 1, a read-out of m, not an intervention.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
