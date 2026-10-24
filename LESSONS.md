@@ -1681,6 +1681,12 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   one parallel batch; the Edit failed (file not yet read), the commit landed without the
   pre-output note. Caught from the commit's stat before push, amended, then pushed. Rule: **a
   commit is never in the same batch as the edits it records**; check `git show --stat` first.
+- 2026-10-24 (C2p unit 2, #268): a new `trackC_writeup/paper_slots.json` that a new test reads was
+  never committed. The whitelist `.gitignore` drops any `.json` not named, and `git add -A
+  trackC_writeup/` said nothing; every local test passed on the untracked copy. `/challenge-pr`
+  found it by unpacking the commit. Rule: **a PR that adds a file type or a new non-`.py`/`.md`
+  file runs its new tests on `git archive HEAD | tar -x` before the PR opens**, and checks
+  `git status --short --ignored` for the new paths.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
