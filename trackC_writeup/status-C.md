@@ -22,6 +22,7 @@
   - C5 unit 1, M2 (Blocked 104 (a), the user's; tier 1, description): each seed's massive-activation coordinates (2–3 per seed, ≥ 100× the median coordinate's max at some grid step) are ordinary at the break (no coordinate of any seed above 2.4× the median's at 128–1000) and reach 100× only at step 16000 (32000 on one seed), long after both events; they carry none of the falls V counts (their share above ½ at 0 transitions), so the mean whose falls V counts at the break is not theirs; projected out, the break's date is kept on 7 of 9 seeds (two cross the half line by one violation at one arm, as random sets also do) and the centred event's on 9 of 9, as expected when nothing large is removed; the lean from 2510.06477 ("around 1k") did not hold for this statistic; whether ‖m‖² sits in a few other coordinates is Blocked 105 — `trackC_writeup/status-C.md` "C5 unit 1"
   - C5 unit 2, M2's other half (Blocked 105 (a), the user's; budget 3 units + close-out): frozen before output; its gate, on seed 0's off-grid step 7000, refused the absolute "a few coordinates hold half a fall" (falls turned to random bases read "few" at 0.65, since coordinates move both ways); the rotation-relative reading passes both sides; Blocked 106 (a), the user's, made it the primary: on the ten seeds the falls V counts at the break are **no more concentrated in the model's coordinates than in a random basis** (9 of 9; post hoc, slightly less on every seed), no coordinate recurs, and the mean itself is spread there (half of ‖m‖² in 132–135 of 1024, a random basis 127–129), below a random basis from 4000 (104–113), in 6–24 coordinates at 8000 and 2–3 at 16000; a few coordinates hold half of each net fall in any basis (cancellation), so the result is about the basis, not a count — `trackC_writeup/status-C.md` "C5 unit 2"
   - **C5 closed on M2 2026-10-24 at its exit** (3 units + close-out, as extended by Blocked 105 (a); writing only): at the break's steps neither the massive-activation coordinates (ordinary there, 100× only from 16000, outside the falls) nor any recurring few carry the falls V counts, and the falls are not basis-aligned, against a gate that planted 3 coordinates (a set of 8–16 not tested; "not in a few coordinates" may not be said); projecting the massive ones out keeps both of C2's dates, a check rather than a test that could have moved (nothing large removed); a read-out, not an intervention. Whether the draft's section 4.1 leads with the level is Blocked 107, the user's. Parked items carried (when the mean becomes basis-aligned → ROADMAP C5; the late carriers' wording → C2p) or dropped (unit 1's set-aside pass); the draft's edits from M2 belong to C2p, next — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
+  - C2p opened 2026-10-24 at the user's request (2 units + close-out); unit 1: the draft converted to LaTeX for Overleaf (`trackC_writeup/tex/`, compiled, CI-checked against the Markdown) and ten figures to cull from, five new (the identity-weight picture, an illustration; the two events on the ten seeds; E₁ against its mean term; the massive coordinates' late arrival; the mean spread at the break), each but the illustration from a record; where the draft lives once the user edits it is Blocked 108 — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -30,10 +31,10 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The draft's revision (M2's results, the late carriers' wording), second fresh-context read and LaTeX: ROADMAP C2p, next; posting is the user's — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
+  - The draft's revisions (M2's results, the late carriers' wording, m15, m19, m25, §8 and F9 against 2510.06477), the user's cull of the ten figures and a second fresh-context read: C2p unit 2, in the source Blocked 108 names; posting is the user's — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `620bfeff1d`
+- **Reviewed:** 2026-10-24 · body `8673defdc5`
 <!-- /phase-card -->
 
 ## Units
@@ -55,6 +56,54 @@
 | C5 1. M2's preflight, run and reading | **done 2026-10-23: 104 (a), the user's; frozen before output (`1b4e2c6`, `6a38770`); P1 kept 7 of 9, P2 kept 9 of 9; R0′ 0 on every seed; R0b 16000; the exit met** | `c5_massive.py`; "C5 unit 1" below |
 | C5 2. M2's other half (105 (a), the user's; budget 3 units + close-out) | **done 2026-10-24**: the gate refused the absolute "few" (`ded356f`); 106 (a), the user's: the rotation reading primary, re-frozen (`6db31cf`); **"not basis-aligned", 9 of 9** (post hoc, slightly more spread than a random basis); no recurring coordinate; the mean spread at the break (half in 132–135 of 1024); revised after `/challenge-pr` on #265; the exit met | `c5_mean.py`; "C5 unit 2" below |
 | C5 close-out (M2) | **done 2026-10-24: writing only; exit met at 3 units + close-out; Parked items carried (ROADMAP C5, C2p) or dropped** | "C5 on M2, on one page" below |
+| C2p 1. the LaTeX and ten figures (opened at the user's request) | **done 2026-10-24: `tex/` compiles (22 pages); figures 6–10 new, 9 and 10 C5's; `numbers.py`'s docstring; Blocked 108** | `design-C2p.md`, `to_tex.py`, `tex/`; "C2p unit 1" below |
+
+## C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)
+
+Opened at the user's request in the session that closed C5 (`design-C2p.md`: 2 units +
+close-out). Writing and drawing only: no forward pass, no new reading; every number in the new
+captions and paragraph is a key from a record already on disk.
+
+**The LaTeX.** `trackC_writeup/to_tex.py` converts the rendered `draft-C2.md` into
+`trackC_writeup/tex/` (`main.tex`, `refs.bib`, `fig/*.pdf`), the folder to upload to Overleaf.
+It targets pdfLaTeX (Overleaf's default): the draft's Unicode mathematics becomes math mode, the
+two display equations are set by hand, citations become natbib author–year keys (36 entries, each
+arXiv one with its link), and §N, figure N, table 1 and appendix X become `\ref`s. It refuses a display
+equation, citation, figure reference or character it cannot convert. Compiled here with tectonic
+(XeTeX): 22 pages, no undefined reference, every figure before the references; the one BibTeX
+warning is the Mistral checkpoints' missing year (the draft gives none). pdfLaTeX itself was not
+run here (not installed); the converter refuses any character outside T1's accented Latin, which is
+the condition pdfLaTeX needs. CI (`tests/test_trackC_tex.py`) checks that the tracked `tex/` is the
+conversion of the tracked draft and that every figure has its PDF. LaTeX numbers figures by
+position, so the Markdown's figure 6 is the LaTeX's figure 1; the `\ref`s follow.
+
+**The figures** (1–5 unchanged; 6–10 new, drawn by `numbers.py figures` from the table):
+
+| figure | where | what | from |
+|---|---|---|---|
+| 6 | §2.1 | the identity-weight picture: 40 tokens on S² clustering, E₁ never falling | `_toy`, a simulation (an illustration, refused if its E₁ ever falls); **not a record** |
+| 7 | §4.1 | the two events on the ten seeds, uncentred and centred (10⁻⁴), each over its plateau | unit 3s's `reading.json` |
+| 8 | §4.1 | seed 0's E₁ and ½ + ½‖m‖² by state at 512 and 1000; the share of transitions where the two move together, by step | unit 5's profile, unit 5b's readings |
+| 9 | appendix C | each seed's massive set over the median coordinate, by step, against 100× | C5 unit 1's `reading.json`, seed 0's `set.json` |
+| 10 | appendix C | coordinates holding half of ‖m‖², the model's basis against random bases, by step | C5 unit 2's `reading.json` |
+
+Records: 26 (was 23), 254 keys (was 241), 60 sentence claims (3 new: the massive coordinates
+ordinary at 128–1000 and at 100× only after 1000; the mean spread at the break and below a random
+basis's count by 4000; the centred half-rise at 1000 on most seeds); no existing key or record
+moved. Appendix C gains one paragraph, "Which coordinates carry the mean", for figures 9 and 10
+(the read-out caveat stated); §4.1's own M2 text is unit 2's, after Blocked 107. A first render
+said the massive coordinates' largest ratio at 128–1000 "exceeds" none at 2.3× when the record's
+is 2.35; caught before commit and printed to two decimals. The PDFs are deterministic (two draws,
+equal bytes).
+
+**Not established / not done:** which figures to keep (the user's cull); m15, m19, m25, §8 and F9
+against 2510.06477, the second fresh read (unit 2); a pdfLaTeX run.
+
+**Parked:** none.
+
+**Re-run.** `METS_DATA=<main>/data python -m trackC_writeup.numbers produce`; then `render`,
+`figures`, and `python -m trackC_writeup.to_tex build`. Conda `mets` env (matplotlib 3.10.8).
+Compile: upload `trackC_writeup/tex/` to Overleaf, or `tectonic -X compile main.tex` inside it.
 
 ## C5 on M2, on one page (closed 2026-10-24)
 

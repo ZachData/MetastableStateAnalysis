@@ -11,13 +11,16 @@ Three steps, so that only the first needs the main tree's `data/`:
 - **render** fills `draft-C2.src.md`'s `{{key}}` / `{{key|fmt}}` slots from the table and writes
   `draft-C2.md`. An unknown key or format refuses. `check` renders in memory and fails if the
   tracked `draft-C2.md` differs, so CI checks the draft against the table on any checkout.
-- **figures** draws `fig/fig{1,2,3}_*.svg` from the table alone (matplotlib, deterministic SVG).
+- **figures** draws figures 1–10 from the table alone (matplotlib): `fig/fig*.svg` for the
+  Markdown draft and `tex/fig/fig*.pdf` for the LaTeX one (`to_tex.py`), both deterministic.
+  Figure 6 is an illustration computed in `_toy`, not a record.
 
 Numbers a paper reports are that paper's and carry its citation; numbers from this project's
 records and from Pythia's released training configs are keys.
 
     METS_DATA=<main>/data python -m trackC_writeup.numbers produce [--reread data:<path> ...]
     python -m trackC_writeup.numbers render | check | figures
+    python -m trackC_writeup.to_tex build | check
 """
 
 from __future__ import annotations
@@ -40,6 +43,7 @@ TABLE = HERE / "numbers.json"
 SOURCE = HERE / "draft-C2.src.md"
 DRAFT = HERE / "draft-C2.md"
 FIGDIR = HERE / "fig"
+PDFDIR = HERE / "tex" / "fig"        # the LaTeX draft's copies (`to_tex.py`)
 
 #: Record ids: `data:` under METS_DATA (the main tree's, never added), `repo:` tracked.
 RECORDS = {
@@ -68,6 +72,10 @@ RECORDS = {
     "c5mean": "data:trackC/c2u5/2026-10-23-mean/profile.json",
     "c5b": "data:trackC/c2u5b/2026-10-23/readings.json",
     "push": "repo:trackC_writeup/p_a5_push_record.json",
+    # C5 on M2 (figures 9 and 10; C2p unit 1): each seed's massive set, and unit 2's reading
+    "c5set0": "data:trackC/c5/2026-10-23-u1/seed0/set.json",
+    "c5u1": "data:trackC/c5/2026-10-23-u1/reading.json",
+    "c5u2": "data:trackC/c5/2026-10-24-u2/reading.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -303,6 +311,11 @@ def _r1_out(r: dict) -> List[tuple]:
     """The (seed, prompt, date) series R1 dates outside the window."""
     return [(int(s), p, d) for s, x in r["per_seed"].items() for p, d in x["R1"]["dates"].items()
             if d not in r["window"]]
+
+
+def _c5seeds(r: dict) -> Dict[str, dict]:
+    """C5's readings keep seed 0 (the development set) apart from the nine; the figures draw all ten."""
+    return dict(r["per_seed"], **{"0": r["seed0_development"]})
 
 
 def _c5b_s_exc(r: dict) -> int:
@@ -612,6 +625,26 @@ KEYS: Dict[str, tuple] = {
     "a5g.effect_step": ("a5_seed0", lambda g: g["planted_effect"]["reading"]["step"]),
     "a5g.energy_tol": ("a5_seed0", lambda g: g["known_answer"]["energy_tol"]),
     "a5g.pass": ("a5_seed0", lambda g: g["pass"]),
+    # figures 6–10 (C2p unit 1): the series each draws
+    "f7.series": ("c3s", lambda c: {s: {"u": b["V_u"], "c": b["V_c"]["0.0001"]} for s, b in c["beside"].items()}),
+    "f7.plateaus": ("c3s", lambda c: {s: [d["plateau_uncentred"], d["arms"]["0.0001"]["plateau_centred"]]
+                                      for s, d in dict(c["per_seed"], **{"0": c["seed0_development"]}).items()}),
+    "f8.mean_depth": ("c5mean", lambda r: {st: r["seeds_data"]["0"]["profile"][st] for st in ("512", "1000")}),
+    "f8.same_dir": ("c5b", lambda r: {s: v["same_direction_share"] for s, v in r["R6"]["by_step"].items()}),
+    "f9.ratio": ("c5u1", lambda r: {s: [d["S_max_ratio_by_step"][str(t)] for t in GRID] for s, d in _c5seeds(r).items()}),
+    "f9.r_min": ("c5set0", lambda r: r["r_min"]),
+    "f9.window_max": ("c5u1", lambda r: max(d["S_max_ratio_by_step"][t] for d in _c5seeds(r).values()
+                                            for t in C5B_EARLY)),
+    "f9.r0b": ("c5u1", lambda r: _span(d["R0b_step"] for d in _c5seeds(r).values())),
+    "f10.level": ("c5u2", lambda r: {s: [d["Q3"]["level"][str(t)]["k_half_median"] for t in GRID]
+                                     for s, d in _c5seeds(r).items()}),
+    "f10.rotated": ("c5u2", lambda r: {s: [d["Q3"]["level"][str(t)]["rotated_k_half_median"] for t in GRID]
+                                       for s, d in _c5seeds(r).items()}),
+    "f10.break_model": ("c5u2", lambda r: _span(d["Q3"]["level"][t]["k_half_median"] for t in ("512", "1000")
+                                                for d in _c5seeds(r).values())),
+    "f10.break_rot": ("c5u2", lambda r: _span(d["Q3"]["level"][t]["rotated_k_half_median"] for t in ("512", "1000")
+                                              for d in _c5seeds(r).values())),
+    "f10.at4000": ("c5u2", lambda r: _span(d["Q3"]["level"]["4000"]["k_half_median"] for d in _c5seeds(r).values())),
 }
 
 
@@ -762,6 +795,11 @@ CLAIMS: List[tuple] = [
      lambda k: k["rd.same_dir"][0] > 0.95 and k["rd.m_any_fall"][0] > 0.95),
     ("§4.1 R6′: the mean's term is not most of the rises at 16 and 32, but is at every step from 128",
      lambda k: max(k["rd.s_rises"].values()) < 0.5 and k["rd.s_rises_min_from128"] > 0.5),
+    ("appendix C, figure 9: the massive coordinates are ordinary at 128–1000 and reach the threshold only after",
+     lambda k: k["f9.window_max"] < 10 and k["f9.r0b"][0] > 1000),
+    ("appendix C, figure 10: the mean is spread at the break, below a random basis's count by 4000",
+     lambda k: k["f10.break_model"][0] >= k["f10.break_rot"][0] and k["f10.at4000"][1] < k["f10.break_rot"][0]),
+    ("figure 7's caption: the centred half-rise at 1000 on most seeds", lambda k: k["c3s.K2"] > k["c3s.n"] / 2),
 ]
 
 
@@ -945,10 +983,35 @@ def _xaxis(ax, steps: Sequence[int], warmup: int) -> None:
 
 
 def _save(fig, name: str) -> Path:
+    """The SVG (the Markdown draft's) in `fig/`, and a PDF in `tex/fig/` (the LaTeX draft's, `to_tex.py`)."""
     FIGDIR.mkdir(exist_ok=True)
     path = FIGDIR / name
     fig.savefig(path, format="svg", metadata={"Date": None, "Creator": None}, bbox_inches="tight")
+    PDFDIR.mkdir(parents=True, exist_ok=True)
+    fig.savefig(PDFDIR / path.with_suffix(".pdf").name, format="pdf", bbox_inches="tight",
+                metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
     return path
+
+
+def _toy(n: int = 40, beta: float = 1.0, dt: float = 0.02, t_end: float = 8.0, seed: int = 0):
+    """Figure 6's illustration, not a record: n tokens on S² under the identity-weight dynamics
+    ẋᵢ = P_{xᵢ}(Σⱼ softmaxⱼ(β⟨xᵢ, xⱼ⟩) xⱼ) [Geshkovski et al. 2023], Euler steps renormalised to
+    the sphere, and E_β along it. Refuses if E_β ever falls (§2.1's monotonicity, the known answer)."""
+    import numpy as np
+    x = np.random.default_rng(seed).normal(size=(n, 3))
+    x /= np.linalg.norm(x, axis=1, keepdims=True)
+    ts, xs, es = [], [], []
+    for i in range(int(round(t_end / dt)) + 1):
+        g = x @ x.T
+        ts.append(i * dt), xs.append(x.copy()), es.append(np.exp(beta * g).sum() / (2 * beta * n * n))
+        w = np.exp(beta * (g - g.max(axis=1, keepdims=True)))
+        v = (w / w.sum(axis=1, keepdims=True)) @ x
+        v -= (v * x).sum(axis=1, keepdims=True) * x
+        x = x + dt * v
+        x /= np.linalg.norm(x, axis=1, keepdims=True)
+    if min(np.diff(es)) < -1e-12:
+        raise Refused("refusing: the toy's E_β fell, so figure 6 would not show §2.1's picture")
+    return ts, xs, es
 
 
 def figures(keys: Dict[str, dict]) -> List[Path]:
@@ -1106,6 +1169,114 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     ax.set_xticks([0, 6, 12, 18, 24])
     ax.legend(loc="upper left", fontsize=7)
     out.append(_save(fig, "fig5_count.svg"))
+    plt.close(fig)
+
+    # Figure 6 (§2.1; an illustration from `_toy`, no record): the identity-weight picture
+    import numpy as np
+    ts, xs, es = _toy()
+    fig = plt.figure(figsize=(7.2, 2.3))
+    snaps = (0.0, 2.0, 3.5)
+    for j, t in enumerate(snaps):
+        ax = fig.add_axes([0.01 + 0.19 * j, 0.08, 0.18, 0.80])
+        p = xs[min(range(len(ts)), key=lambda i: abs(ts[i] - t))]
+        ax.add_patch(plt.Circle((0, 0), 1, fill=False, color=MUTED, lw=0.8))
+        front = p[:, 2] >= 0
+        ax.scatter(p[front, 0], p[front, 1], s=12, color=SERIES[0], zorder=3, lw=0)
+        ax.scatter(p[~front, 0], p[~front, 1], s=12, facecolor="none", edgecolor=SERIES[0], lw=0.7, zorder=2)
+        ax.set_xlim(-1.08, 1.08), ax.set_ylim(-1.08, 1.08), ax.set_aspect("equal"), ax.axis("off")
+        ax.set_title(f"depth t = {t:g}", fontsize=8.5, color=INK)
+    ax = fig.add_axes([0.66, 0.2, 0.32, 0.68])
+    ax.plot(ts, es, color=SERIES[0], lw=1.6)
+    for t in snaps:
+        ax.axvline(t, color=RULE, lw=0.8, zorder=0)
+    ax.set_xlabel("depth t (layers, read as time)")
+    ax.set_ylabel("E₁")
+    out.append(_save(fig, "fig6_picture.svg"))
+    plt.close(fig)
+
+    # Figure 7 (§4.1; units 3 and 3s): the two events on the ten seeds, uncentred and centred
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 2.7), sharey=True)
+    ser, plat = k["f7.series"], k["f7.plateaus"]
+    for s in sorted(ser, key=lambda s: s == "0"):
+        col, lw, z = (INK, 2.0, 3) if s == "0" else ("#9a9893", 1.0, 1)
+        for ax, part, pi in ((axs[0], "u", 0), (axs[1], "c", 1)):
+            ax.plot(x, [v / plat[s][pi] for v in ser[s][part]], color=col if s == "0" else
+                    (SERIES[0] if part == "u" else SERIES[1]), lw=lw, alpha=1 if s == "0" else 0.55, zorder=z)
+    for ax, title in zip(axs, ("E₁ as read (uncentred)", "each prompt's mean token removed (centred, τ = 10⁻⁴)")):
+        _xaxis(ax, steps, warmup)
+        ax.axhline(0.5, color=INK, lw=0.8, ls=(0, (3, 2)))
+        ax.axvline(x[steps.index(512)], color=SERIES[0], lw=0.8, ls=(0, (1, 2)))
+        ax.axvline(x[steps.index(1000)], color=SERIES[1], lw=0.8, ls=(0, (1, 2)))
+        ax.set_title(title, fontsize=8.5, color=INK, loc="left")
+        ax.set_xlabel("training step (log scale)")
+    axs[0].set_ylabel("V / plateau median")
+    for ax, col in zip(axs, SERIES[:2]):
+        ax.legend([Line2D([], [], color=INK, lw=2.0), Line2D([], [], color=col, lw=1.0, alpha=0.55)],
+                  ["seed 0", "seeds 1–9"], loc="upper left", fontsize=7.5)
+    out.append(_save(fig, "fig7_events.svg"))
+    plt.close(fig)
+
+    # Figure 8 (§2.1, appendix C; unit 5b): E₁ and its mean term by depth, and how often they move together
+    fig, axs = plt.subplots(1, 2, figsize=(7.2, 2.8), gridspec_kw={"width_ratios": [1.2, 1], "wspace": 0.35})
+    ax = axs[0]
+    for col, st in ((SERIES[0], "512"), ("#0d2f5c", "1000")):
+        e1, m2 = k["rd.depth"]["0"][st], k["f8.mean_depth"][st]
+        mterm = [0.5 + 0.5 * v for v in m2]
+        states = list(range(len(e1)))
+        ax.plot(states, e1, color=col, lw=1.6, label=f"E₁, step {_tick(int(st))}")
+        ax.plot(states, mterm, color=col, lw=1.2, ls=(0, (3, 2)), label=f"½ + ½‖m‖², step {_tick(int(st))}")
+        falls = [i + 1 for i in range(len(e1) - 1) if e1[i + 1] < e1[i]]
+        ax.plot(falls, [e1[i] for i in falls], "v", color=SERIES[1], ms=4, zorder=4)
+    ax.plot([], [], "v", color=SERIES[1], ms=4, label="a drop in E₁")
+    ax.set_xlabel("state (0 = embeddings)")
+    ax.set_ylabel("mean over the 7 prompts")
+    ax.set_xticks([0, 6, 12, 18, 24])
+    ax.legend(loc="upper left", fontsize=6.5, ncol=1)
+    ax = axs[1]
+    sd = k["f8.same_dir"]
+    ax.plot(x, [sd[str(s)] for s in steps], color=SERIES[0], marker="o", ms=3, lw=1.4)
+    _xaxis(ax, steps, warmup)
+    ax.set_xticks(_xpos([0, 8, 128, 2000, 32000]), [_tick(s) for s in (0, 8, 128, 2000, 32000)])
+    ax.set_ylim(0.9, 1.005)
+    ax.set_xlabel("training step (log scale)")
+    ax.set_ylabel("share of transitions where E₁\nand ‖m‖² move the same way")
+    out.append(_save(fig, "fig8_mean.svg"))
+    plt.close(fig)
+
+    # Figure 9 (§4.1; C5 unit 1): the massive-activation coordinates arrive long after both events
+    fig, ax = plt.subplots(figsize=(4.8, 2.8))
+    for s in range(10):
+        ax.plot(x, k["f9.ratio"][str(s)], color=INK if s == 0 else "#9a9893", lw=2.0 if s == 0 else 1.0,
+                zorder=3 if s == 0 else 1)
+    ax.set_yscale("log")
+    ax.axhline(k["f9.r_min"], color=SERIES[1], lw=0.9, ls=(0, (3, 2)))
+    ax.text(x[1], k["f9.r_min"] * 1.15, f"{_num(k['f9.r_min'])}×, the set's threshold", fontsize=7.5, color=MUTED)
+    _xaxis(ax, steps, warmup)
+    ax.axvspan(x[steps.index(128)], x[steps.index(1000)], color=SERIES[0], alpha=0.08, lw=0)
+    ax.set_xlabel("training step (log scale); blue band: 128–1000")
+    ax.set_ylabel("largest coordinate of the set,\nover the median coordinate's")
+    ax.legend([Line2D([], [], color=INK, lw=2.0), Line2D([], [], color="#9a9893", lw=1.0)],
+              ["seed 0", "seeds 1–9"], loc="upper left", fontsize=7.5)
+    out.append(_save(fig, "fig9_massive.svg"))
+    plt.close(fig)
+
+    # Figure 10 (§4.1; C5 unit 2): how many coordinates hold half of ‖m‖², against a random basis
+    fig, ax = plt.subplots(figsize=(4.8, 2.8))
+    lev, rot = k["f10.level"], k["f10.rotated"]
+    ax.fill_between(x, [min(c) for c in zip(*rot.values())], [max(c) for c in zip(*rot.values())],
+                    color="#9a9893", alpha=0.35, lw=0, label="the same means, random bases (range)")
+    for s in sorted(lev, key=lambda s: s == "0"):
+        ax.plot(x, lev[s], color=INK if s == "0" else SERIES[0], lw=2.0 if s == "0" else 1.0,
+                alpha=1 if s == "0" else 0.6, zorder=3 if s == "0" else 2)
+    ax.plot([], [], color=INK, lw=2.0, label="seed 0, the model's coordinates")
+    ax.plot([], [], color=SERIES[0], lw=1.0, label="seeds 1–9")
+    ax.set_yscale("log")
+    _xaxis(ax, steps, warmup)
+    ax.axvspan(x[steps.index(128)], x[steps.index(1000)], color=SERIES[0], alpha=0.08, lw=0)
+    ax.set_xlabel("training step (log scale); blue band: 128–1000")
+    ax.set_ylabel("coordinates holding half of ‖m‖²\n(median over states, of 1024)")
+    ax.legend(loc="lower left", fontsize=7)
+    out.append(_save(fig, "fig10_level.svg"))
     plt.close(fig)
     return out
 
