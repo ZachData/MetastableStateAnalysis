@@ -33,7 +33,8 @@ def test_unicode_mathematics_becomes_math_mode():
     assert c.inline("E₁ falls") == "$E_{1}$ falls"
     assert c.inline("‖m‖² of 10⁻⁴") == r"$\|m\|^{2}$ of $10^{-4}$"
     assert c.inline("E_β and S^{d−1}") == r"$E_\beta $ and $S^{d-1}$"
-    assert c.inline("xᵢ ∈ S") == r"$x_{i} \in $ S"
+    assert c.inline("xᵢ ∈ S^{d−1}") == r"$x_{i} \in S^{d-1}$"
+    assert c.inline("E = κ p^(κ−1) with") == r"E = $\kappa p^{\kappa -1}$ with"
     assert c.inline("softmaxⱼ") == r"$\operatorname{softmax}_{j}$"
 
 
@@ -56,6 +57,8 @@ def test_refuses_an_unknown_citation_figure_or_display():
         conv("See figure 3.")
     with pytest.raises(t.Refused):
         conv("  E = mc².")
+    with pytest.raises(t.Refused):
+        conv("A bare caret, a^b.")
 
 
 def test_sections_and_figures_get_labels():

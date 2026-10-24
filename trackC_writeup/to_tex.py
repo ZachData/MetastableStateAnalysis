@@ -66,6 +66,11 @@ def _math_inner(s: str) -> str:
             out.append(r"\operatorname{" + w.group(0) + "}")
             i += len(w.group(0))
             continue
+        if s.startswith("^(", i):                       # p^(κ−1): a parenthesised exponent
+            j = s.index(")", i)
+            out.append("^{" + _math_inner(s[i + 2:j]) + "}")
+            i = j + 1
+            continue
         if c in _SUB:                                   # a run of subscripts
             j = i
             while j < len(s) and s[j] in _SUB and not (s[j] == "." and (j + 1 >= len(s) or s[j + 1] not in _SUB)):
@@ -99,14 +104,15 @@ def _math_inner(s: str) -> str:
 _MATH = re.compile(
     r"‖[^‖\s][^‖]{0,30}‖[⁰-⁹²³¹⁻ᵏᵀ]*"                                  # ‖m‖², ‖W − W₀‖
     r"|⟨[^⟩]{1,30}⟩[⁰-⁹²³¹⁻ᵏᵀ]*"                                      # ⟨xᵢ, xⱼ⟩ᵏ
-    r"|(?<![A-Za-z])[A-Za-zΣΔβδ](?:_\{[^}]{1,20}\}|_[A-Za-zβ0-9]|\^\{[^}]{1,20}\})+"  # E_β, S^{d−1}, Σ_{k≥2}
+    r"|(?<![A-Za-z])[A-Za-zΣΔβδκ](?:_\{[^}]{1,20}\}|_[A-Za-zβ0-9]|\^\{[^}]{1,20}\}|\^\([^)]{1,20}\))+"  # E_β, S^{d−1}, Σ_{k≥2}, p^(κ−1)
     r"|(?<![A-Za-z0-9.])(?:[A-Za-z]+(?=[₀-₉ᵢⱼₖ])|\d+(?:\.\d+)?|[A-Za-zΔΣβδẋ)])(?:[₀-₉ᵢⱼₖ]+(?:\.[₀-₉]+)?|[⁰-⁹²³¹⁻ᵏᵀ]+)+"  # E₁, E₃.₅, 10⁻⁴, softmaxⱼ
     r"|[βρκαΔΣδτ≥≤×−∈½·′√]"
 )
 _OP_MERGE = re.compile(r"\$([^$]+)\$(\s*[=+<>/,]\s*|\s*[=+<>]\s*[A-Za-z0-9.]{1,3}\s*[=+<>]\s*|)\$([^$]+)\$")
 _REL = r"(?:\\(?:in|geq|leq|times|cdot) ?|[=<>]|\\sum _\{[^}]*\})"
 #: "$x$ $\in$ $S$" -> "$x \in S$": a lone relation merges with its neighbours across a space.
-_REL_MERGE = (re.compile(r"\$([^$]+)\$\s+\$(" + _REL + r")\$"), re.compile(r"\$([^$]*" + _REL + r")\$\s+\$([^$]+)\$"))
+_REL_MERGE = (re.compile(r"\$([^$]+)\$\s+\$(" + _REL + r")\$"), re.compile(r"\$([^$]*" + _REL + r")\$\s+\$([^$]+)\$"),
+              re.compile(r"\$(\\(?:alpha|beta|kappa|rho|tau|delta) ?)\$ \$([^$]+)\$"))   # "$\kappa$ $p$": a product
 
 
 def _protect(text: str, store: List[str], latex: str) -> str:
@@ -184,6 +190,8 @@ class Converter:
         s = self._cites(s, store)
         s = self._refs(s, store)
         s = _MATH.sub(lambda m: _protect(s, store, "$" + _math_inner(m.group(0)) + "$"), s)
+        if "^" in s or re.search(r"(?<![\x00\d])_", s):
+            raise Refused(f"refusing: a sub- or superscript this converter does not set: {s[:120]!r}")
         s = _escape(s)
         for c, t in _TEXTCHAR.items():
             s = s.replace(c, t)
@@ -410,10 +418,11 @@ def _bibesc(v: str) -> str:
 def build_text(md: str) -> Tuple[str, str]:
     c = Converter(md)
     tex = c.convert()
-    bad = sorted({ch for ch in tex if ord(ch) > 127 and ch not in _SAFE})
+    bib = c.bibtex()
+    bad = sorted({ch for ch in tex + bib if ord(ch) > 127 and ch not in _SAFE})
     if bad:
         raise Refused(f"refusing: characters pdfLaTeX would not set: {bad}")
-    return tex, c.bibtex()
+    return tex, bib
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:

@@ -798,7 +798,9 @@ CLAIMS: List[tuple] = [
     ("appendix C, figure 9: the massive coordinates are ordinary at 128–1000 and reach the threshold only after",
      lambda k: k["f9.window_max"] < 10 and k["f9.r0b"][0] > 1000),
     ("appendix C, figure 10: the mean is spread at the break, below a random basis's count by 4000",
-     lambda k: k["f10.break_model"][0] >= k["f10.break_rot"][0] and k["f10.at4000"][1] < k["f10.break_rot"][0]),
+     lambda k: k["f10.break_model"][0] >= k["f10.break_rot"][0]
+     and all(k["f10.level"][s][GRID.index(4000)] < min(r[GRID.index(4000)] for r in k["f10.rotated"].values())
+             for s in k["f10.level"])),
     ("figure 7's caption: the centred half-rise at 1000 on most seeds", lambda k: k["c3s.K2"] > k["c3s.n"] / 2),
 ]
 

@@ -34,7 +34,7 @@
   - The draft's revisions (M2's results, the late carriers' wording, m15, m19, m25, §8 and F9 against 2510.06477), the user's cull of the ten figures and a second fresh-context read: C2p unit 2, in the source Blocked 108 names; posting is the user's — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `8673defdc5`
+- **Reviewed:** 2026-10-24 · body `46e47ce95d`
 <!-- /phase-card -->
 
 ## Units
@@ -77,15 +77,28 @@ the condition pdfLaTeX needs. CI (`tests/test_trackC_tex.py`) checks that the tr
 conversion of the tracked draft and that every figure has its PDF. LaTeX numbers figures by
 position, so the Markdown's figure 6 is the LaTeX's figure 1; the `\ref`s follow.
 
-**The figures** (1–5 unchanged; 6–10 new, drawn by `numbers.py figures` from the table):
+**The figures** (1–5 unchanged; 6–10 new, drawn by `numbers.py figures` from the table). LaTeX
+numbers figures by position, so the two drafts number them differently; cull by file
+(after `/challenge-pr` on #267, finding 4):
 
-| figure | where | what | from |
-|---|---|---|---|
-| 6 | §2.1 | the identity-weight picture: 40 tokens on S² clustering, E₁ never falling | `_toy`, a simulation (an illustration, refused if its E₁ ever falls); **not a record** |
-| 7 | §4.1 | the two events on the ten seeds, uncentred and centred (10⁻⁴), each over its plateau | unit 3s's `reading.json` |
-| 8 | §4.1 | seed 0's E₁ and ½ + ½‖m‖² by state at 512 and 1000; the share of transitions where the two move together, by step | unit 5's profile, unit 5b's readings |
-| 9 | appendix C | each seed's massive set over the median coordinate, by step, against 100× | C5 unit 1's `reading.json`, seed 0's `set.json` |
-| 10 | appendix C | coordinates holding half of ‖m‖², the model's basis against random bases, by step | C5 unit 2's `reading.json` |
+| file | Markdown | LaTeX | where | what | from |
+|---|---|---|---|---|---|
+| `fig6_picture` | 6 | 1 | §2.1 | the identity-weight picture: 40 tokens on S² clustering, E₁ never falling | `_toy`, a simulation (an illustration, refused if its E₁ ever falls); **not a record** |
+| `fig1_break` | 1 | 2 | §4 | V by step on the ten seeds | (C2 unit 2) |
+| `fig7_events` | 7 | 3 | §4.1 | the two events on the ten seeds, uncentred and centred (10⁻⁴), each over its plateau | unit 3s's `reading.json` |
+| `fig8_mean` | 8 | 4 | §4.1 | seed 0's E₁ and ½ + ½‖m‖² by state at 512 and 1000; the share of transitions where the two move together, by step | unit 5's profile, unit 5b's readings |
+| `fig2_timeline` | 2 | 5 | §5 | the rows on seed 0 | (C2 unit 2) |
+| `fig3_ov` | 3 | 6 | §6 | S2's OV edits | (C2 unit 2) |
+| `fig4_schedules` | 4 | 7 | §7 | the other schedules | (C2 unit 4) |
+| `fig5_count` | 5 | 8 | appendix C | where the drops sit; E₁ by depth | (C2 unit 5b) |
+| `fig9_massive` | 9 | 9 | appendix C | each seed's massive set over the median coordinate, by step, against 100× | C5 unit 1's `reading.json`, seed 0's `set.json` |
+| `fig10_level` | 10 | 10 | appendix C | coordinates holding half of ‖m‖², the model's basis against random bases, by step | C5 unit 2's `reading.json` |
+
+Appendix C's paragraph "Which coordinates carry the mean" exists for `fig9_massive` and
+`fig10_level`; it goes if both are cut. The converter sets the draft's Unicode mathematics, but
+single-letter variables written in plain letters (V, R, m, n, Q = K = V = I) stay in text font,
+and `E = κ p^(κ−1)`'s E with them (`/challenge-pr` on #267, finding 2, which also found that
+exponent printed as a literal caret: now set, and a bare caret refuses).
 
 Records: 26 (was 23), 254 keys (was 241), 60 sentence claims (3 new: the massive coordinates
 ordinary at 128–1000 and at 100× only after 1000; the mean spread at the break and below a random
