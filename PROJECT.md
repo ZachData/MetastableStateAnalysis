@@ -2935,8 +2935,8 @@ project-wide.
 - A few coordinates (5–8) hold half of each net fall in either basis, because a net fall is only
   6–10 % of the coordinates' gross movement; so the finding is about the basis, not a count. The
   mean itself is spread: half of ‖m‖² takes 132–135 of 1024 coordinates at 512 and 1000 (a random
-  basis 127–129), and concentrates into 2–3 only by 8000–16000, when §3.72's coordinates become
-  massive. So at the break E₁'s first-order term is a property of a direction, not of privileged
+  basis 127–129); it is below a random basis from 4000 (104–113), in 6–24 coordinates at 8000
+  and 2–3 at 16000, when §3.72's coordinates become massive. So at the break E₁'s first-order term is a property of a direction, not of privileged
   coordinates of the residual stream. The gate tested a 3-coordinate plant only (status "Not
   established").
 - An absolute bar ("≤ 16 coordinates hold half") was frozen first and refused by its gate: net

@@ -20,19 +20,20 @@
   - **C2 closed 2026-10-23 at its exit** (9 units + close-out, as extended by Blocked 102 (a)): a complete draft, every number rendered from a record, a fresh-context referee read answered. It establishes a dated, reproduced break in E₁'s monotonicity (the registered seed count), a second event after it in the token-centred cloud (at 1000), and that V at β = 1 nearly counts falls in the tokens' mean norm; it does not separate either date from the LR warmup. Every Parked item carried (C4, C5, C2p, the draft's posting thread) or dropped (GPT-2 medium, token-drift, an aligned-pair null); what happens to the draft was Blocked 103, decided (a), the user's: C5's M2 first, then C2p; nothing posted to arXiv by Claude — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - C5 opened 2026-10-23 on M2 only (Blocked 103 (a); writing only): a scan and a proposed design that projects each seed's massive-activation coordinates (read at its own step 143000) out of every token and recounts both C2 counts against 20 random coordinate sets; the scan found a Pythia-410m anisotropy-type statistic dated "around step 1k" (2510.06477) that C2's §8 and F9 do not cite (carried to C2p); the set and scope are Blocked 104, the user's — `trackC_writeup/status-C.md` "C5 unit 0"
   - C5 unit 1, M2 (Blocked 104 (a), the user's; tier 1, description): each seed's massive-activation coordinates (2–3 per seed, ≥ 100× the median coordinate's max at some grid step) are ordinary at the break (no coordinate of any seed above 2.4× the median's at 128–1000) and reach 100× only at step 16000 (32000 on one seed), long after both events; they carry none of the falls V counts (their share above ½ at 0 transitions), so the mean whose falls V counts at the break is not theirs; projected out, the break's date is kept on 7 of 9 seeds (two cross the half line by one violation at one arm, as random sets also do) and the centred event's on 9 of 9, as expected when nothing large is removed; the lean from 2510.06477 ("around 1k") did not hold for this statistic; whether ‖m‖² sits in a few other coordinates is Blocked 105 — `trackC_writeup/status-C.md` "C5 unit 1"
-  - C5 unit 2, M2's other half (Blocked 105 (a), the user's; budget 3 units + close-out): frozen before output; its gate, on seed 0's off-grid step 7000, refused the absolute "a few coordinates hold half a fall" (falls turned to random bases read "few" at 0.65, since coordinates move both ways); the rotation-relative reading passes both sides; Blocked 106 (a), the user's, made it the primary: on the ten seeds the falls V counts at the break are **no more concentrated in the model's coordinates than in a random basis** (9 of 9; post hoc, slightly less on every seed), no coordinate recurs, and the mean itself is spread there (half of ‖m‖² in 132–135 of 1024, a random basis 127–129), concentrating into 2–3 coordinates only by 8000–16000; a few coordinates hold half of each net fall in any basis (cancellation), so the result is about the basis, not a count — `trackC_writeup/status-C.md` "C5 unit 2"
+  - C5 unit 2, M2's other half (Blocked 105 (a), the user's; budget 3 units + close-out): frozen before output; its gate, on seed 0's off-grid step 7000, refused the absolute "a few coordinates hold half a fall" (falls turned to random bases read "few" at 0.65, since coordinates move both ways); the rotation-relative reading passes both sides; Blocked 106 (a), the user's, made it the primary: on the ten seeds the falls V counts at the break are **no more concentrated in the model's coordinates than in a random basis** (9 of 9; post hoc, slightly less on every seed), no coordinate recurs, and the mean itself is spread there (half of ‖m‖² in 132–135 of 1024, a random basis 127–129), below a random basis from 4000 (104–113), in 6–24 coordinates at 8000 and 2–3 at 16000; a few coordinates hold half of each net fall in any basis (cancellation), so the result is about the basis, not a count — `trackC_writeup/status-C.md` "C5 unit 2"
+  - **C5 closed on M2 2026-10-24 at its exit** (3 units + close-out, as extended by Blocked 105 (a); writing only): at the break's steps neither the massive-activation coordinates (ordinary there, 100× only from 16000, outside the falls) nor any recurring few carry the falls V counts, and the falls are not basis-aligned, against a gate that planted 3 coordinates (a set of 8–16 not tested; "not in a few coordinates" may not be said); projecting the massive ones out keeps both of C2's dates, a check rather than a test that could have moved (nothing large removed); a read-out, not an intervention. Whether the draft's section 4.1 leads with the level is Blocked 107, the user's. Parked items carried (when the mean becomes basis-aligned → ROADMAP C5; the late carriers' wording → C2p) or dropped (unit 1's set-aside pass); the draft's edits from M2 belong to C2p, next — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - C5's close-out on M2 (writing only; units 1 and 2 read, the exit met): Parked items carried or dropped (when m becomes basis-aligned, 4000–8000; the late carriers on seeds 3 and 4; unit 1's set-aside pass); then C2p, then C4 — `trackC_writeup/status-C.md` "C5 unit 2"
+  - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The draft's revision, second fresh-context read and LaTeX: ROADMAP C2p, after M2; posting is the user's — `trackC_writeup/status-C.md` "C5 unit 0"
+  - The draft's revision (M2's results, the late carriers' wording), second fresh-context read and LaTeX: ROADMAP C2p, next; posting is the user's — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `9b572f9d64`
+- **Reviewed:** 2026-10-24 · body `620bfeff1d`
 <!-- /phase-card -->
 
 ## Units
@@ -53,7 +54,74 @@
 | C5 0. M2's scan and design (writing only) | **done 2026-10-23: proposed; Blocked 104 (the set and scope)** | `lit-C5.md`, `design-C5.md`; "C5 unit 0" below |
 | C5 1. M2's preflight, run and reading | **done 2026-10-23: 104 (a), the user's; frozen before output (`1b4e2c6`, `6a38770`); P1 kept 7 of 9, P2 kept 9 of 9; R0′ 0 on every seed; R0b 16000; the exit met** | `c5_massive.py`; "C5 unit 1" below |
 | C5 2. M2's other half (105 (a), the user's; budget 3 units + close-out) | **done 2026-10-24**: the gate refused the absolute "few" (`ded356f`); 106 (a), the user's: the rotation reading primary, re-frozen (`6db31cf`); **"not basis-aligned", 9 of 9** (post hoc, slightly more spread than a random basis); no recurring coordinate; the mean spread at the break (half in 132–135 of 1024); revised after `/challenge-pr` on #265; the exit met | `c5_mean.py`; "C5 unit 2" below |
-| C5 close-out (M2) | — | — |
+| C5 close-out (M2) | **done 2026-10-24: writing only; exit met at 3 units + close-out; Parked items carried (ROADMAP C5, C2p) or dropped** | "C5 on M2, on one page" below |
+
+## C5 on M2, on one page (closed 2026-10-24)
+
+**Asked** (`design-C5.md` "What this opening of C5 is for"): the referee's M2. C2 unit 5b showed
+that V at β = 1 nearly counts the layers at which the tokens' mean norm ‖m‖² falls; is that mean
+the massive-activation coordinates, or any few coordinates, and do C2's two dates survive
+removing them? **Exit met** (budget extended on the record to 3 units + close-out by Blocked
+105 (a); #263–#265 and this): R0, R0′, R0b, P1, P2 (unit 1) and Q1–Q3 (unit 2) read on the 9
+PolyPythias seeds with seed 0 the development set, both controls, each gate passed before any
+scored record (unit 2's after one refusal and Blocked 106 (a)). Writing only here.
+
+**Established** (tier 1, description; `pythia-410m` seeds 0–9, the 18 grid steps, v1's 7
+prompts; numbers in the unit sections below):
+
+1. **The massive-activation coordinates are not the break's.** Each seed's 2–3 coordinates are
+   ordinary at 128–1000 (≤ 2.4× the median coordinate's max), reach 100× only at step 16000
+   (32000 on one seed), and carry none of the falls V counts (R0′: share above ½ at 0
+   transitions on every seed). Projected out, the break's date is kept on 7 of 9 seeds (the two
+   others cross the half line by one violation at one arm, as random sets also do) and the
+   centred event's on 9 of 9 (unit 1): a check, not a test that could have moved, since the
+   coordinates removed are ordinary at the break.
+2. **No other few coordinates are the break's either.** The falls V counts at 128–1000 (1224, 5b's
+   family) are no more concentrated in the model's coordinates than in a random basis, 9 of 9
+   ("not basis-aligned"; post hoc, slightly more spread on every seed); no coordinate recurs in
+   ¼ of any seed's falls; the mean itself is spread there (half of ‖m‖² in 132–135 of 1024 at 512
+   and 1000, a random basis 127–129). It equals a random basis's at 2000 (126–131), is below it
+   on every seed at 4000 (104–113), and sits in 6–24 coordinates at 8000 and 2–3 at 16000 (unit 2).
+3. **So at the break's steps no privileged coordinates of the kind tested carry the break**:
+   neither the massive set nor a concentration like the gate's plant (3 coordinates). A
+   statement about the basis, not a count: a few coordinates hold half of each *net* fall in any
+   basis, by cancellation (unit 2's gate), so the draft may not say "not in a few coordinates".
+4. **The lean from 2510.06477 ("around 1k") did not hold for this statistic** on 410m's seeds:
+   the coordinates reach 100× an order of magnitude later (unit 1; `lit-C5.md`).
+
+**Not established:** any causal statement (a read-out of the states, not a clamp in the forward
+pass, 2607.09279's intervention); a direction that is not a coordinate (rotation-invariant, which
+C2's centred count already reads); a privileged set of 8–16 coordinates carrying part of each
+fall, or the plant on the scored steps (unit 2's gate planted 3 coordinates at 7000); when the
+falls V counts become basis-aligned after 1000 (the level turns between 2000 and 4000); the attention sink's share per head; other
+β, rungs or prompts; any separation from the LR warmup (F1, C4).
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 0. scan and design | #263 | proposed; 104 (a), the user's, froze the set and scope |
+| 1. M2: projection and recount | #264 | P1 kept 7 of 9, P2 9 of 9, R0′ 0, R0b 16000 |
+| 2. M2's other half (105 (a)) | #265 | the absolute "few" refused by its gate; 106 (a): "not basis-aligned", 9 of 9 |
+| close-out | this | writing only |
+
+**Parked items at close:**
+
+| item | from | outcome |
+|---|---|---|
+| When m becomes basis-aligned (the level as a random basis's at 2000, below it at 4000 on every seed, 6–24 coordinates at 8000; corrected at the close, `/challenge-pr` on #266, finding 3: unit 2's Parked had "spread at 4000") | unit 2 | **carried to ROADMAP C5's row** (unscheduled): Q2 on the falls at 2000, 4000 and 8000 is a read of unit 2's records (`c5_mean.family` takes the steps), no forward pass; dating the level inside (2000, 4000] needs off-grid checkpoints. C2p quotes the recorded levels as description, with R0b's 16000 beside |
+| The carriers change late on seeds 3 and 4 (seed 3's end-state set is not its 16000–54000 one; seed 4's are gone at 143000) | unit 1 | **carried to C2p**: the draft says the set is per seed, the union over the grid, not an end-state set; S3's choice of coordinates reads the same caveat in unit 1 |
+| Unit 1's first pass 1 (`2026-10-23-u1-v0`), kept as the defect's evidence | unit 1 | **dropped**: `LESSONS.md` 3 records the defect; the directory under `data/` (untracked) is the user's to delete |
+| C2's §8 and F9 against 2510.06477 | unit 0 (`lit-C5.md` Parked 1) | carried to C2p at C5's opening (unchanged) |
+
+**What it changes for the draft** (each an edit in C2p, none made here): §4.1 gains M2's two
+results (the massive coordinates ordinary at the break and outside the falls; the falls not
+basis-aligned, the mean spread), with the read-out caveat, the gate's reach (a 3-coordinate
+plant) and unit 2's rule that it does not say "not in a few coordinates"; whether it leads with
+the level (Q3) or the frozen rotation reading (Q2) is **Blocked 107, the user's** (`/challenge-pr`
+on #265, finding 6, homed at the close after #266's finding 4); §8's "Anisotropy, outlier dimensions
+and sinks" and appendix A's note no longer leave massive activations open as the mean's carrier
+at these steps; §8 and F9 meet 2510.06477 (its "around 1k" not reproduced for this statistic).
 
 ## C5 unit 2, M2's other half: the falls at the break are not concentrated in the model's coordinates (2026-10-24)
 
@@ -107,7 +175,7 @@ runner). Known answers met on every record: tokens' hash, e1 and Σmᵢ² (and �
 | **The other way** (post hoc, `/challenge-pr` on #265, finding 2; `reading.json` `post_hoc_ties`) | **the model's basis spreads the falls slightly more than a random basis does, on every seed**: ties apart, a rotation holds half the fall in fewer coordinates at 41–50 % of draws and in more at 15–24 % (ties 30–38 %); the fall sits above 95 % of its rotations at 5–15 % of a seed's falls, below 5 % of them at 0–2.2 %. Seed 0: 43 %, 23 %, 6.1 %, 0.8 %. Not a frozen reading; no label is taken from it |
 | Q1, k½ (beside) | half a fall takes a median of 5–8 coordinates (quartiles 3–14), against 4–8 for the same two vectors turned at random; 0.78–0.91 of falls at ≤ 16. **So by the design's own count the falls do sit in a few coordinates, in either basis**: a net fall is 6–10 % of the coordinates' gross movement Σ\|δᵢ\| (median per seed), and a few of the moving coordinates outweigh that net. "A few" is the cancellation's, not the model's coordinates' (the gate) |
 | Q3, recurring coordinates | **none**: no coordinate is in the k½ set at ≥ ¼ of a seed's falls, on any seed (so none of S or M) |
-| Q3, the level of ‖m‖² | at the break the mean itself is spread: half of ‖m‖² takes 132–135 coordinates at 512 and 1000 on every seed (participation ratio 352–366), against 127–129 (341–346) turned at random; also at step 0 (123–125), 128 and 4000 (104–113). By 8000 it is 6–24, by 16000 2–3 (ratio 3–7): the massive coordinates arriving (unit 1's R0b); at 143000 2–16, except seed 4 (133; its carriers are gone by then, unit 1's Parked) |
+| Q3, the level of ‖m‖² | at the break the mean itself is spread: half of ‖m‖² takes 132–135 coordinates at 512 and 1000 on every seed (participation ratio 352–366), against 127–129 (341–346) turned at random; also at step 0 (123–125) and 128; as a random basis's at 2000 (126–131), below it at 4000 (104–113, corrected at the close: first written as spread). By 8000 it is 6–24, by 16000 2–3 (ratio 3–7): the massive coordinates arriving (unit 1's R0b); at 143000 2–16, except seed 4 (133; its carriers are gone by then, unit 1's Parked) |
 
 **What it changes** (the design's table, fixed before output; worded after `/challenge-pr` on
 #265, findings 1–3): "not basis-aligned". §4.1 in C2p says the falls V counts at the break are no
@@ -129,8 +197,8 @@ grid) reads aligned at 0.95: whether alignment begins between 1000 and 8000, and
 read (the family is 128–1000; the level's numbers at 4000 and 8000 are beside).
 
 **Parked** (discoveries; not followed):
-- When m becomes basis-aligned: the level reads spread at 4000 (104–113) and concentrated at 8000
-  (6–24). Why: it would date the massive coordinates' takeover of the mean with a statistic that
+- When m becomes basis-aligned: the level reads below a random basis at 4000 (104–113 against
+  127–129; first written "spread", corrected at the close) and concentrated at 8000 (6–24). Why: it would date the massive coordinates' takeover of the mean with a statistic that
   needs no 100× threshold. Cost: a read of these records, no forward pass. Decision it could
   change: how C2p words unit 1's R0b date (16000 at 100×). Carry or drop at the close-out.
 
