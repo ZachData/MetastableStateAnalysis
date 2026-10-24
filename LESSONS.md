@@ -1554,6 +1554,14 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   real grid (a check script), and an outcome two hypotheses both predict is labelled with both;
   a plant moved to a new model is sized against that model's own per-unit scale, not carried
   over in absolute units**.
+- 2026-10-24 (C5 unit 2, caught by the gate, before any scored record): "a few coordinates hold
+  half a fall in ‖m‖²" was frozen as an absolute bar, k½ ≤ 16 of 1024, on the *net* fall. The
+  pure tests built their spread fall as a scaling, every coordinate falling, so they passed. Real
+  falls at step 7000 turned to random bases read "few" at 0.65: coordinates move both ways, the
+  net is small against them, and about 11 coordinates hold half of it in any basis. The
+  rotation-relative reading beside it passed both sides (Blocked 106). Rule: **a concentration
+  statistic on a signed sum is gated on the real vectors turned to random bases before its bar
+  is chosen; a pure test's "spread" case must have mixed signs, as the data does**.
 
 ## 7. Literature found after the construction was built
 

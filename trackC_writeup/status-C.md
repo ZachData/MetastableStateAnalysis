@@ -20,18 +20,19 @@
   - **C2 closed 2026-10-23 at its exit** (9 units + close-out, as extended by Blocked 102 (a)): a complete draft, every number rendered from a record, a fresh-context referee read answered. It establishes a dated, reproduced break in E₁'s monotonicity (the registered seed count), a second event after it in the token-centred cloud (at 1000), and that V at β = 1 nearly counts falls in the tokens' mean norm; it does not separate either date from the LR warmup. Every Parked item carried (C4, C5, C2p, the draft's posting thread) or dropped (GPT-2 medium, token-drift, an aligned-pair null); what happens to the draft was Blocked 103, decided (a), the user's: C5's M2 first, then C2p; nothing posted to arXiv by Claude — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - C5 opened 2026-10-23 on M2 only (Blocked 103 (a); writing only): a scan and a proposed design that projects each seed's massive-activation coordinates (read at its own step 143000) out of every token and recounts both C2 counts against 20 random coordinate sets; the scan found a Pythia-410m anisotropy-type statistic dated "around step 1k" (2510.06477) that C2's §8 and F9 do not cite (carried to C2p); the set and scope are Blocked 104, the user's — `trackC_writeup/status-C.md` "C5 unit 0"
   - C5 unit 1, M2 (Blocked 104 (a), the user's; tier 1, description): each seed's massive-activation coordinates (2–3 per seed, ≥ 100× the median coordinate's max at some grid step) are ordinary at the break (no coordinate of any seed above 2.4× the median's at 128–1000) and reach 100× only at step 16000 (32000 on one seed), long after both events; they carry none of the falls V counts (their share above ½ at 0 transitions), so the mean whose falls V counts at the break is not theirs; projected out, the break's date is kept on 7 of 9 seeds (two cross the half line by one violation at one arm, as random sets also do) and the centred event's on 9 of 9, as expected when nothing large is removed; the lean from 2510.06477 ("around 1k") did not hold for this statistic; whether ‖m‖² sits in a few other coordinates is Blocked 105 — `trackC_writeup/status-C.md` "C5 unit 1"
+  - C5 unit 2, M2's other half (Blocked 105 (a), the user's; budget 3 units + close-out): frozen before output; its gate, on seed 0's off-grid step 7000, refused the absolute "a few coordinates hold half a fall" (falls turned to random bases read "few" at 0.65, since coordinates move both ways); the rotation-relative reading passes both sides; no scored cell read; which rule reads is Blocked 106 — `trackC_writeup/status-C.md` "C5 unit 2"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
-  - M2's other half, whether ‖m‖² at the break sits in a few other coordinates (a set chosen by the mean): Blocked 105, the user's (one more unit, or close M2 and carry it); then the close-out, then C2p — `trackC_writeup/status-C.md` "C5 unit 1"
+  - M2's other half, whether ‖m‖² at the break sits in a few other coordinates (a set chosen by the mean): unit 2 (105 (a)), its gate refused the absolute "few" on turned falls (0.65 against ≤ 0.05), the rotation reading passes; which rule reads is Blocked 106, the user's; then the close-out, then C2p — `trackC_writeup/status-C.md` "C5 unit 2"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's revision, second fresh-context read and LaTeX: ROADMAP C2p, after M2; posting is the user's — `trackC_writeup/status-C.md` "C5 unit 0"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-23 · body `b67ec96371`
+- **Reviewed:** 2026-10-24 · body `a621093732`
 <!-- /phase-card -->
 
 ## Units
@@ -51,7 +52,38 @@
 | C2 close-out | **done 2026-10-23: writing only; exit met at 9 units + close-out; every Parked item carried or dropped; where to post was Blocked 103, decided (a)** | "C2 on one page" below |
 | C5 0. M2's scan and design (writing only) | **done 2026-10-23: proposed; Blocked 104 (the set and scope)** | `lit-C5.md`, `design-C5.md`; "C5 unit 0" below |
 | C5 1. M2's preflight, run and reading | **done 2026-10-23: 104 (a), the user's; frozen before output (`1b4e2c6`, `6a38770`); P1 kept 7 of 9, P2 kept 9 of 9; R0′ 0 on every seed; R0b 16000; the exit met** | `c5_massive.py`; "C5 unit 1" below |
+| C5 2. M2's other half (105 (a), the user's; budget 3 units + close-out) | **gate refused 2026-10-24** (frozen before output, `ded356f`): the absolute "few" (k½ ≤ 16) reads 0.65 of turned falls; Q2's rotation reading passes both sides; no grid-step pass; Blocked 106 | `c5_mean.py`; "C5 unit 2" below |
 | C5 close-out (M2) | — | — |
+
+## C5 unit 2, M2's other half: the gate refused (2026-10-24)
+
+Blocked 105 (a), the user's; budget 3 units + close-out on the record. Design `design-C5.md`
+"Unit 2", code `trackC_writeup/c5_mean.py` and `tests/test_trackC_mean.py`, frozen and pushed in
+`ded356f` before any output. Code hash `code_sha()` as recorded in `gate.json`. Tier 1, description.
+
+**Input.** `pythia-410m` seed 0, off-grid step 7000 (trained, not scored), the 7 v1 prompts,
+float32 forward on the RTX 3080, TF32 off, m float64. Its 60 transitions at which E₁ drops by
+more than 1e-3 and ‖m‖² falls. Record `data/trackC/c5/2026-10-24-u2/gate/` (main tree):
+`gate.json`, `preflight_input.json` (not yet sent to `tools/design_preflight`: the statistic is
+in question).
+
+| population (60 transitions) | read "few" (k½ ≤ 16) | f_rot ≤ 0.05 | median k½ | bar |
+|---|---|---|---|---|
+| **planted null** (each fall turned by a Haar rotation) | **0.65** | 0.03 | 11 | few ≤ 0.05 (**fails**), f_rot ≤ 0.10 (passes) |
+| plant, f = 0.5 (a third of the fall in 3 coordinates) | 0.90 | 0.85 | 8 | beside |
+| plant, f = 1 (half) | 1.00 | 0.93 | 3 | beside |
+| plant, f = 2 (two thirds) | 1.00 | 0.97 | 3 | ≥ 0.9 both (passes) |
+| trained at 7000 (seen; not a scored cell) | 0.98 | 0.95 | 2 | — |
+
+**Why the absolute bar fails.** k½ is taken on the *net* fall Δ = Σδᵢ, and the coordinates
+move both ways: ‖m‖²'s net fall is small against its per-coordinate moves, so in any basis about
+11 coordinates of 1024 already hold half of it. The pure tests' spread fall was a pure scaling
+(every δᵢ negative), so they never met the cancellation (`LESSONS.md` 6). The rotation reading
+does not depend on that: it compares each fall with the same two vectors in random bases, and it
+separates the null (0.03) from the plant (0.85 already at f = 0.5).
+
+**Not run.** The grid-step pass (no m for any scored cell exists). The design refuses the pass
+on a failed gate, so the choice is the user's (Blocked 106).
 
 ## C5 unit 1, M2: the massive-activation coordinates projected out (2026-10-23)
 
