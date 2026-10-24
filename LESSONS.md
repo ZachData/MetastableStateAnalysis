@@ -179,6 +179,9 @@ world moves, nobody updates the line, and the next session acts on it.
   printed B2a's close-out. Caught by Start step 1. Same session, a stale doc of another kind:
   `docs/LITERATURE.md` §0 says scholarly hosts are blocked, and `WebFetch` read eight arXiv
   abstract pages (`trackA_force/lit-C2.md` marks them [A]).
+  **Again 2026-10-24 (C2p close-out):** the main tree at #240, 160 commits behind (#241–#268);
+  the hook printed A5's register `STATE.md` while C2p sat at Blocked 109. Caught by Start step 1
+  (`git show origin/main:STATE.md`). The largest lag so far; the hook fix is still the user's.
   **Again 2026-10-06 (after #156):** still at `6abbcb8`, now 5 merges behind (#152–#156): the
   five sessions in between each read `origin/main` and none fast-forwarded the main tree. The
   hook printed R6's `STATE.md` again; Start step 1 caught it, and the main tree was fast-forwarded.

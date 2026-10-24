@@ -24,6 +24,7 @@
   - **C5 closed on M2 2026-10-24 at its exit** (3 units + close-out, as extended by Blocked 105 (a); writing only): at the break's steps neither the massive-activation coordinates (ordinary there, 100× only from 16000, outside the falls) nor any recurring few carry the falls V counts, and the falls are not basis-aligned, against a gate that planted 3 coordinates (a set of 8–16 not tested; "not in a few coordinates" may not be said); projecting the massive ones out keeps both of C2's dates, a check rather than a test that could have moved (nothing large removed); a read-out, not an intervention. Whether the draft's section 4.1 leads with the level is Blocked 107, the user's. Parked items carried (when the mean becomes basis-aligned → ROADMAP C5; the late carriers' wording → C2p) or dropped (unit 1's set-aside pass); the draft's edits from M2 belong to C2p, next — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - C2p opened 2026-10-24 at the user's request (2 units + close-out); unit 1: the draft converted to LaTeX for Overleaf (`trackC_writeup/tex/`, compiled, CI-checked against the Markdown) and ten figures to cull from, five new (the identity-weight picture, an illustration; the two events on the ten seeds; E₁ against its mean term; the massive coordinates' late arrival; the mean spread at the break), each but the illustration from a record; where the draft lives once the user edits it is Blocked 108 — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
   - C2p unit 2 (107 (a), 108 (a), the user's; writing only): the draft's source is now `trackC_writeup/paper/` (the Overleaf folder; `paper_check` lists any number no record renders to, CI-checked); M2's results in the draft's section 4.1, level first; §8 and F9 meet 2510.06477, whose Pythia grid reads no step between 1 and 1000, so its "around 1k" bounds rather than dates (a correction to C5); m15, m19, m25 done; pdfLaTeX compiles (26 pages); a second fresh read (major revision, 6 major, 20 minor) answered in `referee-C2p.md`, its framing points Blocked 109 — `trackC_writeup/status-C.md` "C2p unit 2"
+  - **C2p closed 2026-10-24 at its exit** (2 units + close-out; Blocked 109 (a), the user's; writing only): `paper/` is an Overleaf-ready draft (pdfLaTeX, 28 pages, `paper_check` 0), cut to seven figures in the main text and three in appendices (the illustration out), with the second read's framing points made: the title and abstract lead with the count and the mean it follows at β = 1, §4 leads with a per-seed table and p and E follow it, out of the abstract, §5 states the 0.625 base rate, a glossary and per-row definitions; no number moved; no Parked items; m11, m12, M3 (iii), a code and data statement and posting are the user's — `trackC_writeup/status-C.md` "C2p on one page (closed 2026-10-24)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -32,10 +33,10 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The user's figure cut and the second read's framing points (title, p and E, the abstract's head coincidence, a glossary, anonymity): Blocked 109; then C2p's close-out; posting is the user's — `trackC_writeup/referee-C2p.md`
+  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `1e965d9095`
+- **Reviewed:** 2026-10-24 · body `d54e4e03bb`
 <!-- /phase-card -->
 
 ## Units
@@ -59,6 +60,60 @@
 | C5 close-out (M2) | **done 2026-10-24: writing only; exit met at 3 units + close-out; Parked items carried (ROADMAP C5, C2p) or dropped** | "C5 on M2, on one page" below |
 | C2p 1. the LaTeX and ten figures (opened at the user's request) | **done 2026-10-24: `tex/` compiles (22 pages); figures 6–10 new, 9 and 10 C5's; `numbers.py`'s docstring; Blocked 108** | `design-C2p.md`, `to_tex.py`, `tex/`; "C2p unit 1" below |
 | C2p 2. the revisions and the second fresh read (107 (a), 108 (a), the user's) | **done 2026-10-24: `paper/` is the source; M2's results level first, §8 and F9 against 2510.06477 (its grid reads no step in (1, 1000)), m15, m19, m25 (`fig11_rho`); `paper_check` 0; the read: major revision, 6 + 20 points answered; Blocked 109** | `paper/`, `paper_check.py`, `referee-C2p.md`; "C2p unit 2" below |
+| C2p close-out (109 (a), the user's) | **done 2026-10-24: writing only; the cut and the read's framing points made in `paper/` (28 pages, `paper_check` 0); exit met at 2 units + close-out; no Parked items** | "C2p on one page" below |
+
+## C2p on one page (closed 2026-10-24)
+
+**Asked** (`design-C2p.md` "What C2p is for"): make C2's draft ready for the user to rewrite and
+post (the LaTeX, figures to cull from, the ROADMAP row's revisions), with no new reading.
+**Exit met** at its budget, 2 units + close-out (#267, #268 and this): `paper/` compiles with
+pdfLaTeX; every item of the ROADMAP row is done or handed to the user by name; the second
+fresh-context read is answered (`referee-C2p.md`). Blocked 109 decided (a), the user's
+(2026-10-24): Claude makes the recommended cut and framing points at the close-out.
+
+**Established** (writing only; no number moved; the draft's claims are C2's and C5's):
+
+1. **`trackC_writeup/paper/` is an Overleaf-ready draft**: pdfLaTeX, 28 pages, no undefined
+   reference; every number in it is a record key or a literal with a stated reason
+   (`paper_check` 0, CI). The check catches 42 % of one-digit changes, so it is not a proofread.
+2. **The cut** (109 (i)): seven figures in the main text (`fig1_break`, `fig7_events`,
+   `fig8_mean`, `fig10_level`, `fig2_timeline`, `fig3_ov`, `fig4_schedules`). Three are in
+   appendices: `fig11_rho` (A), `fig5_count` and `fig9_massive` (C). `fig6_picture`, an
+   illustration, is out of the text; its file stays in `paper/fig/` so it can be put back.
+3. **The second read's framing points** (109 (ii); each row in `referee-C2p.md`). The title and
+   abstract now lead with what is measured and what it follows at β = 1, with the particle picture
+   as motivation (M1 (d)). §4 leads with a per-seed table (checked against `a5.V` and `s0.V`), and
+   p and E come after it in one sentence, out of the abstract (M2). The abstract says "one grid
+   step later" in place of the heads' step, and §5 states the 0.625 base rate
+   (`tools/math_checks/c2p_alignment_base_rate.py`), so the alignments are not read as links (M3).
+   There is a glossary (§3.5) and per-row definitions with bootstrap units (appendix D) (M6).
+   m6, m13 (checked in `c2_aniso.py`), m17 (dropped) and m19 are stated.
+4. **One correction to C5** (unit 2, already under `## Corrections received`): 2510.06477's
+   Pythia grid reads no step in (1, 1000), so its "around 1k" bounds, not dates.
+
+**Not established / not done:** anything new about the model. **The user's:** m11 (anonymity, the
+timestamp narrative, "the author's notes"), m12 (the abstract's density beyond the reframing),
+M3 (iii) (how the shares at 512 are used), a code and data statement, the venue, the records'
+release and posting (Blocked 103 (a)). No third fresh read of the reframed draft was run (the
+budget closed it). **ROADMAP C5:** the readings the second read asks for (V_m dated, a magnitude
+statistic, a β sweep, both normalisations on GPT-2, the set-aside dating rules on the nine seeds,
+a per-cell OV table, the substitution on more seeds).
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 1. the LaTeX and ten figures | #267 | `tex/` from the Markdown, CI-checked; figures 6–10 new |
+| 2. the revisions and the second read | #268 | `paper/` the source; `paper_check`; major revision, 6 + 20, answered |
+| close-out (109 (a)) | this | the cut and the framing points in `paper/` |
+
+**Parked items at close:** none (units 1 and 2 parked none; every referee point has a row in
+`referee-C2p.md`).
+
+**For the user's rewrite.** If the Overleaf copy has been edited since #268, carry over this
+close-out's edits: the diff of `trackC_writeup/paper/` from `7d9cfe6` (#268's merge) to this PR's merge.
+Re-run as in "C2p unit 2" below. The 28-page build is `pdflatex main && bibtex main` and then
+`pdflatex main` three times.
 
 ## C2p unit 2, the revisions in `paper/` and the second fresh read (2026-10-24)
 

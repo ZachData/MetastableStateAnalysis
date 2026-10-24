@@ -110,5 +110,69 @@
  {
   "slot": "{{rd.m_any_fall|range2}}",
   "where": "§1 item 2, §4.1: ‖m‖² falls wherever E₁ falls"
+ },
+ {
+  "slot": "{{s0.V|list}}",
+  "where": "§4 table 2 (M2 of the second read): seed 0's V by step"
+ },
+ {
+  "slot": "{{a5.V[1]|list}}",
+  "where": "§4 table 2: seed 1's V by step"
+ },
+ {
+  "slot": "{{a5.V[2]|list}}",
+  "where": "§4 table 2: seed 2's V by step"
+ },
+ {
+  "slot": "{{a5.V[3]|list}}",
+  "where": "§4 table 2: seed 3's V by step"
+ },
+ {
+  "slot": "{{a5.V[4]|list}}",
+  "where": "§4 table 2: seed 4's V by step"
+ },
+ {
+  "slot": "{{a5.V[5]|list}}",
+  "where": "§4 table 2: seed 5's V by step"
+ },
+ {
+  "slot": "{{a5.V[6]|list}}",
+  "where": "§4 table 2: seed 6's V by step"
+ },
+ {
+  "slot": "{{a5.V[7]|list}}",
+  "where": "§4 table 2: seed 7's V by step"
+ },
+ {
+  "slot": "{{a5.V[8]|list}}",
+  "where": "§4 table 2: seed 8's V by step"
+ },
+ {
+  "slot": "{{a5.V[9]|list}}",
+  "where": "§4 table 2: seed 9's V by step"
+ },
+ {
+  "slot": "{{a5.plateaus|list}}",
+  "where": "§4 table 2: the nine seeds' plateau medians"
+ },
+ {
+  "slot": "{{a5.steps|list}}",
+  "where": "§4 table 2: the nine seeds' breaks"
+ },
+ {
+  "literal": "0.625",
+  "why": "§5 (M3 of the second read): two dates uniform and independent on 256, 512, 1000, 2000 are within one grid step with probability 10/16; tools/math_checks/c2p_alignment_base_rate.py B1"
+ },
+ {
+  "literal": "64 000",
+  "why": "§3.1 (m6 of the second read): the power-of-two step the grid does not hold, named to say why 54 000 is there"
+ },
+ {
+  "literal": "2 000 000",
+  "why": "appendix D, E6u and E6b: the n-gram table set's size, fixed in trackA_force/design-A3.md 'Placed before any unit 4 output'"
+ },
+ {
+  "literal": "0.99",
+  "why": "appendix D, E11: the simulator's cluster criterion (cos >= 0.99), fixed in trackA_force/design-A3.md 'Placed before any unit 3 output'"
  }
 ]
