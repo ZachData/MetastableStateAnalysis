@@ -7,6 +7,9 @@ B1  P(|i - j| <= 1) for i, j uniform and independent on {0, 1, 2, 3} is 10/16 = 
 B2  The same by enumerating the four Pythia steps themselves, "within one grid step" read as adjacent
     or equal on Pythia's released grid (numerical).
 B3  Seven aligned of nine read against Bin(9, 5/8): its mean is 45/8 = 5.625 (sympy).
+B4  Anchored at the break (512, the second of the four steps), a date uniform on the four is
+    within one grid step of it with probability 3/4 (`/challenge-pr` on #269, finding 4: seven of
+    the nine pairs read include the break, so 0.625 understates chance for them).
 
 NOT proved: that the rows' dates are independent or uniform on those four steps (they are not: they
 share one ramp, and a row's locator bounds where it can fall); that the four steps are the right
@@ -52,6 +55,10 @@ record("B2 the four steps are consecutive on Pythia's grid, 10 of 16 pairs withi
 # B3
 mean = 9 * p
 record("B3 Bin(9, 5/8) mean = 45/8 = 5.625", mean == sp.Rational(45, 8), f"{mean} = {float(mean)}")
+
+# B4
+anchored = sp.Rational(sum(1 for s in support if abs(idx[s] - idx[512]) <= 1), len(support))
+record("B4 within one step of the break at 512 = 3/4", anchored == sp.Rational(3, 4), f"{anchored}")
 
 print(f"\n{sum(results)}/{len(results)} passed")
 sys.exit(0 if all(results) else 1)
