@@ -684,6 +684,48 @@ L 295.195212 155.376
 L 316.424941 135.721155 
 " clip-path="url(#p9cded66f88)" style="fill: none; stroke: #0b0b0b; stroke-width: 2; stroke-linecap: square"/>
    </g>
+   <g id="line2d_57">
+    <path d="M 57.651122 18.014486 
+L 72.761423 18.014486 
+L 87.871725 18.014486 
+L 102.982026 18.238645 
+L 118.092328 18.46459 
+L 133.202629 18.014486 
+L 148.31293 18.014486 
+L 163.423232 18.014486 
+L 178.533533 18.014486 
+L 193.643835 18.014486 
+L 208.237127 18.014486 
+L 223.347428 18.014486 
+L 238.457729 18.014486 
+L 253.568031 18.014486 
+L 268.678332 18.238645 
+L 283.788634 18.238645 
+L 295.195212 18.238645 
+L 316.424941 18.014486 
+" clip-path="url(#p9cded66f88)" style="fill: none; stroke-dasharray: 1.8,1.35; stroke-dashoffset: 0; stroke: #52514e; stroke-width: 0.9"/>
+   </g>
+   <g id="line2d_58">
+    <path d="M 57.651122 17.792085 
+L 72.761423 17.792085 
+L 87.871725 17.571415 
+L 102.982026 17.571415 
+L 118.092328 17.352449 
+L 133.202629 17.792085 
+L 148.31293 17.792085 
+L 163.423232 17.792085 
+L 178.533533 17.792085 
+L 193.643835 17.792085 
+L 208.237127 17.571415 
+L 223.347428 17.571415 
+L 238.457729 17.571415 
+L 253.568031 17.571415 
+L 268.678332 17.352449 
+L 283.788634 17.352449 
+L 295.195212 17.571415 
+L 316.424941 17.571415 
+" clip-path="url(#p9cded66f88)" style="fill: none; stroke-dasharray: 1.8,1.35; stroke-dashoffset: 0; stroke: #52514e; stroke-width: 0.9"/>
+   </g>
    <g id="legend_1">
     <g id="patch_7">
      <path d="M 59.418031 134.126844 
@@ -696,7 +738,7 @@ z
     <g id="text_16">
      <text style="font-size: 7px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="79.018031" y="134.126844" transform="rotate(-0 79.018031 134.126844)">the same means, random bases (range)</text>
     </g>
-    <g id="line2d_57">
+    <g id="line2d_59">
      <path d="M 59.418031 141.951531 
 L 66.418031 141.951531 
 L 73.418031 141.951531 
@@ -705,7 +747,7 @@ L 73.418031 141.951531
     <g id="text_17">
      <text style="font-size: 7px; font-family: 'DejaVu Sans', 'Bitstream Vera Sans', 'Computer Modern Sans Serif', 'Lucida Grande', 'Verdana', 'Geneva', 'Lucid', 'Arial', 'Helvetica', 'Avant Garde', sans-serif; text-anchor: start" x="79.018031" y="144.401531" transform="rotate(-0 79.018031 144.401531)">seed 0, the model's coordinates</text>
     </g>
-    <g id="line2d_58">
+    <g id="line2d_60">
      <path d="M 59.418031 152.226219 
 L 66.418031 152.226219 
 L 73.418031 152.226219 

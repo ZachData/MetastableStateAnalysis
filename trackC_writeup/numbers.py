@@ -14,12 +14,15 @@ Three steps, so that only the first needs the main tree's `data/`:
 - **figures** draws figures 1–10 from the table alone (matplotlib): `fig/fig*.svg` for the
   Markdown draft and `tex/fig/fig*.pdf` for the LaTeX one (`to_tex.py`), both deterministic.
   Figure 6 is an illustration computed in `_toy`, not a record.
+- **paper-figures** draws the figures only the user's LaTeX source `paper/` uses (C2p unit 2,
+  Blocked 108 (a): appendix A's ρ) into `fig/paper/`, from the table alone; nothing here writes
+  into `paper/`, so each is copied there by hand.
 
 Numbers a paper reports are that paper's and carry its citation; numbers from this project's
 records and from Pythia's released training configs are keys.
 
     METS_DATA=<main>/data python -m trackC_writeup.numbers produce [--reread data:<path> ...]
-    python -m trackC_writeup.numbers render | check | figures
+    python -m trackC_writeup.numbers render | check | figures | paper-figures
     python -m trackC_writeup.to_tex build | check
 """
 
@@ -44,6 +47,7 @@ SOURCE = HERE / "draft-C2.src.md"
 DRAFT = HERE / "draft-C2.md"
 FIGDIR = HERE / "fig"
 PDFDIR = HERE / "tex" / "fig"        # the LaTeX draft's copies (`to_tex.py`)
+PAPERFIG = HERE / "fig" / "paper"     # figures only `paper/` uses (C2p unit 2); copied into `paper/fig/` by hand
 
 #: Record ids: `data:` under METS_DATA (the main tree's, never added), `repo:` tracked.
 RECORDS = {
@@ -76,6 +80,8 @@ RECORDS = {
     "c5set0": "data:trackC/c5/2026-10-23-u1/seed0/set.json",
     "c5u1": "data:trackC/c5/2026-10-23-u1/reading.json",
     "c5u2": "data:trackC/c5/2026-10-24-u2/reading.json",
+    # C2p unit 2 (§4.1's M2 paragraph): unit 2's frozen constants (the plant's size, "few", recurrence)
+    "c5mean_src": "repo:trackC_writeup/c5_mean.py",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -133,8 +139,9 @@ def load(rid: str) -> object:
 
 
 def constant(src: str, name: str) -> float:
-    """A module-level numeric constant, read from the source (`name: type = value` or `name = value`)."""
-    m = re.search(rf"^{name}\s*(?::[^=]+)?=\s*([-+\d.eE]+)\s*$", src, re.M)
+    """A module-level numeric constant, read from the source (`name: type = value` or `name = value`,
+    a trailing comment allowed)."""
+    m = re.search(rf"^{name}\s*(?::[^=]+)?=\s*([-+\d.eE]+)\s*(?:#.*)?$", src, re.M)
     if not m:
         raise Refused(f"refusing: no constant {name} in the source")
     return float(m.group(1))
@@ -337,6 +344,8 @@ KEYS: Dict[str, tuple] = {
     "cfg.warmup_70m": ("cfg_70m", lambda c: round(c["warmup"] * c["train-iters"])),
     "cfg.seq_len": ("cfg_410m", lambda c: c["seq-length"]),
     "cfg.layers": ("cfg_410m", lambda c: c["num-layers"]),
+    "cfg.layers_160m": ("cfg_160m", lambda c: c["num-layers"]),
+    "cfg.layers_70m": ("cfg_70m", lambda c: c["num-layers"]),
     "cfg.width": ("cfg_410m", lambda c: c["hidden-size"]),
     "cfg.heads": ("cfg_410m", lambda c: c["num-attention-heads"]),
     "cfg.heads_total": ("cfg_410m", lambda c: c["num-layers"] * c["num-attention-heads"]),
@@ -645,6 +654,22 @@ KEYS: Dict[str, tuple] = {
     "f10.break_rot": ("c5u2", lambda r: _span(d["Q3"]["level"][t]["rotated_k_half_median"] for t in ("512", "1000")
                                               for d in _c5seeds(r).values())),
     "f10.at4000": ("c5u2", lambda r: _span(d["Q3"]["level"]["4000"]["k_half_median"] for d in _c5seeds(r).values())),
+    # §4.1's M2 paragraph (C2p unit 2; C5 units 1 and 2, the nine seeds scored, seed 0 the development set)
+    "m2.set_size": ("c5u1", lambda r: _span(len(d["S"]) for d in _c5seeds(r).values())),
+    "m2.p1_kept": ("c5u1", lambda r: r["tally_P1"]["K_kept"]),
+    "m2.p2_kept": ("c5u1", lambda r: r["tally_P2"]["K_kept"]),
+    "m2.n": ("c5u1", lambda r: r["tally_P1"]["n"]),
+    "m2.r0p_above_half": ("c5u1", lambda r: sum(round(c["n"] * c["frac_above_half"]) for d in _c5seeds(r).values()
+                                                for c in d["R0prime"]["S"].values() if c["n"])),
+    "m2.r0p_n": ("c5u1", lambda r: sum(c["n"] for d in _c5seeds(r).values() for c in d["R0prime"]["S"].values())),
+    "m2.q2_not": ("c5u2", lambda r: r["tally_Q2"]["not_aligned"]),
+    "m2.q2_of": ("c5u2", lambda r: r["tally_Q2"]["of"]),
+    "m2.recurring": ("c5u2", lambda r: sum(len(d["Q3"]["recurring"]) for d in _c5seeds(r).values())),
+    "m2.level_2000": ("c5u2", lambda r: _span(d["Q3"]["level"]["2000"]["k_half_median"] for d in _c5seeds(r).values())),
+    "m2.level_16000": ("c5u2", lambda r: _span(d["Q3"]["level"]["16000"]["k_half_median"] for d in _c5seeds(r).values())),
+    "m2.n_plant": ("c5mean_src", lambda s: int(constant(s, "N_PLANT"))),
+    "m2.n_rot": ("c5mean_src", lambda s: int(constant(s, "N_ROT"))),
+    "m2.few": ("c5mean_src", lambda s: int(constant(s, "FEW"))),
 }
 
 
@@ -802,6 +827,11 @@ CLAIMS: List[tuple] = [
      and all(k["f10.level"][s][GRID.index(4000)] < min(r[GRID.index(4000)] for r in k["f10.rotated"].values())
              for s in k["f10.level"])),
     ("figure 7's caption: the centred half-rise at 1000 on most seeds", lambda k: k["c3s.K2"] > k["c3s.n"] / 2),
+    ("§4.1, M2: no massive coordinate holds more than half of a fall at 128–1000; not basis-aligned on every seed; "
+     "no coordinate recurs", lambda k: k["m2.r0p_above_half"] == 0 and k["m2.r0p_n"] > 0
+     and k["m2.q2_not"] == k["m2.q2_of"] and k["m2.recurring"] == 0),
+    ("§4.1, M2: the break's date kept on most seeds, the centred date on all", lambda k: k["m2.n"] / 2 < k["m2.p1_kept"] < k["m2.n"]
+     and k["m2.p2_kept"] == k["m2.n"]),
 ]
 
 
@@ -929,19 +959,24 @@ WORDS = ("none", "one", "two", "three", "four", "five", "six", "seven", "eight",
 SLOT = re.compile(r"\{\{([\w.]+)(?:\[(\w+)\])?(?:\|(\w+))?\}\}")
 
 
+def slot_text(m: re.Match, keys: Dict[str, dict]) -> str:
+    """One `{{key}}` / `{{key[sub]|fmt}}` slot as the draft prints it."""
+    key, sub, fmt = m.groups()
+    if key not in keys:
+        raise Refused(f"refusing: {{{{{key}}}}} has no record (not in {TABLE.name})")
+    v = keys[key]["value"]
+    if sub is not None:
+        v = v[sub] if isinstance(v, dict) else v[int(sub)]
+    if fmt is None:
+        return _num(v) if not isinstance(v, str) else v
+    if fmt not in FORMATS:
+        raise Refused(f"refusing: format {fmt!r} unknown ({sorted(FORMATS)})")
+    return FORMATS[fmt](v)
+
+
 def render(source: str, keys: Dict[str, dict]) -> str:
     def one(m: re.Match) -> str:
-        key, sub, fmt = m.groups()
-        if key not in keys:
-            raise Refused(f"refusing: {{{{{key}}}}} has no record (not in {TABLE.name})")
-        v = keys[key]["value"]
-        if sub is not None:
-            v = v[sub] if isinstance(v, dict) else v[int(sub)]
-        if fmt is None:
-            return _num(v) if not isinstance(v, str) else v
-        if fmt not in FORMATS:
-            raise Refused(f"refusing: format {fmt!r} unknown ({sorted(FORMATS)})")
-        return FORMATS[fmt](v)
+        return slot_text(m, keys)
     head = (f"<!-- trackC_writeup/draft-C2.md — rendered by `python -m trackC_writeup.numbers render` "
             f"from draft-C2.src.md and numbers.json; edit the source, not this file. -->\n")
     body = re.sub(r"\A<!--.*?-->\n", "", source, count=1, flags=re.S)
@@ -1265,8 +1300,10 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     # Figure 10 (§4.1; C5 unit 2): how many coordinates hold half of ‖m‖², against a random basis
     fig, ax = plt.subplots(figsize=(4.8, 2.8))
     lev, rot = k["f10.level"], k["f10.rotated"]
-    ax.fill_between(x, [min(c) for c in zip(*rot.values())], [max(c) for c in zip(*rot.values())],
-                    color="#9a9893", alpha=0.35, lw=0, label="the same means, random bases (range)")
+    lo, hi = [min(c) for c in zip(*rot.values())], [max(c) for c in zip(*rot.values())]
+    ax.fill_between(x, lo, hi, color="#9a9893", alpha=0.35, lw=0, label="the same means, random bases (range)")
+    for edge in (lo, hi):           # drawn over the seeds' lines, which cover the band at 0–4000
+        ax.plot(x, edge, color=MUTED, lw=0.9, ls=(0, (2, 1.5)), zorder=4)
     for s in sorted(lev, key=lambda s: s == "0"):
         ax.plot(x, lev[s], color=INK if s == "0" else SERIES[0], lw=2.0 if s == "0" else 1.0,
                 alpha=1 if s == "0" else 0.6, zorder=3 if s == "0" else 2)
@@ -1283,11 +1320,46 @@ def figures(keys: Dict[str, dict]) -> List[Path]:
     return out
 
 
+S1_LABELS = {"qk_query": "query", "qk_key": "key", "ov_write": "OV write", "ov_cplx": "OV complex",
+             "ov_read": "OV read", "ov_neg": "OV negative", "ov_pos": "OV positive"}
+
+
+def paper_figures(keys: Dict[str, dict]) -> List[Path]:
+    """Figure 11 (appendix A; the referee's m25): ρ by family and step, S1's records."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    _style(plt)
+    k = {n: v["value"] for n, v in keys.items()}
+    steps = [int(s) for s in S1_STEPS]
+    x = _xpos(steps)
+    rho = {f: [dict(k["s1.rho_qk"][s], **k["s1.rho_ov"][s])[f] for s in S1_STEPS] for f in S1_FAMILIES}
+    fig, ax = plt.subplots(figsize=(4.8, 2.8))
+    colors = dict(zip(S1_FAMILIES, (SERIES[0], SERIES[0], SERIES[1], SERIES[1], SERIES[2], SERIES[2], INK)))
+    dashed = {"qk_key", "ov_cplx", "ov_neg"}
+    for f in S1_FAMILIES:
+        ax.plot(x, rho[f], color=colors[f], lw=1.2, ls=(0, (3, 2)) if f in dashed else "-", marker="o", ms=2.5,
+                label=S1_LABELS[f])
+    ax.axhline(1.0, color=MUTED, lw=0.8)
+    ax.axvspan(x[0], _xpos([k["cfg.warmup_steps"]])[0], color=WARM, lw=0, zorder=0)
+    shown = (0, 128, 512, 2000, 4000, 143000)
+    ax.set_xticks(_xpos(shown), [_tick(s) for s in shown], fontsize=7)
+    ax.set_xlabel("training step (log scale); shaded: the warmup")
+    ax.set_ylabel("ρ = PR / PR₀ (1: the Haar null)")
+    ax.legend(loc="lower left", fontsize=6.5, ncol=2)
+    PAPERFIG.mkdir(parents=True, exist_ok=True)
+    path = PAPERFIG / "fig11_rho.pdf"
+    fig.savefig(path, format="pdf", bbox_inches="tight",
+                metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
+    plt.close(fig)
+    return [path]
+
+
 # ---------------------------------------------------------------------------
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description="C2's numbers, draft and figures from their records")
-    ap.add_argument("step", choices=("produce", "render", "check", "figures"))
+    ap.add_argument("step", choices=("produce", "render", "check", "figures", "paper-figures"))
     ap.add_argument("--reread", action="append", default=[],
                     help="a record id or key whose change has been read (produce only)")
     a = ap.parse_args(argv)
@@ -1297,8 +1369,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(f"wrote {TABLE.relative_to(REPO)}: {len(table['keys'])} keys from {len(table['records'])} records")
         return 0
     keys = json.loads(TABLE.read_text())["keys"]
-    if a.step == "figures":
-        for p in figures(keys):
+    if a.step in ("figures", "paper-figures"):
+        for p in (figures if a.step == "figures" else paper_figures)(keys):
             print(f"wrote {p.relative_to(REPO)}")
         return 0
     text = render(SOURCE.read_text(), keys)

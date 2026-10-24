@@ -23,6 +23,7 @@
   - C5 unit 2, M2's other half (Blocked 105 (a), the user's; budget 3 units + close-out): frozen before output; its gate, on seed 0's off-grid step 7000, refused the absolute "a few coordinates hold half a fall" (falls turned to random bases read "few" at 0.65, since coordinates move both ways); the rotation-relative reading passes both sides; Blocked 106 (a), the user's, made it the primary: on the ten seeds the falls V counts at the break are **no more concentrated in the model's coordinates than in a random basis** (9 of 9; post hoc, slightly less on every seed), no coordinate recurs, and the mean itself is spread there (half of ‖m‖² in 132–135 of 1024, a random basis 127–129), below a random basis from 4000 (104–113), in 6–24 coordinates at 8000 and 2–3 at 16000; a few coordinates hold half of each net fall in any basis (cancellation), so the result is about the basis, not a count — `trackC_writeup/status-C.md` "C5 unit 2"
   - **C5 closed on M2 2026-10-24 at its exit** (3 units + close-out, as extended by Blocked 105 (a); writing only): at the break's steps neither the massive-activation coordinates (ordinary there, 100× only from 16000, outside the falls) nor any recurring few carry the falls V counts, and the falls are not basis-aligned, against a gate that planted 3 coordinates (a set of 8–16 not tested; "not in a few coordinates" may not be said); projecting the massive ones out keeps both of C2's dates, a check rather than a test that could have moved (nothing large removed); a read-out, not an intervention. Whether the draft's section 4.1 leads with the level is Blocked 107, the user's. Parked items carried (when the mean becomes basis-aligned → ROADMAP C5; the late carriers' wording → C2p) or dropped (unit 1's set-aside pass); the draft's edits from M2 belong to C2p, next — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - C2p opened 2026-10-24 at the user's request (2 units + close-out); unit 1: the draft converted to LaTeX for Overleaf (`trackC_writeup/tex/`, compiled, CI-checked against the Markdown) and ten figures to cull from, five new (the identity-weight picture, an illustration; the two events on the ten seeds; E₁ against its mean term; the massive coordinates' late arrival; the mean spread at the break), each but the illustration from a record; where the draft lives once the user edits it is Blocked 108 — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
+  - C2p unit 2 (107 (a), 108 (a), the user's; writing only): the draft's source is now `trackC_writeup/paper/` (the Overleaf folder; `paper_check` lists any number no record renders to, CI-checked); M2's results in the draft's section 4.1, level first; §8 and F9 meet 2510.06477, whose Pythia grid reads no step between 1 and 1000, so its "around 1k" bounds rather than dates (a correction to C5); m15, m19, m25 done; pdfLaTeX compiles (26 pages); a second fresh read (major revision, 6 major, 20 minor) answered in `referee-C2p.md`, its framing points Blocked 109 — `trackC_writeup/status-C.md` "C2p unit 2"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -31,10 +32,10 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The draft's revisions (M2's results, the late carriers' wording, m15, m19, m25, §8 and F9 against 2510.06477), the user's cull of the ten figures and a second fresh-context read: C2p unit 2, in the source Blocked 108 names; posting is the user's — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
+  - The user's figure cut and the second read's framing points (title, p and E, the abstract's head coincidence, a glossary, anonymity): Blocked 109; then C2p's close-out; posting is the user's — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `46e47ce95d`
+- **Reviewed:** 2026-10-24 · body `1c5abb7cd0`
 <!-- /phase-card -->
 
 ## Units
@@ -57,6 +58,64 @@
 | C5 2. M2's other half (105 (a), the user's; budget 3 units + close-out) | **done 2026-10-24**: the gate refused the absolute "few" (`ded356f`); 106 (a), the user's: the rotation reading primary, re-frozen (`6db31cf`); **"not basis-aligned", 9 of 9** (post hoc, slightly more spread than a random basis); no recurring coordinate; the mean spread at the break (half in 132–135 of 1024); revised after `/challenge-pr` on #265; the exit met | `c5_mean.py`; "C5 unit 2" below |
 | C5 close-out (M2) | **done 2026-10-24: writing only; exit met at 3 units + close-out; Parked items carried (ROADMAP C5, C2p) or dropped** | "C5 on M2, on one page" below |
 | C2p 1. the LaTeX and ten figures (opened at the user's request) | **done 2026-10-24: `tex/` compiles (22 pages); figures 6–10 new, 9 and 10 C5's; `numbers.py`'s docstring; Blocked 108** | `design-C2p.md`, `to_tex.py`, `tex/`; "C2p unit 1" below |
+| C2p 2. the revisions and the second fresh read (107 (a), 108 (a), the user's) | **done 2026-10-24: `paper/` is the source; M2's results level first, §8 and F9 against 2510.06477 (its grid reads no step in (1, 1000)), m15, m19, m25 (`fig11_rho`); `paper_check` 0; the read: major revision, 6 + 20 points answered; Blocked 109** | `paper/`, `paper_check.py`, `referee-C2p.md`; "C2p unit 2" below |
+
+## C2p unit 2, the revisions in `paper/` and the second fresh read (2026-10-24)
+
+Blocked 107 (a) and 108 (a), the user's (2026-10-24). Writing only: no forward pass and no new
+reading. Every number added is a key from a record already on disk, or a cited paper's.
+
+**Where the draft lives now.** Under 108 (a) the draft's source is `trackC_writeup/paper/`, the
+user's Overleaf folder, which nothing generated writes into. The user had uploaded `tex/` and not
+yet edited it (the Desktop zip `c2_draft_overleaf.zip` was byte-identical to `tex/`), so `paper/`
+starts as `tex/`, and `git diff --no-index trackC_writeup/tex trackC_writeup/paper` is exactly this
+unit's edits. If the Overleaf copy has already been edited, that diff is what to carry over.
+`tex/` and `draft-C2.md` stay the record-backed version (CI unchanged).
+`python -m trackC_writeup.paper_check` lists every number in `paper/*.tex` that no key renders to
+(a slot of `draft-C2.src.md`, or of `paper_slots.json` for numbers new to `paper/`) and that the
+record-backed draft does not write literally. `tests/test_trackC_paper.py` fails on any such
+number, so the user's rewrite is checked in CI. It reads 0 now. What it does not catch: it
+compares tokens, not contexts, so a changed small integer that some key also prints passes.
+It was planted-tested on 1590, 9.8 and 12 000: each listed.
+
+**pdfLaTeX.** Installed as TeX Live 2026 from Fedora's packages in a distrobox (`latex`), with
+`pdflatex` and `bibtex` exported to `~/.local/bin`; TinyTeX's install script was refused by auto
+mode. `tex/` compiles clean (24 pages; the labels settle on the fourth pass), and so does
+`paper/` after this unit (26 pages, no undefined reference). The one BibTeX warning is the Mistral
+checkpoints' missing year.
+
+**The revisions** (the ROADMAP row's items):
+
+| item | what changed in `paper/main.tex` |
+|---|---|
+| M2's results, level first (107 (a)) | §4.1 gains "Which coordinates carry the mean". It opens with the level (half of ‖m‖² in 132–135 of 1024 coordinates at 512 and 1000, random bases 127–129). Then the frozen rotation reading: not basis-aligned on 9 of 9, no recurring carrier. Then the massive set: 2–3 per seed, ≤ 2.35× at 128–1000, 100× at 16 000–32 000, more than half of none of the 1224 falls, and projected out, dates kept on 7 of 9 and 9 of 9 ("a check, not a test"). Then the gate's reach (3 coordinates) and unit 2's rule: about the basis, not a count. Then the level after the break. One clause each in the abstract and §1 item 2. Appendix C's paragraph becomes a pointer |
+| the late carriers' wording | "one set per seed, the union over the grid, not the set at the last step, which differs on some seeds", and the massive-set figure's caption explains the fall at 143 000 on seeds 3 and 4 |
+| §8 and F9 against 2510.06477 | Read from the paper's own HTML: its appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … on one GSM8K prompt. So its "around step 1k" bounds its changes to (1, 1000], which holds both of C2's dates and orders neither. It is cited as the nearest published reading; its criterion for massive activations (the first token's norm) is not ours, so the two dates are not one quantity. F9's "no reviewed measurement inside the window" is gone. §8's novelty sentence now says "on checkpoints inside the first 1000 steps". Massive activations are no longer left open as the mean's carrier at the break. This corrects C5 (`## Corrections received`) |
+| m15 | §7 cites the Mistral release post (Karamcheti and Orr 2021, read 2026-10-24): five GPT-2 small seeds, each its own seed. The checkpoint spacing stays the repository's, since the post gives none |
+| m19 | §7: 70m and 160m have 6 and 12 layers, so V is at most 6 × 7 and 12 × 7 against 24 × 7 (keys `cfg.layers_70m`, `cfg.layers_160m`) |
+| m25 | Appendix A gains ρ by family and step (`fig11_rho`, S1's records, drawn by the new `numbers.py paper-figures` into `fig/paper/`, copied into `paper/fig/` by hand) |
+| the second fresh read | `referee-C2p.md`: major revision, 6 major and 20 minor. Every point is answered there. The fixes that need no reading are made (the 0.956 rounding, seed 6's centred date, §2.1's citation, §6's rationale, the abstract on the step-128 substitution, the GPT-2 bands, captions, internal labels). The framing points are Blocked 109's. The ones that need a reading are carried to ROADMAP C5 |
+
+Keys: 270 (was 254) from 27 records (was 26; `c5_mean.py` added for its frozen constants).
+`numbers.py`'s `constant()` now reads a constant with a trailing comment. The level figure draws
+the random-basis band's edges over the seeds' lines (`fig10_level`, both drafts). The record-backed
+Markdown keeps its "0.96 or more" (true minimum 0.956); it is frozen under 108 (a), and `paper/`
+has the fix.
+
+**The figures**, by file (LaTeX numbers by position; the map in "C2p unit 1" with this change):
+`fig11_rho` is new and sits in appendix A, so in `paper/` it is figure 8, and `fig5_count`,
+`fig9_massive` and `fig10_level` are 9, 10 and 11. Eleven files to cull from; the cut is the
+user's (Blocked 109).
+
+**Not established / not done:** the user's figure cut and the framing points (Blocked 109). V_m
+dated, a magnitude statistic, both normalisations on GPT-2, the set-aside dating rules on the nine
+seeds (carried to ROADMAP C5). m13 and m17 are not checked here (Blocked 109).
+
+**Parked:** none (each referee point has a home in `referee-C2p.md`'s table).
+
+**Re-run.** `METS_DATA=<main>/data python -m trackC_writeup.numbers produce`, then `paper-figures`;
+`python -m trackC_writeup.paper_check`; compile: `cd trackC_writeup/paper && pdflatex main && bibtex
+main && pdflatex main && pdflatex main && pdflatex main`, or upload the folder to Overleaf.
 
 ## C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)
 
@@ -1057,4 +1116,4 @@ ROADMAP row carried it. Inputs read: the one-page closes of A3, A5, S1 and S2 an
 
 ## Corrections received
 
-none
+- 2026-10-24 (C2p unit 2): C5's finding 4 ("the lean from 2510.06477, 'around 1k', did not hold") and `lit-C5.md`'s row read the paper's "around step 1k" as a date; its appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … only, so it bounds its changes to (1, 1000] (both C2 dates inside), and its training figure reads entropy, sink rate and the BOS norm, not σ₁²/‖X‖²_F. The coordinates' 16000–32000 stands; it is not a date the paper's grid could contradict. "C2p unit 2" below; `LESSONS.md` 7.
