@@ -1637,6 +1637,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   push` committed and pushed `72ccbc0` over a red gate (3 phase-card errors):
   the pipeline's status is `tail`'s. Fixed in the next commit. Chain a commit
   on `check.sh`'s own exit code (redirect to a log, then grep it).
+- 2026-10-24 (#266): the same chain again, a third time: `check.sh | tail -2 && … git commit
+  && git push` pushed `08cc1fa` over one phase-card error (a bare `§4.1`, which the lint reads
+  as `PROJECT.md`'s) and a stale doc index. Fixed in the next commit. The rule above was in this
+  file, not in the habit: redirect to a log and test `$?` before any commit in the same call.
 - 2026-09-29 (#115): `git log --diff-filter=A -1 -- <record>` in the cloud
   container named `2225beb` as the commit that added P-I5's real-run record,
   and the code comment cited it. The clone is shallow (`git rev-parse

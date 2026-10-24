@@ -69,7 +69,7 @@ Indent marks depth: none = `##`, `·` = `###`, `··` = `####`; a bold **A.** ro
 | 2715 | 100 | 1.5k | 3.15 The ablation mode is not a detail (2026-09-11) |
 | 2815 | 83 | 1.2k | 3.16 The verified literature scan, and the phase-8 reframe (2026-09-12) |
 | 2898 | 25 | 448 | 3.72 Massive activations arrive at step 16000, long after the break; the mean whose falls V counts at the break is not theirs (2026-10-23) |
-| 2923 | 26 | 454 | 3.73 At the break, the tokens' mean and its falls are not concentrated in the model's coordinates (2026-10-24) |
+| 2923 | 26 | 467 | 3.73 At the break, the tokens' mean and its falls are not concentrated in the model's coordinates (2026-10-24) |
 | 2949 | 18 | 274 | 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23) |
 | 2967 | 23 | 371 | 3.70 V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, at every step (2026-10-23) |
 | 2990 | 19 | 306 | 3.69 On GPT-2 small's 5 seeds (a log warmup), E₁'s larger rise falls at the update count's band, a smaller one at the LR dose's; the frozen… |
