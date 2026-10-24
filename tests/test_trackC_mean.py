@@ -96,9 +96,25 @@ def test_family_skips_rises_and_tiny_changes():
 
 def test_recurring_and_tally():
     assert m.recurring([[1, 2], [1], [3]], 0.5) == [(1, 2 / 3)]
-    assert m.tally({s: "spread" for s in range(1, 10)})["label"] == "spread"
-    labs = {s: ("few" if s <= 7 else "spread") for s in range(1, 10)}
-    assert m.tally(labs)["label"] == "in a few coordinates"
-    labs = {s: ("few" if s <= 4 else "spread") for s in range(1, 10)}
+    assert m.tally({s: "not aligned" for s in range(1, 10)})["label"] == "not basis-aligned"
+    labs = {s: ("aligned" if s <= 7 else "not aligned") for s in range(1, 10)}
+    assert m.tally(labs)["label"] == "basis-aligned"
+    labs = {s: ("aligned" if s <= 4 else "not aligned") for s in range(1, 10)}
     assert m.tally(labs)["label"] == "mixed"
-    assert m.label_q1(16) == "few" and m.label_q1(16.5) == "spread"
+    assert m.label_q2(0.5) == "aligned" and m.label_q2(0.49) == "not aligned"
+
+
+def test_a_mixed_sign_fall_reads_at_chance_and_a_plant_reads_aligned():
+    """The gate's lesson (`LESSONS.md` 6, 2026-10-24): coordinates moving both ways, as the data's do."""
+    rng = np.random.default_rng(5)
+    d, T = 512, 25
+    A = rng.standard_normal((T, d)) / np.sqrt(d)
+    B = 0.97 * A + 0.05 * rng.standard_normal((T, d)) / np.sqrt(d)
+    assert np.all((B * B - A * A).sum(1) < 0)
+    assert np.mean((B * B - A * A) > 0) > 0.2                   # mixed signs
+    Qs = m.rotations(40, d, 11)
+    fr, _ = m.f_rot(A, B, Qs)
+    assert np.mean(fr <= m.F_ROT) <= 0.2
+    coords = [rng.choice(d, size=3, replace=False).tolist() for _ in range(T)]
+    frp, _ = m.f_rot(*m.plant(A, B, coords, 2.0), Qs)
+    assert np.mean(frp <= m.F_ROT) >= 0.9

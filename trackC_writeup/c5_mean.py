@@ -158,15 +158,16 @@ def recurring(sets: Sequence[Sequence[int]], frac: float = RECUR) -> List[Tuple[
     return sorted(((i, k / n) for i, k in cnt.items() if k / n >= frac), key=lambda x: -x[1])
 
 
-def label_q1(med: float) -> str:
-    return "few" if med <= FEW else "spread"
+def label_q2(frac_aligned: float) -> str:
+    """Q2, the primary (Blocked 106 (a)): 'aligned' if at least half the falls sit at f_rot ≤ F_ROT."""
+    return "aligned" if frac_aligned >= 0.5 else "not aligned"
 
 
 def tally(labels: Dict[int, str]) -> dict:
-    few = sum(v == "few" for v in labels.values())
-    spread = sum(v == "spread" for v in labels.values())
-    lab = "in a few coordinates" if few >= KEPT else "spread" if spread >= KEPT else "mixed"
-    return {"few": few, "spread": spread, "of": len(labels), "label": lab}
+    al = sum(v == "aligned" for v in labels.values())
+    no = sum(v == "not aligned" for v in labels.values())
+    lab = "basis-aligned" if al >= KEPT else "not basis-aligned" if no >= KEPT else "mixed"
+    return {"aligned": al, "not_aligned": no, "of": len(labels), "label": lab}
 
 
 def family(ms: Dict[Tuple[int, str], np.ndarray], e1s: Dict[Tuple[int, str], np.ndarray],
@@ -312,26 +313,28 @@ def gate(a) -> int:
         Ap, Bp = plant(At, Bt, coords, f)
         k = k_half(Ap, Bp)
         fr, _ = f_rot(Ap, Bp, Qn)
-        arms[f"{f:g}"] = {"k_half": k.tolist(), "few": float(np.mean(k <= FEW)),
+        arms[f"{f:g}"] = {"k_half": k.tolist(), "f_rot": fr.tolist(), "few": float(np.mean(k <= FEW)),
                           "rot": float(np.mean(fr <= F_ROT)), "median_k": float(np.median(k))}
     null, eff = arms["0"], arms[f"{GATE_DOSE:g}"]
-    passed = (null["few"] <= GATE_NULL_FEW and null["rot"] <= GATE_NULL_ROT
-              and eff["few"] >= GATE_EFF and eff["rot"] >= GATE_EFF)
+    # Blocked 106 (a): f_rot is the primary; "few" (refused as a bar in ded356f) is description
+    passed = null["rot"] <= GATE_NULL_ROT and eff["rot"] >= GATE_EFF
     fr_tr, _ = f_rot(A, B, Qn)
     res = {"code": code_sha(), "step": SCALE_STEP, "n_transitions": T,
            "skipped_small": fam["skipped_small"], "skipped_rise": fam["skipped_rise"],
-           "trained": {"k_half": k_trained.tolist(), "median_k": float(np.median(k_trained)),
+           "trained": {"k_half": k_trained.tolist(), "f_rot": fr_tr.tolist(), "median_k": float(np.median(k_trained)),
                        "rot": float(np.mean(fr_tr <= F_ROT))},
            "arms": arms, "passed": bool(passed),
-           "bars": {"null_few_max": GATE_NULL_FEW, "null_rot_max": GATE_NULL_ROT, "effect_min": GATE_EFF,
-                    "dose": GATE_DOSE}}
+           "few_bar_as_frozen_in_ded356f": {"null_few_max": GATE_NULL_FEW, "null_few": null["few"],
+                                             "passed": null["few"] <= GATE_NULL_FEW and eff["few"] >= GATE_EFF},
+           "bars": {"null_rot_max": GATE_NULL_ROT, "effect_min": GATE_EFF, "dose": GATE_DOSE}}
     (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
-    pf = {"statistic": "k_half: the fewest coordinates holding half a fall in |m|^2", "direction": "less",
-          "nulls": {"turned": null["k_half"]}, "moved_marks": [],
-          "trained": k_trained.tolist(), "trained_step": str(SCALE_STEP),
+    pf = {"statistic": "f_rot: the fraction of 100 Haar rotations at which the same fall needs no more "
+                       "coordinates for half (k_half)", "direction": "less",
+          "nulls": {"turned": null["f_rot"]}, "moved_marks": [],
+          "trained": fr_tr.tolist(), "trained_step": str(SCALE_STEP),
           "scored_steps": [str(s) for s in FAMILY_STEPS],
-          "planted": {str(i): arms[f"{f:g}"]["k_half"] for i, f in enumerate(DOSES)},
-          "bounds": [1, A.shape[1]]}
+          "planted": {str(i): arms[f"{f:g}"]["f_rot"] for i, f in enumerate(DOSES)},
+          "bounds": [0, 1]}
     (out / "preflight_input.json").write_text(json.dumps(pf) + "\n")
     print(json.dumps({"T": T, "trained_median_k": res["trained"]["median_k"], "trained_rot": res["trained"]["rot"],
                       **{f: {k: v for k, v in x.items() if k != "k_half"} for f, x in arms.items()},
@@ -374,17 +377,17 @@ def seed_reading(ms, e1s, seed: int) -> dict:
                          "pr_median_by_state": np.median(pr, axis=0).tolist(),
                          "k_half_median": float(np.median(kl)), "pr_median": float(np.median(pr)),
                          "rotated_k_half_median": float(klr), "rotated_pr_median": float(prr)}
-    med = float(np.median(k))
+    al = float(np.mean(fr <= F_ROT))
     return {"n_transitions": int(len(k)), "skipped_small": fam["skipped_small"], "skipped_rise": fam["skipped_rise"],
-            "Q1": {"median_k_half": med, "label": label_q1(med),
-                   "rotated_median_k_half": float(np.median(kr)),
+            "Q1": {"median_k_half": float(np.median(k)), "rotated_median_k_half": float(np.median(kr)),
                    "quartiles": np.percentile(k, [25, 75]).tolist(), "min": int(k.min()), "max": int(k.max()),
                    "frac_few": float(np.mean(k <= FEW)),
                    "by_step": {str(s): ({"n": int((steps == s).sum()), "median_k_half": float(np.median(k[steps == s])),
                                          "rotated_median_k_half": float(np.median(kr[:, steps == s]))}
                                         if (steps == s).any() else {"n": 0}) for s in FAMILY_STEPS}},
-            "Q2": {"median_f_rot": float(np.median(fr)), "frac_f_rot_le": float(np.mean(fr <= F_ROT)),
-                   "basis_aligned": bool(np.mean(fr <= F_ROT) >= 0.5)},
+            "Q2": {"median_f_rot": float(np.median(fr)), "frac_f_rot_le": al, "label": label_q2(al),
+                   "by_step": {str(s): (float(np.mean(fr[steps == s] <= F_ROT)) if (steps == s).any() else None)
+                               for s in FAMILY_STEPS}},
             "Q3": {"recurring": rec, "recurring_in_S": [i for i, _ in rec if i in sel["S"]],
                    "recurring_in_M": [i for i, _ in rec if i in sel.get("M", [])], "S": sel["S"], "M": sel.get("M"),
                    "level": level}}
@@ -398,17 +401,16 @@ def read(a) -> int:
         codes[seed] = sorted(cds)
         per[seed] = seed_reading(ms, e1s, seed)
         q = per[seed]
-        print(seed, "T", q["n_transitions"], "k½ med", q["Q1"]["median_k_half"], q["Q1"]["label"],
-              "rot", q["Q1"]["rotated_median_k_half"], "| f_rot≤.05", round(q["Q2"]["frac_f_rot_le"], 3),
+        print(seed, "T", q["n_transitions"], "| Q2 f_rot≤.05", round(q["Q2"]["frac_f_rot_le"], 3), q["Q2"]["label"],
+              "| k½ med", q["Q1"]["median_k_half"], "turned", q["Q1"]["rotated_median_k_half"],
               "| recurring", q["Q3"]["recurring"][:5], flush=True)
     if len({tuple(v) for v in codes.values()}) != 1:
         raise MeanRefused(f"records from more than one code version: {codes}")
     dev = per.pop(0)
-    res = {"code": code_sha(), "record_codes": codes, "tally_Q1": tally({s: r["Q1"]["label"] for s, r in per.items()}),
-           "basis_aligned": sum(r["Q2"]["basis_aligned"] for r in per.values()),
+    res = {"code": code_sha(), "record_codes": codes, "tally_Q2": tally({s: r["Q2"]["label"] for s, r in per.items()}),
            "per_seed": per, "seed0_development": dev}
     (out / "reading.json").write_text(json.dumps(res, indent=1) + "\n")
-    print(json.dumps({"Q1": res["tally_Q1"], "basis_aligned_of_9": res["basis_aligned"]}))
+    print(json.dumps({"Q2": res["tally_Q2"]}))
     return 0
 
 
