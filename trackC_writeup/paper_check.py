@@ -8,14 +8,20 @@ are not accounted for, for the user to source or drop. A number in `paper/*.tex`
 `\\begin{document}`) is accounted for when it is
 
 - **keyed**: printed by a `{{key}}` slot of `draft-C2.src.md` (the record-backed draft), or by a
-  slot in `paper_slots.json` (numbers new to `paper/`, each slot with where it is used); or
+  `{"slot", "where"}` entry of `paper_slots.json` (numbers new to `paper/`); or
 - **literal**: written by hand in `draft-C2.src.md` outside its slots (notation, a cited paper's
-  numbers, a citation's year or locator), which C2's reviews already read.
+  numbers, a citation's year or locator), which C2's reviews already read, or a `{"literal",
+  "why"}` entry of `paper_slots.json` (a number no record holds, e.g. a derived base rate, with
+  its reason; the reason is required).
 
 Numbers are compared as tokens ("143 000", "0.19", "10" and "4" of "10^{-4}"), not in context: a
-keyed 9 accounts for every 9, so a changed small integer can pass unseen; the check catches a new
-or changed number that matches nothing anywhere, which is the drift a rewrite introduces.
-Labels, references, citation keys and figure paths are skipped.
+keyed 9 accounts for every 9. **It is a weak check.** Measured at C2p unit 2 (`/challenge-pr` on
+#268): changing the last digit of each of the 1051 numbers in `paper/main.tex`, one at a time, is
+caught 441 times (42 %; 60 of 74 decimals). A seed count ("9 of 9" to "8 of 9") or a grid date
+(512 to 1000) passes, because the changed value is also printed somewhere else. It catches a new
+or changed number that matches nothing anywhere; a green check is not a proofread.
+Labels, references, citation keys and figure paths are skipped. `stale_figures` lists any figure in
+`paper/fig/` that is not byte-equal to its generated copy (`tex/fig/` or `fig/paper/`).
 
     python -m trackC_writeup.paper_check          # lists them; exit 1 if any
 """
@@ -63,12 +69,17 @@ def accounted(keys: Dict[str, dict]) -> Tuple[Set[str], Set[str]]:
     keyed = set()
     for m in n.SLOT.finditer(src):
         keyed.update(tokens(n.slot_text(m, keys)))
+    literal = set(tokens(n.SLOT.sub(" ", src)))
     for entry in json.loads(SLOTS.read_text()):
+        if "literal" in entry:
+            if set(entry) != {"literal", "why"} or not entry["why"].strip():
+                raise n.Refused(f"refusing: {entry!r} in {SLOTS.name}: a literal needs a reason ('why')")
+            literal.update(tokens(entry["literal"]))
+            continue
         m = n.SLOT.fullmatch(entry["slot"])
         if not m:
             raise n.Refused(f"refusing: {entry['slot']!r} in {SLOTS.name} is not one slot")
         keyed.update(tokens(n.slot_text(m, keys)))
-    literal = set(tokens(n.SLOT.sub(" ", src)))
     return keyed, literal
 
 
@@ -82,6 +93,16 @@ def unsourced(keys: Dict[str, dict]) -> List[Tuple[str, int, str, str]]:
     return out
 
 
+def stale_figures() -> List[str]:
+    """Figures in `paper/fig/` that are not byte-equal to their generated copy (copied by hand)."""
+    out = []
+    for f in sorted((PAPER / "fig").glob("*.pdf")):
+        gen = [d / f.name for d in (n.PDFDIR, n.PAPERFIG) if (d / f.name).is_file()]
+        if not gen or all(g.read_bytes() != f.read_bytes() for g in gen):
+            out.append(f.name)
+    return out
+
+
 def main() -> int:
     keys = json.loads(n.TABLE.read_text())["keys"]
     bad = unsourced(keys)
@@ -89,7 +110,10 @@ def main() -> int:
         print(f"{name}:{line}: {num}    … {ctx} …")
     print(f"{len(bad)} number(s) in {PAPER.relative_to(n.REPO)}/ that no key renders to and the "
           f"record-backed draft does not write", file=sys.stderr)
-    return 1 if bad else 0
+    stale = stale_figures()
+    for f in stale:
+        print(f"paper/fig/{f}: not its generated copy (tex/fig/ or fig/paper/); copy it again", file=sys.stderr)
+    return 1 if bad or stale else 0
 
 
 if __name__ == "__main__":

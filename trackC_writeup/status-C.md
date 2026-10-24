@@ -35,7 +35,7 @@
   - The user's figure cut and the second read's framing points (title, p and E, the abstract's head coincidence, a glossary, anonymity): Blocked 109; then C2p's close-out; posting is the user's — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `1c5abb7cd0`
+- **Reviewed:** 2026-10-24 · body `1e965d9095`
 <!-- /phase-card -->
 
 ## Units
@@ -76,7 +76,7 @@ unit's edits. If the Overleaf copy has already been edited, that diff is what to
 record-backed draft does not write literally. `tests/test_trackC_paper.py` fails on any such
 number, so the user's rewrite is checked in CI. It reads 0 now. What it does not catch: it
 compares tokens, not contexts, so a changed small integer that some key also prints passes.
-It was planted-tested on 1590, 9.8 and 12 000: each listed.
+It was planted-tested on 1590, 9.8 and 12 000: each listed. Measured by `/challenge-pr` on #268, a one-digit change to each of the 1051 numbers in `paper/main.tex` is caught 441 times (42 %); a seed count or a grid date passes (stated in the docstring). A number no record holds goes into `paper_slots.json` as a literal with a required reason, and `stale_figures` checks `paper/fig/` against the generated copies (both added after `/challenge-pr` on #268).
 
 **pdfLaTeX.** Installed as TeX Live 2026 from Fedora's packages in a distrobox (`latex`), with
 `pdflatex` and `bibtex` exported to `~/.local/bin`; TinyTeX's install script was refused by auto

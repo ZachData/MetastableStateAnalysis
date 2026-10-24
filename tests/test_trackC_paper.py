@@ -32,7 +32,22 @@ def test_names_and_the_preamble_are_not_numbers():
     assert pc.tex_numbers(tex) == []
 
 
-def test_every_slot_in_paper_slots_renders():
+def test_every_entry_in_paper_slots_is_a_slot_or_a_reasoned_literal():
     for entry in json.loads(pc.SLOTS.read_text()):
-        assert set(entry) == {"slot", "where"}
-        n.slot_text(n.SLOT.fullmatch(entry["slot"]), KEYS)
+        if "literal" in entry:
+            assert set(entry) == {"literal", "why"} and entry["why"].strip()
+        else:
+            assert set(entry) == {"slot", "where"}
+            n.slot_text(n.SLOT.fullmatch(entry["slot"]), KEYS)
+
+
+def test_a_literal_without_a_reason_refuses(tmp_path, monkeypatch):
+    bad = tmp_path / "slots.json"
+    bad.write_text(json.dumps([{"literal": "0.625", "why": " "}]))
+    monkeypatch.setattr(pc, "SLOTS", bad)
+    with pytest.raises(n.Refused):
+        pc.accounted(KEYS)
+
+
+def test_figures_in_paper_are_their_generated_copies():
+    assert pc.stale_figures() == []

@@ -42,6 +42,8 @@
 !trackC_writeup/paper/*
 !trackC_writeup/paper/fig/*
 !trackC_writeup/fig/paper/*.pdf
+# paper_check.py's sources for numbers new to paper/: record slots, and literals with their reason.
+!trackC_writeup/paper_slots.json
 # GPT-2 small's logged LR (C2 unit 3c), read by tools/math_checks/c2_warmup_grid.py W2.
 !trackC_writeup/gpt2_small_lr_log.json
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
