@@ -27,7 +27,7 @@
   - The light cone (Blocked 67 (a)): a nudge at block 4 on repeated random tokens reaches the induction partner (j + 63) about 11× more than its neighbours, from step 1000. Ablating the three typed induction members removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets (L1, rank 1.000). The three nearest-type non-members remove 0.05 (0.88, not shown). Of the members' 0.54, about 0.24 is the partner's response falling and 0.30 the neighbours' rising, so about half of it is the response being kept off nearby tokens. ℓ ≈ 2.0 after block 6 is a ratio on a small signal: the partner's response there is 0.097, 8 % of its final 1.17, so the cone's size is added after block 6 (unit 2's "most of the cone is in place after block 6" was wrong). That early ratio is `L6H3`'s (ind1 0.46, untyped), and ablating it leaves the final response unchanged; `L6H0` (ind0 0.75, untyped) leaves the partner unchanged and lets the neighbours rise (Δℓ 0.18) — `trackB_circuit/status-B.md` "B3 unit 2 (2026-10-19)", "B3 unit 2b (2026-10-19)"
   - B3 closed 2026-10-19 at its exit: the light cone runs along induction partners from step 1000 and goes through the three typed induction members in part (half of their share keeps the response off nearby tokens); the partner's response is added across depth (blocks 6–8, 10–11 and 16–23); the members' routing exponent shows no difference from their layers', and B2's QK-symmetry split is not shown to go beyond head type. Path patching, the heads that add the response, a block-6 nudge site and a layer-matched same-type control are carried to B4 — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
   - 2026-10-24: B2a's and B3's citations of 2609.28448 give section numbers the paper does not have (the paper's V A and V B were cited as 6.1, 6.2 and 7, with four more); a citation only, no reading moves — `trackB_circuit/status-B.md` "Corrections received"
-  - B7 (routing activity across depth) opened 2026-10-25 with a scan, a `sympy` check and a design, frozen the same day (Blocked 110 (a)); its gate passes every arm (unit 1), no real cell read yet; the review then found its offset-profile null biased upward when partners persist on few rows. Revised over pairs of different rows (Blocked 111 (a)), the null no longer moves with persistence. The re-gate fails on one arm: with every head identical, too few rows enter at the minimum entry. A fix to the entry rule passes on scratch and is the user's decision (Blocked 112) — `trackB_circuit/status-B.md` "B7 unit 1", "B7 unit 1b" The check shows that on diffuse rows the argmax switch rate and the soft overlap say opposite things whatever the dynamics, and that a shuffled-layer null sees drift but not freezing. So B7 reads only condensed rows, against an offset-profile null as well, with each head matched to the next layer's best head — `trackB_circuit/design-B7.md` "The math"
+  - B7 (routing activity across depth) opened 2026-10-25 with a scan, a `sympy` check and a design, frozen the same day (Blocked 110 (a)); its gate passes every arm (unit 1), no real cell read yet; the review then found its offset-profile null biased upward when partners persist on few rows. Revised over pairs of different rows (Blocked 111 (a)), the null no longer moves with persistence. The re-gate fails on one arm: with every head identical, too few rows enter at the minimum entry. With heads entering on the all-prompt best match (Blocked 112 (a), P still leave-one-out) the re-gate passes every arm (unit 1c); no real cell read yet — `trackB_circuit/status-B.md` "B7 unit 1", "B7 unit 1b", "B7 unit 1c" The check shows that on diffuse rows the argmax switch rate and the soft overlap say opposite things whatever the dynamics, and that a shuffled-layer null sees drift but not freezing. So B7 reads only condensed rows, against an offset-profile null as well, with each head matched to the next layer's best head — `trackB_circuit/design-B7.md` "The math"
 - **Superseded / wrong:** B3 unit 2's "most of the cone (ℓ ≈ 2.0) is already in the residual after block 6, before any member runs" (2026-10-19, #228): ℓ is a ratio, and the partner's σ there is 8 % of its final size — `trackB_circuit/status-B.md` "B3 unit 2b (2026-10-19)"
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -40,7 +40,7 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-- **Reviewed:** 2026-10-25 · body `c95ed5ddde`
+- **Reviewed:** 2026-10-25 · body `5805d7dbdd`
 <!-- /phase-card -->
 
 ## Units
@@ -99,7 +99,44 @@ no member α.
 | 0. design, scan, `sympy` check | **done 2026-10-25; frozen as revised (Blocked 110 (a), the user's)**, revised after `/challenge-pr` on #271 (the first proposal's N0 sat at half of chance and its in-sample best-of-16 match 40 % above it, so a pure reshuffle would have read "persistence"; now leave-one-prompt-out matching, a row-valid binned N0, an ordered partition of descriptions, 3 units). Inputs checked: all 18 × 7 `attentions.npz` `(24, 16, n, n)` and `activations.npz` `(25, n, 1024)` present, so no forward pass | `design-B7.md`, `lit-B.md` "B7", `tools/math_checks/b7_partner_persistence.py` (7 checks pass since unit 1b; re-run: `python tools/math_checks/b7_partner_persistence.py`) |
 | 1. `b7_activity.py`, gate G0–G9, code tests | **done 2026-10-25: every arm passes** on the first run; `/challenge-pr` on #272 found N0 biased under persistence (below) | "B7 unit 1" below |
 | 1b. reserve (Blocked 111 (a), the user's) | **done 2026-10-25: the re-gate fails on one arm.** N0 over pairs of different rows; the review's fixes. Every arm passes but G1 at the minimum entry under the 8000 and 143000 sinks, where 16 and 18 of 23 cells do not enter (h\* selection under tied heads). The reserve is spent: **Blocked 112** | "B7 unit 1b" below |
-| 2. the 18 steps × 23 layer pairs | after 112 | `python -m trackB_circuit.b7_activity read` (refuses without a passing gate on the same code and inputs) |
+| 1c. entry on the all-prompt h\* (Blocked 112 (a), the user's; budget 3 → 4 units on the record) | **done 2026-10-25: every arm passes**, G1 at the minimum entry 23 of 23 at every sink step | "B7 unit 1c" below |
+| 2. the 18 steps × 23 layer pairs | next (the last unit of 4) | `python -m trackB_circuit.b7_activity read` (refuses without a passing gate on the same code and inputs) |
+
+## B7 unit 1c (2026-10-25): the re-gate passes (Blocked 112 (a))
+
+**Input:** as unit 1b (A1a's 18 run dirs, `prompts_hash` `976b62d677bc`, real sinks at 512, 8000,
+143000, real attention at 143000 for G8, B3's rows at code `2c13479d759c`, the 252 input files'
+sha256 in the record). Code `trackB_circuit/b7_activity.py` `a39756ddfea4` (choices 18–19 in its
+docstring); record `data/b7/2026-10-25-unit1c/gate.json` (main tree); torch on cuda; wall 446 s.
+Re-run: `METS_DATA=<main tree>/data python -m trackB_circuit.b7_activity gate --out <dir>`. Code
+tests `tests/test_b7_activity.py` (21: #273's strict-xfail test for G1 at the minimum entry with
+sinks that differ by head now passes and is a plain test; entry against a brute force: the
+all-prompt h\*, its rows, who enters at five floors, and P still leave-one-out).
+
+**The change (Blocked 112 (a), the user's).** A head enters on its jointly condensed rows with h\*
+chosen on all 7 prompts (≥ 50), for entry only; P, N0, N1 and every interval stay leave-one-out, so
+a head's weight in P is its leave-one-out rows. Each head's leave-one-out rows, entry rows and entry
+h\* are written in the cell's `heads`, and the minimum and median over the entering heads beside the
+cell (choice 18). G3 prints the pooled r beside (choice 19, #273 finding 4). `design-B7.md` "Revised
+at unit 1c"; budget 4 units + close-out.
+
+| arm | result (per sink step 512 / 8000 / 143000) | pass |
+|---|---|---|
+| G0 | as unit 1b | yes |
+| G1 frozen, full rows | P = 1, N0 0.008–0.009; 23 of 23 "frozen" each | yes |
+| G1 frozen, minimum entry | **23 of 23 read and "frozen" at each sink step** (unit 1b: 23 / 7 / 5); P = 1, N0 0–0.026 / 0–0.059 / 0–0.039; fewest leave-one-out rows of an entering head 50 / 36 / **12**; a cell's joint rows 800 / 577–800 / 276–800 | yes |
+| G2 reshuffled | 23 of 23 "rerouting" each; pooled (P − N0)/N0 −5.2 / −2.4 / −2.9 % (band 25 %); per-cell extreme beside 0.17 / 0.18 / 0.24 | yes |
+| G3 drift, full rows | r 0.797–0.805; pooled r 0.800 / 0.800 / 0.800; 23 of 23 "depth-local" each | yes |
+| G3 drift, minimum entry | r 0.774–0.836 (band ± 0.057); pooled r 0.801 / 0.804 / 0.799; 23 of 23 "depth-local" each | yes |
+| G4, G5, G6, G9 | as unit 1 | yes |
+| G7 false persistence | 0 of 1380 at full rows; **1 of 1380 (0.07 %) at the minimum entry** (unit 1b: 0), none unread; bar 5 % | yes |
+| G8 planted on real | 10 → 11 "depth-local", planted heads P = 1, h\* `L11H3`; other cells' N1 moves at most 0.0063, no description changed | yes |
+
+**What the change costs, as #273's review measured it on scratch:** at the minimum entry under
+143000's sinks an entering head can carry 12 leave-one-out rows into P (here 12, as predicted), so
+a cell's P can lean on heads thinner than the frozen 50. On real data the printed rows say where.
+G7's one false cell at the minimum entry is new under the wider entry; at 0.07 % against a 5 % bar it
+is beside, not a failure. No real cell read; unit 2 is next.
 
 ## B7 unit 1b (2026-10-25): the re-gate fails on G1 at the minimum entry (Blocked 111 (a))
 

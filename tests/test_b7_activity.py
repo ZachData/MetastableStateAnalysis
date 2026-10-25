@@ -122,6 +122,36 @@ def test_matched_is_leave_one_prompt_out():
         assert abs(m["P"][d] - num / den) < 1e-12
 
 
+def test_entry_uses_the_h_star_of_all_prompts():
+    # choice 18: entry on the joint rows of the all-prompt h*, P and its draws still leave-one-out
+    rng = np.random.default_rng(5)
+    Q, G = 5, 4
+    agree = rng.integers(0, 30, (Q, 3, G)).astype(float)
+    joint = agree + rng.integers(0, 40, (Q, 3, G))
+    M = torch.as_tensor(np.array([[1.0] * Q, [2, 0, 1, 1, 1]]))
+    for floor in (0, 60, 100, 140, 1e9):
+        m = b7.matched(torch.as_tensor(agree), torch.as_tensor(joint), M, min_joint=floor)
+        hs = agree.sum(0).argmax(-1)
+        rows = joint.sum(0)[np.arange(3), hs]
+        assert m["hstar_entry"].tolist() == hs.tolist()
+        assert m["head_joint_entry"].tolist() == rows.tolist()
+        assert m["enter"].tolist() == (rows >= floor).tolist()
+        enter = rows >= floor
+        if not enter.any():
+            assert np.isnan(m["P"]).all()
+            continue
+        for d, mm in enumerate(M.numpy()):
+            num = den = 0.0
+            for h in np.flatnonzero(enter):
+                for q in range(Q):
+                    if mm[q] == 0:
+                        continue
+                    g = int(np.argmax(sum(mm[p] * agree[p, h] for p in range(Q) if p != q)))
+                    num += mm[q] * agree[q, h, g]
+                    den += mm[q] * joint[q, h, g]
+            assert abs(m["P"][d] - num / den) < 1e-12
+
+
 def test_neighbours_and_d():
     rng = np.random.default_rng(3)
     X = torch.as_tensor(rng.normal(size=(2, 40, 8)))
@@ -219,9 +249,8 @@ def test_read_refuses_a_gate_on_other_inputs(monkeypatch):
         b7.check_gate({**good, "G0": {}})
 
 
-@pytest.mark.xfail(strict=True, reason="Blocked 112: under G1's identical heads the leave-one-out h* picks "
-                   "the head with fewest rows in the held-out prompt, so cells do not enter at the minimum entry")
 def test_g1_at_the_minimum_entry_with_sinks_that_differ_by_head():
+    # Blocked 112: failed on entry under unit 1b's leave-one-out count (strict xfail); passes on choice 18
     rng = np.random.default_rng(61)
     sinks = [torch.as_tensor(rng.choice([0.3, 0.99], size=(L, H, n - b7.ROW_FROM), p=[0.6, 0.4])) for n in NS]
     st = b7.planted_stages("G1", sinks, NS, seed=62)
