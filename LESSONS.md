@@ -899,6 +899,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-25, B7 unit 2 (a selection step the gate gave no variance; seen reading the real grid,
+  after the gate passed): the interval re-chooses each fold's best-matched head h\* inside every
+  bootstrap draw, on about 3.6 distinct other prompts against the sample's 6. Every planted arm put
+  one map in all 16 heads, so any h\* agreed and re-choosing it cost nothing; on real heads whose
+  best match differs by prompt, P's draws fall with fewer distinct prompts (0.95 → 0.72 at 3) and the
+  interval's lower tail lengthens. 5 of 38 "frozen" and 2 of 7 "rerouting" cells rest on that
+  tail; no "depth-local" cell does. Rule: **a gate for a statistic with a selection step plants
+  units that differ in what the selection picks (heads that differ by prompt), so the interval's
+  selection variance is calibrated, not only its sampling variance**. `status-B.md` "B7 unit 2".
 - 2026-10-25, B7 unit 1b (a new arm pre-checked on its statistic, not its pass rule, on a
   simplified input; seen in the gate, before any real cell): G1 at the minimum entry was added for
   N0's bias. The PR's scratch numbers and this session's pre-gate GPU check both read N0 and r, and
