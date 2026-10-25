@@ -217,3 +217,13 @@ def test_read_refuses_a_gate_on_other_inputs(monkeypatch):
             b7.check_gate(bad)
     with pytest.raises(b7.B7Error):
         b7.check_gate({**good, "G0": {}})
+
+
+@pytest.mark.xfail(strict=True, reason="Blocked 112: under G1's identical heads the leave-one-out h* picks "
+                   "the head with fewest rows in the held-out prompt, so cells do not enter at the minimum entry")
+def test_g1_at_the_minimum_entry_with_sinks_that_differ_by_head():
+    rng = np.random.default_rng(61)
+    sinks = [torch.as_tensor(rng.choice([0.3, 0.99], size=(L, H, n - b7.ROW_FROM), p=[0.6, 0.4])) for n in NS]
+    st = b7.planted_stages("G1", sinks, NS, seed=62)
+    rec = b7.arm_check("G1", b7.run_step(st, seed=63, n_boot=200, thin=b7.MIN_JOINT), min_entry=True)
+    assert rec["pass"], rec

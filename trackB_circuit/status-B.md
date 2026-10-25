@@ -40,7 +40,7 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-- **Reviewed:** 2026-10-25 · body `a704ce5e46`
+- **Reviewed:** 2026-10-25 · body `c95ed5ddde`
 <!-- /phase-card -->
 
 ## Units
@@ -140,6 +140,16 @@ N0's bias, the reason the arm was added, is fixed in every read cell. Tried on s
 G3 at full rows and at the minimum entry at all three sink steps, with G7 at the minimum entry 0 of 345
 over 5 seeds.** That changes a frozen definition (design "per-head persistence P": "enters with ≥ 50
 jointly condensed rows over the 7 folds"), and the reserve is spent: Blocked 112.
+
+**After `/challenge-pr` on #273 (accept with changes).** Finding 1: the code test for G1 at the minimum
+entry used one constant sink for every head, the input that hid the failure. A strict-xfail test
+with sinks that differ by head now fails on entry under this code and passes under (a). Finding 2,
+measured on scratch: under (a) an entering head can have as few as 12 leave-one-out rows (G1, 143000's
+sinks; median 39; G7 27), and a second floor of 25 brings G1's failure back (2 of 23 unread). This is
+in Blocked 112. Finding 3: N0's own sampling noise is not in the `P − N0` interval, since its profiles
+are the sample's in every draw (choice 3). G7 guards the false side, nothing guards a real persistent
+cell whose N0 reads high (up to 0.044 at 50 rows). Parked below. Finding 4 (the pooled r beside G3) goes
+into unit 1c if 112 is (a). Answers: PR #273.
 
 **Caveats.** (1) On real data the totals are not fixed by thinning, so the effect there is weaker, but
 it can still lower a tied head's joint rows near the entry, and its weight. (2) G7 now has its
@@ -1208,6 +1218,7 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 - B2, Phase 6's `U_pos` / `U_neg` / `U_A` dimensions of the members' union (design-B2 "Beside, not in the family"), not built in unit 2: why, a subspace view of the members beside the per-head columns; cost, about one session (`p6_subspace/math-6.md` §7.2 on the stored OVs); could change nothing in the family (beside only). **Dropped at B2's close (2026-10-18):** it can change no reading, and C6 by pair already gives B4 the shared space it needs ("B2 on one page").
 - B2, which pairs carry C6 was read after the rank (descriptive, `c6_pairs.json`): why, the rank is the circuit's mean; cost, none (done); could change B4's choice of what to nudge: `L5H2`'s write space and the 11 heads after layer 5 whose keys read it at ≥ 10× chance (`c6_pairs.json` `l5h2_readers_all`, code `b12ad273a201`): members `L8H6`, `L7H8`, `L11H14`; non-members in 7d's causal top 10 `L7H1`, `L8H9`, `L10H9`; non-members outside it `L7H7`, `L9H0` (27×), `L8H7`, `L10H0`, `L11H2`; then `L6H3`, `L10H4` at about 9×, not the members' keys alone (the list first read the members' layers only; `/challenge-pr` on #222, finding 1). **Carried to B4** at B2's close (2026-10-18).
 - B2, a head-type control for C3 (`/challenge-pr` on #221, finding 2): why, non-member previous-token and induction heads sit with the members; cost, a list of head types from 7d's sweep and one re-rank; could change C3 from "members differ" to "these head types differ". **Carried to B3** at B2's close (2026-10-18; B3 joins per-head reads to 7d's sweep).
+- B7, N0's own sampling noise in the `P − N0` interval (`/challenge-pr` on #273, finding 3): why, N0's profiles are the sample's in every draw (choice 3), so a cell whose N0 reads high by chance (up to 0.044 against about 0.009 at 50 rows) can be read "rerouting" when it persists; cost, re-estimating N0 per draw (the U-statistic, so no duplicated self-pairs) and one re-gate; could change a sparse cell from "rerouting" to "persistence". Unit 2 prints N0's rows beside each cell; decided at B7's close.
 
 ## Corrections received
 
