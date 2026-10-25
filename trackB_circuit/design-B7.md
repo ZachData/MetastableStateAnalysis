@@ -3,9 +3,14 @@
 
 Opened 2026-10-25 at the user's request ("Open B7"). Row: `docs/ROADMAP.md` §7 B7 (set
 2026-10-24 from 2609.28448). Scan: `trackB_circuit/lit-B.md` "B7". Math:
-`tools/math_checks/b7_partner_persistence.py` (5 checks pass). Tier 1 throughout: exploratory,
+`tools/math_checks/b7_partner_persistence.py` (6 checks pass). Tier 1 throughout: exploratory,
 unregistered; 410m is an exploration rung (`p8_scale_ladder/design-8.md`), so nothing here can
 score a registered row. **Proposed, not frozen: Blocked 110 is the freeze, the user's.**
+**Revised after `/challenge-pr` on #271 (accept with changes) before the freeze:** the next-layer
+head is matched leave-one-prompt-out, and N0 is a row-valid offset chance within position bins,
+since the first proposal's best-of-16 match and pooled-profile N0 put a pure reshuffle 0.007
+above N0 (1); the descriptions are an ordered partition with "positional, not separable" (2);
+3 units (3); representation-space neighbour persistence beside (4); > 1/2, and checks 2 and 6 (5).
 
 ## What B7 asks
 
@@ -26,17 +31,18 @@ all 18 steps × 7 v1 prompts (none missing), and `activations.npz` `(25, n, 1024
 - **Exit:** the cell table below over 23 layer pairs × 18 steps, each cell with its counts,
   intervals and the input named, after the gate passes. "Rerouting everywhere" or "nothing
   readable before step 512" are verdicts, not failures.
-- **Budget: 2 units on the record**, this design as unit 0, then a close-out page (writing only).
-  Unit 1 builds `trackB_circuit/b7_activity.py` and passes the gate; unit 2 reads the 18 steps.
-  Alternative: 3 units, a reserve for a failed gate (B2a, A2 and B3 each overran on one,
-  `LESSONS.md` 10). At the budget B7 closes at what it knows unless you extend it on the record.
+- **Budget: 3 units on the record**, this design as unit 0, then a close-out page (writing only).
+  Unit 1 builds `trackB_circuit/b7_activity.py` and runs the gate; unit 1b is a reserve, spent
+  only if an arm fails (B2a, A2 and B3 each overran on one, `LESSONS.md` 10); unit 2 reads the
+  18 steps. Alternative: 2 units, no reserve. At the budget B7 closes at what it knows unless you
+  extend it on the record.
 - **Compute:** reads stored arrays only, about 19 GB of attention; I/O-bound. Torch on the GPU as
   B3 (`b3_route._load_attn`), CPU allowed, since the operations are argmax and counting, not
   float-sensitive.
 
 ## The math
 
-`tools/math_checks/b7_partner_persistence.py` (`sympy` + numerics, 5 checks pass): (1) on
+`tools/math_checks/b7_partner_persistence.py` (`sympy` + numerics, 6 checks pass): (1) on
 diffuse rows the two obvious measures disagree in opposite directions: independent uniform
 argmaxes agree with probability 1/n (switch rate ≈ 1, "rerouting"), while two uniform rows have
 soft overlap 1 − TV = 1 ("frozen"); independent s = 1 Gaussian-logit rows at n = 256 still overlap
@@ -47,7 +53,13 @@ redraws (collision probability c), the lag-k agreement is **P(k) = r^k + (1 − 
 (r = 1) agrees with distant layers as much as with the next, so **a shuffled-layer null sees drift
 but not freezing**; reshuffled (r = 0) sits at c; r = (P(1) − c)/(1 − c). A period-two routing has
 P(1) = c, P(2) = 1. (5) D on unit states lies in [0, 2]; random directions in 1024 dimensions give
-√2. **What it does not prove:** that 410m's rows follow check 4's chain (the real lag profile is
+√2. (6) **The nulls at the real design points** (the 7 prompts' n, 16 heads, a pure reshuffle):
+the per-row chance is 0.0085 (rows pooled); a best-of-16 match chosen on the read prompts gives P
+0.0118, and an offset profile pooled over all positions gives c 0.0043 (`/challenge-pr` on #271,
+finding 1); matching leave-one-prompt-out gives P 0.0084, and the row-valid offset chance within
+32-position bins gives N0 0.0089, asserted within −3 % to +15 % of chance (conservative: it
+leans to "rerouting").
+**What it does not prove:** that 410m's rows follow check 4's chain (the real lag profile is
 read, not fitted); that a kept partner in an untied net is one geometry persisting rather than
 two layers' weights agreeing (Sec. V B); that top-1 is the right summary of a row whose mass sits
 on 2–3 partners (the soft overlap on condensed rows is beside).
@@ -57,32 +69,37 @@ on 2–3 partners (the soft overlap on condensed rows is beside).
 | object | definition |
 |---|---|
 | attention, rows | B3's: stored `attentions.npz`, query i ≥ 16, **position 0 dropped as key and query, the row renormalised over keys 1..i** (Ã); rows with non-sink mass `w_i = 1 − A_i0 < 0.05` are out (B3's `W_MIN`) |
-| a condensed row | Ã's top share ≥ **0.5** *(placed)*; its **partner** π(i) is that key (unique, check 2) and its **offset** i − π(i) |
-| per-head persistence P (primary) | for head (l, h): the fraction of rows i condensed in both (l, h) and (l + 1, h\*) with the same partner, where **h\* is the head of layer l + 1 with the most agreement with (l, h)**, chosen once per step over the 7 prompts pooled (2110.06821's best-match; head indices carry nothing across layers). A head enters with ≥ **50** *(placed)* jointly condensed rows over the 7 prompts. The cell value for (l → l + 1, step) is the mean over the entering heads, weighted by their jointly condensed row counts |
+| a condensed row | Ã's top share > **0.5** *(placed)*; its **partner** π(i) is that key (unique, check 2) and its **offset** i − π(i) |
+| per-head persistence P (primary) | for head (l, h): the fraction of rows i condensed in both (l, h) and (l + 1, h\*) with the same partner, where **h\* is the head of layer l + 1 with the most agreement with (l, h)** (2110.06821's best-match; head indices carry nothing across layers), **chosen leave-one-prompt-out**: for each prompt q, h\* is chosen on the other 6 and P counted on q, then the 7 folds are pooled (so the max over 16 does not inflate P, check 6). A head enters with ≥ **50** *(placed)* jointly condensed rows over the 7 folds. The cell value for (l → l + 1, step) is the mean over the entering heads, weighted by their jointly condensed row counts |
 | pooled persistence (beside) | the layer's row: the mean of its 16 heads' Ã weighted by `w_i`, renormalised; condensed and P as above, one value per layer pair |
-| N1, shuffled-layer null | the same statistic, best-match included, between l and every layer l′ with \|l′ − l\| ≥ 2 (both directions in depth), averaged. Excess `P − N1` > 0 is **depth-local persistence** (drift) |
-| N0, offset-profile null | for each entering pair (l, h) → (l + 1, h\*), c = Σ_k p(k) q(k) over the two heads' offset profiles on their jointly condensed rows; cell value weighted as P. Excess `P − N0` > 0 is **persistence beyond position** |
+| N1, shuffled-layer null | the same statistic, leave-one-prompt-out best-match included, between l and every layer l′ with \|l′ − l\| ≥ 2 (both directions in depth), averaged. Excess `P − N1` > 0 is **depth-local persistence** (drift) |
+| N0, offset-profile null | for each entering pair (l, h) → (l + 1, h\*) and each read row i: c_i = Σ_k p(k) q(k) over offsets k valid at i (1..i − 1), with p, q the two heads' offset profiles on the jointly condensed rows in i's **32-position bin** *(placed)* over all 7 prompts, each renormalised over the valid k; N0 is the mean of c_i over the read rows, weighted as P. Excess `P − N0` > 0 is **persistence beyond position**. Profiles pooled over all positions are biased low (check 6) |
 | step 0 | the same statistics at step 0 where rows pass; expected mostly unreadable (near-uniform attention to step 256, B2a). Step 0 is the reference for `D_ℓ` (check 1) |
 | P_2 (beside) | P at lag 2 (l → l + 2, best-match), so a two-cycle (lag-1 at N0, lag-2 high) is not read as rerouting |
 | D_1, D_2 (beside) | the paper's `D_ℓ` (l. 482–490) on `activations.npz` (unit states; index l is the residual attention layer l reads, B3's convention), position 0 dropped, mean over tokens and prompts; per layer and step |
 | soft overlap (beside) | 1 − ½‖Ã_{l,h,i} − Ã_{l+1,h\*,i}‖₁ on the jointly condensed rows |
+| neighbour persistence (beside) | the paper's notion of partner: each token i's nearest earlier token by cosine among 1..i − 1 in the unit states at index l, and whether it is the same at l + 1; per layer pair and step, with N1 as for P (distant layers). Beside, not primary: ROADMAP's question is routing, and 410m's states share large common directions (C5's massive tokens), so cosine neighbours may follow those rather than what attention reads |
 | condensed share (beside) | the fraction of rows (`w_i ≥ 0.05`) condensed, per head and per layer: whether the cell routes sparsely at all |
 | α (beside) | B3's per-head α (`b3_route.alpha_of`, weighted), its layer median, read from B3's stored rows (`data/b3/2026-10-18-unit1/rows`) with B3's code hash checked |
-| interval | percentile 2.5–97.5 % over 2000 *(placed)* bootstrap draws of the 7 prompts (h\* re-chosen in each draw) |
+| interval | percentile 2.5–97.5 % over 2000 *(placed)* bootstrap draws of the 7 prompts (the folds and h\* re-done in each draw) |
 | steps, prompts | B2a's 18 steps; the 7 scored v1 prompts (hash pinned at run time, `core/prompts.py`); the 12 held-out (`core/holdout.py`) are not read |
 
 ## The cells (fixed before any output)
 
 Family: the 23 layer pairs × 18 steps; the statistic is the per-head P against N1 and N0 with
-their intervals. A cell with fewer than 2 entering heads *(placed)* is **not read**, and the
-count is printed instead. Each read cell gets one description, from check 4:
+their intervals. Each cell gets exactly one description, the first that applies (from check 4):
 
-| description | when |
-|---|---|
-| rerouting | `P − N0`'s interval contains 0 |
-| frozen across depth | `P − N0`'s interval above 0 and `P − N1`'s contains 0 |
-| depth-local persistence | `P − N1`'s interval above 0 |
-| (beside) a two-cycle candidate | rerouting at lag 1 and `P_2 − N0`'s interval above 0 |
+| order | description | when |
+|---|---|---|
+| 1 | not read | fewer than 2 entering heads *(placed)*; the count is printed instead |
+| 2 | positional, not separable | N0 ≥ 0.5 *(placed)*: the offset profiles alone predict most of the agreement (two previous-token layers), so persistence beyond position cannot be read |
+| 3 | rerouting | `P − N0`'s interval does not lie above 0 |
+| 4 | depth-local persistence | `P − N1`'s interval above 0 |
+| 5 | frozen across depth | `P − N1`'s interval contains 0 |
+| 6 | persistent, less than at distant layers | `P − N1`'s interval below 0 |
+
+Beside, not a class: **a two-cycle candidate** is a cell read "rerouting" at lag 1 whose
+`P_2 − N0` interval lies above 0.
 
 These are descriptions of cells, not labels a head gets; the 23 × 18 grid is read as a picture
 (where in depth, from which step), with no count of cells tested against a rate. A cell's reading
@@ -99,12 +116,12 @@ Partners are drawn uniformly from keys 1..i − 2 (never i − 1) unless the arm
 |---|---|---|
 | G0 | inputs: 18 × 7 attention and activation files present; shapes `(24, 16, n, n)`, `(25, n, 1024)`; rows sum to 1 within 1e-5; states unit norm within 1e-5; B3's rows present with their code hash | all hold, else the gap is recorded before anything is read |
 | G1 frozen | one partner map π(i), the same at every layer and head | P ≥ 0.99, N1 ≥ 0.99, `P − N0` ≥ 0.9; every cell "frozen across depth" |
-| G2 reshuffled | an independent π per layer and head | \|P − N0\| ≤ 0.02, \|P − N1\| ≤ 0.02; every cell "rerouting" |
+| G2 reshuffled | an independent π per layer and head | \|P − N0\| ≤ 0.25 · N0 (N0 is about 0.009 here, check 6, so an absolute band would check nothing); every cell "rerouting" |
 | G3 drift | each row keeps its partner with r = 0.8 per layer, else redraws | (P − N0)/(1 − N0) within 0.8 ± 0.03; every cell "depth-local persistence" |
-| G4 positional | every head previous-token (π(i) = i − 1) | \|P − N0\| ≤ 0.01; every cell "rerouting" (nothing beyond position) |
+| G4 positional | every head previous-token (π(i) = i − 1) | N0 ≥ 0.99; every cell "positional, not separable" |
 | G5 period two | two maps alternating by layer | lag-1 cells "rerouting", every cell a two-cycle candidate, `P_2` ≥ 0.99 |
 | G6 diffuse | uniform rows | no row condensed; every cell "not read"; no P printed (refuse rather than degrade) |
-| G7 best-match bias | G2, at the minimum entry (50 jointly condensed rows per head: rows thinned at random) | the false "persistence" (`P − N0` or `P − N1` interval above 0) in ≤ 5 % of cells, over 20 seeds |
+| G7 false persistence | G2 at the full row counts, and at the minimum entry (50 jointly condensed rows per head: rows thinned at random) | a cell read anything but "rerouting" in ≤ 5 % of cells at both, over 20 seeds |
 | G8 planted on real | real attention at 143000; in layers 10 and 11, heads 0–3 overwritten with one shared fixed partner map | cell 10 → 11 "frozen across depth" or "depth-local", with those 4 heads' P ≥ 0.95 (h\* found); every other cell's P within 0.01 of the unplanted run, except cells touching layers 10–11 |
 | G9 D | D_1 on a planted state sequence: the same states at every layer (D = 0), and antipodal flips (D = 2) | within 1e-6 |
 
@@ -116,7 +133,8 @@ An arm that fails changes the constants, with the reason recorded, before any re
 The array shapes, file presence and unit norms above; one stored residual norm (position 0 at
 layer 12 of `hdbscan_code`, 143000: 986, the sink); B3's recorded results (`status-B.md` "B3 on
 one page"), B2a's (attention near uniform to step 256, positional heads from 512), B2's. No
-partner, persistence, condensed share or `D_ℓ` value has been computed.
+partner, persistence, condensed share or `D_ℓ` value has been computed on real attention. The
+reviewer's and Claude's simulations of G2 on synthetic partners (check 6) have been seen.
 
 ## Units
 
@@ -124,6 +142,7 @@ partner, persistence, condensed share or `D_ℓ` value has been computed.
 |---|---|---|
 | 0 | this design, the scan, the `sympy` check | frozen (Blocked 110) |
 | 1 | `trackB_circuit/b7_activity.py`: the objects above, G0–G9, code tests | every arm passes, or a recorded change |
+| 1b | reserve: a failed arm's revision, re-gated (spent only if unit 1 fails) | every arm passes |
 | 2 | the 18 steps × 23 layer pairs, the beside columns, the cell picture, with the input named | the table is written with its input |
 
 ## Fences
@@ -143,17 +162,29 @@ partner, persistence, condensed share or `D_ℓ` value has been computed.
 
 1. **Per-head best-match as primary, pooled beside.** ROADMAP named both. Pooling 16 heads makes
    a layer row condensed only when most heads agree, which may leave few rows; best-match keeps
-   heads but takes a max over 16, which G7 calibrates. The alternative primary is the pooled row.
+   heads but takes a max over 16, removed by choosing it leave-one-prompt-out (check 6) and
+   calibrated by G7. The alternatives are the pooled row as primary, or a max taken under every
+   null (the first proposal; N0 did not take it, finding 1).
 2. **N0 added, step 0 demoted.** ROADMAP named a shuffled-layer null and step 0. Check 4 shows the
    shuffled-layer null alone cannot see freezing, and check 1 that step 0's near-uniform rows say
    nothing about partners; so N0 (offset profiles) is the second null and step 0 is `D_ℓ`'s
    reference. The alternative is ROADMAP's pair as written, with step 0 read where rows pass.
-3. **Top share ≥ 0.5 as "condensed".** It makes the partner unique without a tie rule. A head
+   N0 treats a bin's offset profile as all of "positional": a head whose partner depends on
+   content and offset together is only partly removed. A within-bin offset permutation was
+   tried in simulation and ran about 10 % below chance (permuted offsets fall outside a row's
+   range), so the analytic row-valid chance, which errs above, was kept.
+3. **Top share > 0.5 as "condensed".** It makes the partner unique without a tie rule. A head
    splitting its mass over two partners (0.45 / 0.45) is out. The alternative is N_eff ≤ 2 with
    a top-2 set match; or top share ≥ 0.3 with ties broken by index.
 4. **`D_ℓ` beside, not primary.** It is the paper's activity measure. It is beside because in
    410m a layer's displacement mixes attention and the MLP, and ROADMAP's question is the routing
    side. The alternative is `D_1`, `D_2` as the family and the switch rate as its mechanism.
-5. **Budget 2**, with 3 as the alternative above.
+5. **Budget 3 with a reserve**, with 2 as the alternative above (the first proposal; finding 3).
 6. **No cell count against a rate.** The grid is read as a picture; the alternative is a count of
    "frozen" cells against G2's false rate, which would make B7 a test it was not set up to be.
+7. **"Positional, not separable" at N0 ≥ 0.5.** Below it, a previous-token-heavy pair is read
+   against N0 as usual; above it, nothing is said. The alternative is no positional class, with
+   G4 read as "rerouting" (the first proposal: the opposite of what G4 plants, finding 2).
+8. **Neighbour persistence beside, not in the family** (finding 4): the paper's partners are
+   representation-space neighbours, and the column is cheap from the stored states; it is beside
+   because cosine neighbours in 410m may follow shared large directions, not what attention reads.

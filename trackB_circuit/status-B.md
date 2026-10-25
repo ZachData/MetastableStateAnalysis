@@ -40,7 +40,7 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-- **Reviewed:** 2026-10-25 · body `8a0a7017e5`
+- **Reviewed:** 2026-10-25 · body `a4ff503d2f`
 <!-- /phase-card -->
 
 ## Units
@@ -96,7 +96,7 @@ no member α.
 
 | unit | state | where |
 |---|---|---|
-| 0. design, scan, `sympy` check | **done 2026-10-25; proposed, not frozen (Blocked 110)**. Inputs checked: all 18 × 7 `attentions.npz` `(24, 16, n, n)` and `activations.npz` `(25, n, 1024)` present, so no forward pass | `design-B7.md`, `lit-B.md` "B7", `tools/math_checks/b7_partner_persistence.py` (5 checks pass; re-run: `python tools/math_checks/b7_partner_persistence.py`) |
+| 0. design, scan, `sympy` check | **done 2026-10-25; proposed, not frozen (Blocked 110)**, revised after `/challenge-pr` on #271 (the first proposal's N0 sat at half of chance and its in-sample best-of-16 match 40 % above it, so a pure reshuffle would have read "persistence"; now leave-one-prompt-out matching, a row-valid binned N0, an ordered partition of descriptions, 3 units). Inputs checked: all 18 × 7 `attentions.npz` `(24, 16, n, n)` and `activations.npz` `(25, n, 1024)` present, so no forward pass | `design-B7.md`, `lit-B.md` "B7", `tools/math_checks/b7_partner_persistence.py` (6 checks pass; re-run: `python tools/math_checks/b7_partner_persistence.py`) |
 
 ## B3 on one page (closed 2026-10-19)
 

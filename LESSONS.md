@@ -2156,6 +2156,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   a property of E₁ everywhere along training as a property of the break. Rule: a conditional
   share ("X at every Y") is set beside the same share conditioned on not-Y, or on Y's complement
   of the same kind (here, rises), never beside the unconditional rate.
+- 2026-10-25, B7 unit 0 (found by `/challenge-pr` on #271, finding 1, before any real value): the
+  proposed design matched each head to the best of 16 next-layer heads on the prompts it read,
+  and set it against an offset-profile null pooled over all positions. Both errors lean the same
+  way: on a pure reshuffle P sat 40 % above chance and N0 at half of it, so every cell would have
+  read "persistence beyond position". The design said "every null takes the same max" and N0 did
+  not. Its own gate arm had an absolute tolerance (0.02) 2× the null's size, so it would have
+  passed. Rule: a null is simulated at the real design points before the design is proposed,
+  and a tolerance is stated relative to the null's size.
 
 ## 12. Deleted, then needed
 

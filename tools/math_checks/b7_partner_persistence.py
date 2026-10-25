@@ -31,6 +31,13 @@ WHAT IT SHOWS
    has P(1) = c, P(2) = 1.
 5. **D_ℓ on unit states.** ‖u − v‖² = 2 − 2 cos θ, so D_ℓ ∈ [0, 2]; a consensus flip has D = 2;
    two independent uniform directions in 1024 dimensions have D ≈ √2.
+6. **The nulls at the real design points** (`/challenge-pr` on #271, finding 1). On the 7 v1
+   prompts' lengths (rows 16..n − 1), 16 heads per layer, partners reshuffled (uniform on
+   1..i − 2): the per-row chance is ≈ 0.0085. A best-of-16 next-layer head chosen on the prompts
+   it is read on inflates P to ≈ 0.012; an offset profile pooled over all positions puts c at
+   ≈ 0.004 (pooling mixes rows of different reach). Choosing the head leave-one-prompt-out puts P
+   back at chance, and the row-valid offset chance within 32-position bins puts N0 at chance or
+   up to 15 % above it (conservative: excess leans to 0).
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -61,10 +68,15 @@ soft = 1 - 0.5 * np.abs(a1 - a2).sum(1)
 arg = (a1.argmax(1) == a2.argmax(1)).mean()
 assert soft.mean() > 0.4 and arg < 0.02, (soft.mean(), arg)
 
-# 2. Top share > 1/2 makes the argmax unique: the other entries sum to < 1/2.
+# 2. Top share > 1/2 makes the argmax unique: any other entry b ≤ 1 − a, and a − (1 − a) > 0.
 e = sp.symbols("e", positive=True)
 a = sp.Rational(1, 2) + e
-assert sp.simplify(((1 - a) - a) + 2 * e) == 0          # every other entry ≤ 1 − a = a − 2e < a
+assert (a - (1 - a)).is_positive                        # = 2e, positive by e's assumption
+assert (sp.Rational(1, 2) - (1 - sp.Rational(1, 2))).is_positive is False   # at exactly 1/2 a tie is possible
+rows2 = rng.dirichlet(np.ones(30) * 0.05, 20000)
+top = np.sort(rows2, 1)
+big = top[:, -1] > 0.5
+assert big.any() and (top[big, -1] > top[big, -2]).all()
 
 # 3. Offset-profile null: Cauchy–Schwarz bound, and c = 1 for two equal one-hot profiles.
 p = rng.dirichlet(np.ones(20), 1000)
@@ -107,7 +119,61 @@ x = rng.normal(size=(2000, 1024)); x /= np.linalg.norm(x, axis=1, keepdims=True)
 y = rng.normal(size=(2000, 1024)); y /= np.linalg.norm(y, axis=1, keepdims=True)
 assert abs(np.sqrt(((x - y) ** 2).sum(1).mean()) - np.sqrt(2)) < 0.01
 
-print("b7_partner_persistence: 5 checks pass (diffuse rows: argmax agreement 1/n, soft overlap 1, "
+# 6. The nulls at the real design points: the pooled-profile N0 and an in-sample best-of-16 are
+# biased; leave-one-prompt-out matching and a row-valid within-bin N0 are not (or err high).
+NS, H, BIN = (465, 242, 512, 446, 286, 482, 467), 16, 32
+rws = [np.arange(16, nn) for nn in NS]
+chance = np.mean(np.concatenate([1 / (r_ - 2) for r_ in rws]))
+lens = np.array([len(r_) for r_ in rws])
+
+
+def draw():
+    return [np.stack([rng.integers(1, r_ - 1) for _ in range(H)]) for r_ in rws]
+
+
+def best(Aa, Bb, h, prompts):
+    return int(np.argmax([sum((Aa[pp][h] == Bb[pp][g]).sum() for pp in prompts) for g in range(H)]))
+
+
+def n0_rows(Aa, Bb, h, g, qq):
+    ia = np.concatenate(rws)
+    oa = np.concatenate([r_ - Aa[pp][h] for pp, r_ in enumerate(rws)])
+    ob = np.concatenate([r_ - Bb[pp][g] for pp, r_ in enumerate(rws)])
+    K, out = int(ia.max()) + 1, []
+    for b0 in range(16, int(rws[qq].max()) + 1, BIN):
+        m_ = (ia >= b0) & (ia < b0 + BIN)
+        pa, pb = np.bincount(oa[m_], minlength=K) * 1.0, np.bincount(ob[m_], minlength=K) * 1.0
+        for i in rws[qq][(rws[qq] >= b0) & (rws[qq] < b0 + BIN)]:
+            va, vb = pa[1:i], pb[1:i]
+            out.append((va / va.sum() * vb / vb.sum()).sum() if va.sum() and vb.sum() else 0.0)
+    return np.mean(out)
+
+
+p_in, c_pool, p_loo, n0 = [], [], [], []
+for _ in range(2):
+    Aa, Bb = draw(), draw()
+    for h in range(0, H, 2):
+        hs = best(Aa, Bb, h, range(7))
+        p_in.append(sum((Aa[pp][h] == Bb[pp][hs]).sum() for pp in range(7)) / lens.sum())
+        oa = np.concatenate([r_ - Aa[pp][h] for pp, r_ in enumerate(rws)])
+        ob = np.concatenate([r_ - Bb[pp][hs] for pp, r_ in enumerate(rws)])
+        K = max(oa.max(), ob.max()) + 1
+        c_pool.append((np.bincount(oa, minlength=K) / len(oa) * np.bincount(ob, minlength=K) / len(ob)).sum())
+        num, n0q = 0, []
+        for qq in range(7):
+            g = best(Aa, Bb, h, [pp for pp in range(7) if pp != qq])
+            num += (Aa[qq][h] == Bb[qq][g]).sum()
+            n0q.append(n0_rows(Aa, Bb, h, g, qq))
+        p_loo.append(num / lens.sum())
+        n0.append(np.average(n0q, weights=lens))
+p_in, c_pool, p_loo, n0 = map(np.mean, (p_in, c_pool, p_loo, n0))
+assert p_in > 1.25 * chance and c_pool < 0.6 * chance, (p_in, c_pool, chance)
+assert abs(p_loo - chance) < 0.1 * chance, (p_loo, chance)
+assert chance * 0.97 < n0 < chance * 1.15, (n0, chance)
+
+print("b7_partner_persistence: 6 checks pass (diffuse rows: argmax agreement 1/n, soft overlap 1, "
       f"independent s = 1 rows overlap {soft.mean():.2f}; top share > 1/2 gives a unique argmax; "
       "offset-profile null c = Σ p q, 1 for a shared one-hot offset; P(k) = r^k + (1 − r^k) c, "
-      "so a shuffled-layer null sees drift but not freezing, r identified; D ∈ [0, 2], √2 at random)")
+      "so a shuffled-layer null sees drift but not freezing, r identified; D ∈ [0, 2], √2 at random; "
+      f"at the real n, chance {chance:.4f}: in-sample best-of-16 P {p_in:.4f}, pooled-profile c "
+      f"{c_pool:.4f}, leave-one-out P {p_loo:.4f}, row-valid binned N0 {n0:.4f})")
