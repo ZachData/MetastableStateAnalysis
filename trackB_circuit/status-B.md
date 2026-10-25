@@ -27,6 +27,7 @@
   - The light cone (Blocked 67 (a)): a nudge at block 4 on repeated random tokens reaches the induction partner (j + 63) about 11× more than its neighbours, from step 1000. Ablating the three typed induction members removes 0.54 of ℓ's 2.37, above all 200 random layer-matched 3-sets (L1, rank 1.000). The three nearest-type non-members remove 0.05 (0.88, not shown). Of the members' 0.54, about 0.24 is the partner's response falling and 0.30 the neighbours' rising, so about half of it is the response being kept off nearby tokens. ℓ ≈ 2.0 after block 6 is a ratio on a small signal: the partner's response there is 0.097, 8 % of its final 1.17, so the cone's size is added after block 6 (unit 2's "most of the cone is in place after block 6" was wrong). That early ratio is `L6H3`'s (ind1 0.46, untyped), and ablating it leaves the final response unchanged; `L6H0` (ind0 0.75, untyped) leaves the partner unchanged and lets the neighbours rise (Δℓ 0.18) — `trackB_circuit/status-B.md` "B3 unit 2 (2026-10-19)", "B3 unit 2b (2026-10-19)"
   - B3 closed 2026-10-19 at its exit: the light cone runs along induction partners from step 1000 and goes through the three typed induction members in part (half of their share keeps the response off nearby tokens); the partner's response is added across depth (blocks 6–8, 10–11 and 16–23); the members' routing exponent shows no difference from their layers', and B2's QK-symmetry split is not shown to go beyond head type. Path patching, the heads that add the response, a block-6 nudge site and a layer-matched same-type control are carried to B4 — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
   - 2026-10-24: B2a's and B3's citations of 2609.28448 give section numbers the paper does not have (the paper's V A and V B were cited as 6.1, 6.2 and 7, with four more); a citation only, no reading moves — `trackB_circuit/status-B.md` "Corrections received"
+  - B7 (routing activity across depth) opened 2026-10-25 with a scan, a `sympy` check and a design not yet frozen. The check shows that on diffuse rows the argmax switch rate and the soft overlap say opposite things whatever the dynamics, and that a shuffled-layer null sees drift but not freezing. So B7 reads only condensed rows, against an offset-profile null as well, with each head matched to the next layer's best head — `trackB_circuit/design-B7.md` "The math"
 - **Superseded / wrong:** B3 unit 2's "most of the cone (ℓ ≈ 2.0) is already in the residual after block 6, before any member runs" (2026-10-19, #228): ℓ is a ratio, and the partner's σ there is 8 % of its final size — `trackB_circuit/status-B.md` "B3 unit 2b (2026-10-19)"
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -39,7 +40,7 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-- **Reviewed:** 2026-10-24 · body `763ba2602f`
+- **Reviewed:** 2026-10-25 · body `a4ff503d2f`
 <!-- /phase-card -->
 
 ## Units
@@ -90,6 +91,12 @@ and unit 1's gate record (below), which includes the members' type scores and fo
 no member α.
 
 **B3 closed 2026-10-19** at its exit condition (Blocked 69 (a), the user's): "B3 on one page" below.
+
+**B7** (its own budget, `design-B7.md` "Exit condition and budget"; Blocked 110 sets it):
+
+| unit | state | where |
+|---|---|---|
+| 0. design, scan, `sympy` check | **done 2026-10-25; proposed, not frozen (Blocked 110)**, revised after `/challenge-pr` on #271 (the first proposal's N0 sat at half of chance and its in-sample best-of-16 match 40 % above it, so a pure reshuffle would have read "persistence"; now leave-one-prompt-out matching, a row-valid binned N0, an ordered partition of descriptions, 3 units). Inputs checked: all 18 × 7 `attentions.npz` `(24, 16, n, n)` and `activations.npz` `(25, n, 1024)` present, so no forward pass | `design-B7.md`, `lit-B.md` "B7", `tools/math_checks/b7_partner_persistence.py` (6 checks pass; re-run: `python tools/math_checks/b7_partner_persistence.py`) |
 
 ## B3 on one page (closed 2026-10-19)
 

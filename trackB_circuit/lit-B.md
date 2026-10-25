@@ -195,3 +195,36 @@ read at search-summary level only.
 
 Not read: 2605.08505, 2510.05554, Scalable-Softmax, 2605.12697, 2606.29139, 2511.17194,
 2601.16407 beyond search summaries; cited at that level.
+
+# B7, routing activity across depth — scan at opening (2026-10-25)
+
+Trigger 1 (B7 opens; precedes `design-B7.md`'s freeze). Primary text: 2609.28448's introduction
+(l. 196–209: temporal activity, condensation and clustering are three properties), §2 (`Y_A`,
+l. 425–443; `D_ℓ`, l. 482–490), §4 (the period-two orbit, l. 2815–2828; hard routing and partner
+switches, l. 3000–3012) and §5's diagnostics (l. 3220–3227), from
+`docs/readings/arXiv-2609.28448v1/main.tex`. Three web searches (2026-10-25); 2110.06821 read at
+the method level (ar5iv), the rest at search-summary level.
+
+| source | finding | bearing on B7 |
+|---|---|---|
+| 2609.28448 l. 196–209, 3220–3227 (primary) | "temporal activity describes how the token configuration evolves with depth"; it is measured by the **unaligned displacement** `D_ℓ = [mean_i ‖u_i(t+ℓ) − u_i(t)‖²]^{1/2}` of unit states, with `D_2` separating continued motion from a fixed state or a two-cycle; "condensed attention can remain active through persistent rerouting" | the paper's activity is a **state** quantity; partner switching is the routing-side mechanism of it in the condensed phase. B7 reads switching as ROADMAP asked and puts `D_1`, `D_2` beside it from the stored unit states (`activations.npz`, `(25, n, 1024)`, unit norm), no forward pass |
+| 2609.28448 l. 2815–2828 (primary) | "repeated switching of attention partners is not by itself chaotic: in the period-two regime the same routing pattern returns after two layers" | a lag-1 switch rate alone cannot tell a two-cycle from rerouting; **lag-2 agreement is beside** every lag-1 rate (check 4, gate arm G5) |
+| 2609.28448 l. 3000–3012 (primary) | in hard routing "the geometry determines the routing, while the routing changes the geometry"; a switch happens when two neighbouring gaps exchange order. The model is tied (one map iterated) | in an untied net layer l + 1 has its own Q, K: a kept partner can be two layers' weights agreeing. Description only; the tied separation goes to S4's tied arm (fence) |
+| 2110.06821 (Bhojanapalli et al., 2021; method read) | attention similarity across layers as `1 − mean_p ½‖A_p − A′_p‖₁` against the **best-matching head** of the other layer; adjacent layers are most similar (BERT-Large: the best head ≈ 0.8 to the previous layer); "a pair of random heads is expected to produce significantly different attention scores" (their Lemma 1); models trained on random data are less similar | (1) head h at layer l is unrelated to head h at l + 1, so a "per-head" switch rate needs a **best-matched head** in the next layer (the design's primary), chosen on held-out prompts; (2) adjacent-layer persistence in a trained net is expected, so B7's content is the curve over training and the split against the nulls, not "persistence exists"; (3) their soft overlap reads two uniform rows as identical (check 1): it is beside, on condensed rows only |
+| 2408.01890 (Mu et al., TACL; abstract) | highly similar attention within most layers of LLaMA-2/3; shallow layers are sensitive to small deviations | expect the first layers to differ; per-layer cells, not a pooled depth average |
+| 2409.14595, 2402.11819 (summaries) | many layers share attention (cosine), first and last layers differ; head-wise sharing tied to weight similarity | the same; and weight similarity across layers (B2's spectra) is a candidate explanation of persistence, which is Sec. V B's point |
+| 2407.09298 "Transformer Layers as Painters" (summary) | middle layers share a representation space and tolerate reordering | partner persistence in the middle layers may say the states barely move; `D_1` beside separates "frozen because states stay" from "frozen while states move" |
+| search: partner switching / rerouting across depth in trained LMs, or cross-layer attention similarity across Pythia checkpoints | none found; nearest are weight-level layer similarity over training (2603.00359, summary) and CKA to the final checkpoint (2410.11451, summary) | the switch rate over the 18 steps is new as measured; descriptive, tier 1 |
+
+## What changes in the design
+
+| from | change |
+|---|---|
+| 2609.28448 l. 482–490 | `D_1`, `D_2` on unit states (position 0 dropped) beside every cell: the paper's own activity measure, read where step 0 can be read |
+| 2609.28448 l. 2815–2828 | lag-2 agreement `P_2` beside the lag-1 rate |
+| 2110.06821 | the per-head rate matches each head to the next layer's best head, **chosen leave-one-prompt-out** so the max over 16 does not inflate P (check 6; the first proposal took the max on the read prompts, `/challenge-pr` on #271, finding 1). ROADMAP's "per head" is read this way |
+| check 1 (`tools/math_checks/b7_partner_persistence.py`) | the rate is read only on **condensed rows** (top share of the sink-free row > 0.5, so the partner is unique, check 2); on diffuse rows the argmax says "rerouting" and the soft overlap says "frozen" whatever the dynamics. Step 0 (near uniform to 256, B2a) is then mostly unreadable for the rate and is the reference for `D_ℓ` only |
+| check 4 | a shuffled-layer null sees **drift** but not **freezing** (a partner kept at every depth agrees with distant layers too); an **offset-profile null** `N0` is added (a row-valid chance within 32-position bins, check 6), so frozen, depth-local and rerouting are distinguishable cells, and the positional part (a previous-token head at two depths) is taken out or, where N0 ≥ 0.5, read as "positional, not separable" |
+
+Not read: 2408.01890, 2409.14595, 2402.11819, 2407.09298, 2603.00359, 2410.11451 beyond search
+summaries; cited at that level.

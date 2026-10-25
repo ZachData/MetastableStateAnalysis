@@ -55,6 +55,8 @@ world moves, nobody updates the line, and the next session acts on it.
   Caught by Start step 1's check; read `STATE.md` from the fresh branch instead. Fix not made
   (the hook could print `git show origin/main:STATE.md`); parked here as the cheapest one.
   2026-10-23 (C5 unit 0): again, at #239 with `origin/main` at #262 (124 commits behind).
+  2026-10-25 (B7 unit 0): again, at #240 with `origin/main` at #270 (170 commits behind); the
+  hook's output was 50 KB, so even the stale copy was read from a file, not from context.
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
@@ -2053,6 +2055,7 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   code, was wrong, and was replaced by one that changes the invisible rows. And one tracked doc
   (`status-10.md`, number fixes) was rewritten through a `python` heredoc against `CLAUDE.md`
   "While working" (use Edit); the rule exists for the re-inject cost.
+  Again 2026-10-25 (B7 unit 0): `lit-B.md`'s B7 section appended with a `cat >>` heredoc.
 - 2026-10-17, A2's close-out (#216's text, found while writing the one page): unit 5 wrote "1e's
   ≤ 0.05 holds to 1000 and fails in 17 of 24 blocks from 8000" and STATE carried it. A2's share
   is the sink's per-token norm over the update's per-token norm; 1e's is the sink's projection on
@@ -2153,6 +2156,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   a property of E₁ everywhere along training as a property of the break. Rule: a conditional
   share ("X at every Y") is set beside the same share conditioned on not-Y, or on Y's complement
   of the same kind (here, rises), never beside the unconditional rate.
+- 2026-10-25, B7 unit 0 (found by `/challenge-pr` on #271, finding 1, before any real value): the
+  proposed design matched each head to the best of 16 next-layer heads on the prompts it read,
+  and set it against an offset-profile null pooled over all positions. Both errors lean the same
+  way: on a pure reshuffle P sat 40 % above chance and N0 at half of it, so every cell would have
+  read "persistence beyond position". The design said "every null takes the same max" and N0 did
+  not. Its own gate arm had an absolute tolerance (0.02) 2× the null's size, so it would have
+  passed. Rule: a null is simulated at the real design points before the design is proposed,
+  and a tolerance is stated relative to the null's size.
 
 ## 12. Deleted, then needed
 
