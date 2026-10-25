@@ -898,6 +898,13 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-25, B7 unit 1 (a null estimated from the statistic's own rows; `/challenge-pr` on #272,
+  before any real cell): N0's offset profiles are built from the same jointly condensed rows P is
+  counted on, so each row's own agreeing pair enters Σ p q and N0 rises by ≈ P/m. Check 6 and the gate's
+  null arms had P at chance, and the persistence arms had full rows (m ≈ 200), so the bias stayed
+  under 1 %; at the 50-row entry it is 0.3 and G3 fails. Rule: **a null estimated from the same units
+  as the statistic is checked under the planted effect at the smallest admitted count, not only under
+  the null; a plug-in Σ p q over the same sample becomes a U-statistic over different units**.
 - 2026-10-25, B7 unit 1 (a bias band applied per cell; seen on planted data, the gate passed):
   G2's "|P − N0| ≤ 0.25 · N0" was set to catch a biased null (the first proposal's N0 sat at half
   of chance), but applied to each of 23 cells it also counts each cell's sampling noise (P ≈ 0.008
