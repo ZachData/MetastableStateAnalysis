@@ -10,9 +10,13 @@ its partner is that key and its offset i − π(i).
 **P** for (l, h) against layer l′: the best-matched head h* of l′ (most agreeing rows) is chosen
 leave-one-prompt-out, P is pooled over the 7 folds; a cell is the entering heads' agreeing rows
 over their jointly condensed rows (the weighted mean). **N1** is that statistic between l and
-every l′ with |l′ − l| ≥ 2 that is read, averaged. **N0** is the mean over the read rows of
-c_i = Σ_k p(k) q(k), p and q the two heads' offset profiles on the pair's jointly condensed rows in
-i's 32-position bin (from 16) over the 7 prompts, each renormalised over the offsets valid at i.
+every l′ with |l′ − l| ≥ 2 that is read, averaged. **N0** (unit 1b, Blocked 111 (a)) is the mean
+over the read rows of c_i, the share of ordered pairs (j, j′) of *different* jointly condensed rows
+of i's 32-position bin (from 16) over the 7 prompts, with j's offset in (l, h) and j′'s in
+(l′, h*) both valid at i, whose offsets agree: (Σ_k p(k) q(k) − #rows agreeing with themselves) /
+(C_p C_q − #rows with both offsets valid), sums over offsets ≤ i − 1. Unit 1's c_i (Σ p q over the
+same rows, self-pairs included) rose with persistence by about P/m on m rows a bin (`/challenge-pr`
+on #272, finding 1). A row with no such pair is left out of N0 and counted.
 
 **Choices the design left open, made before any output:**
 (1) The offsets valid at i are 0..i − 1 (keys 1..i). The design's "1..i − 1" counted from key 1 of
@@ -35,6 +39,20 @@ for every head pair of every layer pair, its 50 jointly condensed rows of lowest
 and reports unread cells beside. (10) G8 records differences from the unplanted run only, never
 its values.
 
+**Unit 1b (Blocked 111 (a), the user's; `/challenge-pr` on #272, findings 1–6):** (11) N0 over
+pairs of different rows, above. (12) A cell is "not read", with the reason, when its sample N0 or
+the interval it is described by is not finite, or when more than NONFINITE_MAX of that interval's
+bootstrap draws are not finite (each interval's non-finite draws are counted). (13) G1 and G3 also
+run at the minimum entry (`thin` = MIN_JOINT); G3's band there is ± G3_Z standard errors of a
+binomial r = 0.8 on the cell's jointly condensed rows (4: about 0.4 % that one of 69 cells fails
+by chance), since ± 0.03 is about 2 standard errors at 800 rows. (14) G2 passes on the pooled
+deviation |Σ P − Σ N0| / Σ N0 ≤ 0.25 over a sink step's cells (rows weighted); the per-cell
+extreme is beside (finding 3). (15) G8 prints the other cells' largest N1 change and the layers whose
+description changed, never the descriptions (choice 10; N1 reads layers 10–11, so it may move);
+their |ΔP| = 0 is a code check (separable by construction), not evidence. (16) The gate records each input file's sha256, the torch and numpy
+versions and the device; `read` refuses unless the gate's code, `prompts_hash`, `RUNS` and every
+file hash it reads match. (17) NaN is written to JSON as null.
+
 NUMERICS: stored attention (float32) cast to float64 on the GPU; offset histograms float32 (exact
 integer counts), their ratios and every statistic float64. CPU allowed (argmax and counting).
 
@@ -47,9 +65,12 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
+import math
 import os
 import time
+import warnings
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -73,6 +94,9 @@ N_BOOT = 2000                              # placed (design)
 PLANT = 0.8                                # design (gate): a planted row's partner mass
 SINK_STEPS = (512, 8000, 143000)           # design (gate): real sink masses
 G0_TOL = 1e-5
+NONFINITE_MAX = 0.05                       # placed (unit 1b): an interval's non-finite draws
+G2_MAX = 0.25                              # design (gate): G2's relative band, pooled (unit 1b)
+G3_R, G3_TOL, G3_Z = 0.8, 0.03, 4.0        # design (gate); G3_Z placed (unit 1b): the minimum entry
 G7_SEEDS, G7_MAX = 20, 0.05
 G8_STEP, G8_LAYERS, G8_HEADS = 143000, (10, 11), (0, 1, 2, 3)
 DESCRIPTIONS = ("not read", "positional, not separable", "rerouting", "depth-local persistence",
@@ -202,11 +226,14 @@ def _cat(stages: Sequence[Dict], key: str, row_from: int = ROW_FROM):
 
 
 def n0_sums(pa, pb, J, pos, pid, Q: int, bin_: int = BIN):
-    """Σ over jointly condensed rows of each prompt of c_i (design N0), (Q, H, G) float64.
+    """N0's row sums (design N0 as revised, Blocked 111 (a)): per prompt, Σ c_i over the jointly
+    condensed rows where c_i is defined, and the count of those rows, each (Q, H, G) float64.
+    c_i is over ordered pairs of different jointly condensed rows of i's bin, offsets ≤ i − 1.
     ``pa`` (H, R), ``pb`` (G, R) partner keys; ``J`` (H, G, R) the joint mask (possibly thinned)."""
     torch = _torch()
     H, G = pa.shape[0], pb.shape[0]
     out = torch.zeros((H, G, Q), dtype=torch.float64, device=pa.device)
+    rows = torch.zeros_like(out)
     oa = torch.where(pa >= 0, pos - pa, 0)
     ob = torch.where(pb >= 0, pos - pb, 0)
     top = int(pos.max()) + 1
@@ -214,9 +241,10 @@ def n0_sums(pa, pb, J, pos, pid, Q: int, bin_: int = BIN):
         r = ((pos >= b0) & (pos < b0 + bin_)).nonzero().squeeze(-1)
         if r.numel() == 0:
             continue
-        Jb = J[..., r].to(torch.float32)
-        if not bool(Jb.any()):
+        Jr = J[..., r]
+        if not bool(Jr.any()):
             continue
+        Jb = Jr.to(torch.float32)
         Kb = b0 + bin_ - 1
         OA = torch.zeros((H, r.numel(), Kb), dtype=torch.float32, device=pa.device)
         OB = torch.zeros((G, r.numel(), Kb), dtype=torch.float32, device=pa.device)
@@ -228,16 +256,24 @@ def n0_sums(pa, pb, J, pos, pid, Q: int, bin_: int = BIN):
         Cpq = torch.cumsum(p * q, -1).gather(-1, idx)
         Cp = torch.cumsum(p, -1).gather(-1, idx)
         Cq = torch.cumsum(q, -1).gather(-1, idx)
-        c = torch.where(Jb > 0, Cpq / torch.where(Cp * Cq > 0, Cp * Cq, 1.0), 0.0)
+        # self-pairs: row j valid at i when both its offsets are ≤ i − 1 (V[h, g, i, j])
+        mx = torch.maximum(oa[:, None, r], ob[None, :, r])                   # (H, G, r)
+        V = (mx[..., None, :] <= (pos[r] - 1)[:, None]) & Jr[..., None, :]
+        same = (oa[:, None, r] == ob[None, :, r])[..., None, :]
+        num = Cpq - (V & same).sum(-1).to(torch.float64)
+        den = Cp * Cq - V.sum(-1).to(torch.float64)
+        ok = Jr & (den > 0)
+        c = torch.where(ok, num / torch.where(den > 0, den, 1.0), 0.0)
         onehot = torch.nn.functional.one_hot(pid[r], Q).to(torch.float64)
         out += c @ onehot
-    return out.permute(2, 0, 1)
+        rows += ok.to(torch.float64) @ onehot
+    return out.permute(2, 0, 1), rows.permute(2, 0, 1)
 
 
 def pair_counts(stages: Sequence[Dict], lags: Sequence[int] = (1, 2), thin: Optional[int] = None,
                 seed: int = 0, key: str = "part") -> Dict:
     """Per-prompt agreeing and jointly condensed row counts for every ordered layer pair,
-    (L, L, Q, H, H), and N0's row sums for the pairs (l, l + lag). With `thin`, each head pair
+    (L, L, Q, H, H), and N0's row sums and defined rows for the pairs (l, l + lag). With `thin`, each head pair
     of each layer pair keeps only its `thin` jointly condensed rows of lowest random priority."""
     torch = _torch()
     part, pos, pid = _cat(stages, key)
@@ -334,22 +370,34 @@ def interval(x: np.ndarray) -> Tuple[float, float]:
     return (float(lo), float(hi))
 
 
+def nonfinite(x: np.ndarray) -> float:
+    """The share of bootstrap draws (rows 1..) that are not finite."""
+    return float(1 - np.isfinite(x[1:]).mean())
+
+
 def describe(n_enter: int, n0: float, d0: Tuple[float, float], d1: Tuple[float, float],
-             n1_read: bool = True) -> str:
-    """The design's ordered partition: the first description that applies."""
-    if n_enter < MIN_HEADS or not np.isfinite(n0):
-        return DESCRIPTIONS[0]
+             n1_read: bool = True, bad0: float = 0.0, bad1: float = 0.0) -> Tuple[str, Optional[str]]:
+    """The design's ordered partition: the first description that applies, and why a cell is not
+    read (choice 12: a non-finite value or interval is never read as a description)."""
+    if n_enter < MIN_HEADS:
+        return DESCRIPTIONS[0], f"{n_enter} entering heads"
+    if not np.isfinite(n0):
+        return DESCRIPTIONS[0], "N0 not finite"
     if n0 >= POS_N0:
-        return DESCRIPTIONS[1]
+        return DESCRIPTIONS[1], None
+    if not np.isfinite(d0).all() or bad0 > NONFINITE_MAX:
+        return DESCRIPTIONS[0], f"P - N0: {bad0:.3f} of draws not finite"
     if not d0[0] > 0:
-        return DESCRIPTIONS[2]
+        return DESCRIPTIONS[2], None
     if not n1_read:
-        return DESCRIPTIONS[0]
+        return DESCRIPTIONS[0], "no distant layer read"
+    if not np.isfinite(d1).all() or bad1 > NONFINITE_MAX:
+        return DESCRIPTIONS[0], f"P - N1: {bad1:.3f} of draws not finite"
     if d1[0] > 0:
-        return DESCRIPTIONS[3]
+        return DESCRIPTIONS[3], None
     if d1[1] >= 0:
-        return DESCRIPTIONS[4]
-    return DESCRIPTIONS[5]
+        return DESCRIPTIONS[4], None
+    return DESCRIPTIONS[5], None
 
 
 def ratio(agree, joint, M) -> np.ndarray:
@@ -364,33 +412,48 @@ def cells(cnt: Dict, M, flat: Optional[Dict] = None) -> List[Dict]:
     the lag-2 columns and per-head values; `flat` adds the pooled and neighbour columns."""
     L = cnt["L"]
     ag, jt, n0 = cnt["agree"], cnt["joint"], cnt["n0"]
+
+    def with_n0(a, b):
+        m = matched(ag[a, b], jt[a, b], M, {"N0s": n0[(a, b)][0], "N0r": n0[(a, b)][1]})
+        with np.errstate(invalid="ignore", divide="ignore"):
+            m["N0"] = m["N0s"] / m["N0r"]                  # Σ c_i / defined rows, per draw
+        return m
+
     out = []
     for l in range(L - 1):
-        m1 = matched(ag[l, l + 1], jt[l, l + 1], M, {"N0": n0[(l, l + 1)]})
+        m1 = with_n0(l, l + 1)
         far = []
         for l2 in range(L):
             if abs(l2 - l) >= 2:
                 m = matched(ag[l, l2], jt[l, l2], M)
                 if m["n_enter"] >= MIN_HEADS:
                     far.append(m["P"])
-        with np.errstate(invalid="ignore"):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
             N1 = np.nanmean(np.stack(far), 0) if far else np.full_like(m1["P"], np.nan)
         P, N0 = m1["P"], m1["N0"]
         d0, d1 = interval(P - N0), interval(P - N1)
+        bad0, bad1 = nonfinite(P - N0), nonfinite(P - N1)
+        desc, why = describe(m1["n_enter"], float(N0[0]), d0, d1, bool(far), bad0, bad1)
+        joint_rows = float(m1["head_joint"][m1["enter"]].sum())
         c = {"l": l, "n_enter": m1["n_enter"], "n_far": len(far), "dropped": m1["dropped"],
-             "joint_rows": float(m1["head_joint"][m1["enter"]].sum()),
-             "description": describe(m1["n_enter"], float(N0[0]), d0, d1, bool(far))}
+             "joint_rows": joint_rows, "description": desc, "not_read_because": why,
+             "nonfinite_draws": {"P_minus_N0": bad0, "P_minus_N1": bad1}}
         if m1["n_enter"] >= MIN_HEADS:
             c.update({"P": float(P[0]), "N0": float(N0[0]), "N1": float(N1[0]), "P_ci": interval(P),
-                      "P_minus_N0_ci": d0, "P_minus_N1_ci": d1})
+                      "P_minus_N0_ci": d0, "P_minus_N1_ci": d1,
+                      "n0_rows_undefined": joint_rows * (1 - float(m1["N0r"][0]))})
         c["heads"] = {"P": m1["head_P"].tolist(), "joint": m1["head_joint"].tolist(),
                       "enter": m1["enter"].tolist(), "hstar": m1["hstar"].tolist()}
         if l + 2 < L:
-            m2 = matched(ag[l, l + 2], jt[l, l + 2], M, {"N0": n0[(l, l + 2)]})
+            m2 = with_n0(l, l + 2)
             if m2["n_enter"] >= MIN_HEADS:
-                d2 = interval(m2["P"] - m2["N0"])
-                c.update({"P2": float(m2["P"][0]), "N0_2": float(m2["N0"][0]), "P2_minus_N0_2_ci": d2})
-                c["two_cycle"] = bool(c["description"] == DESCRIPTIONS[2] and d2[0] > 0)
+                x2 = m2["P"] - m2["N0"]
+                d2 = interval(x2)
+                c.update({"P2": float(m2["P"][0]), "N0_2": float(m2["N0"][0]), "P2_minus_N0_2_ci": d2,
+                          "nonfinite_draws_2": nonfinite(x2)})
+                c["two_cycle"] = bool(c["description"] == DESCRIPTIONS[2] and d2[0] > 0
+                                      and nonfinite(x2) <= NONFINITE_MAX)
         if "soft" in cnt and m1["n_enter"] >= MIN_HEADS:
             s = matched(ag[l, l + 1], jt[l, l + 1], M[:1], {"soft": cnt["soft"][:, l]})
             c["soft"] = float(s["soft"][0])
@@ -401,7 +464,9 @@ def cells(cnt: Dict, M, flat: Optional[Dict] = None) -> List[Dict]:
                 if name == "nb":
                     fr = [ratio(f["agree"][l, l2], f["joint"][l, l2], M) for l2 in range(f["agree"].shape[0])
                           if abs(l2 - l) >= 2]
-                    n1 = np.nanmean(np.stack(fr), 0)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", RuntimeWarning)
+                        n1 = np.nanmean(np.stack(fr), 0)
                     c["nb_N1"], c["nb_P_minus_N1_ci"] = float(n1[0]), interval(v - n1)
         out.append(c)
     return out
@@ -433,18 +498,45 @@ def run_step(stages: Sequence[Dict], seed: int, n_boot: int = N_BOOT, thin: Opti
 
 # ---------------------------------------------------------------- inputs
 
-def load_attn(path: Path, device: str):
+def _load(path: Path, key: str, device: str, hashes: Optional[Dict[str, str]] = None):
+    """One stored array as torch float64, read once; its file's sha256 goes into `hashes`."""
     torch = _torch()
-    with np.load(path) as z:
-        a = z["attentions"]
+    b = path.read_bytes()
+    if hashes is not None:
+        key_ = str(path.relative_to(DATA)) if path.is_relative_to(DATA) else str(path)
+        hashes[key_] = hashlib.sha256(b).hexdigest()
+    with np.load(io.BytesIO(b)) as z:
+        a = z[key]
     return torch.from_numpy(a).to(device=device, dtype=torch.float64)
 
 
-def load_states(path: Path, device: str):
-    torch = _torch()
-    with np.load(path) as z:
-        x = z["activations"]
-    return torch.from_numpy(x).to(device=device, dtype=torch.float64)
+def load_attn(path: Path, device: str, hashes: Optional[Dict[str, str]] = None):
+    return _load(path, "attentions", device, hashes)
+
+
+def load_states(path: Path, device: str, hashes: Optional[Dict[str, str]] = None):
+    return _load(path, "activations", device, hashes)
+
+
+def clean(x):
+    """JSON-safe: NaN and ±inf become null (choice 17), numpy scalars and tuples plain."""
+    if isinstance(x, dict):
+        return {str(k): clean(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [clean(v) for v in x]
+    if isinstance(x, np.ndarray):
+        return clean(x.tolist())
+    if isinstance(x, (np.floating, float)):
+        return float(x) if math.isfinite(x) else None
+    if isinstance(x, np.integer):
+        return int(x)
+    if isinstance(x, np.bool_):
+        return bool(x)
+    return x
+
+
+def dump(path: Path, rec: Dict) -> None:
+    path.write_text(json.dumps(clean(rec), indent=1, allow_nan=False) + "\n")
 
 
 def alpha_beside(step: int) -> Dict:
@@ -524,8 +616,9 @@ def planted_stages(arm: str, sinks: Sequence, ns: Sequence[int], seed: int, row_
     return out
 
 
-def arm_check(arm: str, res: Dict) -> Dict:
-    """One arm's pass condition on one run's cells (design "Unit 1's gate")."""
+def arm_check(arm: str, res: Dict, min_entry: bool = False) -> Dict:
+    """One arm's pass condition on one run's cells (design "Unit 1's gate"; G1 and G3 also at the
+    minimum entry, G2 pooled, unit 1b)."""
     cs = res["cells"]
     desc = [c["description"] for c in cs]
     read = [c for c in cs if "P" in c]
@@ -533,21 +626,25 @@ def arm_check(arm: str, res: Dict) -> Dict:
     rec: Dict = {"descriptions": {d: desc.count(d) for d in sorted(set(desc))}}
     if read:
         rec.update({"P_range": [min(f("P")), max(f("P"))], "N0_range": [min(f("N0")), max(f("N0"))],
-                    "N1_range": [float(np.nanmin(f("N1"))), float(np.nanmax(f("N1")))]})
+                    "N1_range": [float(np.nanmin(f("N1"))), float(np.nanmax(f("N1")))],
+                    "joint_rows_range": [min(f("joint_rows")), max(f("joint_rows"))],
+                    "n0_rows_undefined_share": sum(f("n0_rows_undefined")) / sum(f("joint_rows"))})
     if arm == "G1":
-        ok = (len(read) == len(cs) and min(f("P")) >= 0.99 and min(f("N1")) >= 0.99
+        ok = (bool(read) and len(read) == len(cs) and min(f("P")) >= 0.99 and min(f("N1")) >= 0.99
               and min(p - q for p, q in zip(f("P"), f("N0"))) >= 0.9 and set(desc) == {DESCRIPTIONS[4]})
     elif arm == "G2":
-        dev = [abs(c["P"] - c["N0"]) / c["N0"] for c in read]
-        rec["max_rel_dev"] = max(dev) if dev else None
-        w = np.array([c["joint_rows"] for c in read])
-        rec["pooled_rel_dev"] = float((w @ f("P") - w @ f("N0")) / (w @ f("N0"))) if read else None   # beside
-        rec["joint_rows_range"] = [float(w.min()), float(w.max())] if read else None
-        ok = len(read) == len(cs) and max(dev) <= 0.25 and set(desc) == {DESCRIPTIONS[2]}
+        w = np.array(f("joint_rows"))
+        rec["max_rel_dev"] = max(abs(c["P"] - c["N0"]) / c["N0"] for c in read) if read else None   # beside
+        rec["pooled_rel_dev"] = float((w @ f("P") - w @ f("N0")) / (w @ f("N0"))) if read else None
+        ok = (bool(read) and len(read) == len(cs) and abs(rec["pooled_rel_dev"]) <= G2_MAX
+              and set(desc) == {DESCRIPTIONS[2]})
     elif arm == "G3":
         r = [(c["P"] - c["N0"]) / (1 - c["N0"]) for c in read]
+        tol = [G3_Z * math.sqrt(G3_R * (1 - G3_R) / c["joint_rows"]) if min_entry else G3_TOL for c in read]
         rec["r_range"] = [min(r), max(r)] if r else None
-        ok = len(read) == len(cs) and all(abs(x - 0.8) <= 0.03 for x in r) and set(desc) == {DESCRIPTIONS[3]}
+        rec["band_min"] = min(tol) if tol else None
+        ok = (bool(read) and len(read) == len(cs) and all(abs(x - G3_R) <= t for x, t in zip(r, tol))
+              and set(desc) == {DESCRIPTIONS[3]})
     elif arm == "G4":
         ok = len(read) == len(cs) and min(f("N0")) >= 0.99 and set(desc) == {DESCRIPTIONS[1]}
     elif arm == "G5":
@@ -571,6 +668,7 @@ def g0(device: str) -> Tuple[Dict, Dict]:
     gaps, worst = [], {"rowsum": 0.0, "norm": 0.0}
     sinks: Dict[int, List] = {s: [] for s in SINK_STEPS}
     ns: Dict[str, int] = {}
+    hashes: Dict[str, str] = {}
     for step in STEPS:
         for p in V1:
             d = run_dir(step, p)
@@ -578,7 +676,7 @@ def g0(device: str) -> Tuple[Dict, Dict]:
             if not (fa.exists() and fx.exists()):
                 gaps.append(f"{d}: missing")
                 continue
-            A = load_attn(fa, device)
+            A = load_attn(fa, device, hashes)
             L, H, n, n2 = A.shape
             if (L, H) != (N_LAYERS, N_HEADS) or n != n2:
                 gaps.append(f"{fa}: shape {tuple(A.shape)}")
@@ -586,7 +684,7 @@ def g0(device: str) -> Tuple[Dict, Dict]:
             if step in sinks:
                 sinks[step].append(A[:, :, ROW_FROM:, 0].clone())
             del A
-            X = load_states(fx, device)
+            X = load_states(fx, device, hashes)
             if tuple(X.shape) != (N_LAYERS + 1, n, 1024):
                 gaps.append(f"{fx}: shape {tuple(X.shape)}")
             worst["norm"] = max(worst["norm"], float((X.norm(dim=-1) - 1).abs().max()))
@@ -600,7 +698,7 @@ def g0(device: str) -> Tuple[Dict, Dict]:
         gaps.append(f"prompts_hash {ph}, want {PROMPTS_HASH}")
     ok = not gaps and worst["rowsum"] <= G0_TOL and worst["norm"] <= G0_TOL
     return {"pass": bool(ok), "gaps": gaps, "max_rowsum_dev": worst["rowsum"], "max_norm_dev": worst["norm"],
-            "n": ns, "files": len(STEPS) * len(V1)}, {"sinks": sinks, "ns": [ns[p] for p in V1]}
+            "n": ns, "files": len(hashes), "sha256": hashes}, {"sinks": sinks, "ns": [ns[p] for p in V1]}
 
 
 def g8(device: str, seed: int) -> Dict:
@@ -622,19 +720,24 @@ def g8(device: str, seed: int) -> Dict:
     r0, r1 = run_step(real, seed), run_step(plan, seed)
     lo, hi = min(G8_LAYERS), max(G8_LAYERS)
     touch = {lo - 1, lo, hi}
-    dP = [abs(a.get("P", np.nan) - b.get("P", np.nan)) for a, b in zip(r0["cells"], r1["cells"])
-          if a["l"] not in touch and ("P" in a or "P" in b)]
-    same_read = all(("P" in a) == ("P" in b) for a, b in zip(r0["cells"], r1["cells"]) if a["l"] not in touch)
+    others = [(a, b) for a, b in zip(r0["cells"], r1["cells"]) if a["l"] not in touch]
+    dP = [abs(a.get("P", np.nan) - b.get("P", np.nan)) for a, b in others if "P" in a or "P" in b]
+    dN1 = [abs(a["N1"] - b["N1"]) for a, b in others if "N1" in a and "N1" in b]
+    same_read = all(("P" in a) == ("P" in b) for a, b in others)
+    moved = [a["l"] for a, b in others if a["description"] != b["description"]]   # layers only (choice 10)
     c = r1["cells"][lo]
     hp = [c["heads"]["P"][h] for h in G8_HEADS]
     hs = [sorted(set(np.asarray(c["heads"]["hstar"])[:, h].tolist())) for h in G8_HEADS]
     found = all(set(x) <= set(G8_HEADS) for x in hs)
     ok = (c["description"] in DESCRIPTIONS[3:5] and min(hp) >= 0.95 and found and same_read
           and (max(dP) if dP else 0.0) <= 0.01)
+    # |ΔP| = 0 on the other cells is a code check (cell l reads layers l and l + 1 only, same
+    # seed); their N1 averages distant layers, 10–11 among them, so it may move (printed, choice 15)
     return {"pass": bool(ok), "cell": f"{lo} -> {hi}", "description": c["description"],
             "planted_heads_P": hp, "planted_heads_joint": [c["heads"]["joint"][h] for h in G8_HEADS],
-            "planted_heads_hstar": hs, "other_cells_max_abs_dP": max(dP) if dP else 0.0,
-            "other_cells_same_read": same_read, "other_cells": len(dP)}
+            "planted_heads_hstar": hs, "other_cells_max_abs_dP_code_check": max(dP) if dP else 0.0,
+            "other_cells_same_read": same_read, "other_cells": len(dP),
+            "other_cells_max_abs_dN1": max(dN1) if dN1 else None, "other_cells_description_changed_at": moved}
 
 
 def g9() -> Dict:
@@ -656,9 +759,11 @@ def cmd_gate(a) -> int:
     out.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
     meta = {"code": code_sha(), "prompts_hash": prompts_hash(), "runs": RUNS, "b3_rows": str(B3_ROWS),
+            "device": a.device, "torch": torch.__version__, "numpy": np.__version__,
             "constants": {"ROW_FROM": ROW_FROM, "W_MIN": W_MIN, "TOP": TOP, "MIN_JOINT": MIN_JOINT,
                           "MIN_HEADS": MIN_HEADS, "POS_N0": POS_N0, "BIN": BIN, "N_BOOT": N_BOOT,
-                          "PLANT": PLANT, "SINK_STEPS": SINK_STEPS, "G7_SEEDS": G7_SEEDS}}
+                          "PLANT": PLANT, "SINK_STEPS": SINK_STEPS, "NONFINITE_MAX": NONFINITE_MAX,
+                          "G2_MAX": G2_MAX, "G3": [G3_R, G3_TOL, G3_Z], "G7_SEEDS": G7_SEEDS}}
     gate: Dict = {"meta": meta}
     gate["G0"], real = g0(a.device)
     print(f"G0 pass={gate['G0']['pass']} ({time.time() - t0:.0f}s)", flush=True)
@@ -667,6 +772,9 @@ def cmd_gate(a) -> int:
         for s in SINK_STEPS:
             st = planted_stages(arm, real["sinks"][s], real["ns"], seed_for("B7", arm, s))
             runs[str(s)] = arm_check(arm, run_step(st, seed_for("B7", arm, s, "boot")))
+            if arm in ("G1", "G3"):                       # choice 13: also at the minimum entry
+                runs[f"{s}_min_entry"] = arm_check(
+                    arm, run_step(st, seed_for("B7", arm, s, "boot"), thin=MIN_JOINT), min_entry=True)
             del st
         gate[arm] = {"pass": all(r["pass"] for r in runs.values()), "by_sink_step": runs}
         print(f"{arm} pass={gate[arm]['pass']} ({time.time() - t0:.0f}s)", flush=True)
@@ -693,7 +801,7 @@ def cmd_gate(a) -> int:
     gate["G9"] = g9()
     gate["pass"] = all(gate[k]["pass"] for k in ARMS)
     gate["seconds"] = round(time.time() - t0)
-    (out / "gate.json").write_text(json.dumps(gate, indent=1, default=float) + "\n")
+    dump(out / "gate.json", gate)
     print(json.dumps({k: gate[k]["pass"] for k in ARMS} | {"pass": gate["pass"]}))
     torch.cuda.empty_cache()
     return 0
@@ -701,28 +809,39 @@ def cmd_gate(a) -> int:
 
 # ---------------------------------------------------------------- the read (unit 2)
 
+def check_gate(gate: Dict) -> None:
+    """Refuse unless the gate passed on this code, these prompts and these runs (choice 16)."""
+    m = gate.get("meta", {})
+    want = {"code": code_sha(), "prompts_hash": prompts_hash(), "runs": json.loads(json.dumps(RUNS))}
+    bad = [f"{k} {m.get(k)!r} vs {v!r}" for k, v in want.items() if m.get(k) != v]
+    if not gate.get("pass") or bad or not gate.get("G0", {}).get("sha256"):
+        raise B7Error(f"gate: pass={gate.get('pass')}; {'; '.join(bad) or 'no input hashes'}"
+                      " (refuse: no real cell before a passing gate on this code and these inputs)")
+
+
 def cmd_read(a) -> int:
     gate = json.loads(Path(a.gate).read_text())
-    if not gate.get("pass") or gate["meta"]["code"] != code_sha():
-        raise B7Error(f"gate {a.gate}: pass={gate.get('pass')}, code {gate['meta']['code']} vs {code_sha()}"
-                      " (refuse: no real cell before a passing gate on this code)")
+    check_gate(gate)
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     steps = [int(s) for s in a.steps.split(",")] if a.steps else list(STEPS)
     for step in steps:
         t0 = time.time()
-        st, ds = [], []
+        st, ds, hashes = [], [], {}
         for p in V1:
             d = run_dir(step, p)
-            s = prompt_stage(load_attn(d / "attentions.npz", a.device), load_states(d / "activations.npz", a.device),
-                             soft=True)
+            s = prompt_stage(load_attn(d / "attentions.npz", a.device, hashes),
+                             load_states(d / "activations.npz", a.device, hashes), soft=True)
             ds.append(s.pop("d"))
             st.append(s)
+        moved = [k for k, v in hashes.items() if gate["G0"]["sha256"].get(k) != v]
+        if moved:
+            raise B7Error(f"step {step}: {len(moved)} input files differ from the gate's ({moved[0]}, ...)")
         res = run_step(st, seed_for("B7", "read", step), beside=True)
         rec = {"step": step, "code": code_sha(), "prompts_hash": prompts_hash(), "gate": str(a.gate),
-               "runs": {p: str(run_dir(step, p)) for p in V1}, "n": [s["n"] for s in st],
+               "runs": {p: str(run_dir(step, p)) for p in V1}, "sha256": hashes, "n": [s["n"] for s in st],
                **res, "D": d_of(ds), "alpha": alpha_beside(step)}
-        (out / f"step{step}.json").write_text(json.dumps(rec, indent=1, default=float) + "\n")
+        dump(out / f"step{step}.json", rec)
         print(f"step {step}: {time.time() - t0:.0f}s", flush=True)
         del st
     return 0

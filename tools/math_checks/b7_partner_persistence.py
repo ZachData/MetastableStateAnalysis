@@ -38,6 +38,12 @@ WHAT IT SHOWS
    ≈ 0.004 (pooling mixes rows of different reach). Choosing the head leave-one-prompt-out puts P
    back at chance, and the row-valid offset chance within 32-position bins puts N0 at chance or
    up to 15 % above it (conservative: excess leans to 0).
+7. **N0 over pairs of different rows** (unit 1b, Blocked 111 (a); `/challenge-pr` on #272,
+   finding 1). Profiles built from the same m rows that P counts include each row's own pair, so
+   their Σ p q has mean c + (P_a − c)/m: it rises with the persistence it is the null for. Summed
+   over ordered pairs of different rows it has mean c whatever P_a is. At 50 rows over the 7
+   prompts (the minimum entry), frozen partners put the first at about 36× its reshuffled value
+   and the second within 15 % of it.
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -48,6 +54,9 @@ WHAT IT DOES NOT PROVE
   (2609.28448 Sec. V B). Only a tied model (S4's tied arm) separates the two.
 - That top-1 is the right summary of a condensed row whose mass sits on 2–3 partners; the soft
   overlap on condensed rows is beside for that.
+- That check 7's per-row ratio is exactly unbiased: the expectation is shown for the counts, and
+  restricting to offsets valid at i makes c_i a ratio of two counts (the simulation bounds what
+  is left at these design points). Nor that a bin's offset profile is all of "positional".
 """
 import numpy as np
 import sympy as sp
@@ -171,9 +180,49 @@ assert p_in > 1.25 * chance and c_pool < 0.6 * chance, (p_in, c_pool, chance)
 assert abs(p_loo - chance) < 0.1 * chance, (p_loo, chance)
 assert chance * 0.97 < n0 < chance * 1.15, (n0, chance)
 
-print("b7_partner_persistence: 6 checks pass (diffuse rows: argmax agreement 1/n, soft overlap 1, "
+# 7. N0 over pairs of different rows (unit 1b, Blocked 111 (a); `/challenge-pr` on #272, finding 1).
+# m rows of a bin, each agreeing with itself with probability Pa and with another row with c:
+# Σ_{j, j'} 1[a_j = b_j'] has mean m Pa + m (m − 1) c, so Σ p q / m² = c + (Pa − c)/m, while the
+# sum over j ≠ j' divided by m (m − 1) has mean c whatever Pa is.
+mm, Pa, cc7 = sp.symbols("m P_a c", positive=True)
+tot = mm * Pa + mm * (mm - 1) * cc7
+assert sp.simplify(tot / mm**2 - (cc7 + (Pa - cc7) / mm)) == 0
+assert sp.simplify((tot - mm * Pa) / (mm * (mm - 1)) - cc7) == 0
+# Numerically at the real design points: 50 jointly condensed rows over the 7 prompts (the minimum
+# entry), offsets valid at i only, frozen (a = b) against reshuffled (a, b independent).
+allpos = np.concatenate(rws)
+
+
+def n0_pair(pos_, oa, ob):
+    olds, news = [], []
+    for b0 in range(16, int(pos_.max()) + 1, BIN):
+        m_ = np.nonzero((pos_ >= b0) & (pos_ < b0 + BIN))[0]
+        for r_ in m_:
+            i = pos_[r_]
+            va, vb = oa[m_] <= i - 1, ob[m_] <= i - 1
+            eq = (oa[m_][:, None] == ob[m_][None, :]) & va[:, None] & vb[None, :]
+            pairs = va[:, None] & vb[None, :]
+            olds.append(eq.sum() / pairs.sum())
+            off = ~np.eye(len(m_), dtype=bool)
+            if (pairs & off).sum():
+                news.append((eq & off).sum() / (pairs & off).sum())
+    return np.mean(olds), np.mean(news)
+
+
+res7 = {"frozen": [], "reshuffled": []}
+for _ in range(300):
+    pos_ = rng.choice(allpos, 50, replace=False)
+    oa = pos_ - rng.integers(1, pos_ - 1)                   # keys 1..i − 2, as the gate plants
+    res7["frozen"].append(n0_pair(pos_, oa, oa))
+    res7["reshuffled"].append(n0_pair(pos_, oa, pos_ - rng.integers(1, pos_ - 1)))
+(old_f, new_f), (old_r, new_r) = (np.mean(res7[k], 0) for k in ("frozen", "reshuffled"))
+assert old_f > 10 * old_r, (old_f, old_r)                   # self-pairs: N0 rises with persistence
+assert abs(new_f - new_r) < 0.15 * new_r, (new_f, new_r)    # pairs of different rows: it does not
+
+print("b7_partner_persistence: 7 checks pass (diffuse rows: argmax agreement 1/n, soft overlap 1, "
       f"independent s = 1 rows overlap {soft.mean():.2f}; top share > 1/2 gives a unique argmax; "
       "offset-profile null c = Σ p q, 1 for a shared one-hot offset; P(k) = r^k + (1 − r^k) c, "
       "so a shuffled-layer null sees drift but not freezing, r identified; D ∈ [0, 2], √2 at random; "
       f"at the real n, chance {chance:.4f}: in-sample best-of-16 P {p_in:.4f}, pooled-profile c "
-      f"{c_pool:.4f}, leave-one-out P {p_loo:.4f}, row-valid binned N0 {n0:.4f})")
+      f"{c_pool:.4f}, leave-one-out P {p_loo:.4f}, row-valid binned N0 {n0:.4f}; at 50 rows, N0 with "
+      f"self-pairs frozen {old_f:.4f} vs reshuffled {old_r:.4f}, over different rows {new_f:.4f} vs {new_r:.4f})")

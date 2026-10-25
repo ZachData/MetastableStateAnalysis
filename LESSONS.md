@@ -57,6 +57,7 @@ world moves, nobody updates the line, and the next session acts on it.
   2026-10-23 (C5 unit 0): again, at #239 with `origin/main` at #262 (124 commits behind).
   2026-10-25 (B7 unit 0): again, at #240 with `origin/main` at #270 (170 commits behind); the
   hook's output was 50 KB, so even the stale copy was read from a file, not from context.
+  2026-10-25 (B7 unit 1b): again, at #240 with `origin/main` at #272.
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
@@ -898,6 +899,16 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-25, B7 unit 1b (a new arm pre-checked on its statistic, not its pass rule, on a
+  simplified input; seen in the gate, before any real cell): G1 at the minimum entry was added for
+  N0's bias. The PR's scratch numbers and this session's pre-gate GPU check both read N0 and r, and
+  the GPU check used one constant sink (0.3) for every head, so every head pair kept the same 50
+  thinned rows. With the real per-head sinks the thinned sets differ. Under G1's 16 identical
+  heads, the count-based leave-one-out h\* then picks, for each held-out prompt, the head with the
+  fewest rows there, so the matched pair sums to under 50 and 16–18 of 23 cells do not enter (8000,
+  143000). N0's bias was fixed in every read cell. Rule: **a scratch pre-check of a new gate arm
+  runs that arm's own pass check at the real design points (real sinks, real counts), not only the
+  statistic it was added for**. Blocked 112.
 - 2026-10-25, B7 unit 1 (a null estimated from the statistic's own rows; `/challenge-pr` on #272,
   before any real cell): N0's offset profiles are built from the same jointly condensed rows P is
   counted on, so each row's own agreeing pair enters Σ p q and N0 rises by ≈ P/m. Check 6 and the gate's

@@ -3,7 +3,7 @@
 
 Opened 2026-10-25 at the user's request ("Open B7"). Row: `docs/ROADMAP.md` §7 B7 (set
 2026-10-24 from 2609.28448). Scan: `trackB_circuit/lit-B.md` "B7". Math:
-`tools/math_checks/b7_partner_persistence.py` (6 checks pass). Tier 1 throughout: exploratory,
+`tools/math_checks/b7_partner_persistence.py` (7 checks pass). Tier 1 throughout: exploratory,
 unregistered; 410m is an exploration rung (`p8_scale_ladder/design-8.md`), so nothing here can
 score a registered row. **Frozen 2026-10-25 as revised, 3 units + close-out (Blocked 110 (a), the
 user's).** Unit 1's `b7_activity.py` docstring records ten choices the design left open, made
@@ -13,6 +13,12 @@ head is matched leave-one-prompt-out, and N0 is a row-valid offset chance within
 since the first proposal's best-of-16 match and pooled-profile N0 put a pure reshuffle 0.007
 above N0 (1); the descriptions are an ordered partition with "positional, not separable" (2);
 3 units (3); representation-space neighbour persistence beside (4); > 1/2, and checks 2 and 6 (5).
+**Revised at unit 1b (Blocked 111 (a), the user's, 2026-10-25), before any real cell was read:**
+`/challenge-pr` on #272 (finding 1) showed the frozen N0 counted each row's own agreeing pair, so it
+rose with persistence by about P/m on m rows a bin (0.27–0.34 under G1 at the 50-row entry). N0 is
+now over pairs of different rows (check 7); G1 and G3 also run at the minimum entry; G2 is read on
+its pooled deviation; findings 2, 4–6 are code (`b7_activity.py` docstring, choices 11–17). The
+rows below say "as revised" where they changed.
 
 ## What B7 asks
 
@@ -44,7 +50,10 @@ all 18 steps × 7 v1 prompts (none missing), and `activations.npz` `(25, n, 1024
 
 ## The math
 
-`tools/math_checks/b7_partner_persistence.py` (`sympy` + numerics, 6 checks pass): (1) on
+`tools/math_checks/b7_partner_persistence.py` (`sympy` + numerics, 7 checks pass; check 7, unit 1b:
+profiles that keep each row's own pair have Σ p q with mean c + (P − c)/m, pairs of different rows
+mean c, and at 50 rows a frozen map puts the first at 0.306 against 0.0084 reshuffled, the second
+at 0.0088 against 0.0083): (1) on
 diffuse rows the two obvious measures disagree in opposite directions: independent uniform
 argmaxes agree with probability 1/n (switch rate ≈ 1, "rerouting"), while two uniform rows have
 soft overlap 1 − TV = 1 ("frozen"); independent s = 1 Gaussian-logit rows at n = 256 still overlap
@@ -75,7 +84,7 @@ on 2–3 partners (the soft overlap on condensed rows is beside).
 | per-head persistence P (primary) | for head (l, h): the fraction of rows i condensed in both (l, h) and (l + 1, h\*) with the same partner, where **h\* is the head of layer l + 1 with the most agreement with (l, h)** (2110.06821's best-match; head indices carry nothing across layers), **chosen leave-one-prompt-out**: for each prompt q, h\* is chosen on the other 6 and P counted on q, then the 7 folds are pooled (so the max over 16 does not inflate P, check 6). A head enters with ≥ **50** *(placed)* jointly condensed rows over the 7 folds. The cell value for (l → l + 1, step) is the mean over the entering heads, weighted by their jointly condensed row counts |
 | pooled persistence (beside) | the layer's row: the mean of its 16 heads' Ã weighted by `w_i`, renormalised; condensed and P as above, one value per layer pair |
 | N1, shuffled-layer null | the same statistic, leave-one-prompt-out best-match included, between l and every layer l′ with \|l′ − l\| ≥ 2 (both directions in depth), averaged. Excess `P − N1` > 0 is **depth-local persistence** (drift) |
-| N0, offset-profile null | for each entering pair (l, h) → (l + 1, h\*) and each read row i: c_i = Σ_k p(k) q(k) over offsets k valid at i (1..i − 1), with p, q the two heads' offset profiles on the jointly condensed rows in i's **32-position bin** *(placed)* over all 7 prompts, each renormalised over the valid k; N0 is the mean of c_i over the read rows, weighted as P. Excess `P − N0` > 0 is **persistence beyond position**. Profiles pooled over all positions are biased low (check 6) |
+| N0, offset-profile null (as revised) | for each entering pair (l, h) → (l + 1, h\*) and each read row i: c_i is the share of ordered pairs (j, j′) of **different** jointly condensed rows in i's **32-position bin** *(placed)* over all 7 prompts, j's offset in (l, h) and j′'s in (l + 1, h\*) both valid at i (0..i − 1), whose offsets agree; N0 is the mean of c_i over the read rows, weighted as P; a row with no such pair is left out of N0 and counted. Excess `P − N0` > 0 is **persistence beyond position**. Profiles pooled over all positions are biased low (check 6); profiles that keep each row's own pair are biased up by about P/m (check 7; the frozen definition, Σ_k p(k) q(k), until unit 1b) |
 | step 0 | the same statistics at step 0 where rows pass; expected mostly unreadable (near-uniform attention to step 256, B2a). Step 0 is the reference for `D_ℓ` (check 1) |
 | P_2 (beside) | P at lag 2 (l → l + 2, best-match), so a two-cycle (lag-1 at N0, lag-2 high) is not read as rerouting |
 | D_1, D_2 (beside) | the paper's `D_ℓ` (l. 482–490) on `activations.npz` (unit states; index l is the residual attention layer l reads, B3's convention), position 0 dropped, mean over tokens and prompts; per layer and step |
@@ -117,9 +126,9 @@ Partners are drawn uniformly from keys 1..i − 2 (never i − 1) unless the arm
 | arm | construction | passes when |
 |---|---|---|
 | G0 | inputs: 18 × 7 attention and activation files present; shapes `(24, 16, n, n)`, `(25, n, 1024)`; rows sum to 1 within 1e-5; states unit norm within 1e-5; B3's rows present with their code hash | all hold, else the gap is recorded before anything is read |
-| G1 frozen | one partner map π(i), the same at every layer and head | P ≥ 0.99, N1 ≥ 0.99, `P − N0` ≥ 0.9; every cell "frozen across depth" |
-| G2 reshuffled | an independent π per layer and head | \|P − N0\| ≤ 0.25 · N0 (N0 is about 0.009 here, check 6, so an absolute band would check nothing); every cell "rerouting" |
-| G3 drift | each row keeps its partner with r = 0.8 per layer, else redraws | (P − N0)/(1 − N0) within 0.8 ± 0.03; every cell "depth-local persistence" |
+| G1 frozen | one partner map π(i), the same at every layer and head; at full rows and (as revised) at the minimum entry (G7's thinning) | P ≥ 0.99, N1 ≥ 0.99, `P − N0` ≥ 0.9; every cell "frozen across depth" |
+| G2 reshuffled | an independent π per layer and head | (as revised) pooled over a sink step's cells, rows weighted, \|Σ P − Σ N0\| ≤ 0.25 · Σ N0 (N0 is about 0.009 here, check 6, so an absolute band would check nothing; per cell the band also counted sampling noise, finding 3), the per-cell extreme beside; every cell "rerouting" |
+| G3 drift | each row keeps its partner with r = 0.8 per layer, else redraws; at full rows and (as revised) at the minimum entry | (P − N0)/(1 − N0) within 0.8 ± 0.03 at full rows, and at the minimum entry within ± 4 binomial standard errors on the cell's joint rows (± 0.057 at 800); every cell "depth-local persistence" |
 | G4 positional | every head previous-token (π(i) = i − 1) | N0 ≥ 0.99; every cell "positional, not separable" |
 | G5 period two | two maps alternating by layer | lag-1 cells "rerouting", every cell a two-cycle candidate, `P_2` ≥ 0.99 |
 | G6 diffuse | uniform rows | no row condensed; every cell "not read"; no P printed (refuse rather than degrade) |
@@ -144,7 +153,7 @@ reviewer's and Claude's simulations of G2 on synthetic partners (check 6) have b
 |---|---|---|
 | 0 | this design, the scan, the `sympy` check | frozen (Blocked 110) |
 | 1 | `trackB_circuit/b7_activity.py`: the objects above, G0–G9, code tests | every arm passes, or a recorded change |
-| 1b | reserve: a failed arm's revision, re-gated (spent only if unit 1 fails) | every arm passes |
+| 1b | reserve: a failed arm's revision, re-gated (spent only if unit 1 fails). **Spent** on N0's revision (Blocked 111 (a)) | every arm passes |
 | 2 | the 18 steps × 23 layer pairs, the beside columns, the cell picture, with the input named | the table is written with its input |
 
 ## Fences
