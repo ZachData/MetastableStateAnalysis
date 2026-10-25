@@ -1612,6 +1612,16 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   rotation-relative reading beside it passed both sides (Blocked 106). Rule: **a concentration
   statistic on a signed sum is gated on the real vectors turned to random bases before its bar
   is chosen; a pure test's "spread" case must have mixed signs, as the data does**.
+- 2026-10-25 (B7′ unit 1, caught by the code tests before the gate, and by the gate): the design's
+  confound arm G10 (b) had to make B7's instrument read "depth-local" over a plant that put the
+  sink in 2 prompts of 7, but the interval is a bootstrap over prompts: (5/7)^7 = 9.5 % of draws
+  hold neither, so the 2.5 % bound sits at 0 whatever the sink does. A second arm, G11, required
+  "frozen across depth" with a sub-threshold key confined to layers 7–20, and the two cannot both
+  hold. Both were written and reviewed (#278) as text; neither reviewer computed what the plant
+  gives under the instrument's own resampling. Rule: **before a design freezes, each planted arm's
+  pass condition is checked against the instrument's resampling unit (here prompts): count the
+  draws that miss the planted structure, and keep any added nuisance out of an arm whose
+  condition has no noise to absorb it**.
 
 ## 7. Literature found after the construction was built
 
