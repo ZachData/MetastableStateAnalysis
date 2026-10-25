@@ -228,3 +228,29 @@ the method level (ar5iv), the rest at search-summary level.
 
 Not read: 2408.01890, 2409.14595, 2402.11819, 2407.09298, 2603.00359, 2410.11451 beyond search
 summaries; cited at that level.
+
+# B7′, sink-excluded routing activity — scan at opening (2026-10-25)
+
+Trigger 1 (B7′ opens; precedes `design-B7p.md`'s freeze). Three web searches (2026-10-25), all at
+search-summary level; the sink papers already scanned (`p1d_cluster_ensemble/lit-1d.md` 3 and 6,
+`trackC_writeup/lit-C5.md`: position-0 sinks in Pythia, massive activations on the first token and
+delimiters) are not repeated.
+
+| source | finding | bearing on B7′ |
+|---|---|---|
+| 2512.22213 (Wong, Zhang, Mahon, Luk, Isopoussu, Zhao; v3 2026-03; summary) | "secondary sinks", unlike the primary (BOS) sink, arise mostly in **middle layers**, persist a variable number of layers and draw less mass; 11 model families; tied to the rotary base | B7's mid-depth `.` / `\n` keys fit this class. The rule is per layer with a union over layers (R2, R3), not a fixed window, so a sink that lives in 9–12 is found; gate arm G10's prompt B plants one |
+| 2410.13835 (active-dormant heads; summary) | some models have two sinks on prose, the start token and **the first delimiter**; tied to how much code a model trained on | B7's 2000 table had an early `.` / `\n` in every prompt; whether each S_q key is the prompt's first delimiter is recorded beside (R6). Pythia's Pile holds code |
+| 1906.04341 (Clark et al., 2019, BERT; via a summary) | heads put heavy attention on `[SEP]` and on periods, read as a no-op | a delimiter key read as a partner is the no-op, not routing; dropping it as position 0 is dropped is the matching treatment |
+| 2602.05228 (summary) | a per-head "sink value", attention to the sink from all other tokens with the sink left out of the denominator; varies widely across heads and layers | supports per-head sink shares in the plant (s_{q,h} drawn per head) rather than one share for all |
+| 2604.10135 (summary) | natural periods and newlines are ambiguous delimiters next to an explicit one | which `.` or `\n` becomes the sink is not predictable from the token; R2 reads it, not a token list |
+| search: excluding non-initial sinks before cross-layer attention statistics | no standard method; the nearest identify sink tokens per layer or head and compute over the rest | the drop-and-renormalise rule is ours (B3's position-0 rule extended), gated by G10–G12 |
+
+## What changes in the design
+
+| from | change |
+|---|---|
+| 2512.22213 | R2 per layer, R3 the union; ROADMAP's example window (layers 7–20) not used |
+| 2410.13835 | "first delimiter" beside each S_q key |
+| 2602.05228 | the plant's sink share is per (prompt, head) |
+
+Not read: all five beyond search summaries; cited at that level.
