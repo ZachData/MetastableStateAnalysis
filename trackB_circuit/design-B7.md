@@ -19,6 +19,17 @@ rose with persistence by about P/m on m rows a bin (0.27–0.34 under G1 at the 
 now over pairs of different rows (check 7); G1 and G3 also run at the minimum entry; G2 is read on
 its pooled deviation; findings 2, 4–6 are code (`b7_activity.py` docstring, choices 11–17). The
 rows below say "as revised" where they changed.
+**Revised at unit 1c (Blocked 112 (a), the user's, 2026-10-25), before any real cell was read:**
+unit 1b's re-gate failed G1 at the minimum entry under the 8000 and 143000 sinks. The trigger is
+the gate's thinning, which keeps exactly 50 joint rows per head pair, together with G1's identical
+heads: with that fixed total, the leave-one-out h\* picks for each held-out prompt the head with the
+fewest rows there, so no head reached 50 (G1 at full rows, with the same identical heads but no
+fixed total, passed). Real data has no fixed total, so the failure is the gate's construction more
+than the instrument's; the same construction puts every head's entry count at exactly 50, so G1's
+pass under the new rule sits at the floor (`/challenge-pr` on #274, finding 2). A head now enters on its joint rows with h\* chosen on all 7 prompts, used for
+entry only, and only with at least one leave-one-out row (#274 finding 1); P, N0, N1 and the intervals stay leave-one-out, and each head's leave-one-out rows are
+printed beside its cell (`b7_activity.py` choices 18–19). The budget goes from 3 to 4 units, on the
+record.
 
 ## What B7 asks
 
@@ -39,7 +50,7 @@ all 18 steps × 7 v1 prompts (none missing), and `activations.npz` `(25, n, 1024
 - **Exit:** the cell table below over 23 layer pairs × 18 steps, each cell with its counts,
   intervals and the input named, after the gate passes. "Rerouting everywhere" or "nothing
   readable before step 512" are verdicts, not failures.
-- **Budget: 3 units on the record**, this design as unit 0, then a close-out page (writing only).
+- **Budget: 4 units on the record** (3 at the freeze; unit 1c added by Blocked 112 (a)), this design as unit 0, then a close-out page (writing only).
   Unit 1 builds `trackB_circuit/b7_activity.py` and runs the gate; unit 1b is a reserve, spent
   only if an arm fails (B2a, A2 and B3 each overran on one, `LESSONS.md` 10); unit 2 reads the
   18 steps. Alternative: 2 units, no reserve. At the budget B7 closes at what it knows unless you
@@ -81,10 +92,10 @@ on 2–3 partners (the soft overlap on condensed rows is beside).
 |---|---|
 | attention, rows | B3's: stored `attentions.npz`, query i ≥ 16, **position 0 dropped as key and query, the row renormalised over keys 1..i** (Ã); rows with non-sink mass `w_i = 1 − A_i0 < 0.05` are out (B3's `W_MIN`) |
 | a condensed row | Ã's top share > **0.5** *(placed)*; its **partner** π(i) is that key (unique, check 2) and its **offset** i − π(i) |
-| per-head persistence P (primary) | for head (l, h): the fraction of rows i condensed in both (l, h) and (l + 1, h\*) with the same partner, where **h\* is the head of layer l + 1 with the most agreement with (l, h)** (2110.06821's best-match; head indices carry nothing across layers), **chosen leave-one-prompt-out**: for each prompt q, h\* is chosen on the other 6 and P counted on q, then the 7 folds are pooled (so the max over 16 does not inflate P, check 6). A head enters with ≥ **50** *(placed)* jointly condensed rows over the 7 folds. The cell value for (l → l + 1, step) is the mean over the entering heads, weighted by their jointly condensed row counts |
+| per-head persistence P (primary) | for head (l, h): the fraction of rows i condensed in both (l, h) and (l + 1, h\*) with the same partner, where **h\* is the head of layer l + 1 with the most agreement with (l, h)** (2110.06821's best-match; head indices carry nothing across layers), **chosen leave-one-prompt-out**: for each prompt q, h\* is chosen on the other 6 and P counted on q, then the 7 folds are pooled (so the max over 16 does not inflate P, check 6). A head enters with ≥ **50** *(placed)* jointly condensed rows ~~over the 7 folds~~ *(as revised, unit 1c)* with the h\* of all 7 prompts, used for entry only; its weight in P is its leave-one-out rows, printed beside. The cell value for (l → l + 1, step) is the mean over the entering heads, weighted by their jointly condensed row counts with the leave-one-out h\* *(as revised, unit 1c: said, not changed)* |
 | pooled persistence (beside) | the layer's row: the mean of its 16 heads' Ã weighted by `w_i`, renormalised; condensed and P as above, one value per layer pair |
 | N1, shuffled-layer null | the same statistic, leave-one-prompt-out best-match included, between l and every layer l′ with \|l′ − l\| ≥ 2 (both directions in depth), averaged. Excess `P − N1` > 0 is **depth-local persistence** (drift) |
-| N0, offset-profile null (as revised) | for each entering pair (l, h) → (l + 1, h\*) and each read row i: c_i is the share of ordered pairs (j, j′) of **different** jointly condensed rows in i's **32-position bin** *(placed)* over all 7 prompts, j's offset in (l, h) and j′'s in (l + 1, h\*) both valid at i (0..i − 1), whose offsets agree; N0 is the mean of c_i over the read rows, weighted as P; a row with no such pair is left out of N0 and counted. Excess `P − N0` > 0 is **persistence beyond position**. Profiles pooled over all positions are biased low (check 6); profiles that keep each row's own pair are biased up by about P/m (check 7; the frozen definition, Σ_k p(k) q(k), until unit 1b) |
+| N0, offset-profile null (as revised) | for each entering pair (l, h) → (l + 1, h\*), h\* the leave-one-out match of each fold *(unit 1c: said, not changed)*, and each read row i: c_i is the share of ordered pairs (j, j′) of **different** jointly condensed rows in i's **32-position bin** *(placed)* over all 7 prompts, j's offset in (l, h) and j′'s in (l + 1, h\*) both valid at i (0..i − 1), whose offsets agree; N0 is the mean of c_i over the read rows, weighted as P; a row with no such pair is left out of N0 and counted. Excess `P − N0` > 0 is **persistence beyond position**. Profiles pooled over all positions are biased low (check 6); profiles that keep each row's own pair are biased up by about P/m (check 7; the frozen definition, Σ_k p(k) q(k), until unit 1b) |
 | step 0 | the same statistics at step 0 where rows pass; expected mostly unreadable (near-uniform attention to step 256, B2a). Step 0 is the reference for `D_ℓ` (check 1) |
 | P_2 (beside) | P at lag 2 (l → l + 2, best-match), so a two-cycle (lag-1 at N0, lag-2 high) is not read as rerouting |
 | D_1, D_2 (beside) | the paper's `D_ℓ` (l. 482–490) on `activations.npz` (unit states; index l is the residual attention layer l reads, B3's convention), position 0 dropped, mean over tokens and prompts; per layer and step |
@@ -154,6 +165,7 @@ reviewer's and Claude's simulations of G2 on synthetic partners (check 6) have b
 | 0 | this design, the scan, the `sympy` check | frozen (Blocked 110) |
 | 1 | `trackB_circuit/b7_activity.py`: the objects above, G0–G9, code tests | every arm passes, or a recorded change |
 | 1b | reserve: a failed arm's revision, re-gated (spent only if unit 1 fails). **Spent** on N0's revision (Blocked 111 (a)) | every arm passes |
+| 1c | entry on the all-prompt h\* (Blocked 112 (a)), the pooled r beside G3, re-gated | every arm passes |
 | 2 | the 18 steps × 23 layer pairs, the beside columns, the cell picture, with the input named | the table is written with its input |
 
 ## Fences
