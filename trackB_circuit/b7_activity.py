@@ -57,7 +57,10 @@ file hash it reads match. (17) NaN is written to JSON as null.
 enters on its jointly condensed rows with the h* of all 7 prompts (≥ MIN_JOINT), used for entry
 only; P, N0, N1, the extras and every interval stay leave-one-out, so a head's weight in P is its
 leave-one-out rows, which can be fewer than MIN_JOINT. Each head's leave-one-out rows and entry
-rows and h* are printed, and a cell's minimum and median over its entering heads beside. Replaces
+rows and h* are printed, and a cell's minimum and median over its entering heads beside. A head
+with no leave-one-out rows does not enter (`/challenge-pr` on #274, finding 1: it would count
+toward MIN_HEADS with nothing in P). Unit 1b's entry count is printed beside each cell
+(`n_enter_loo_rule`, finding 2), and G7 records its fewest leave-one-out rows (finding 4). Replaces
 choice 2's count (its fixed entering set in every draw stands). (19) G3 prints the pooled r
 (rows-weighted Σ(P − N0) / Σ(1 − N0) over a run's read cells) beside.
 
@@ -358,7 +361,7 @@ def matched(agree, joint, M, extras: Optional[Dict] = None, min_joint: int = MIN
     Ah, Jh = take(agree), take(joint)
     he = S_all[0].argmax(-1)                                                 # (H,) entry's h*
     Je = joint.sum(0).gather(-1, he[:, None]).squeeze(-1)                    # (H,) its rows
-    enter = Je >= min_joint
+    enter = (Je >= min_joint) & (Jh[0] > 0)                                  # choice 18; > 0: #274 finding 1
     den = Jh[:, enter].sum(1)
     nan = torch.full_like(den, torch.nan)
     ok = (den > 0) & ~bad
@@ -371,7 +374,8 @@ def matched(agree, joint, M, extras: Optional[Dict] = None, min_joint: int = MIN
     return {"P": cell(Ah), **{k: cell(take(v)) for k, v in extras.items()},
             "n_enter": int(enter.sum()), "dropped": int(bad[1:].sum()), "enter": enter.cpu().numpy(),
             "head_P": headP, "head_joint": Jh[0].cpu().numpy(), "hstar": hs[0].cpu().numpy(),
-            "head_joint_entry": Je.cpu().numpy(), "hstar_entry": he.cpu().numpy()}
+            "head_joint_entry": Je.cpu().numpy(), "hstar_entry": he.cpu().numpy(),
+            "n_enter_loo_rule": int((Jh[0] >= min_joint).sum())}
 
 
 def interval(x: np.ndarray) -> Tuple[float, float]:
@@ -454,6 +458,7 @@ def cells(cnt: Dict, M, flat: Optional[Dict] = None) -> List[Dict]:
              "joint_rows": joint_rows, "description": desc, "not_read_because": why,
              "loo_rows_min": float(loo.min()) if loo.size else None,          # beside (choice 18)
              "loo_rows_median": float(np.median(loo)) if loo.size else None,
+             "n_enter_loo_rule": m1["n_enter_loo_rule"],                       # beside: unit 1b's entry
              "nonfinite_draws": {"P_minus_N0": bad0, "P_minus_N1": bad1}}
         if m1["n_enter"] >= MIN_HEADS:
             c.update({"P": float(P[0]), "N0": float(N0[0]), "N1": float(N1[0]), "P_ci": interval(P),
@@ -802,6 +807,7 @@ def cmd_gate(a) -> int:
     g7 = {}
     for variant, thin in (("full", None), ("min_entry", MIN_JOINT)):
         false = read = unread = 0
+        loo_min = math.inf
         for s in SINK_STEPS:
             for k in range(G7_SEEDS):
                 st = planted_stages("G7", real["sinks"][s], real["ns"], seed_for("B7", "G7", s, k))
@@ -813,7 +819,9 @@ def cmd_gate(a) -> int:
                     else:
                         read += 1
                         false += c["description"] != DESCRIPTIONS[2]
+                        loo_min = min(loo_min, c["loo_rows_min"])
         g7[variant] = {"false": false, "read": read, "unread": unread, "rate": false / read if read else None,
+                       "loo_rows_min": loo_min if read else None,
                        "pass": bool(read and false / read <= G7_MAX)}
         print(f"G7 {variant}: {false}/{read} ({time.time() - t0:.0f}s)", flush=True)
     gate["G7"] = {"pass": all(v["pass"] for v in g7.values()), **g7}

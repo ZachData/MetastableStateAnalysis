@@ -152,6 +152,18 @@ def test_entry_uses_the_h_star_of_all_prompts():
             assert abs(m["P"][d] - num / den) < 1e-12
 
 
+def test_a_head_with_no_leave_one_out_rows_does_not_enter():
+    # #274 finding 1: 60 rows all in one prompt pass the all-prompt floor but leave nothing out of sample
+    Q, G = 7, 3
+    agree = np.zeros((Q, 2, G)); joint = np.zeros((Q, 2, G))
+    agree[0, 0, 2] = joint[0, 0, 2] = 60          # head 0: one prompt only; out of it h* ties to g = 0, no rows
+    agree[:, 1, 1] = 10; joint[:, 1, 1] = 15                                # head 1: every prompt
+    m = b7.matched(torch.as_tensor(agree), torch.as_tensor(joint), torch.ones((1, Q), dtype=torch.float64))
+    assert m["head_joint_entry"].tolist() == [60, 105]
+    assert m["head_joint"].tolist() == [0, 105]
+    assert m["enter"].tolist() == [False, True] and m["n_enter"] == 1
+
+
 def test_neighbours_and_d():
     rng = np.random.default_rng(3)
     X = torch.as_tensor(rng.normal(size=(2, 40, 8)))

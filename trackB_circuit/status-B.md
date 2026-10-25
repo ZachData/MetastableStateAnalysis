@@ -40,7 +40,7 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-- **Reviewed:** 2026-10-25 · body `5805d7dbdd`
+- **Reviewed:** 2026-10-25 · body `a6ffb2ab70`
 <!-- /phase-card -->
 
 ## Units
@@ -106,10 +106,13 @@ no member α.
 
 **Input:** as unit 1b (A1a's 18 run dirs, `prompts_hash` `976b62d677bc`, real sinks at 512, 8000,
 143000, real attention at 143000 for G8, B3's rows at code `2c13479d759c`, the 252 input files'
-sha256 in the record). Code `trackB_circuit/b7_activity.py` `a39756ddfea4` (choices 18–19 in its
-docstring); record `data/b7/2026-10-25-unit1c/gate.json` (main tree); torch on cuda; wall 446 s.
+sha256 in the record). Code `trackB_circuit/b7_activity.py` `a1de85990c74` (choices 18–19 in its
+docstring), after `/challenge-pr` on #274; record `data/b7/2026-10-25-unit1c-r2/gate.json` (main
+tree); torch on cuda; wall 442 s. The first run (`a39756ddfea4`, `2026-10-25-unit1c/`) gave the same
+table cell for cell.
 Re-run: `METS_DATA=<main tree>/data python -m trackB_circuit.b7_activity gate --out <dir>`. Code
-tests `tests/test_b7_activity.py` (21: #273's strict-xfail test for G1 at the minimum entry with
+tests `tests/test_b7_activity.py` (22: a head with no leave-one-out rows does not enter (fails on
+`a39756ddfea4`); #273's strict-xfail test for G1 at the minimum entry with
 sinks that differ by head now passes and is a plain test; entry against a brute force: the
 all-prompt h\*, its rows, who enters at five floors, and P still leave-one-out).
 
@@ -129,7 +132,7 @@ at unit 1c"; budget 4 units + close-out.
 | G3 drift, full rows | r 0.797–0.805; pooled r 0.800 / 0.800 / 0.800; 23 of 23 "depth-local" each | yes |
 | G3 drift, minimum entry | r 0.774–0.836 (band ± 0.057); pooled r 0.801 / 0.804 / 0.799; 23 of 23 "depth-local" each | yes |
 | G4, G5, G6, G9 | as unit 1 | yes |
-| G7 false persistence | 0 of 1380 at full rows; **1 of 1380 (0.07 %) at the minimum entry** (unit 1b: 0), none unread; bar 5 % | yes |
+| G7 false persistence | 0 of 1380 at full rows; **1 of 1380 (0.07 %) at the minimum entry** (unit 1b: 0), none unread; bar 5 %; fewest leave-one-out rows of an entering head 407 / 10 | yes |
 | G8 planted on real | 10 → 11 "depth-local", planted heads P = 1, h\* `L11H3`; other cells' N1 moves at most 0.0063, no description changed | yes |
 
 **What the change costs, as #273's review measured it on scratch:** at the minimum entry under
@@ -137,6 +140,17 @@ at unit 1c"; budget 4 units + close-out.
 a cell's P can lean on heads thinner than the frozen 50. On real data the printed rows say where.
 G7's one false cell at the minimum entry is new under the wider entry; at 0.07 % against a 5 % bar it
 is beside, not a failure. No real cell read; unit 2 is next.
+
+**After `/challenge-pr` on #274 (accept with changes).** Finding 1, confirmed: a head whose
+all-prompt rows reach 50 but whose leave-one-out rows are 0 entered and counted toward the 2-head
+rule, so a cell could be read on one head's data. A head now also needs at least one leave-one-out
+row; a code test fails on `a39756ddfea4` and passes now; re-gated (`a1de85990c74`), identical, so the
+guard never fires on the planted arms. Finding 2: the cause is named in the design (the gate's
+thinning to exactly 50 rows a pair, with identical heads; G1's new pass sits at the floor), and every
+cell now prints unit 1b's entry count beside (`n_enter_loo_rule`), so unit 2 shows where the two rules
+disagree on real data. Finding 3: the design says N0 and P's weights use the leave-one-out h\* (as the
+code always did). Finding 4: G7 records its fewest leave-one-out rows (10 at the minimum entry); thin
+heads with P below 1 are seen only there, since G3's minimum-entry cells keep 800 rows. Answers: PR #274.
 
 ## B7 unit 1b (2026-10-25): the re-gate fails on G1 at the minimum entry (Blocked 111 (a))
 
