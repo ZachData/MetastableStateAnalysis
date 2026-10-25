@@ -5,7 +5,9 @@ Opened 2026-10-25 at the user's request ("Open B7"). Row: `docs/ROADMAP.md` §7 
 2026-10-24 from 2609.28448). Scan: `trackB_circuit/lit-B.md` "B7". Math:
 `tools/math_checks/b7_partner_persistence.py` (6 checks pass). Tier 1 throughout: exploratory,
 unregistered; 410m is an exploration rung (`p8_scale_ladder/design-8.md`), so nothing here can
-score a registered row. **Proposed, not frozen: Blocked 110 is the freeze, the user's.**
+score a registered row. **Frozen 2026-10-25 as revised, 3 units + close-out (Blocked 110 (a), the
+user's).** Unit 1's `b7_activity.py` docstring records ten choices the design left open, made
+before any output.
 **Revised after `/challenge-pr` on #271 (accept with changes) before the freeze:** the next-layer
 head is matched leave-one-prompt-out, and N0 is a row-valid offset chance within position bins,
 since the first proposal's best-of-16 match and pooled-profile N0 put a pure reshuffle 0.007
