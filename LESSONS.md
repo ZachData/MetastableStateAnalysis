@@ -899,6 +899,18 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-25, B7 unit 2 (a planted gate homogeneous where the real input is not; found by
+  `/challenge-pr` on #276 after the real grid was read): every planted arm put one partner map in
+  every head of every prompt, at every row. On the real rows two prompts carry about 0.9 of
+  mid-depth's condensed rows from 8000, and 0.85–0.94 of theirs sit on one newline (a second sink,
+  known since this file's lesson 3 and never checked on B7's rows), so "depth-local persistence"
+  mostly means "kept on the sink", and the 7-prompt bootstrap swings with which of those two prompts a
+  draw holds (22 of 155 descriptions move with h\* held fixed). Claude first blamed the
+  interval's re-choice of h\* and sized it with a filter that can only narrow an interval (wrong
+  twice; the reviewer re-ran it). Rule: **before a gate freezes, read the real rows' composition
+  at one step off the grid (each prompt's share of the rows, each prompt's most-attended key) and
+  plant what it shows (a second sink, prompts that differ); and a diagnostic that changes two
+  things at once (re-selection and draw size) sizes neither**. `status-B.md` "B7 unit 2".
 - 2026-10-25, B7 unit 1b (a new arm pre-checked on its statistic, not its pass rule, on a
   simplified input; seen in the gate, before any real cell): G1 at the minimum entry was added for
   N0's bias. The PR's scratch numbers and this session's pre-gate GPU check both read N0 and r, and
