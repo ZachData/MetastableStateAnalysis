@@ -41,7 +41,7 @@ We read $E_{1}$ layer by layer at 18 checkpoints of \texttt{pythia-410m} and of 
 
 \textbf{What none of this separates (\S\ref{sec:7}).} Every dated event from step 128 to 1000 falls inside the learning-rate warmup, which runs to step 1430 and which all ten runs share. Two further runs do not separate a training event from the schedule. On \texttt{pythia-70m} and \texttt{pythia-160m}, which warm up over the same steps at higher peak rates, both dates are consistent with the count of updates and with the cumulative learning rate, and the centred date excludes the rate itself. On Mistral's GPT-2 small, whose warmup is logarithmic and longer, the break's larger rise falls where the count of updates predicts, after a smaller first rise where the cumulative rate does, and the label the rule fixed before that run gives turns on two of its choices (the plateau window and one tolerance of the centred count). So the dates are dates inside a warmup, not training events told apart from it.
 
-Everything here is exploratory, on one model size, seven hand-picked prompts and a grid with no checkpoint between 512 and 1000; only the seed count of \S\ref{sec:4} was registered. \S\ref{sec:2} gives the energy and the exact conditions under which it is monotone, \S\ref{sec:3} the setup, \S\ref{sec:8} related work; appendix~\ref{sec:A} reads the heads' shared subspaces along the same steps, appendix~\ref{sec:B} the gate each reading passed before it was read, appendix~\ref{sec:C} what the count is made of (by prompt, by layer, without the frame-changing transitions, and $E_{1}$'s net change), and appendix~\ref{sec:D} defines the timeline's rows.
+Everything here is exploratory, on one model size, seven hand-picked prompts and a grid with no checkpoint between 512 and 1000; only the seed count of \S\ref{sec:4} was registered. \S\ref{sec:2} gives the energy and the exact conditions under which it is monotone, \S\ref{sec:3} the setup, \S\ref{sec:8} related work; appendix~\ref{sec:A} reads the heads' shared subspaces along the same steps, appendix~\ref{sec:B} the gate each reading passed before it was read, appendix~\ref{sec:C} what the count is made of (by prompt, by layer, without the frame-changing transitions, and $E_{1}$'s net change), and appendix~\ref{sec:D} takes the timeline's rows one by one: what each measures, why it is there, how it is dated and whether its change is larger than its noise.
 
 \section{Background}\label{sec:2}
 
@@ -112,7 +112,7 @@ The registration commit (\texttt{c2eb9a7}) is dated 2026-10-20, 18:36 UTC; the f
   \item[Gate.] A run of a reading's full statistic, before the real data are read, on inputs whose answer is known: a planted null and a planted effect at the real design points (appendix~\ref{sec:B}). A gate that fails \emph{refuses} the reading until the rule is changed, and the change is stated.
   \item[Arm.] One variant of a reading run beside the others under the same rule, for example one tolerance of the centred count, or one projection of \S\ref{sec:4.1}.
   \item[Description.] A reading with no calibrated null, or one read after the dates it might have moved; it is reported, not tested, and no date rests on it.
-  \item[Locator.] \S\ref{sec:5}'s rule for dating a row of the timeline; each row is defined in appendix~\ref{sec:D}.
+  \item[Locator.] \S\ref{sec:5}'s rule for dating a row of the timeline; each row is defined and read in appendix~\ref{sec:D}.
 \end{description}
 
 \section{The break, dated and reproduced}\label{sec:4}
@@ -199,23 +199,23 @@ Where does the break fall against what else the model learns? On seed 0's 18 ste
 
 \begin{table}[tbp]
 \centering\small
-\caption{Seed 0's rows, ordered by their dated step; each row's definition is in appendix~\ref{sec:D}. All are on \texttt{pythia-410m}'s 18 steps and the 7 prompts, except the n-gram rows, read on 64 held-out text blocks from the Pile's validation split. E1c, the centred cloud (\S\ref{sec:4.1}), is dated by \S\ref{sec:3.3}'s half-rise and was added after the other rows were read. Censored: the row's largest change up to 4000 is at 4000, still growing, so its date is a lower bound. Refused: E11 runs the identity-weight dynamics from each step's measured token cloud and reads one cluster in every cell, as theory requires at a long horizon, so it cannot date anything. E3's two heads, and E4's, were named in earlier work on this model, not chosen by the seeds' rule of the 1000 tie below.}\label{tab:rows}
+\caption{Seed 0's rows, ordered by their dated step; each row is taken on its own in appendix~\ref{sec:D} (a row's name links to its entry). All are on \texttt{pythia-410m}'s 18 steps and the 7 prompts, except the n-gram rows, read on 64 held-out text blocks from the Pile's validation split. E1c, the centred cloud (\S\ref{sec:4.1}), is dated by \S\ref{sec:3.3}'s half-rise and was added after the other rows were read. Censored: the row's largest change up to 4000 is at 4000, still growing, so its date is a lower bound. Refused: E11 runs the identity-weight dynamics from each step's measured token cloud and reads one cluster in every cell, as theory requires at a long horizon, so it cannot date anything. E3's two heads, and E4's, were named in earlier work on this model, not chosen by the seeds' rule of the 1000 tie below.}\label{tab:rows}
 \begin{tabularx}{\linewidth}{@{}l X l@{}}
 \toprule
 row & what changes & dated step \\
 \midrule
-E5 & effective rank of the token cloud on the sphere, mean over prompts, falls & 8 \\
-E6u & KL divergence from a unigram predictor to the model's next-token distribution, at its minimum & 128 \\
-E6b & the same for a bigram predictor (also 256 with the bigram counted on the rest of the split) & 256 \\
-E1 & the energy break (\S\ref{sec:4}) & 512 \\
-E2 & the OV maps' attractive share: per head, the share of the OV map's squared eigenvalue mass on eigenvalues with positive real part, median over the 384 heads, falls & 512 \\
-E8 & the weights' spectral tail exponent $\alpha $ \citep{martin2019}, median over matrix types and layers, falls & 1000 (512 from its peak) \\
-E3 & induction: attention of two induction heads (\texttt{L8H6}, \texttt{L11H14}) to the token after an earlier copy of the current one & 1000 \\
-E4 & previous-token attention of head \texttt{L5H2} & 1000 \\
-E1c & the token-centred cloud's break (\S\ref{sec:4.1}), the same at each of its four tolerances & 1000 \\
-E10 & the learning-rate schedule, its half-point & 1000 \\
-E7 & relative weight change $\|W - W_{0}\| / \|W_{0}\|$ & censored at 2000 \\
-E11 & a simulator's cluster count from the measured start & refused \\
+\hyperref[sec:D:E5]{E5} & effective rank of the token cloud on the sphere, mean over prompts, falls & 8 \\
+\hyperref[sec:D:E6]{E6u} & KL divergence from a unigram predictor to the model's next-token distribution, at its minimum & 128 \\
+\hyperref[sec:D:E6]{E6b} & the same for a bigram predictor (also 256 with the bigram counted on the rest of the split) & 256 \\
+\hyperref[sec:D:E1]{E1} & the energy break (\S\ref{sec:4}) & 512 \\
+\hyperref[sec:D:E2]{E2} & the OV maps' attractive share: per head, the share of the OV map's squared eigenvalue mass on eigenvalues with positive real part, median over the 384 heads, falls & 512 \\
+\hyperref[sec:D:E8]{E8} & the weights' spectral tail exponent $\alpha $ \citep{martin2019}, median over matrix types and layers, falls & 1000 (512 from its peak) \\
+\hyperref[sec:D:E3]{E3} & induction: attention of two induction heads (\texttt{L8H6}, \texttt{L11H14}) to the token after an earlier copy of the current one & 1000 \\
+\hyperref[sec:D:E4]{E4} & previous-token attention of head \texttt{L5H2} & 1000 \\
+\hyperref[sec:D:E1c]{E1c} & the token-centred cloud's break (\S\ref{sec:4.1}), the same at each of its four tolerances & 1000 \\
+\hyperref[sec:D:E10]{E10} & the learning-rate schedule, its half-point & 1000 \\
+\hyperref[sec:D:E7]{E7} & relative weight change $\|W - W_{0}\| / \|W_{0}\|$ & censored at 2000 \\
+\hyperref[sec:D:E11]{E11} & a simulator's cluster count from the measured start & refused \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -223,7 +223,7 @@ E11 & a simulator's cluster count from the measured start & refused \\
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=\linewidth]{fig/fig2_timeline.pdf}
-\caption{Seed 0's rows by step, each as the share of its change ($\Delta $ over its reference; E1 as V over its plateau median, E1c as $V_c$ at $10^{-4}$ over its own; the n-gram rows as the fall into their minimum), each signed so that its dated change is upward (E5, E2 and E8 fall). The axes are cut at $-$1.2, and E5 and E6u run below the cut after their dates. Dot: the dated step (E8's dated from step 0, 1000; from its peak it is 512). Shaded: the warmup, to step 1430. E7 and E11 are not drawn.}\label{fig:fig2_timeline}
+\caption{Seed 0's rows by step, each as the share of its change ($\Delta $ over its reference; E1 as V over its plateau median, E1c as $V_c$ at $10^{-4}$ over its own; the n-gram rows as the fall into their minimum), each signed so that its dated change is upward (E5, E2 and E8 fall). The axes are cut at $-$1.2, and E5 and E6u run below the cut after their dates. Dot: the dated step (E8's dated from step 0, 1000; from its peak it is 512). Shaded: the warmup, to step 1430. E7 and E11 are not drawn. Each panel is shown and read on its own in appendix~\ref{sec:D}.}\label{fig:fig2_timeline}
 \end{figure}
 
 \textbf{The order.} E5 (8) < E6u (128) < E6b (256) < E1 = E2 (512) < E3 = E4 = E1c = E10 (1000), with E8 between the two groups: dated from step 0 it ties the second (1000), dated from its peak the first (512). The rank collapse and the unigram minimum come before the break; the break falls with the OV fall, within one grid step of the bigram minimum and of the previous-token and induction heads, which the centred cloud's break joins (on the seeds too, at 1000 on eight of nine). E1c was added after the other rows were read and its pairs are not counted below. The 11 pairs fixed before the reading are the break with each of the nine model and simulator rows, and two among the circuit rows (E4 with E3, E3 with E2). Seven are aligned within one grid step, 2 are not (the rank collapse and the unigram minimum come first) and 2 are unread (E7 censored, E11 refused). A one-step gap counts as aligned, here and in \S\ref{sec:1}. No null says how many pairs quantities driven by one ramp would align on this grid, so the count is description. For scale: most rows fall on the four consecutive grid steps 256, 512, 1000 and 2000, and two dates drawn independently and uniformly from those four are within one grid step with probability 10/16 = 0.625, and seven of the nine pairs read include the break, which sits at 512 between 256 and 1000, so that a date drawn the same way is within one grid step of it with probability 3/4. Seven aligned of nine read is about what chance placement on these steps gives; the alignments are not evidence of a link.
@@ -346,22 +346,166 @@ Read from the same records as \S\ref{sec:4} and \S\ref{sec:4.1} after every date
 \caption{For each seed, the largest of its massive-activation coordinates (one set per seed, fixed over the whole grid) over the median coordinate's, by step; seed 0 in black. Blue band: steps 128--1000, where both of \S\ref{sec:4}'s events fall. Dashed: the 100$\times $ threshold that defines the set. On seeds 3 and 4 the curve falls at the last step, on seed 4 far below the threshold: their carriers change late, which is why the set is the union over the grid, not the set at the last step.}\label{fig:fig9_massive}
 \end{figure}
 
-\section{The timeline's rows}\label{sec:D}
+\section{The timeline's rows, one by one}\label{sec:D}
 
-Each row of table~\ref{tab:rows}, on seed 0, at the 18 steps. ``Units'' are what the locator's bootstrap resamples (\S\ref{sec:5}).
+This appendix takes table~\ref{tab:rows}'s rows one at a time, in the table's order, each with its own panel of figure~\ref{fig:fig2_timeline}. Every entry answers the same four questions: what the row measures, why it is on the timeline, how it is dated, and whether its change is larger than its noise. Table~\ref{tab:rowsD} puts the numbers side by side; a row's name links to its entry. Every row is on seed 0, at the 18 steps.
 
-\begin{description}
-  \item[E1, E1c.] V (\S\ref{sec:3.2}) and $V_c$ (\S\ref{sec:4.1}), dated by the half-rise of \S\ref{sec:3.3}, not by the locator.
-  \item[E2.] For each head, the eigenvalues $\lambda $ of its OV map restricted to the head's 64-dimensional subspace (the map's nonzero eigenvalues; its null space adds nothing), and the share $\sum _{\operatorname{Re}\lambda >0}|\lambda |^{2} / \sum |\lambda |^{2}$; the median over the 384 heads. Units: heads.
-  \item[E3.] The attention of heads \texttt{L8H6} and \texttt{L11H14} from a query to the key that follows an earlier copy of the query's token, pooled over every such pair in a prompt, weighted by the pairs' count over the 7 prompts and averaged over the two heads. Units: the 14 (prompt, head) pairs.
-  \item[E4.] Head \texttt{L5H2}'s mean attention from each query to the key just before it, mean over the 7 prompts. Units: prompts.
-  \item[E5.] For each prompt and state, the effective rank exp($-\sum _{k} p_{k} \ln p_{k}$) of the unit tokens' Gram matrix, $p_{k}$ its eigenvalues over their sum; the smallest over the states, mean over the 7 prompts. Units: prompts.
-  \item[E6u, E6b.] KL($q \,\|\, p_{\text{model}}$) in nats from a unigram (token frequencies) or a Witten--Bell bigram predictor q, counted on 2 000 000 held-out tokens of the Pile's validation split, to the model's next-token distribution, mean over the positions of a block of 1024 tokens and over 64 such blocks. Dated at the minimum. Units: blocks.
-  \item[E7.] $\|W_{t} - W_{0}\|_{F} / \|W_{0}\|_{F}$ for each of four matrix types (QKV, attention output, MLP in, MLP out), the median over the 24 layers, then the median over the types. Units: layers.
-  \item[E8.] For each weight matrix W, the tail exponent $\alpha $ of a continuous power law fitted by maximum likelihood to the eigenvalues of $WW^{\top}$, the tail's lower cut chosen by the least Kolmogorov--Smirnov distance over tails of at least 10 eigenvalues \citep{martin2019}; the median over layers, then over the four types. Units: layers.
-  \item[E10.] Pythia's learning rate, linear to its peak at 1430 and then a cosine to 0.1 of it; its half-point, with no floor.
-  \item[E11.] The identity-weight dynamics integrated from each step's measured token cloud to time 200, at a $\beta $ fitted to each prompt (the median over blocks of a per-block fit), not at $\beta $ = 1, and the number of clusters at the end (connected components of ``cosine $\geq $ 0.99''), mean over the 7 prompts. Refused (table~\ref{tab:rows}).
-\end{description}
+\textbf{Reading a panel.} The vertical axis is the share of the row's change done by each step: $\Delta $(s) over the row's reference (\S\ref{sec:5}), signed so that the dated change is upward. The solid line at 1 is the reference, and the hollow ring marks the step it is taken at; the dashed line at $\tfrac12$ is the half-point, and the dot is the dated step, the first grid step on or above it. E6u and E6b are dated at their minimum instead, so their panels have no half-line and the dot sits on the ring. The shading is the learning-rate warmup, to step 1430. A date means that half the change is done by that step and not by the grid step before it; nothing between grid steps is seen.
+
+\textbf{What ``larger than its noise'' means.} For every row dated by the locator, $\sigma $ is the bootstrap standard error of $\Delta $ at the reference step, over 1000 resamples of the row's units (its prompts, heads, layers or text blocks). The row is dated only if the reference is at least 4$\sigma $; otherwise it reads ``no change''. Each row's own floor was also calibrated, as the 95\,\% upper bound of the 95th percentile of reference / $\sigma $ over 1000 flat series carrying that row's noise, and the floor used is the larger of the two; every row's own bound came out under 4. Before any row was dated, the rule was run on 1000 flat series per row, which read ``no change'' at least 95\,\% of the time, and on a change planted in each gap of the grid at 9$\sigma $, which it placed in the right gap at least 90\,\% of the time (appendix~\ref{sec:B}). Passing the floor says the row's early change is not noise across its own units. It is not a p-value for the date, and it does not test whether two rows' dates are linked, which \S\ref{sec:5} reads as description. With 7 prompts as units, $\sigma $ is the spread over these seven texts, not over text in general.
+
+\begin{table}[htbp]
+\centering\small
+\caption{The rows' numbers. Reference: the row's largest change from step 0 up to step 4000, at the step given (for the n-gram rows, the fall into the minimum). $\sigma $: its bootstrap standard error over the units. Null: the share of 1000 flat series at the row's noise that read ``no change''. E1, E1c and E10 are not dated by the locator, so they have no $\sigma $; E11 has no date.}\label{tab:rowsD}
+\begin{tabular}{@{}l l r r r r l@{}}
+\toprule
+row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
+\midrule
+\hyperref[sec:D:E5]{E5} & 7 prompts & 12.53 (16) & 0.604 & 20.7 & 0.972 & 8 \\
+\hyperref[sec:D:E6]{E6u} & 64 blocks & 1.84 (128) & 0.016 & 118.4 & 1.000 & 128 \\
+\hyperref[sec:D:E6]{E6b} & 64 blocks & 3.60 (256) & 0.026 & 140.4 & 1.000 & 256 \\
+\hyperref[sec:D:E1]{E1} & 7 prompts & --- & --- & --- & --- & 512 \\
+\hyperref[sec:D:E2]{E2} & 384 heads & 0.504 (1000) & 0.002 & 226.7 & 1.000 & 512 \\
+\hyperref[sec:D:E8]{E8} & 24 layers & 9.28 (2000) & 1.11 & 8.3 & 1.000 & 1000 \\
+\hyperref[sec:D:E3]{E3} & 14 (prompt, head) & 0.060 (1000) & 0.005 & 11.9 & 0.990 & 1000 \\
+\hyperref[sec:D:E4]{E4} & 7 prompts & 0.911 (1000) & 0.008 & 120.6 & 0.984 & 1000 \\
+\hyperref[sec:D:E1c]{E1c} & 7 prompts & --- & --- & --- & --- & 1000 \\
+\hyperref[sec:D:E10]{E10} & --- & --- & --- & --- & --- & 1000 \\
+\hyperref[sec:D:E7]{E7} & 24 layers & 2.38 (4000) & 0.082 & 29.2 & 1.000 & censored at 2000 \\
+\hyperref[sec:D:E11]{E11} & 7 prompts & --- & --- & --- & --- & refused \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{E5: the token cloud's effective rank}\label{sec:D:E5}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E5.pdf}\end{center}
+
+\textbf{What it measures.} For each prompt and state, the effective rank exp($-\sum _{k} p_{k} \ln p_{k}$) of the unit tokens' Gram matrix, $p_{k}$ its eigenvalues over their sum: roughly, how many directions the tokens spread over. The row takes the smallest value over the 25 states, so it reads the layer where the cloud is narrowest, and averages it over the 7 prompts. It falls when, at some layer, the tokens crowd into a few directions.
+
+\textbf{Why it is on the timeline.} Rank collapse, tokens becoming nearly parallel with depth, is studied in the theory of attention \citep{dong2021,noci2022}, and in its simplest form it is the clustering the particle picture predicts. A row that dates it says whether the clouds narrowed before or after the energy broke.
+
+\textbf{How it is dated.} It starts at 14.66 at step 0 and reaches 2.12 at step 16, its lowest value up to 4000, so the reference is a fall of 12.53; more than half of it is done by step 8.
+
+\textbf{Larger than its noise?} Yes: the reference is 20.7$\sigma $ over the 7 prompts. Its null arm read ``no change'' on 0.972 of the flat series, the lowest of the rows and still above 0.95.
+
+\textbf{What to take from it.} This is the table's earliest change, long before the break. It reverses: the rank climbs back past its starting value between 512 and 1000, the step at which the centred cloud breaks, and ends at 12.75. The panel cuts its fall below $-$1.2. Only the first move is dated.
+
+\subsection{E6u and E6b: how close the model is to a unigram and a bigram predictor}\label{sec:D:E6}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E6u.pdf}\\[2pt]\includegraphics[width=0.7\linewidth]{fig/figD_E6b.pdf}\end{center}
+
+\textbf{What they measure.} KL($q \,\|\, p_{\text{model}}$) in nats, from a predictor q to the model's next-token distribution. For E6u q is a unigram predictor (token frequencies), and for E6b a Witten--Bell bigram predictor, both counted on 2 000 000 held-out tokens of the Pile's validation split. The KL is averaged over the positions of a block of 1024 tokens and over 64 such blocks. A small value means the model predicts much as the n-gram predictor does.
+
+\textbf{Why they are on the timeline.} Networks fit low-order statistics of their data first, and on Pythia the loss on sequences sampled from unigram and bigram statistics falls to a trough and then rises \citep{belrose2024}. These two rows date that stage on this model, with the same locator as the other rows. Our quantity differs from that loss: it compares the model's predictions with the predictor's on real text.
+
+\textbf{How they are dated.} Both fall and then rise, so each is dated at its minimum, and the floor applies to the fall into it. E6u falls from 3.30 to 1.46 nats at step 128, and E6b from 5.52 to 1.92 at step 256. The bigram counted on a larger table (the rest of the split) also has its minimum at 256.
+
+\textbf{Larger than their noise?} Yes, by far: 118.4$\sigma $ and 140.4$\sigma $ over the 64 blocks.
+
+\textbf{What to take from them.} The model is closest to a unigram predictor at step 128 and to a bigram predictor at 256, one grid step apart. Both come before the break or one grid step before it, and both then move steadily away (to 8.59 and 7.32 nats at the last step). The panels cut E6u's later rise below $-$1.2.
+
+\subsection{E1: the energy break}\label{sec:D:E1}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E1.pdf}\end{center}
+
+\textbf{What it measures.} V, the number of layer-to-layer drops in $E_{1}$ over the 7 prompts (\S\ref{sec:3.2}), here over its 1000--4000 plateau median (57).
+
+\textbf{Why it is on the timeline.} It is the event the paper dates (\S\ref{sec:4}); the timeline asks what else changes when it does.
+
+\textbf{How it is dated.} By the half-rise of \S\ref{sec:3.3}, not by the locator: V is 0 through step 128, 19 at 256 and 56 at 512, so it first reaches half the plateau at 512.
+
+\textbf{Larger than its noise?} Its evidence is of a different kind. E1 is dated by the half-rise, not by the locator, so no $\sigma $ or floor is computed for it; instead its date holds at tolerances $10^{-4}$, $10^{-3}$ and $10^{-2}$ and with any one prompt left out (\S\ref{sec:3.2}), and it reproduced on 9 of 9 seeds under the prediction registered before their intermediate checkpoints were downloaded (\S\ref{sec:3.4}, \S\ref{sec:4}). It is the only registered row, and what the registration shows is that the date is the recipe's, not one run's.
+
+\textbf{What to take from it.} The break is almost complete at 512 (0.98 of the change): of the rows dated 512 and 1000 it is the furthest along at 512.
+
+\subsection{E2: the OV maps' attractive share}\label{sec:D:E2}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E2.pdf}\end{center}
+
+\textbf{What it measures.} For each head, the eigenvalues $\lambda $ of its OV map restricted to the head's 64-dimensional subspace, and the share $\sum _{\operatorname{Re}\lambda >0}|\lambda |^{2} / \sum |\lambda |^{2}$ of their squared size on eigenvalues with positive real part; the median over the 384 heads.
+
+\textbf{Why it is on the timeline.} In the particle picture the value map decides whether tokens attract: with V = I they cluster and $E_\beta $ rises with depth, with V = $-$I it falls (\S\ref{sec:2.1}). A trained head's OV map plays V's part, and the share of its eigenvalues with positive real part is a head-by-head proxy for how attractive it is. If the break were the OV maps turning repulsive, this row would move with it.
+
+\textbf{How it is dated.} It starts at 0.504, close to the half that a map with no preferred sign would give, and falls to 0.000 at step 1000: there the median head has no eigenvalue mass with positive real part. Half the fall is done by 512.
+
+\textbf{Larger than its noise?} Yes: 226.7$\sigma $ over the 384 heads, the largest ratio in the table.
+
+\textbf{What to take from it.} The fall is dated with the break, at 512, and its bottom at 1000 ties induction, which is why ``break, then induction, then the OV phase'' is not shown (\S\ref{sec:5}). A negative eigenvalue share is not by itself repulsion in the dynamics \citep{gao2026}, which is why the phase is named for the share; and editing the OV maps does not undo the break (\S\ref{sec:6}). The share recovers partway later, to 0.39 at the last step.
+
+\subsection{E8: the weights' spectral tail exponent}\label{sec:D:E8}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E8.pdf}\end{center}
+
+\textbf{What it measures.} For each weight matrix W, the exponent $\alpha $ of a power law fitted by maximum likelihood to the tail of the eigenvalues of $WW^{\top}$, the tail's lower cut chosen by the least Kolmogorov--Smirnov distance over tails of at least 10 eigenvalues; the median over the 24 layers, then over four matrix types (QKV, attention output, MLP in, MLP out).
+
+\textbf{Why it is on the timeline.} In the heavy-tailed account of training, a smaller $\alpha $, a heavier tail, goes with more correlation learned into the weights \citep{martin2019}. With E2 and E7 it is read from the weights alone, with no input, so it says whether the weights' spectra change in the same window as the activations.
+
+\textbf{How it is dated.} $\alpha $ first rises, from 13.52 at step 0 to a peak at step 256, then falls, to 4.23 at 2000. The locator dates only a move in the row's declared direction (down) from step 0, so the rise does not count: from step 0 the reference is 9.28 and the date 1000. Measured from the peak instead, the reference is 12.88 and the date 512. Both are given, and a pair with E8 is read only where the two agree (\S\ref{sec:5}).
+
+\textbf{Larger than its noise?} Yes, but by the least margin of the dated rows: 8.3$\sigma $ over the 24 layers. That is under the 9$\sigma $ at which the first design called a row low-powered, though above the power calibrated for this row in its gap, which replaced that rule after the first gate and before E8 was dated (appendix~\ref{sec:B}).
+
+\textbf{What to take from it.} The weights' tails grow heavy inside the window of the break and the circuit rows, and $\alpha $ stays near its new level to the end (3.88).
+
+\subsection{E3: induction attention}\label{sec:D:E3}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E3.pdf}\end{center}
+
+\textbf{What it measures.} The attention of heads \texttt{L8H6} and \texttt{L11H14} from a query to the key that follows an earlier copy of the query's token, pooled over every such pair in a prompt, weighted by the pairs' count over the 7 prompts and averaged over the two heads.
+
+\textbf{Why it is on the timeline.} Induction heads complete a repeated pattern by attending to what followed the token's last occurrence, and their formation is a landmark of the developmental order (\S\ref{sec:2.2}; \citealp{olsson2022}). The two heads were named as induction heads in earlier work on this model, not picked from these series. The row as first written (five heads, attention to the earlier copy itself) was refused before it was read, because it scored the wrong key, and replaced by this one, which was gated before it was dated.
+
+\textbf{How it is dated.} It rises from 0.004 to a peak of 0.065 at step 1000, and half of that is not reached until then: at 512 it is only 0.03 of the way.
+
+\textbf{Larger than its noise?} Yes: 11.9$\sigma $ over the 14 (prompt, head) pairs.
+
+\textbf{What to take from it.} Induction arrives late and abruptly, between 512 and 1000, the step at which the centred cloud breaks. It then falls, to 0.021 at the last step; the fall is not dated.
+
+\subsection{E4: previous-token attention}\label{sec:D:E4}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E4.pdf}\end{center}
+
+\textbf{What it measures.} Head \texttt{L5H2}'s mean attention from each query to the key just before it, mean over the 7 prompts.
+
+\textbf{Why it is on the timeline.} Previous-token heads form before induction heads in the stagewise account (\S\ref{sec:2.2}), and an induction head reads from one \citep{olsson2022}. \texttt{L5H2} was named as this model's previous-token head in earlier work.
+
+\textbf{How it is dated.} It rises from 0.014 to 0.925 at step 1000: by then the head puts nearly all its attention on the previous token. At 512 it is 0.35 of the way, so it crosses the half-point at 1000.
+
+\textbf{Larger than its noise?} Yes: 120.6$\sigma $ over the 7 prompts.
+
+\textbf{What to take from it.} Previous-token and induction tie at 1000 on this grid, but previous-token is further along at 512, the order the literature reports; the grid cannot date the gap (\S\ref{sec:5}). It stays high, at 0.78 at the last step.
+
+\subsection{E1c: the centred cloud's break}\label{sec:D:E1c}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E1c.pdf}\end{center}
+
+\textbf{What it measures.} $V_c$, V counted on the token-centred cloud: each prompt's mean unit token removed and the rows normalised again (\S\ref{sec:4.1}). The panel is $V_c$ at tolerance $10^{-4}$ over its own plateau median.
+
+\textbf{Why it is on the timeline.} $E_{1}$'s first-order term is the tokens' mean (\S\ref{sec:2.1}), so E1 can move with no change in how the tokens sit relative to one another. E1c dates the break with the mean removed. It was added after the other rows were read, so its pairs are not counted in \S\ref{sec:5}.
+
+\textbf{How it is dated.} By the half-rise, at each of four tolerances; a date counts only if all four agree. At 512 it is 0.19--0.24 of its plateau, and all four reach half at 1000.
+
+\textbf{Larger than its noise?} As for E1: dated by the half-rise, so no $\sigma $ or floor; its date holds at four tolerances and at 1000 on eight of the nine seeds, though it was not registered (\S\ref{sec:4.1}).
+
+\textbf{What to take from it.} With the mean removed the break comes one grid step later, at the step of the circuit rows. The shared step is not read as a link: by \S\ref{sec:5}'s convention the uncentred break, one step earlier, is as close to them.
+
+\subsection{E10: the learning-rate schedule}\label{sec:D:E10}
+
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E10.pdf}\end{center}
+
+\textbf{What it measures.} Pythia's learning rate over its peak: linear to the peak at step 1430, then a cosine to 0.1 of it.
+
+\textbf{Why it is on the timeline.} It is the confound. Every other row moves while the rate ramps up, so the schedule is dated with the same half-point to show where a row driven by the ramp alone would fall.
+
+\textbf{How it is dated.} The rate reaches half its peak at step 715, between grid steps, so the first grid step past it is 1000. There is no noise and no floor.
+
+\textbf{What to take from it.} Every aligned pair is inside the warmup, and nothing in the table separates a training event from the ramp (\S\ref{sec:7}).
+
+\subsection{E7 and E11: the two rows not drawn}\label{sec:D:E7}\label{sec:D:E11}
+
+\textbf{E7, the weights' relative change.} $\|W_{t} - W_{0}\|_{F} / \|W_{0}\|_{F}$ for each of the four matrix types, the median over the 24 layers, then over the types: how far training has moved the weights from where they started, a clock for training itself. It is 2.38 at step 4000, 29.2$\sigma $ over the 24 layers, and half of that is reached at 2000. But its largest change up to 4000 is at 4000 itself, still growing, so the reference is not the change's full size and the date is only a lower bound: censored. Its pairs are not read, and it is not drawn.
+
+\textbf{E11, a simulator's cluster count.} The identity-weight dynamics of the particle picture, integrated from each step's measured token cloud to time 200 at a $\beta $ fitted to each prompt, and the number of clusters at the end (connected components of ``cosine $\geq $ 0.99''), mean over the 7 prompts. It asks whether the measured cloud, left to the idealised dynamics, would end in more than one cluster. It reads one cluster in every cell, as the theory requires at a long horizon \citep{geshkovski2023}, so it never changes and cannot date anything: refused. It is not drawn.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
