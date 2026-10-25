@@ -523,3 +523,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   - Over 2× the running median (20.1M against 7.85M): two units in one session at the user's request (a gated code unit and a six-page appendix with a hand-built page), plus a second re-gate after `/challenge-pr` on #274; the main context was re-read across both.
 | 2026-10-25 | B7 unit 2, the 18-step grid, before /challenge-pr | 58 | 172k | 6.3M | 42k | #276 |
 | 2026-10-25 | B7 unit 2 (#276), after /challenge-pr (accept with changes; findings 1-4 taken: caveat mechanism corrected, second sinks found, b7_diag.py tracked) · subagents: general-purpose opus-5-5 1.7M | 82 | 209k | 10.9M | 46k | #276 |
+| 2026-10-25 | B7 close-out, before /challenge-pr | 43 | 161k | 5.3M | 48k | #277 |
