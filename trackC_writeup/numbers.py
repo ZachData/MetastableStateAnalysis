@@ -89,6 +89,7 @@ GRID = (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32
 S2_STEPS = ("0", "256", "512", "1000", "2000", "4000", "143000")
 #: The rows §5's table and figure 2 show, in the order of their dates.
 A3_ROWS = ("E5", "E6u", "E6b", "E1", "E2", "E8", "E3", "E4", "E10")
+A3_FLOORED = ("E5", "E6u", "E6b", "E2", "E8", "E3", "E4", "E7")    # dated by §5's locator with a floor
 #: S2's scored steps (R1's cells after the break) and R2's (the steps where copying exists).
 S2_SCORED = ("512", "1000", "2000", "4000", "143000")
 S2_R2 = ("1000", "2000", "4000", "143000")
@@ -501,6 +502,21 @@ KEYS: Dict[str, tuple] = {
                                                  for p in a["reading"]["pairs"] if p["verdict"] == "aligned")),
     "a3.ngram_blocks": ("a3", lambda a: a["rows"]["E6u"]["n_units"]),
     "a3.floor": ("a3", lambda a: a["constants"]["FLOOR"]),
+    # the rows one by one (appendix D): each floored row's reference, its σ and their ratio, its gate
+    "a3.x0": ("a3", lambda a: {r: a["rows"][r]["series"][0] for r in A3_FLOORED}),
+    "a3.ref": ("a3", lambda a: {r: a["rows"][r]["ref"] for r in A3_FLOORED}),
+    "a3.ref_step": ("a3", lambda a: {r: a["rows"][r]["ref_step"] for r in A3_FLOORED}),
+    "a3.x_ref": ("a3", lambda a: {r: a["rows"][r]["series"][_steps(a).index(a["rows"][r]["ref_step"])]
+                                  for r in A3_FLOORED}),
+    "a3.sigma": ("a3", lambda a: {r: a["rows"][r]["sigma"] for r in A3_FLOORED}),
+    "a3.ref_sigma": ("a3", lambda a: {r: a["rows"][r]["ref_over_sigma"] for r in A3_FLOORED}),
+    "a3.n_units": ("a3", lambda a: {r: a["rows"][r]["n_units"] for r in A3_FLOORED}),
+    "a3.own_floor": ("a3", lambda a: {r: a["gate"][r]["own_floor"] for r in A3_FLOORED}),
+    "a3.null_no_change": ("a3", lambda a: {r: a["gate"][r]["null_no_change"] for r in A3_FLOORED}),
+    "a3.low_power": ("a3", lambda a: sorted(r for r in A3_FLOORED if a["rows"][r]["low_power"])),
+    "a3.low_power_9": ("a3", lambda a: sorted(r for r in A3_FLOORED if a["rows"][r]["low_power_frozen"])),
+    "a3.x_last": ("a3", lambda a: {r: a["rows"][r]["series"][-1] for r in A3_FLOORED}),
+    "a3.E8_peak_ref": ("a3", lambda a: a["rows"]["E8_peak"]["ref"]),
     # S2 (figure 3; §6 is unit 4's)
     "s2.a": ("s2_readings", lambda r: _s2_cells(r, "a")),
     "s2.b": ("s2_readings", lambda r: _s2_cells(r, "b")),
@@ -1324,8 +1340,47 @@ S1_LABELS = {"qk_query": "query", "qk_key": "key", "ov_write": "OV write", "ov_c
              "ov_read": "OV read", "ov_neg": "OV negative", "ov_pos": "OV positive"}
 
 
+def row_panels(keys: Dict[str, dict]) -> List[Path]:
+    """Appendix D: figure 5's lanes one at a time, with the locator's two lines (the reference, 1,
+    and half of it) and the reference step ringed where the row has one (`fig/paper/fig5_<row>.pdf`)."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    _style(plt)
+    k = {n: v["value"] for n, v in keys.items()}
+    steps, warmup, x = k["grid.steps"], k["cfg.warmup_steps"], _xpos(k["grid.steps"])
+    lanes = dict(k["a3.lanes"], E1c=k["c3s.s0_lane"])
+    PAPERFIG.mkdir(parents=True, exist_ok=True)
+    out = []
+    for r in list(A3_ROWS[:-1]) + ["E1c", A3_ROWS[-1]]:
+        lane = lanes[r]
+        fig, ax = plt.subplots(figsize=(4.8, 1.7))
+        ax.axhline(1.0, color=MUTED, lw=0.8)
+        ax.axhline(0.5, color=INK, lw=0.8, ls=(0, (3, 2)))
+        ax.plot(x, lane["y"], color={"E10": SERIES[2], "E1c": SERIES[1]}.get(r, SERIES[0]), lw=1.4)
+        if r in k["a3.ref_step"]:
+            i = steps.index(k["a3.ref_step"][r])
+            ax.plot([x[i]], [lane["y"][i]], "o", ms=7, mfc="none", mec=MUTED, mew=1.0, zorder=4)
+        if lane["step"] is not None:
+            i = steps.index(lane["step"])
+            ax.plot([x[i]], [lane["y"][i]], "o", ms=5, color=INK, zorder=5)
+        ax.set_ylim(max(LANE_FLOOR, min(-0.25, min(lane["y"]) - 0.1)), max(1.35, max(lane["y"]) + 0.1))
+        ax.set_yticks([0, 0.5, 1])
+        ax.grid(axis="x", visible=True)
+        _xaxis(ax, steps, warmup)
+        ax.set_ylabel("share of change", fontsize=8)
+        ax.set_title(f"{r}, dated {_num(lane['step'])}", fontsize=9, loc="left")
+        path = PAPERFIG / f"fig5_{r}.pdf"
+        fig.savefig(path, format="pdf", bbox_inches="tight",
+                    metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
+        plt.close(fig)
+        out.append(path)
+    return out
+
+
 def paper_figures(keys: Dict[str, dict]) -> List[Path]:
-    """Figure 11 (appendix A; the referee's m25): ρ by family and step, S1's records."""
+    """Figure 11 (appendix A; the referee's m25): ρ by family and step, S1's records; and appendix
+    D's row panels (`row_panels`)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -1352,7 +1407,7 @@ def paper_figures(keys: Dict[str, dict]) -> List[Path]:
     fig.savefig(path, format="pdf", bbox_inches="tight",
                 metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
     plt.close(fig)
-    return [path]
+    return [path] + row_panels(keys)
 
 
 # ---------------------------------------------------------------------------

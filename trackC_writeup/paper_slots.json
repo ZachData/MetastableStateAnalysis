@@ -174,5 +174,381 @@
  {
   "literal": "0.99",
   "why": "appendix D, E11: the simulator's cluster criterion (cos >= 0.99), fixed in trackA_force/design-A3.md 'Placed before any unit 3 output'"
+ },
+ {
+  "slot": "{{a3.E6b_full}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.E8_peak}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.E8_peak_ref|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.floor}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_gate}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E2]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E3]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E4]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E5]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E6b]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E6u]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E7]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.n_units[E8]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ngram_blocks}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E2]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E3]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E4]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E5]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E6b]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E6u]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E7]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.null_no_change[E8]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E2]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E3]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E4]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E5]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E6b]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E6u]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E7]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref[E8]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E2]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E3]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E4]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E5]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E6b]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E6u]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E7]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_sigma[E8]|f1}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E2]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E3]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E4]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E5]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E6b]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E6u]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E7]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.ref_step[E8]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E1]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E10]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E11]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E2]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E3]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E4]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E5]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E6b]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E6u]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E7]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.rows[E8]|step}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.share512[E1]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.share512[E3]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.share512[E4]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E2]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E3]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E4]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E5]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E6b]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E6u]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E7]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.sigma[E8]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.warmup_end}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E2]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E3]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E4]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E5]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E6b]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E6u]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x0[E8]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E2]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E3]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E4]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E5]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E6b]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E6u]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_last[E8]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E2]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E3]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E4]|f3}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E5]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E6b]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E6u]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E7]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{a3.x_ref[E8]|f2}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{c3s.s0_lane[step]}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "slot": "{{s0.plateau}}",
+  "where": "appendix D, the rows one by one"
+ },
+ {
+  "literal": "95 0.95",
+  "why": "appendix D: A3's fixed gate constants (design-A3.md §4): the null arm's bar (no change on at least 95 % of flat series) and the own floor's 95 % upper bound of the 95th percentile; not a measured value"
  }
 ]
