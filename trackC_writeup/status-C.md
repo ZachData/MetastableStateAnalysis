@@ -61,6 +61,7 @@
 | C2p 1. the LaTeX and ten figures (opened at the user's request) | **done 2026-10-24: `tex/` compiles (22 pages); figures 6–10 new, 9 and 10 C5's; `numbers.py`'s docstring; Blocked 108** | `design-C2p.md`, `to_tex.py`, `tex/`; "C2p unit 1" below |
 | C2p 2. the revisions and the second fresh read (107 (a), 108 (a), the user's) | **done 2026-10-24: `paper/` is the source; M2's results level first, §8 and F9 against 2510.06477 (its grid reads no step in (1, 1000)), m15, m19, m25 (`fig11_rho`); `paper_check` 0; the read: major revision, 6 + 20 points answered; Blocked 109** | `paper/`, `paper_check.py`, `referee-C2p.md`; "C2p unit 2" below |
 | C2p close-out (109 (a), the user's) | **done 2026-10-24: writing only; the cut and the read's framing points made in `paper/` (28 pages, `paper_check` 0); exit met at 2 units + close-out; no Parked items** | "C2p on one page" below |
+| after C2p: one citation (the user's, 2026-10-24) | **done 2026-10-24: writing only; 2609.28448 (Gao, Yang, Chen) cited in `paper/` §6 (its §6.2: negative eigenvalues of one head's map do not establish negative feedback, beside E2's fall) and §8 (the repulsive case as a discrete map that need not settle); `refs.bib` `gao2026`; still 28 pages, no undefined reference, `paper_check` 0; no number added** | `paper/main.tex`, `paper/refs.bib` |
 
 ## C2p on one page (closed 2026-10-24)
 
