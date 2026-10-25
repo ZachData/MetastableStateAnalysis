@@ -898,6 +898,21 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-25, B7 unit 1 (a null estimated from the statistic's own rows; `/challenge-pr` on #272,
+  before any real cell): N0's offset profiles are built from the same jointly condensed rows P is
+  counted on, so each row's own agreeing pair enters Σ p q and N0 rises by ≈ P/m. Check 6 and the gate's
+  null arms had P at chance, and the persistence arms had full rows (m ≈ 200), so the bias stayed
+  under 1 %; at the 50-row entry it is 0.3 and G3 fails. Rule: **a null estimated from the same units
+  as the statistic is checked under the planted effect at the smallest admitted count, not only under
+  the null; a plug-in Σ p q over the same sample becomes a U-statistic over different units**.
+- 2026-10-25, B7 unit 1 (a bias band applied per cell; seen on planted data, the gate passed):
+  G2's "|P − N0| ≤ 0.25 · N0" was set to catch a biased null (the first proposal's N0 sat at half
+  of chance), but applied to each of 23 cells it also counts each cell's sampling noise (P ≈ 0.008
+  on 23k–45k rows). The gate's seed put the worst cell at 0.244; a scratch run on another seed, at
+  0.287. The bias itself, pooled, is −3 to −5 %. The arm passed by seed, not by margin. Rule: **a
+  band meant to test a null's bias is applied pooled, or set against the statistic's sampling
+  spread at the real row counts; a per-cell extreme over a family is checked on more than one
+  seed before the gate freezes**.
 - 2026-10-22, C2 unit 3c (a tolerance set by one null unit): the null-matched centred arm matches
   the re-inits' uncentred violation rate at 1e-3. On GPT-2 small that rate is 0 (every re-init
   drop is negative), so the arm became the single largest of 252 re-init centred drops, 3.3× the
