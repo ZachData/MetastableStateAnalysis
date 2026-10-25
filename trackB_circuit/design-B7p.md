@@ -5,8 +5,11 @@ Opened 2026-10-25 at the user's request ("Open B7′ … design, gate arm with a
 sink"). Row: `docs/ROADMAP.md` §7 B7′ (set at B7's close, Blocked 113 (a)). Scan:
 `trackB_circuit/lit-B.md` "B7′". Math: `tools/math_checks/b7p_sink_exclusion.py` (5 checks pass).
 Tier 1 throughout: exploratory, unregistered; 410m is an exploration rung, so nothing here can
-score a registered row. **Not frozen: Blocked 114 (yours).** Everything below "Objects" is fixed
-before any sink-excluded row is computed on real attention.
+score a registered row. **Frozen 2026-10-25 as revised after #278's review (Blocked 114 (a), the
+user's): the per-head rule, its gate with G10 (b) as a pass condition, 3 units with a reserve +
+close-out.** Everything below "Objects" is fixed before any sink-excluded row is computed on real
+attention; what the gate's construction left open is fixed in `b7p_sink.py`'s docstring before
+any output.
 **Revised after `/challenge-pr` on #278 (accept with changes), before the freeze:** R2 counts per
 head, not per layer, since the sink table ¼ was placed against counted entering heads only, not a
 layer's 16 (1); a head-sparse arm G14 and a sub-threshold leak arm G15, with the near-miss share
