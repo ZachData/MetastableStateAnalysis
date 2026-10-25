@@ -1586,6 +1586,13 @@ already in `docs/readings/`, and it puts the reduction on V's invariant subspace
 which changed B2a's primary object. Found at B2a's scan by fetching the cited paper before
 designing on it. Rule: a design that quotes a section by title names the file it was read from;
 a `grep` of `docs/readings/` for the title is the first step of the scan.
+2026-10-24 (#270): the correction above, and B2a, B3, ROADMAP and C2's new citation after it,
+numbered 2609.28448's sections wrongly (§6.1 for Sec. V A, §6.2 and §7 for V B, and four more);
+the paper is REVTeX and numbers them in roman, and the repo's numbers match no rendering found.
+A referee checking `paper/`'s `\citep[\S{}6.2]` would have found no such section. Found by
+`/challenge-pr` reading the source's `\section` order. Rule: a section number is copied from the
+PDF as printed, never derived; a reading note (`docs/readings/<id>.md`) holds the paper's section
+map once, and citations point to it.
 2026-10-22 (C2 unit 1): two rows written from summaries were wrong on the point a design leaned
 on. `lit-S2.md` said the gradient-flow energy "decreases" (the texts: non-decreasing; no S2 rule
 moved, since S2 counted drops as violations); `lit-C2.md` gave Bernas et al. as "anisotropy of
