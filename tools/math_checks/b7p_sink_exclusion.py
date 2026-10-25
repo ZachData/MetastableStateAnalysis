@@ -16,7 +16,7 @@ WHAT IT SHOWS
 1. **Dropping keys keeps the order of the rest.** Renormalising a row over keys outside a set S
    divides every kept entry by the same 1 − s, so the argmax among kept keys is unchanged and a
    row condensed on a kept key stays condensed on it (its share a / (1 − s) ≥ a).
-2. **A planted sink row, before and after the drop.** A row putting 0.7 of its non-sink mass on a
+2. **A planted sink row, before and after the drop.** A row putting 0.7 of its mass off position 0 on a
    sink key k, 0.2 on a content partner π ≠ k and 0.1 uniformly over keys 1..i is condensed on k
    (share 0.7 + 0.1 / i > 1/2), and after k is dropped condensed on π (share
    (0.2 + 0.1/i) / (0.3 − 0.1/i) > 1/2 for every i ≥ 2): the hidden partner is recovered. A row
@@ -28,10 +28,13 @@ WHAT IT SHOWS
    prompts' rows at the same offset: at the real n's, with one sink key per prompt drawn in
    10..54, N0 ≤ 0.05 while P = 1, and the cell reads "persistence beyond position".
 4. **The detection rule finds nothing under B7's planted nulls at the real design points.** A
-   key is a sink of (prompt, layer) when it holds ≥ 1/4 of that layer's condensed rows (16 heads,
-   ≥ 50 rows). With partners uniform on 1..i − 2 (G2, G7), one map in every head (G1) or
-   previous-token (G4), the largest share of any key over 400 draws per prompt is about 0.05 at
-   full rows (key 1, which every row can reach; the assert is < 0.1), and at 50 rows thinned at random it reaches 1/4 in none of 2000 draws.
+   key is a sink of (prompt, layer, head) when it holds ≥ 1/4 of that head's condensed rows (heads
+   with ≥ 50; as revised after `/challenge-pr` on #278, finding 1: per head, not per layer). With
+   partners uniform on 1..i − 2 (G2, G7; one map in every head is G1, the same per head), or
+   previous-token (G4), one head's largest key share over 400 draws per prompt is about 0.05 at
+   full rows (key 1, which every row can reach; the assert is < 0.1). At 50 rows thinned at random,
+   over every head of 24 layers of the 7 prompts (2688 heads) in 20 draws, the largest share is
+   about 0.12 and no key reaches 1/4, so the union over heads finds no sink in a null prompt.
 5. **N0 per bootstrap draw (the U-statistic).** With prompt multiplicities m_q from a draw,
    Σ_{j ≠ j′} m_j m_j′ x_j y_j′ = (Σ m x)(Σ m y) − Σ m² x y, so N0 over pairs of different
    *original* rows is a closed form in the per-prompt offset histograms. Counting a row's copies
@@ -45,12 +48,14 @@ WHAT IT DOES NOT PROVE
 - That 410m's second sinks are rows like check 2's (the share on the sink and what is under it are
   read, not assumed); a sink row with mass on 2–3 content keys is out after the drop, as B7's
   diffuse rows are.
-- That ≥ 1/4 of a layer's condensed rows separates sinks from content in 410m: it is placed in the
-  gap of B7's sink table (on the key 0.50–0.94 of a prompt's mid-depth rows; on any other key ≤ 0.06),
-  which was seen before this rule was written, so it is not a blind threshold. A content key that
-  a quarter of a layer's condensed rows point at is dropped as a sink, whatever its token.
-- That the drop leaves "content" rows: what remains is rows whose top non-sink key has > 1/2 of
-  the non-sink mass; positional rows remain (N0 takes them out, as in B7).
+- That ≥ 1/4 of a head's condensed rows separates sinks from content in 410m. It is placed
+  against this null (≤ about 0.12 at 50 rows) and below the share B7's entering heads put on the
+  modal key (median 0.50–0.94, `b7_diag.py prompts`, entering heads pooled, so not R2's own count;
+  `/challenge-pr` on #278, finding 1). R2's per-head shares on real attention were not computed. A
+  content key that a quarter of one head's condensed rows point at is dropped as a sink, whatever
+  its token.
+- That the drop leaves "content" rows: what remains is rows whose top kept key has > 1/2 of the
+  mass left after the drop; positional rows remain (N0 takes them out, as in B7).
 - Check 5's expectation is for the counts; c_i restricted to offsets valid at i is a ratio
   (B7's check 7 caveat), bounded here by simulation only.
 """
@@ -111,7 +116,7 @@ off = pos - ks[pid]                                       # every row on its pro
 n0_sink = n0_bins(pos, pid, off, off)
 assert n0_sink < 0.05, n0_sink                            # P = 1 on these rows; P − N0 > 0.95
 
-# 4. The detection rule under B7's nulls: the largest key share of a (prompt, layer)'s condensed rows.
+# 4. The detection rule under B7's nulls: the largest key share of one head's condensed rows.
 TAU, MINR = 0.25, 50
 
 
@@ -122,13 +127,10 @@ def max_share(keys):
 full, thin = [], []
 for n in NS:
     ii = np.arange(ROW, n)
-    for _ in range(400):
-        g2 = np.concatenate([rng.integers(1, ii - 1) for _ in range(H)])          # G2 / G7
-        g1 = np.tile(rng.integers(1, ii - 1), H)                                  # G1
-        full += [max_share(g2), max_share(g1), max_share(np.tile(ii - 1, H))]    # G4
-    for _ in range(2000 // len(NS) + 1):
-        g2 = np.concatenate([rng.integers(1, ii - 1) for _ in range(H)])
-        thin.append(max_share(rng.choice(g2, MINR, replace=False)))
+    for _ in range(400):                                      # one head: G2 / G7 / G1, and G4
+        full += [max_share(rng.integers(1, ii - 1)), max_share(ii - 1)]
+    for _ in range(20 * 24 * H):                              # every head of a prompt, 20 draws
+        thin.append(max_share(rng.choice(rng.integers(1, ii - 1), MINR, replace=False)))
 assert max(full) < 0.1, max(full)                         # a fifth of the rule or less
 assert sum(t >= TAU for t in thin) == 0, max(thin)
 
@@ -158,5 +160,5 @@ assert fc > 3 * rs, (fc, rs)
 print("b7p_sink_exclusion: 5 checks pass (a drop keeps the kept keys' order; a planted 0.7 / 0.2 / 0.1 "
       "row is condensed on the sink before and on its hidden partner after, a 0.8 / 0.2 row on nothing; "
       f"B7's N0 on frozen sink rows {n0_sink:.4f} with P = 1; under G1, G2, G4 the largest key share "
-      f"{max(full):.4f} at full rows, {max(thin):.3f} at 50 (rule 1/4); N0 per draw at 50 frozen rows "
+      f"{max(full):.4f} at full rows, {max(thin):.3f} at 50 over {len(thin)} heads (rule 1/4 per head); N0 per draw at 50 frozen rows "
       f"{f:.4f} over different original rows, {fc:.4f} with copies, reshuffled {rs:.4f})")

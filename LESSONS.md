@@ -2211,6 +2211,15 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   recommendation, and the close-out repeated the estimate in four files. Rule: an estimate that
   decides between a Blocked item's options is computed from the records when it is a read of
   them, under the rule's own read condition, before the option is recommended.
+- 2026-10-25, B7′ unit 0 (found by `/challenge-pr` on #278, finding 1, before the freeze): the design
+  placed its sink threshold (¼ of a layer's condensed rows over 16 heads) "in the gap" of B7's sink
+  table, 0.50–0.94 against ≤ 0.06. That table pooled only the heads entering each cell
+  (`b7_diag.py prompts`), so it was a different count from the rule's; at 2000 one prompt's key was
+  the modal partner of 63 of 224 heads, so on a layer count its sink could sit under ¼. The rule
+  now counts per head, ¼ is placed against the null, and the arms plant head-sparse and
+  sub-threshold sinks. Rule: a threshold said to sit in a seen gap names the producer of that gap
+  and shows it computes the rule's own statistic; otherwise it is placed against a null and
+  labelled so.
 
 ## 12. Deleted, then needed
 
