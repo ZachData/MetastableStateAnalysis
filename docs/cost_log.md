@@ -526,3 +526,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-25 | B7 close-out, before /challenge-pr | 43 | 161k | 5.3M | 48k | #277 |
 | 2026-10-25 | B7 close-out (#277), after /challenge-pr (accept with changes; findings 1-4 taken: Blocked 113's estimate wrong, long prompts, S4 depth, the known sink) · subagents: general-purpose opus-5-5 1.4M | 59 | 195k | 8.0M | 61k | #277 |
 | 2026-10-25 | B7′ open: design, scan, sympy check (before /challenge-pr) | 41 | 176k | 4.8M | 49k | #278 |
+| 2026-10-25 | B7′ open (#278), after /challenge-pr (accept with changes; findings 1-6 taken: R2 per head, G14/G15, the sink chain and L, beside columns) · subagents: general-purpose opus-5-5 1.1M | 57 | 209k | 7.9M | 54k | #278 |
