@@ -350,7 +350,7 @@ Read from the same records as \S\ref{sec:4} and \S\ref{sec:4.1} after every date
 
 This appendix takes table~\ref{tab:rows}'s rows one at a time, in the table's order, each with its own panel of figure~\ref{fig:fig2_timeline}. Every entry answers the same four questions: what the row measures, why it is on the timeline, how it is dated, and whether its change is larger than its noise. Table~\ref{tab:rowsD} puts the numbers side by side; a row's name links to its entry. Every row is on seed 0, at the 18 steps.
 
-\textbf{Reading a panel.} The vertical axis is the share of the row's change done by each step: $\Delta $(s) over the row's reference (\S\ref{sec:5}), signed so that the dated change is upward. The solid line at 1 is the reference, and the hollow ring marks the step it is taken at; the dashed line at $\tfrac12$ is the half-point, and the dot is the dated step, the first grid step on or above it. The shading is the learning-rate warmup, to step 1430. A date means that half the change is done by that step and not by the grid step before it; nothing between grid steps is seen.
+\textbf{Reading a panel.} The vertical axis is the share of the row's change done by each step: $\Delta $(s) over the row's reference (\S\ref{sec:5}), signed so that the dated change is upward. The solid line at 1 is the reference, and the hollow ring marks the step it is taken at; the dashed line at $\tfrac12$ is the half-point, and the dot is the dated step, the first grid step on or above it. E6u and E6b are dated at their minimum instead, so their panels have no half-line and the dot sits on the ring. The shading is the learning-rate warmup, to step 1430. A date means that half the change is done by that step and not by the grid step before it; nothing between grid steps is seen.
 
 \textbf{What ``larger than its noise'' means.} For every row dated by the locator, $\sigma $ is the bootstrap standard error of $\Delta $ at the reference step, over 1000 resamples of the row's units (its prompts, heads, layers or text blocks). The row is dated only if the reference is at least 4$\sigma $; otherwise it reads ``no change''. Each row's own floor was also calibrated, as the 95\,\% upper bound of the 95th percentile of reference / $\sigma $ over 1000 flat series carrying that row's noise, and the floor used is the larger of the two; every row's own bound came out under 4. Before any row was dated, the rule was run on 1000 flat series per row, which read ``no change'' at least 95\,\% of the time, and on a change planted in each gap of the grid at 9$\sigma $, which it placed in the right gap at least 90\,\% of the time (appendix~\ref{sec:B}). Passing the floor says the row's early change is not noise across its own units. It is not a p-value for the date, and it does not test whether two rows' dates are linked, which \S\ref{sec:5} reads as description. With 7 prompts as units, $\sigma $ is the spread over these seven texts, not over text in general.
 
@@ -379,7 +379,7 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E5: the token cloud's effective rank}\label{sec:D:E5}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E5.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E5.pdf}\end{center}
 
 \textbf{What it measures.} For each prompt and state, the effective rank exp($-\sum _{k} p_{k} \ln p_{k}$) of the unit tokens' Gram matrix, $p_{k}$ its eigenvalues over their sum: roughly, how many directions the tokens spread over. The row takes the smallest value over the 25 states, so it reads the layer where the cloud is narrowest, and averages it over the 7 prompts. It falls when, at some layer, the tokens crowd into a few directions.
 
@@ -393,7 +393,7 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E6u and E6b: how close the model is to a unigram and a bigram predictor}\label{sec:D:E6}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E6u.pdf}\\[2pt]\includegraphics[width=0.7\linewidth]{fig/fig5_E6b.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E6u.pdf}\\[2pt]\includegraphics[width=0.7\linewidth]{fig/figD_E6b.pdf}\end{center}
 
 \textbf{What they measure.} KL($q \,\|\, p_{\text{model}}$) in nats, from a predictor q to the model's next-token distribution. For E6u q is a unigram predictor (token frequencies), and for E6b a Witten--Bell bigram predictor, both counted on 2 000 000 held-out tokens of the Pile's validation split. The KL is averaged over the positions of a block of 1024 tokens and over 64 such blocks. A small value means the model predicts much as the n-gram predictor does.
 
@@ -407,7 +407,7 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E1: the energy break}\label{sec:D:E1}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E1.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E1.pdf}\end{center}
 
 \textbf{What it measures.} V, the number of layer-to-layer drops in $E_{1}$ over the 7 prompts (\S\ref{sec:3.2}), here over its 1000--4000 plateau median (57).
 
@@ -415,13 +415,13 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \textbf{How it is dated.} By the half-rise of \S\ref{sec:3.3}, not by the locator: V is 0 through step 128, 19 at 256 and 56 at 512, so it first reaches half the plateau at 512.
 
-\textbf{Larger than its noise?} Its evidence is of a different kind. V is a count, so it has no bootstrap $\sigma $; instead its date holds at tolerances $10^{-4}$, $10^{-3}$ and $10^{-2}$ and with any one prompt left out (\S\ref{sec:3.2}), and it reproduced on 9 of 9 seeds under the prediction registered before their checkpoints were read (\S\ref{sec:3.4}, \S\ref{sec:4}). It is the only registered row, and what the registration shows is that the date is the recipe's, not one run's.
+\textbf{Larger than its noise?} Its evidence is of a different kind. E1 is dated by the half-rise, not by the locator, so no $\sigma $ or floor is computed for it; instead its date holds at tolerances $10^{-4}$, $10^{-3}$ and $10^{-2}$ and with any one prompt left out (\S\ref{sec:3.2}), and it reproduced on 9 of 9 seeds under the prediction registered before their intermediate checkpoints were downloaded (\S\ref{sec:3.4}, \S\ref{sec:4}). It is the only registered row, and what the registration shows is that the date is the recipe's, not one run's.
 
 \textbf{What to take from it.} The break is almost complete at 512 (0.98 of the change): of the rows dated 512 and 1000 it is the furthest along at 512.
 
 \subsection{E2: the OV maps' attractive share}\label{sec:D:E2}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E2.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E2.pdf}\end{center}
 
 \textbf{What it measures.} For each head, the eigenvalues $\lambda $ of its OV map restricted to the head's 64-dimensional subspace, and the share $\sum _{\operatorname{Re}\lambda >0}|\lambda |^{2} / \sum |\lambda |^{2}$ of their squared size on eigenvalues with positive real part; the median over the 384 heads.
 
@@ -435,13 +435,13 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E8: the weights' spectral tail exponent}\label{sec:D:E8}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E8.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E8.pdf}\end{center}
 
 \textbf{What it measures.} For each weight matrix W, the exponent $\alpha $ of a power law fitted by maximum likelihood to the tail of the eigenvalues of $WW^{\top}$, the tail's lower cut chosen by the least Kolmogorov--Smirnov distance over tails of at least 10 eigenvalues; the median over the 24 layers, then over four matrix types (QKV, attention output, MLP in, MLP out).
 
 \textbf{Why it is on the timeline.} In the heavy-tailed account of training, a smaller $\alpha $, a heavier tail, goes with more correlation learned into the weights \citep{martin2019}. With E2 and E7 it is read from the weights alone, with no input, so it says whether the weights' spectra change in the same window as the activations.
 
-\textbf{How it is dated.} $\alpha $ first rises, from 13.52 at step 0 to a peak at step 512, then falls, to 4.23 at 2000. The locator dates only a move in the row's declared direction (down) from step 0, so the rise does not count: from step 0 the reference is 9.28 and the date 1000. Measured from the peak instead, the reference is 12.88 and the date 512. Both are given, and a pair with E8 is read only where the two agree (\S\ref{sec:5}).
+\textbf{How it is dated.} $\alpha $ first rises, from 13.52 at step 0 to a peak at step 256, then falls, to 4.23 at 2000. The locator dates only a move in the row's declared direction (down) from step 0, so the rise does not count: from step 0 the reference is 9.28 and the date 1000. Measured from the peak instead, the reference is 12.88 and the date 512. Both are given, and a pair with E8 is read only where the two agree (\S\ref{sec:5}).
 
 \textbf{Larger than its noise?} Yes, but by the least margin of the dated rows: 8.3$\sigma $ over the 24 layers. That is under the 9$\sigma $ at which the first design called a row low-powered, though above the power calibrated for this row in its gap, which replaced that rule after the first gate and before E8 was dated (appendix~\ref{sec:B}).
 
@@ -449,7 +449,7 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E3: induction attention}\label{sec:D:E3}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E3.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E3.pdf}\end{center}
 
 \textbf{What it measures.} The attention of heads \texttt{L8H6} and \texttt{L11H14} from a query to the key that follows an earlier copy of the query's token, pooled over every such pair in a prompt, weighted by the pairs' count over the 7 prompts and averaged over the two heads.
 
@@ -463,7 +463,7 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E4: previous-token attention}\label{sec:D:E4}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E4.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E4.pdf}\end{center}
 
 \textbf{What it measures.} Head \texttt{L5H2}'s mean attention from each query to the key just before it, mean over the 7 prompts.
 
@@ -477,7 +477,7 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \subsection{E1c: the centred cloud's break}\label{sec:D:E1c}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E1c.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E1c.pdf}\end{center}
 
 \textbf{What it measures.} $V_c$, V counted on the token-centred cloud: each prompt's mean unit token removed and the rows normalised again (\S\ref{sec:4.1}). The panel is $V_c$ at tolerance $10^{-4}$ over its own plateau median.
 
@@ -485,13 +485,13 @@ row & units & reference (step) & $\sigma $ & ref / $\sigma $ & null & dated \\
 
 \textbf{How it is dated.} By the half-rise, at each of four tolerances; a date counts only if all four agree. At 512 it is 0.19--0.24 of its plateau, and all four reach half at 1000.
 
-\textbf{Larger than its noise?} As for E1: a count, with no bootstrap $\sigma $; its date holds at four tolerances and at 1000 on eight of the nine seeds, though it was not registered (\S\ref{sec:4.1}).
+\textbf{Larger than its noise?} As for E1: dated by the half-rise, so no $\sigma $ or floor; its date holds at four tolerances and at 1000 on eight of the nine seeds, though it was not registered (\S\ref{sec:4.1}).
 
 \textbf{What to take from it.} With the mean removed the break comes one grid step later, at the step of the circuit rows. The shared step is not read as a link: by \S\ref{sec:5}'s convention the uncentred break, one step earlier, is as close to them.
 
 \subsection{E10: the learning-rate schedule}\label{sec:D:E10}
 
-\begin{center}\includegraphics[width=0.7\linewidth]{fig/fig5_E10.pdf}\end{center}
+\begin{center}\includegraphics[width=0.7\linewidth]{fig/figD_E10.pdf}\end{center}
 
 \textbf{What it measures.} Pythia's learning rate over its peak: linear to the peak at step 1430, then a cosine to 0.1 of it.
 

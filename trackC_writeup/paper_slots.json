@@ -550,5 +550,9 @@
  {
   "literal": "95 0.95",
   "why": "appendix D: A3's fixed gate constants (design-A3.md §4): the null arm's bar (no change on at least 95 % of flat series) and the own floor's 95 % upper bound of the 95th percentile; not a measured value"
+ },
+ {
+  "slot": "{{a3.E8_peak_step}}",
+  "where": "appendix D, the rows one by one"
  }
 ]

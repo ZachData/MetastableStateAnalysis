@@ -517,6 +517,7 @@ KEYS: Dict[str, tuple] = {
     "a3.low_power_9": ("a3", lambda a: sorted(r for r in A3_FLOORED if a["rows"][r]["low_power_frozen"])),
     "a3.x_last": ("a3", lambda a: {r: a["rows"][r]["series"][-1] for r in A3_FLOORED}),
     "a3.E8_peak_ref": ("a3", lambda a: a["rows"]["E8_peak"]["ref"]),
+    "a3.E8_peak_step": ("a3", lambda a: a["rows"]["E8_peak"]["peak_step"]),     # a3.E8_peak is the date from it
     # S2 (figure 3; §6 is unit 4's)
     "s2.a": ("s2_readings", lambda r: _s2_cells(r, "a")),
     "s2.b": ("s2_readings", lambda r: _s2_cells(r, "b")),
@@ -1342,7 +1343,8 @@ S1_LABELS = {"qk_query": "query", "qk_key": "key", "ov_write": "OV write", "ov_c
 
 def row_panels(keys: Dict[str, dict]) -> List[Path]:
     """Appendix D: figure 5's lanes one at a time, with the locator's two lines (the reference, 1,
-    and half of it) and the reference step ringed where the row has one (`fig/paper/fig5_<row>.pdf`)."""
+    and half of it, not drawn for the rows dated at their minimum) and the reference step ringed where
+    the row has one (`fig/paper/figD_<row>.pdf`)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -1356,7 +1358,8 @@ def row_panels(keys: Dict[str, dict]) -> List[Path]:
         lane = lanes[r]
         fig, ax = plt.subplots(figsize=(4.8, 1.7))
         ax.axhline(1.0, color=MUTED, lw=0.8)
-        ax.axhline(0.5, color=INK, lw=0.8, ls=(0, (3, 2)))
+        if r not in ("E6u", "E6b"):                     # dated at the minimum, not the half-point
+            ax.axhline(0.5, color=INK, lw=0.8, ls=(0, (3, 2)))
         ax.plot(x, lane["y"], color={"E10": SERIES[2], "E1c": SERIES[1]}.get(r, SERIES[0]), lw=1.4)
         if r in k["a3.ref_step"]:
             i = steps.index(k["a3.ref_step"][r])
@@ -1370,7 +1373,7 @@ def row_panels(keys: Dict[str, dict]) -> List[Path]:
         _xaxis(ax, steps, warmup)
         ax.set_ylabel("share of change", fontsize=8)
         ax.set_title(f"{r}, dated {_num(lane['step'])}", fontsize=9, loc="left")
-        path = PAPERFIG / f"fig5_{r}.pdf"
+        path = PAPERFIG / f"figD_{r}.pdf"
         fig.savefig(path, format="pdf", bbox_inches="tight",
                     metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
         plt.close(fig)
