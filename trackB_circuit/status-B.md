@@ -29,6 +29,7 @@
   - 2026-10-24: B2a's and B3's citations of 2609.28448 give section numbers the paper does not have (the paper's V A and V B were cited as 6.1, 6.2 and 7, with four more); a citation only, no reading moves — `trackB_circuit/status-B.md` "Corrections received"
   - B7 (routing activity across depth) opened 2026-10-25 with a scan, a `sympy` check and a design, frozen the same day (Blocked 110 (a)); its gate passes every arm (unit 1), no real cell read yet; the review then found its offset-profile null biased upward when partners persist on few rows. Revised over pairs of different rows (Blocked 111 (a)), the null no longer moves with persistence. The re-gate fails on one arm: with every head identical, too few rows enter at the minimum entry. With heads entering on the all-prompt best match (Blocked 112 (a), P still leave-one-out) the re-gate passes every arm (unit 1c); no real cell read yet — `trackB_circuit/status-B.md` "B7 unit 1", "B7 unit 1b", "B7 unit 1c" The check shows that on diffuse rows the argmax switch rate and the soft overlap say opposite things whatever the dynamics, and that a shuffled-layer null sees drift but not freezing. So B7 reads only condensed rows, against an offset-profile null as well, with each head matched to the next layer's best head — `trackB_circuit/design-B7.md` "The math"
   - B7's grid over 18 steps × 23 layer pairs (unit 2, B7 at its exit): nothing is condensed to step 256; from 1000–2000 mid-depth (layers 7–20) reads persistent layer to layer beyond position and beyond distant layers, but what persists is mostly a second sink (an early `.` or `\n` in every prompt at 2000; from 8000 a newline in the two code and LaTeX prompts, which carry about 0.9 of the rows), so content partners persisting is not shown; rerouting appears in only 7 cells (3 → 4, 5 → 6, gone from 32000), early layers are positional, and the last layer pairs are the most condensed but not resolved from distant layers. The intervals are wide because two prompts carry most rows: with the best match held fixed, 22 of 155 read cells change description — `trackB_circuit/status-B.md` "B7 unit 2"
+  - B7 closed 2026-10-25 at its exit (Blocked 113 (a)): nothing condensed to step 256; at mid-depth what persists layer to layer is mostly a second sink (an early `.` or `\n`, from 8000 a newline in the code and LaTeX prompts), so routing activity of content partners is not established; rerouting only in 3 → 4 and 5 → 6, early; layers 0, 3, 4 positional; the last layer pairs the most condensed and not resolved from distant layers — `trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"
 - **Superseded / wrong:** B3 unit 2's "most of the cone (ℓ ≈ 2.0) is already in the residual after block 6, before any member runs" (2026-10-19, #228): ℓ is a ratio, and the partner's σ there is 8 % of its final size — `trackB_circuit/status-B.md` "B3 unit 2b (2026-10-19)"
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -41,7 +42,8 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-- **Reviewed:** 2026-10-25 · body `160ad3ca3d`
+  - From B7 at close: B7′, the sink-excluded read with N0 re-estimated per draw, on a prompt set with more content rows (ROADMAP); for B4, the 5 → 6 two-cycle cells' heads; for S4, B7's instrument on the tied and untied arms *(forward pass, GPU minutes a step on new prompts for B7′; the B4 pointer reads records, the S4 arm rides on S4's runs)* — `trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"
+- **Reviewed:** 2026-10-25 · body `f9fd0ff943`
 <!-- /phase-card -->
 
 ## Units
@@ -102,6 +104,84 @@ no member α.
 | 1b. reserve (Blocked 111 (a), the user's) | **done 2026-10-25: the re-gate fails on one arm.** N0 over pairs of different rows; the review's fixes. Every arm passes but G1 at the minimum entry under the 8000 and 143000 sinks, where 16 and 18 of 23 cells do not enter (h\* selection under tied heads). The reserve is spent: **Blocked 112** | "B7 unit 1b" below |
 | 1c. entry on the all-prompt h\* (Blocked 112 (a), the user's; budget 3 → 4 units on the record) | **done 2026-10-25: every arm passes**, G1 at the minimum entry 23 of 23 at every sink step | "B7 unit 1c" below |
 | 2. the 18 steps × 23 layer pairs | **done 2026-10-25: the table is written with its input; B7 is at its exit, 4 of 4 units spent.** Nothing condensed to 256; mid-depth "depth-local persistence" from 1000–2000 (110 cells), mostly rows on a second sink (`.` / `\n`; from 8000 two prompts' newline, about 0.9 of the rows; `/challenge-pr` on #276); rerouting in 7 cells (3 → 4, 5 → 6, gone from 32000), the last layer pairs "frozen across depth"; with h\* held fixed in the draws 22 of 155 read cells change description (caveat 1). What the close-out reads: **Blocked 113** | `b7_activity.py read`, `b7_show.py`, `b7_diag.py`; "B7 unit 2" below |
+
+**B7 closed 2026-10-25** at its exit condition (Blocked 113 (a), the user's): "B7 on one page" below.
+
+## B7 on one page (closed 2026-10-25)
+
+**Asked:** at a fixed step, on condensed rows (top share > ½), does a token's top attention partner
+stay from layer l to l + 1, each head against the next layer's best-matched head (chosen
+leave-one-prompt-out), beyond what position alone gives (N0) and beyond what distant layers give
+(N1), or does it reroute? B3's α beside, so that "condensed and rerouting" and "condensed and
+frozen" are told apart (2609.28448's temporal activity, l. 196–209). **Exit met**
+(`design-B7.md` "Exit condition and budget"): the cell table over 23 layer pairs × 18 steps, each
+cell with its counts, intervals and input, after a passing gate, in 4 units on the record (3 at the
+freeze, Blocked 110 (a); unit 1c added by Blocked 112 (a)). Closed at what it knows, Blocked 113 (a).
+
+**Established (tier 1, `pythia-410m`, nothing registered; stored attention of A1a's 18 run dirs × the
+7 scored v1 prompts, `prompts_hash` `976b62d677bc`, no forward pass; `b7_activity.py`
+`a1de85990c74`; gate `data/b7/2026-10-25-unit1c-r2/gate.json`, records
+`data/b7/2026-10-25-unit2/`, main tree):**
+
+1. **Nothing is condensed to step 256.** No row at any layer has a top share above ½ at steps 0–256,
+   as B2a's near-uniform attention predicts; 5 of 23 cells read at 512, 22–23 from 2000.
+2. **What persists at mid-depth is mostly a second sink.** 110 cells read "depth-local
+   persistence", 89 of them in layers 7–20 from 1000–2000 on (P median 0.86, `P − N1` median 0.27).
+   At 2000 each prompt's mid-depth condensed rows sit mostly on one early `.` or `\n` (0.50–0.83 of
+   them); from 8000 the five prose prompts no longer do, and `hdbscan_code` (`\n` at 34) and
+   `latex_monograph` (`\n` at 10) carry about 0.9 of the rows, 0.85–0.94 of theirs on that one key.
+   N0 cannot remove a fixed key, whose offset moves with the row. So the L cells say that rows kept
+   on the same sink from layer to layer outweigh everything else, and they **do not show content
+   partners persisting**. The sink is the finding: in 410m, from 2000, most of mid-depth's condensed
+   attention is on a key other than position 0, and from 8000 that is a property of two prompts.
+3. **Rerouting is rare and early:** 7 cells, all in 3 → 4 (512–1000) and 5 → 6 (1000–16000), 5 of them
+   two-cycle candidates (partners back at l + 2); none from 32000.
+4. **Layers 0, 3, 4 (and 1 at 143000) are positional:** offsets alone predict most of the agreement
+   (N0 0.53–0.83), as B2a's previous-token heads from 512.
+5. **The last layer pairs are the most condensed and are not resolved from distant layers.** At
+   143000 layers 20–23 hold the highest condensed share (0.43–0.78) and the lowest α (0.03–0.09);
+   21 → 22 reads "frozen across depth" (an interval containing 0) at every read step, 22 → 23 at 6
+   of 9, 20 → 21 at 3.
+6. **Beside, over training:** `D_1`'s median falls from 0.30 (step 0) to 0.21 (512) and rises to 0.43
+   (143000) as α's median falls from 1.00 to 0.37; the soft overlap of read cells rises from 0.28 to
+   0.68. Neighbour persistence sits above its N1 in every cell, step 0 included, so it separates
+   nothing and is not read.
+7. **The instrument.** The gate passes every arm (G0–G9, planted frozen, reshuffled, drift,
+   positional, period two, diffuse, false persistence, planted on real) after two revisions made
+   before any real cell: N0 over pairs of different rows (Blocked 111 (a); the frozen N0 rose with
+   persistence) and entry on the all-prompt best match, P still leave-one-out (Blocked 112 (a)). Its
+   planted arms put one map in every head and every prompt, so it could not see the two things the
+   real data had: a second sink, and prompts that differ.
+
+**Not established:**
+
+- **Routing activity of content partners**: whether non-sink partners persist or reroute across
+  depth. An estimate from the table (not computed): without the sinks a mid-depth cell keeps about
+  1/10 of its rows, about 25 a head, under the 50-row entry, so on these 7 prompts a sink-excluded
+  read would mostly be "not read".
+- Anything about the paper's active or frozen phase: 410m is untied, so a kept partner can be two
+  layers' weights agreeing rather than one geometry persisting (`design-B7.md` "Fences").
+- Any single description near a boundary: with h\* held fixed in the draws, 3 of 7 R, 11 of 38 F and
+  8 of 110 L cells change description, because two prompts carry most rows; F is an interval
+  containing 0, not a shown equality.
+- Whether unit 1b's entry rule would change any description (it counts different heads in 1–13
+  cells a step; not computed), and P in the 39 read cells with an entering head under 50
+  leave-one-out rows (fewest 4).
+- N0's own sampling noise: it is not in the `P − N0` interval, so a sparse cell whose N0 reads high
+  by chance can read "rerouting".
+- Head identity across layers (best match only), partners in representation space (B7's are
+  positions), other rungs, the 12 held-out prompts.
+- Beside, a lean only: the same two prompts flipped mid-depth heads' pooled M1 β sign (`L6H4`,
+  `L15H7`; "Corrections received" 2026-10-16). Whether the same newline does it was not checked.
+
+**Open threads, at close** (B7's three Parked items and its design's fence):
+
+| thread | at close |
+|---|---|
+| The second sinks and the interval: a sink-excluded read under a rule fixed before output, with a gate arm planting a second sink and heads that differ by prompt (Parked) | **carried** to a new ROADMAP row, B7′ (Blocked 113 (a)). It waits on a prompt set with more content rows: the estimate above says 7 prompts would mostly not read, and the 12 held-out are fenced on 410m |
+| N0's own sampling noise in the `P − N0` interval (Parked; `/challenge-pr` on #273, finding 3) | **carried** to B7′: any re-read re-gates, so N0 re-estimated per draw (the U-statistic) goes into the same unit. Unit 2's 7 R cells are the cells it could move |
+| The 5 → 6 two-cycle candidates (2000–16000) and the late layers' F (20–22), per head from the records (Parked) | **carried** to B4 as a pointer (layer 5 holds `L5H2`, whose write space B4 nudges): the cells' `heads` in `data/b7/2026-10-25-unit2/` name the heads, no new run; it can change nothing in B7's grid |
+| Untied against tied: whether a kept partner is one geometry persisting (design "Fences") | **carried** to S4: B7's instrument on S4's tied and untied arms, where one map is iterated |
 
 ## B7 unit 2 (2026-10-25): the 18 steps × 23 layer pairs
 
@@ -1403,9 +1483,9 @@ trackB_circuit/b0_gate.py run --out $D && python trackB_circuit/b0_gate.py repor
 - B2, Phase 6's `U_pos` / `U_neg` / `U_A` dimensions of the members' union (design-B2 "Beside, not in the family"), not built in unit 2: why, a subspace view of the members beside the per-head columns; cost, about one session (`p6_subspace/math-6.md` §7.2 on the stored OVs); could change nothing in the family (beside only). **Dropped at B2's close (2026-10-18):** it can change no reading, and C6 by pair already gives B4 the shared space it needs ("B2 on one page").
 - B2, which pairs carry C6 was read after the rank (descriptive, `c6_pairs.json`): why, the rank is the circuit's mean; cost, none (done); could change B4's choice of what to nudge: `L5H2`'s write space and the 11 heads after layer 5 whose keys read it at ≥ 10× chance (`c6_pairs.json` `l5h2_readers_all`, code `b12ad273a201`): members `L8H6`, `L7H8`, `L11H14`; non-members in 7d's causal top 10 `L7H1`, `L8H9`, `L10H9`; non-members outside it `L7H7`, `L9H0` (27×), `L8H7`, `L10H0`, `L11H2`; then `L6H3`, `L10H4` at about 9×, not the members' keys alone (the list first read the members' layers only; `/challenge-pr` on #222, finding 1). **Carried to B4** at B2's close (2026-10-18).
 - B2, a head-type control for C3 (`/challenge-pr` on #221, finding 2): why, non-member previous-token and induction heads sit with the members; cost, a list of head types from 7d's sweep and one re-rank; could change C3 from "members differ" to "these head types differ". **Carried to B3** at B2's close (2026-10-18; B3 joins per-head reads to 7d's sweep).
-- B7, N0's own sampling noise in the `P − N0` interval (`/challenge-pr` on #273, finding 3): why, N0's profiles are the sample's in every draw (choice 3), so a cell whose N0 reads high by chance (up to 0.044 against about 0.009 at 50 rows) can be read "rerouting" when it persists; cost, re-estimating N0 per draw (the U-statistic, so no duplicated self-pairs) and one re-gate; could change a sparse cell from "rerouting" to "persistence". Unit 2 prints N0's rows beside each cell; decided at B7's close.
-- B7, the second sinks and the interval (unit 2, after `/challenge-pr` on #276): why, mid-depth's L cells are mostly rows on an early `.` / `\n` (from 8000, two prompts' newline with about 0.9 of the rows), and the intervals are wide because those two prompts carry most rows (22 of 155 descriptions move with h\* held fixed); cost, a sink-excluded read (a rule fixed before output dropping each prompt's second-sink keys as position 0 is dropped, prompts weighted equally beside), a gate arm with a planted second sink and heads that differ by prompt, one re-gate and one re-read (one unit); could change every mid-depth cell, including to "not read" where no content rows remain. **Blocked 113.**
-- B7, the 5 → 6 two-cycle candidates (2000–16000) and the late layers' F (20–22): why, layer 5 holds `L5H2` (B1) and the late layers are the most condensed (α 0.03–0.09) with the lowest P; cost, a per-head read of those cells from the records (`heads`), no new run; could change nothing in B7's grid; it could point S4's tied arm or B4 at a layer. Decided at B7's close.
+- B7, N0's own sampling noise in the `P − N0` interval (`/challenge-pr` on #273, finding 3): why, N0's profiles are the sample's in every draw (choice 3), so a cell whose N0 reads high by chance (up to 0.044 against about 0.009 at 50 rows) can be read "rerouting" when it persists; cost, re-estimating N0 per draw (the U-statistic, so no duplicated self-pairs) and one re-gate; could change a sparse cell from "rerouting" to "persistence". Unit 2 prints N0's rows beside each cell. **Carried to B7′ at B7's close (2026-10-25).**
+- B7, the second sinks and the interval (unit 2, after `/challenge-pr` on #276): why, mid-depth's L cells are mostly rows on an early `.` / `\n` (from 8000, two prompts' newline with about 0.9 of the rows), and the intervals are wide because those two prompts carry most rows (22 of 155 descriptions move with h\* held fixed); cost, a sink-excluded read (a rule fixed before output dropping each prompt's second-sink keys as position 0 is dropped, prompts weighted equally beside), a gate arm with a planted second sink and heads that differ by prompt, one re-gate and one re-read (one unit); could change every mid-depth cell, including to "not read" where no content rows remain. **Carried to ROADMAP B7′ at B7's close (Blocked 113 (a), 2026-10-25).**
+- B7, the 5 → 6 two-cycle candidates (2000–16000) and the late layers' F (20–22): why, layer 5 holds `L5H2` (B1) and the late layers are the most condensed (α 0.03–0.09) with the lowest P; cost, a per-head read of those cells from the records (`heads`), no new run; could change nothing in B7's grid; it could point S4's tied arm or B4 at a layer. **Carried to B4 as a pointer at B7's close (2026-10-25).**
 
 ## Corrections received
 

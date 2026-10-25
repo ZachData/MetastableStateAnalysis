@@ -2946,6 +2946,28 @@ project-wide.
 
 ---
 
+## 3.74 Track B's B7 closed: what 410m's mid-depth attention keeps from layer to layer is mostly a second sink, not content partners (2026-10-25)
+
+**`trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"** holds the readings and what
+they did not establish; this section only says why it is project-wide. Tier 1, `pythia-410m`,
+stored attention on v1's 7 prompts over 18 steps, condensed rows only, nothing registered.
+
+- 2609.28448's third property, temporal activity (does a token's top partner stay or reroute from
+  layer to layer?), was read for the first time here. Nothing is condensed to step 256. From 2000,
+  mid-depth (layers 7–20) reads persistent beyond position and beyond distant layers, but the
+  partner kept is mostly one early `.` or `\n` per prompt, and from 8000 a newline in the code and
+  LaTeX prompts, which then carry about 0.9 of the condensed rows. So the frozen rows' dropping of
+  position 0 alone does not remove the sink in 410m; a per-head attention reading on these prompts
+  (routing, partner counts) should check for a second one first. The same two prompts flip
+  mid-depth heads' pooled M1 β (A2 unit 2); whether by the same newline is not checked.
+- Rerouting appears only early and low (3 → 4, 5 → 6; none from 32000), the early layers are
+  positional, and the last layer pairs are the most condensed without being resolved from distant
+  layers. Whether content partners persist is not established; 7 prompts likely hold too few
+  content rows to read it (ROADMAP B7′). In an untied model a kept partner is description, not the
+  paper's frozen phase (S4's tied arm).
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
