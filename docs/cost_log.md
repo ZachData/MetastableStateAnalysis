@@ -518,3 +518,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-25 | B7 unit 1 (#272), after /challenge-pr (accept with changes; finding 1 confirmed, Blocked 111; 2-6 to unit 1b) · subagents: general-purpose opus-5-5 1.0M | 62 | 202k | 8.6M | 33k | #272 |
 | 2026-10-25 | B7 unit 1b (re-gate), before /challenge-pr · subagents: runner haiku-5-5 102k · runner batches, main calls: 9 (haiku-5-5) | 60 | 204k | 8.6M | 48k | #273 |
 | 2026-10-25 | B7 unit 1b (#273), after /challenge-pr (accept with changes; 1 xfail test, 2 measured into Blocked 112, 3 parked, 4 to unit 1c) · subagents: general-purpose opus-5-5 1.2M, runner haiku-5-5 102k · runner batches, main calls: 9 (haiku-5-5) | 74 | 219k | 11.6M | 50k | #273 |
+| 2026-10-25 | B7 unit 1c + paper appendix D (two PRs, one session at the user's request), before /challenge-pr · subagents: runner haiku-5-5 99k · runner batches, main calls: 43 (haiku-5-5) | 81 | 275k | 13.4M | 122k | #274, #275 |
