@@ -25,6 +25,7 @@
   - C2p opened 2026-10-24 at the user's request (2 units + close-out); unit 1: the draft converted to LaTeX for Overleaf (`trackC_writeup/tex/`, compiled, CI-checked against the Markdown) and ten figures to cull from, five new (the identity-weight picture, an illustration; the two events on the ten seeds; E₁ against its mean term; the massive coordinates' late arrival; the mean spread at the break), each but the illustration from a record; where the draft lives once the user edits it is Blocked 108 — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
   - C2p unit 2 (107 (a), 108 (a), the user's; writing only): the draft's source is now `trackC_writeup/paper/` (the Overleaf folder; `paper_check` lists any number no record renders to, CI-checked); M2's results in the draft's section 4.1, level first; §8 and F9 meet 2510.06477, whose Pythia grid reads no step between 1 and 1000, so its "around 1k" bounds rather than dates (a correction to C5); m15, m19, m25 done; pdfLaTeX compiles (26 pages); a second fresh read (major revision, 6 major, 20 minor) answered in `referee-C2p.md`, its framing points Blocked 109 — `trackC_writeup/status-C.md` "C2p unit 2"
   - **C2p closed 2026-10-24 at its exit** (2 units + close-out; Blocked 109 (a), the user's; writing only): `paper/` is an Overleaf-ready draft (pdfLaTeX, 28 pages, `paper_check` 0), cut to seven figures in the main text and three in appendices (the illustration out), with the second read's framing points made: the title and abstract lead with the count, its drops at β = 1 being falls of the mean (one direction), §4 leads with a per-seed table and p and E follow it, out of the abstract, §5 states the alignments' base rate (anchored at the break too), a glossary and per-row definitions; revised after `/challenge-pr` on #269 (findings 1–5 taken); no number moved; no Parked items; m11, m12, M3 (iii), a code and data statement and posting are the user's — `trackC_writeup/status-C.md` "C2p on one page (closed 2026-10-24)"
+  - After C2p (2026-10-24, the user's; writing only): `paper/` cites 2609.28448 in §6 (Sec. V B: a head's negative eigenvalues do not establish negative feedback) and §8, and §5 says the OV phase is named for E2's share; 28 pages, `paper_check` 0 — `trackC_writeup/status-C.md` "Units"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -36,7 +37,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-24 · body `46f6aea0b2`
+- **Reviewed:** 2026-10-24 · body `5329a2f73f`
 <!-- /phase-card -->
 
 ## Units
@@ -61,6 +62,7 @@
 | C2p 1. the LaTeX and ten figures (opened at the user's request) | **done 2026-10-24: `tex/` compiles (22 pages); figures 6–10 new, 9 and 10 C5's; `numbers.py`'s docstring; Blocked 108** | `design-C2p.md`, `to_tex.py`, `tex/`; "C2p unit 1" below |
 | C2p 2. the revisions and the second fresh read (107 (a), 108 (a), the user's) | **done 2026-10-24: `paper/` is the source; M2's results level first, §8 and F9 against 2510.06477 (its grid reads no step in (1, 1000)), m15, m19, m25 (`fig11_rho`); `paper_check` 0; the read: major revision, 6 + 20 points answered; Blocked 109** | `paper/`, `paper_check.py`, `referee-C2p.md`; "C2p unit 2" below |
 | C2p close-out (109 (a), the user's) | **done 2026-10-24: writing only; the cut and the read's framing points made in `paper/` (28 pages, `paper_check` 0); exit met at 2 units + close-out; no Parked items** | "C2p on one page" below |
+| after C2p: one citation (the user's, 2026-10-24) | **done 2026-10-24: writing only; 2609.28448 (Gao, Yang, Chen) cited in `paper/` §6 (its Sec. V B: negative eigenvalues of one head's map do not establish negative feedback, beside E2's fall) and §8 (the repulsive case as a discrete map that need not settle); `refs.bib` `gao2026`; after `/challenge-pr` on #270, §5 says the OV phase is named for E2's share, not a shown negative feedback (so §6's sentence and §5 agree); still 28 pages, no undefined reference, `paper_check` 0; no number added** | `paper/main.tex`, `paper/refs.bib` |
 
 ## C2p on one page (closed 2026-10-24)
 

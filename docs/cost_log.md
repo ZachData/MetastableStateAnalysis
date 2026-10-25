@@ -509,3 +509,6 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   Over 2× the running median: as the row above, plus /challenge-pr's fork (2.1M) and its five fixes.
 | 2026-10-24 | C2p close-out (#269), before /challenge-pr | 69 | 191k | 9.7M | 113k | #269 |
 | 2026-10-24 | C2p close-out (#269), after /challenge-pr (accept with changes; findings 1-5 taken) · subagents: general-purpose opus-5-5 3.0M | 86 | 212k | 13.1M | 117k | #269 |
+| 2026-10-24 | 24 Oct readings (#270), before /challenge-pr | 64 | 307k | 13.0M | 116k | #270 |
+| 2026-10-24 | 24 Oct readings (#270), after /challenge-pr (accept with changes; findings 1-6 taken) · subagents: general-purpose opus-5-5 2.6M | 85 | 344k | 19.9M | 127k | #270 |
+  Over 2× the running median: two sessions' work in one (the check-in with three reading pages, the 76 KB LaTeX read whole to convert it and two papers' sources read; then this PR), with /challenge-pr's fork and six fixes.
