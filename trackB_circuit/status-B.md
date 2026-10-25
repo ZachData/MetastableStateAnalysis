@@ -42,8 +42,8 @@
   - B2–B4 on this harness, with an on-distribution null for B4 *(forward pass, GPU minutes per step)*
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
-  - From B7 at close: B7′, the sink-excluded read with N0 re-estimated per draw, on a prompt set with more content rows (ROADMAP); for B4, the 5 → 6 two-cycle cells' heads; for S4, B7's instrument on the tied and untied arms *(forward pass, GPU minutes a step on new prompts for B7′; the B4 pointer reads records, the S4 arm rides on S4's runs)* — `trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"
-- **Reviewed:** 2026-10-25 · body `f9fd0ff943`
+  - From B7 at close: B7′, the sink-excluded read with N0 re-estimated per draw, on the stored 7 prompts first, then the long prompts (ROADMAP); for B4, the 5 → 6 two-cycle cells' heads; for S4, B7's instrument on tied and untied arms of ≥ 3 layers *(forward pass, GPU minutes a step, only for the long prompts; the 7-prompt read and the B4 pointer read stored arrays, the S4 arm rides on S4's runs)* — `trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"
+- **Reviewed:** 2026-10-25 · body `f73a4ed596`
 <!-- /phase-card -->
 
 ## Units
@@ -156,9 +156,11 @@ freeze, Blocked 110 (a); unit 1c added by Blocked 112 (a)). Closed at what it kn
 **Not established:**
 
 - **Routing activity of content partners**: whether non-sink partners persist or reroute across
-  depth. An estimate from the table (not computed): without the sinks a mid-depth cell keeps about
-  1/10 of its rows, about 25 a head, under the 50-row entry, so on these 7 prompts a sink-excluded
-  read would mostly be "not read".
+  depth. A sink-excluded read was not run. It is not shown to be out of reach on these 7 prompts:
+  scaling every head's rows evenly in the records, 85 of 89 mid-depth L cells keep ≥ 2 entering
+  heads at 1/5 of their rows (what the sink table implies) and 37 at 1/10 (`/challenge-pr` on
+  #277, finding 1, re-derived here). The sink is not removed evenly across heads, so that bounds
+  neither side. Blocked 113's "about 25 a head, so mostly not read" was wrong (corrected below).
 - Anything about the paper's active or frozen phase: 410m is untied, so a kept partner can be two
   layers' weights agreeing rather than one geometry persisting (`design-B7.md` "Fences").
 - Any single description near a boundary: with h\* held fixed in the draws, 3 of 7 R, 11 of 38 F and
@@ -170,7 +172,7 @@ freeze, Blocked 110 (a); unit 1c added by Blocked 112 (a)). Closed at what it kn
 - N0's own sampling noise: it is not in the `P − N0` interval, so a sparse cell whose N0 reads high
   by chance can read "rerouting".
 - Head identity across layers (best match only), partners in representation space (B7's are
-  positions), other rungs, the 12 held-out prompts.
+  positions), other rungs, longer prompts, the 12 held-out prompts.
 - Beside, a lean only: the same two prompts flipped mid-depth heads' pooled M1 β sign (`L6H4`,
   `L15H7`; "Corrections received" 2026-10-16). Whether the same newline does it was not checked.
 
@@ -178,10 +180,21 @@ freeze, Blocked 110 (a); unit 1c added by Blocked 112 (a)). Closed at what it kn
 
 | thread | at close |
 |---|---|
-| The second sinks and the interval: a sink-excluded read under a rule fixed before output, with a gate arm planting a second sink and heads that differ by prompt (Parked) | **carried** to a new ROADMAP row, B7′ (Blocked 113 (a)). It waits on a prompt set with more content rows: the estimate above says 7 prompts would mostly not read, and the 12 held-out are fenced on 410m |
+| The second sinks and the interval: a sink-excluded read under a rule fixed before output, with a gate arm planting a second sink and heads that differ by prompt (Parked) | **carried** to a new ROADMAP row, B7′ (Blocked 113 (a)). It can run on the stored 7 prompts (no forward pass); the long prompts in `p1d_cluster_ensemble/long_prompts/` and `p1e_energy_field/long_prompts_1e/` (1000–2000 tokens, not fenced) add content rows at the cost of forward passes. The 12 held-out v2 prompts are fenced on every model (`core/holdout.py`) |
 | N0's own sampling noise in the `P − N0` interval (Parked; `/challenge-pr` on #273, finding 3) | **carried** to B7′: any re-read re-gates, so N0 re-estimated per draw (the U-statistic) goes into the same unit. Unit 2's 7 R cells are the cells it could move |
 | The 5 → 6 two-cycle candidates (2000–16000) and the late layers' F (20–22), per head from the records (Parked) | **carried** to B4 as a pointer (layer 5 holds `L5H2`, whose write space B4 nudges): the cells' `heads` in `data/b7/2026-10-25-unit2/` name the heads, no new run; it can change nothing in B7's grid |
-| Untied against tied: whether a kept partner is one geometry persisting (design "Fences") | **carried** to S4: B7's instrument on S4's tied and untied arms, where one map is iterated |
+| Untied against tied: whether a kept partner is one geometry persisting (design "Fences") | **carried** to S4, with its condition: N1 compares layers ≥ 2 apart (`design-B7.md` "Objects, fixed here"), so the read needs ≥ 3 layers in both the tied and the untied arm. A 2-layer S4 cannot carry it, and iterating a tied 2-layer model past its trained depth measures another system; S4's design chooses the depth |
+
+**After `/challenge-pr` on #277 (accept with changes).** Finding 1, confirmed from the records:
+Blocked 113's estimate (1/10 of rows, about 25 a head, so a sink-excluded read "mostly not read")
+set the median head against the 50-row entry, but a cell is read once 2 heads enter (`MIN_HEADS`),
+and the sink table implies about 1/5 of rows remain, not 1/10. At 1/5, 85 of 89 mid-depth L cells
+keep ≥ 2 entering heads; at 1/10, 37 (10 of 11 at 143000). The close stands as decided (Blocked 113
+(a), the user's), but its stated reason for not running (b) does not: B7′ is about one unit on the
+stored arrays. Finding 2: the long prompts were missed; B7′ names them, and "fenced on 410m" is
+"fenced on every model". Finding 3: the S4 carry now states the ≥ 3-layer condition. Finding 4:
+§3.74 says a newline sink was known (`LESSONS.md` 3). `LESSONS.md` 11 records the estimate. Answers:
+PR #277.
 
 ## B7 unit 2 (2026-10-25): the 18 steps × 23 layer pairs
 

@@ -2202,6 +2202,15 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   not. Its own gate arm had an absolute tolerance (0.02) 2× the null's size, so it would have
   passed. Rule: a null is simulated at the real design points before the design is proposed,
   and a tolerance is stated relative to the null's size.
+- 2026-10-25, B7 close (found by `/challenge-pr` on #277, finding 1): Blocked 113 recommended
+  closing over a sink-excluded unit on an estimate "not computed": about 1/10 of a mid-depth cell's
+  rows left, about 25 a head, under the 50-row entry, so "mostly not read". The estimate set the
+  median head against the entry, but a cell is read once 2 heads enter, and the session's own sink
+  table implied about 1/5 left. Scaled evenly in the records, 85 of 89 cells still read at 1/5
+  and 37 at 1/10. It also missed the repo's unfenced long prompts. The user decided on that
+  recommendation, and the close-out repeated the estimate in four files. Rule: an estimate that
+  decides between a Blocked item's options is computed from the records when it is a read of
+  them, under the rule's own read condition, before the option is recommended.
 
 ## 12. Deleted, then needed
 
