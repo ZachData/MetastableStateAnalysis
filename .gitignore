@@ -46,6 +46,8 @@
 !trackC_writeup/paper_slots.json
 # GPT-2 small's logged LR (C2 unit 3c), read by tools/math_checks/c2_warmup_grid.py W2.
 !trackC_writeup/gpt2_small_lr_log.json
+# GitHub's activity events for P-A5's registration branch (§3.4's outside timestamp; GitHub keeps them ~90 days). A `repo:` record of numbers.py.
+!trackC_writeup/p_a5_push_record.json
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh

@@ -633,6 +633,12 @@ well-formed but empty/zero result. It looks exactly like a real result.
   again edited by a Python script (one line deleted), against the Edit-tool rule. Rule: **`bash -n`
   every launch script before handing it to the runner; a per-record GPU loop frees its record and
   empties the cache each iteration; a wall-time quote scales every stage the change touches.**
+- 2026-10-28 (figure 12): `numbers.py` lists `repo:trackC_writeup/p_a5_push_record.json` (GitHub's
+  events dating P-A5's registration, which GitHub keeps ~90 days) as a tracked record, but the
+  deny-by-default `.gitignore` never whitelisted it: its only copy was untracked in `../Mets-work`,
+  so `produce` refused in any other worktree, and removing that worktree would have lost it. CI did
+  not see it because CI never runs `produce`. Rule: **a `repo:` record is checked with `git
+  ls-files` when it is added; `git check-ignore -v` on any new non-`.py`/`.md` file before commit.**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

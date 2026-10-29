@@ -25,7 +25,7 @@
   - C2p opened 2026-10-24 at the user's request (2 units + close-out); unit 1: the draft converted to LaTeX for Overleaf (`trackC_writeup/tex/`, compiled, CI-checked against the Markdown) and ten figures to cull from, five new (the identity-weight picture, an illustration; the two events on the ten seeds; E₁ against its mean term; the massive coordinates' late arrival; the mean spread at the break), each but the illustration from a record; where the draft lives once the user edits it is Blocked 108 — `trackC_writeup/status-C.md` "C2p unit 1, the LaTeX and ten figures to cull from (2026-10-24)"
   - C2p unit 2 (107 (a), 108 (a), the user's; writing only): the draft's source is now `trackC_writeup/paper/` (the Overleaf folder; `paper_check` lists any number no record renders to, CI-checked); M2's results in the draft's section 4.1, level first; §8 and F9 meet 2510.06477, whose Pythia grid reads no step between 1 and 1000, so its "around 1k" bounds rather than dates (a correction to C5); m15, m19, m25 done; pdfLaTeX compiles (26 pages); a second fresh read (major revision, 6 major, 20 minor) answered in `referee-C2p.md`, its framing points Blocked 109 — `trackC_writeup/status-C.md` "C2p unit 2"
   - **C2p closed 2026-10-24 at its exit** (2 units + close-out; Blocked 109 (a), the user's; writing only): `paper/` is an Overleaf-ready draft (pdfLaTeX, 28 pages, `paper_check` 0), cut to seven figures in the main text and three in appendices (the illustration out), with the second read's framing points made: the title and abstract lead with the count, its drops at β = 1 being falls of the mean (one direction), §4 leads with a per-seed table and p and E follow it, out of the abstract, §5 states the alignments' base rate (anchored at the break too), a glossary and per-row definitions; revised after `/challenge-pr` on #269 (findings 1–5 taken); no number moved; no Parked items; m11, m12, M3 (iii), a code and data statement and posting are the user's — `trackC_writeup/status-C.md` "C2p on one page (closed 2026-10-24)"
-  - After C2p (2026-10-24, the user's; writing only): `paper/` cites 2609.28448 in §6 (Sec. V B: a head's negative eigenvalues do not establish negative feedback) and §8, and §5 says the OV phase is named for E2's share; 28 pages, `paper_check` 0. 2026-10-25 (the user's): appendix D takes the timeline's rows one by one, each with its panel and its floor numbers; 34 pages — `trackC_writeup/status-C.md` "Units"
+  - After C2p (2026-10-24, the user's; writing only): `paper/` cites 2609.28448 in §6 (Sec. V B: a head's negative eigenvalues do not establish negative feedback) and §8, and §5 says the OV phase is named for E2's share; 28 pages, `paper_check` 0. 2026-10-25 (the user's): appendix D takes the timeline's rows one by one, each with its panel and its floor numbers; 34 pages. 2026-10-28 (the user's): figure 12, the energy ridgeline with the identity-weight reference, drawn from a new record, not yet in `paper/` — `trackC_writeup/status-C.md` "Units"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -37,7 +37,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-25 · body `fab1a04846`
+- **Reviewed:** 2026-10-28 · body `5232dc1d48`
 <!-- /phase-card -->
 
 ## Units
@@ -64,6 +64,36 @@
 | C2p close-out (109 (a), the user's) | **done 2026-10-24: writing only; the cut and the read's framing points made in `paper/` (28 pages, `paper_check` 0); exit met at 2 units + close-out; no Parked items** | "C2p on one page" below |
 | after C2p: one citation (the user's, 2026-10-24) | **done 2026-10-24: writing only; 2609.28448 (Gao, Yang, Chen) cited in `paper/` §6 (its Sec. V B: negative eigenvalues of one head's map do not establish negative feedback, beside E2's fall) and §8 (the repulsive case as a discrete map that need not settle); `refs.bib` `gao2026`; after `/challenge-pr` on #270, §5 says the OV phase is named for E2's share, not a shown negative feedback (so §6's sentence and §5 agree); still 28 pages, no undefined reference, `paper_check` 0; no number added** | `paper/main.tex`, `paper/refs.bib` |
 | after C2p: appendix D, the rows one by one (the user's, 2026-10-25) | **done 2026-10-25: writing only, on records already read; appendix D rewritten as one entry per row of table 2 with its own panel of figure 5: what it measures, why it is on the timeline, how it is dated, and whether its change clears the locator's floor (reference, σ, ref / σ, the null arm's no-change share, all from A3's `a3_rows.json`); a new table 3 of those numbers; table 2's row names and figure 5's caption link to the entries; `numbers.py` new keys `a3.x0`, `a3.ref`, `a3.ref_step`, `a3.x_ref`, `a3.sigma`, `a3.ref_sigma`, `a3.n_units`, `a3.own_floor`, `a3.null_no_change`, `a3.low_power`, `a3.low_power_9`, `a3.x_last`, `a3.E8_peak_ref`, `a3.E8_peak_step` and `row_panels` (`fig/paper/figD_<row>.pdf`, copied into `paper/fig/`; no half-line on the n-gram rows, dated at their minimum); 93 slots + one literal (the gate's 95 %) in `paper_slots.json`; 34 pages, no undefined reference, `paper_check` 0; the page republished. After `/challenge-pr` on #275 (accept with changes): E8's peak step (256, from the right key), the n-gram panels' half-line, the registration's wording (intermediate checkpoints downloaded) and E1's reason for no σ corrected, panels renamed `figD_`; whether to generate table 3 into `paper/` left to the user (Blocked 108 keeps `paper/` hand-edited)** | `paper/main.tex` appendix D; re-run: `python -m trackC_writeup.numbers produce && python -m trackC_writeup.numbers paper-figures`, then copy `fig/paper/figD_*.pdf` into `paper/fig/` |
+| after C2p: figure 12, the energy ridgeline (the user's, 2026-10-28) | **drawn 2026-10-28, not yet in `paper/` (yours to include): tier 1, description, no forward pass; from the page https://claude.ai/artifact/TBed9FFnPDLDWKAeN1duSQ, its identity prototype ported to a tracked producer** | `c2_ridge.py`, `numbers.py` `ridge_figure`, `fig/paper/fig12_ridge.pdf`; "Figure 12, the energy ridgeline" below |
+
+## Figure 12, the energy ridgeline (2026-10-28)
+
+The user's request: the page's ridgeline as a paper figure, with the identity reference panel. Tier 1, a
+description; nothing registered, no threshold, no date.
+
+| | |
+|---|---|
+| figure | `fig/paper/fig12_ridge.pdf` (`numbers.py paper-figures`, `ridge_figure`); deterministic on this machine (two draws byte-equal) |
+| record | `data/trackC/c2ridge/2026-10-28/ridge.json` (sha256 `2bac42c9c601…` in `numbers.json`), producer `c2_ridge.py` code `a76f7ad95b22`, CPU 2.5 min |
+| inputs | A5's seed-0 records `data/trackA/a5/2026-10-20-u1/seed0/records` (126 files, sha256 over the files in name order `6ecb21551a8d…`); V checked against that run's `gate.json` known answer at every step; step-0 `embed_in` of `EleutherAI/pythia-410m`, tokenizer A5's (`step143000`), offline |
+| right panel | E₁ (β = 1) at the 25 states, mean over the 7 prompts, the 18 steps on one height scale, step 0 at the back; a transition is drawn in the drop colour where any prompt drops (A5's D2 rule, 10⁻³), stronger with more prompts; V at the right; claim: equal to `s0.V` |
+| left panel | Q = K = V = I from each prompt's step-0 embedding rows (E at t = 0 equal to the record's `e1[0]` to 10⁻⁵, token ids hashed to the record's), β = 1, 2400 Euler steps to T = 8 renormalised to the sphere, read at 25 equal times; both masks, mean over the prompts; the model at step 0 beside |
+| what it shows | full mask: smallest fine-step change 3.7 × 10⁻⁸ (it refuses on a fall), within 1 % of e/2 (one point) by read 14 of 24; causal (no theorem): smallest change 1.7 × 10⁻⁵, ends 1.33–1.34; the model at step 0 rises 0.52 → 0.88; ridges at 0–128 have no drop; the highest ridge is step 16's (1.23); the mean ends above the embeddings at every step (claim) |
+| matches | the page's identity numbers to 7 × 10⁻¹⁶ (its scratch `identity_ref.py`, ported unchanged in what it computes) |
+
+**Caveats.** t is not depth: T = 8 is figure 6's choice, so the identity curve's rate against the
+model's states means nothing; its shape (monotone, to a ceiling) is the reference. The ridges are the
+mean over prompts; a single prompt's drop shows only as the segment's colour. Seed 0 only.
+
+**Also in this unit.** `p_a5_push_record.json` (a `repo:` record of `numbers.py`, §3.4's outside
+timestamp) was gitignored and its one copy sat untracked in `../Mets-work`; now whitelisted and tracked,
+sha256 equal to the table's (`LESSONS.md` 2). `reg.falsifier_p` moved by one ulp (…338 → …339) under
+Python 3.14.8's float `pow`, named with `--reread`; its rendering is unchanged. This venv redraws
+`fig11_rho` and `figD_*` with other bytes (matplotlib), so the tracked ones were kept.
+
+**Re-run.** `METS_DATA=<main>/data HF_HOME=<main>/data/hf HF_HUB_OFFLINE=1 python -m trackC_writeup.c2_ridge`,
+then `METS_DATA=<main>/data python -m trackC_writeup.numbers produce` and `python -m trackC_writeup.numbers
+paper-figures`; copy `fig/paper/fig12_ridge.pdf` into `paper/fig/` when `paper/` includes it.
 
 ## C2p on one page (closed 2026-10-24)
 

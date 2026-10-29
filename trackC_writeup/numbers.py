@@ -15,8 +15,8 @@ Three steps, so that only the first needs the main tree's `data/`:
   Markdown draft and `tex/fig/fig*.pdf` for the LaTeX one (`to_tex.py`), both deterministic.
   Figure 6 is an illustration computed in `_toy`, not a record.
 - **paper-figures** draws the figures only the user's LaTeX source `paper/` uses (C2p unit 2,
-  Blocked 108 (a): appendix A's ρ) into `fig/paper/`, from the table alone; nothing here writes
-  into `paper/`, so each is copied there by hand.
+  Blocked 108 (a): appendix A's ρ; figure 12, the energy ridgeline, the user's, 2026-10-28) into
+  `fig/paper/`, from the table alone; nothing here writes into `paper/`, so each is copied there by hand.
 
 Numbers a paper reports are that paper's and carry its citation; numbers from this project's
 records and from Pythia's released training configs are keys.
@@ -82,6 +82,8 @@ RECORDS = {
     "c5u2": "data:trackC/c5/2026-10-24-u2/reading.json",
     # C2p unit 2 (§4.1's M2 paragraph): unit 2's frozen constants (the plant's size, "few", recurrence)
     "c5mean_src": "repo:trackC_writeup/c5_mean.py",
+    # Figure 12 (the user's, 2026-10-28): seed 0's E₁ at every step and state, and the identity reference
+    "ridge": "data:trackC/c2ridge/2026-10-28/ridge.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -324,6 +326,12 @@ def _r1_out(r: dict) -> List[tuple]:
 def _c5seeds(r: dict) -> Dict[str, dict]:
     """C5's readings keep seed 0 (the development set) apart from the nine; the figures draw all ten."""
     return dict(r["per_seed"], **{"0": r["seed0_development"]})
+
+
+def _pmean(rows) -> List[float]:
+    """Each state's mean over the prompts' series."""
+    rows = list(rows)
+    return [sum(c) / len(rows) for c in zip(*rows)]
 
 
 def _c5b_s_exc(r: dict) -> int:
@@ -687,6 +695,16 @@ KEYS: Dict[str, tuple] = {
     "m2.n_plant": ("c5mean_src", lambda s: int(constant(s, "N_PLANT"))),
     "m2.n_rot": ("c5mean_src", lambda s: int(constant(s, "N_ROT"))),
     "m2.few": ("c5mean_src", lambda s: int(constant(s, "FEW"))),
+    # Figure 12: the ridges (seed 0, mean over the prompts) and the identity-weight flow from step 0's embeddings
+    "ridge.e1": ("ridge", lambda r: [_pmean(r["ridges"]["e1"][str(s)].values()) for s in r["steps"]]),
+    "ridge.drops": ("ridge", lambda r: r["ridges"]["drops"]),
+    "ridge.V": ("ridge", lambda r: r["ridges"]["V"]),
+    "ridge.n_prompts": ("ridge", lambda r: len(r["prompts"])),
+    "ridge.ident_full": ("ridge", lambda r: _pmean(p["full"] for p in r["identity"]["prompts"].values())),
+    "ridge.ident_causal": ("ridge", lambda r: _pmean(p["causal"] for p in r["identity"]["prompts"].values())),
+    "ridge.ident_T": ("ridge", lambda r: r["identity"]["T"]),
+    "ridge.ident_full_min": ("ridge", lambda r: min(p["full_min_fine_diff"] for p in r["identity"]["prompts"].values())),
+    "ridge.ident_causal_min": ("ridge", lambda r: min(p["causal_min_fine_diff"] for p in r["identity"]["prompts"].values())),
 }
 
 
@@ -695,6 +713,10 @@ KEYS: Dict[str, tuple] = {
 #: render consistent but makes a sentence false cannot pass. Each names its sentence.
 CLAIMS: List[tuple] = [
     ("§3.1 the grid is A5's", lambda k: tuple(k["grid.steps"]) == GRID),
+    ("figure 12: the ridges' V is seed 0's", lambda k: k["ridge.V"] == k["s0.V"]),
+    ("figure 12's caption: the identity flow's E never falls under either mask; the mean ends above the embeddings at every step",
+     lambda k: k["ridge.ident_full_min"] >= 0 and k["ridge.ident_causal_min"] >= 0
+     and all(e[-1] > e[0] for e in k["ridge.e1"])),
     ("§3.2 one date at every tolerance and prompt left out",
      lambda k: len(set(k["s0.tol_steps"])) == 1 and len(set(k["s0.loo_steps"])) == 1
      and k["s0.tol_steps"][0] == k["s0.break"]),
@@ -1382,8 +1404,8 @@ def row_panels(keys: Dict[str, dict]) -> List[Path]:
 
 
 def paper_figures(keys: Dict[str, dict]) -> List[Path]:
-    """Figure 11 (appendix A; the referee's m25): ρ by family and step, S1's records; and appendix
-    D's row panels (`row_panels`)."""
+    """Figure 11 (appendix A; the referee's m25): ρ by family and step, S1's records; figure 12, the
+    energy ridgeline (`ridge_figure`); and appendix D's row panels (`row_panels`)."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -1410,7 +1432,81 @@ def paper_figures(keys: Dict[str, dict]) -> List[Path]:
     fig.savefig(path, format="pdf", bbox_inches="tight",
                 metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
     plt.close(fig)
-    return [path] + row_panels(keys)
+    return [path, ridge_figure(keys)] + row_panels(keys)
+
+
+def ridge_figure(keys: Dict[str, dict]) -> Path:
+    """Figure 12 (the user's, 2026-10-28; `c2_ridge.py`): left, the identity-weight flow from step 0's
+    embeddings, both masks, with the model at step 0 beside; right, seed 0's E₁ against depth at every
+    step on one height scale, step 0 at the back, each transition where a prompt drops drawn in the
+    drop colour (stronger with more prompts), V at the right."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    _style(plt)
+    k = {n: v["value"] for n, v in keys.items()}
+    steps, e1, cnt, v = k["grid.steps"], k["ridge.e1"], k["ridge.drops"], k["ridge.V"]
+    n_p, n, states = k["ridge.n_prompts"], len(steps), list(range(len(e1[0])))
+    fig = plt.figure(figsize=(7.2, 4.6))
+
+    ax = fig.add_axes([0.07, 0.47, 0.25, 0.45])
+    ceiling = 2.718281828459045 / 2                  # E₁ of one point: exp(1) / 2
+    ax.axhline(ceiling, color=MUTED, lw=0.8, ls=(0, (1, 2)))
+    ax.text(0.3, ceiling - 0.02, "e/2: one point", ha="left", va="top", fontsize=7, color=MUTED)
+    ax.plot(states, k["ridge.ident_full"], color=SERIES[2], lw=1.6, label="identity, full mask")
+    ax.plot(states, k["ridge.ident_causal"], color=SERIES[2], lw=1.2, ls=(0, (3, 2)), label="identity, causal mask")
+    ax.plot(states, e1[0], color=INK, lw=1.0, label="the model at step 0")
+    t_end = k["ridge.ident_T"]
+    ax.set_xticks([0, 12, 24], ["0", f"{t_end / 2:g}", f"{t_end:g}"])
+    ax.set_xlabel("t, read at 25 equal times\n(the model: state 0–24)", fontsize=8)
+    ax.set_ylabel("E₁, mean over the prompts")
+    ax.set_ylim(0.45, 1.42)
+    fig.legend(*ax.get_legend_handles_labels(), loc="upper left", bbox_to_anchor=(0.045, 0.30), fontsize=7)
+    ax.set_title("Q = K = V = I, from step 0's embeddings", fontsize=8.5, loc="left", color=INK)
+
+    ax = fig.add_axes([0.42, 0.06, 0.50, 0.90])
+    lo, hi = min(min(e) for e in e1), max(max(e) for e in e1)
+    amp = 3.4                                        # ridge height, in rows: ridges overlap
+    for si in range(n):
+        base = n - 1 - si
+        y = [base + (e - lo) / (hi - lo) * amp for e in e1[si]]
+        z = 2 * si + 2
+        ax.fill_between(states, base, y, color="white", lw=0, zorder=z)
+        ax.fill_between(states, base, y, color=SERIES[0], alpha=0.04 + 0.10 * si / (n - 1), lw=0, zorder=z)
+        ax.plot([states[0], states[-1]], [base, base], color=RULE, lw=0.6, zorder=z)
+        segs = [[(t, y[t]), (t + 1, y[t + 1])] for t in range(len(y) - 1)]
+        flat = [s for s, c in zip(segs, cnt[si]) if c == 0]
+        ax.add_collection(LineCollection(flat, colors=INK, linewidths=1.0, zorder=z + 1))
+        for s, c in zip(segs, cnt[si]):
+            if c:
+                ax.add_collection(LineCollection([s], colors=SERIES[1], linewidths=1.9, zorder=z + 1,
+                                                 alpha=0.45 + 0.55 * min(1.0, 2 * c / n_p)))
+        ax.text(-0.7, base, _tick(steps[si]), ha="right", va="center", fontsize=7,
+                color=INK if steps[si] <= k["cfg.warmup_steps"] else MUTED)
+        ax.text(len(states) - 0.3, base, f"{v[si]}", ha="left", va="center", fontsize=7,
+                color=SERIES[1] if v[si] else MUTED)
+    last_warm = max(i for i, s in enumerate(steps) if s <= k["cfg.warmup_steps"])
+    ax.plot([-3.2, -3.2], [n - 1, n - 1 - last_warm], color=SERIES[0], lw=1.4, clip_on=False)
+    ax.text(-3.7, n - 1 - last_warm / 2, "warmup", rotation=90, ha="center", va="center", fontsize=7,
+            color=SERIES[0])
+    ax.text(-0.7, n - 0.2, "step", ha="right", va="center", fontsize=7, color=MUTED)
+    ax.text(len(states) - 0.3, n - 0.2, "V", ha="left", va="center", fontsize=7, color=MUTED)
+    ax.set_xlim(0, len(states) - 1)
+    ax.set_ylim(-0.4, n - 1 + amp + 0.2)
+    ax.set_xticks([0, 4, 8, 12, 16, 20, 24], ["emb", "4", "8", "12", "16", "20", "24"])
+    ax.set_yticks([])
+    ax.spines["left"].set_visible(False)
+    ax.grid(axis="y", visible=False)
+    ax.grid(axis="x", visible=True)
+    ax.set_axisbelow(True)
+    ax.set_xlabel("state (0 = embeddings)")
+    PAPERFIG.mkdir(parents=True, exist_ok=True)
+    path = PAPERFIG / "fig12_ridge.pdf"
+    fig.savefig(path, format="pdf", bbox_inches="tight",
+                metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
+    plt.close(fig)
+    return path
 
 
 # ---------------------------------------------------------------------------
