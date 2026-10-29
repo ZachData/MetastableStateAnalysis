@@ -106,6 +106,9 @@ PHASES_WITHOUT_PREDICTIONS = {
     "C": "Track C, the write-ups; registers nothing of its own: C2 quotes rows scored "
          "elsewhere (`P-A5`, Track A's) and tier 1 readings "
          "(`trackC_writeup/status-C.md`).",
+    "T": "Track T, Timaeus's checkpoints and the LLC; tier 1 and deliberately "
+         "unregistered: T1 opened 2026-10-29 as an inventory, nothing run, no `P-*` id "
+         "(`trackT_timaeus/status-T.md`).",
 }
 
 #: Which `claims/audits/*.json` is a known-answer dry run, as opposed to a
