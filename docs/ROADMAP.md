@@ -276,6 +276,32 @@ selected pairs' displacement at 143000; to C2, `lit-S2.md` Parked 1 and G3′'s 
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
 
+## 7b. Track T: Timaeus's checkpoints and the LLC (candidates, 2026-10-29)
+
+From the user's check-in (2026-10-29): C2's draft places the break against the LLC stages
+(§2.2, Hoogland et al. 2402.02364) but has no figure that sets the two side by side. The search
+that day found **no published LLC values for any Pythia model**: Timaeus's Pythia work is
+susceptibilities (Pythia-14M, 2601.12703) and influence functions (2509.26544) around trained
+checkpoints, not the LLC along training. Each T unit opens under §3 (scan, exit condition, unit
+budget). Nothing below has been downloaded or run; the Hugging Face listings were read 2026-10-29.
+
+| # | item | why | cost (estimate, not measured) |
+|---|---|---|---|
+| T1 | **inventory**: which `timaeus/*` repo is 2402.02364's model, with which checkpoints and published LLC settings; provenance of `timaeus/gpt-2-small` (~650 checkpoints, no model card) | T3 needs a published curve on a released model; none is confirmed yet | free |
+| T2 | **V and E_β on `timaeus/dodecahedron-32m` / `-67m`** (Llama-style, 16 / 20 layers, FineWeb, 53 checkpoints log-spaced from step 1 to 9536, warmup 1000 steps) | a third family beside Pythia and Mistral GPT-2, with checkpoints at 225, 263, 308, 359, 420, 491, 574, 671, 785, 917 where Pythia has none between 512 and 1000; a different warmup in tokens (about 0.5B against Pythia's 3B), bearing on C2's F1 and C4 | forward passes only |
+| T3 | **positive control for the LLC**: reproduce 2402.02364's published LLC curve on its released model with `devinterp` and its stated settings | the LLC estimate depends on its step size, localisation and nβ, so a number means little until the pipeline reproduces a known curve (`CLAUDE.md` calibration gate) | small model; hours |
+| T4 | **LLC on C2's checkpoints**: `pythia-70m` first, then `pythia-410m` seed 0 at the 18 steps; overlaid on V | the overlay the user asked for, same model and steps as C2's figures | 410m: about 1 s per SGLD step at 8 × 512 tokens (the 40 ms forward pass in `docs/compute_profile.md`, × 3 for the backward, × 8), so 4 chains × 500 steps is about 35 min a checkpoint, about 10 h for 18; 70m about 15× fewer FLOPs (the wall-clock saving smaller on a small model) |
+
+**What the LLC cannot give here, one claim per line.**
+
+- The estimator assumes a local minimum; C2's break (128–512) is inside the warmup, far from one, so the readings that matter most are the least trusted (off-equilibrium estimators: 2606.22389; read before T4's design freezes).
+- Values are comparable only within one fixed setting of the hyperparameters; the overlay compares shapes and dates, not magnitudes.
+- A shared date does not separate either curve from the LR schedule (C2's F1).
+- "Expensive" in the literature is per-token or per-component work (susceptibilities on Pythia-1.4B: about 4,800 H200 hours, Timaeus blog 2026-04-21); one scalar LLC per checkpoint is the cheap case.
+
+Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 passes.
+Whether T opens, and where it sits against the other open rows, is §10 item 11.
+
 ## 8. Track C: write-ups
 
 | # | paper | inputs | when |
@@ -337,6 +363,9 @@ proposed, not decided.
 10. **The §5 process items:** the preflight tool first (one unit, before S1 freezes; **built
     2026-10-20**, its citation rule STATE Blocked 80); pre-authorised fallbacks and the
     alternatives step as `CLAUDE.md` rules; the start-hook fix.
+11. **Track T** (§7b, proposed 2026-10-29): whether it opens, and where it sits against B7′ and
+    C4. Recommended: T1 and T2 first, since they are cheap and T2's dense grid between 512 and
+    1000 bears on C2 directly; T3 and T4 only if the LLC overlay is wanted in C2.
 
 ## 11. What each phase gives the plan
 
