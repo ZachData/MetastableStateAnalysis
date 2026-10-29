@@ -15,12 +15,13 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - Dodecahedron's global batch is inferred from the card's arithmetic, not read from a training log — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
+  - Dodecahedron's global batch is inferred from the card's arithmetic, not read from a training log; the user asks Timaeus (Blocked 118 (b)), and tokens is scored in T2 only on `design-T2.md` D4's condition — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
+  - T2's design is proposed, not frozen (D1–D4, Blocked 119) — `trackT_timaeus/design-T2.md`
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-29 · body `e7635e0e72`
+- **Reviewed:** 2026-10-29 · body `ddadc5deef`
 <!-- /phase-card -->
 
 ## Units
@@ -28,9 +29,27 @@
 | unit | state | where |
 |---|---|---|
 | T1. the inventory | **done 2026-10-29** (one unit, at budget) | `design-T1.md`; "T1, the inventory" below |
-| T2. V and E_β on Dodecahedron | next (Blocked 117 (a)); its design fixes the mapping rule first | `docs/ROADMAP.md` §7b |
+| T2. V and E_β on Dodecahedron | **design proposed 2026-10-29** (Blocked 118 (b)); freezes on D1–D4, Blocked 119; 3 units + close-out after it | `design-T2.md`; "T2, the design" below |
 | T3. LLC positive control | candidate | `docs/ROADMAP.md` §7b |
 | T4. LLC on C2's checkpoints | candidate, after T3 | `docs/ROADMAP.md` §7b |
+
+## T2, the design (proposed 2026-10-29)
+
+`design-T2.md`, opened by Blocked 118 (b), the user's. Nothing downloaded or run; the bands and
+outcome table come from `tools/math_checks/t2_grid.py` (6 of 6 pass; re-run:
+`python3 tools/math_checks/t2_grid.py`). What it fixes and what it found on paper:
+
+| item | value |
+|---|---|
+| grid | the 53 released steps 1–9536 (same on `-32m` and `-67m`); 9536 the preflight's trained step |
+| step against cumulative LR | separated under either batch: E₁ 35–121 against 165–574 (shared 141); centred 65–225 against 308–1072 (shared 263) |
+| fraction against step | not split: 0.7 × step; they part only at 420–574 (E₁), 917–1072 (centred) |
+| tokens at 4.19M | overlaps cumulative and step (the step band one octave down); beside, not scored |
+| tokens at 524k | scored only if a reply confirming it is quoted here before the first scored record (D4 (a), proposed) |
+| plateau (D3 (a), proposed) | 5108–8158, past every predicted date at either batch; beside 1072–3738 |
+| downloads | about 6.7 GB (`-32m`) and 14.3 GB (`-67m`) for the 53 steps |
+
+Open for the user: D1–D4 (Blocked 119), and the message to Timaeus (drafted in `design-T2.md`).
 
 ## T1, the inventory (2026-10-29)
 
