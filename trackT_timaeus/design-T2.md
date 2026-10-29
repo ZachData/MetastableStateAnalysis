@@ -108,8 +108,9 @@ rewrite; T2's reading goes to `status-T.md` and the user decides any F1 sentence
   A at 0.5 ≤ 0.1); frozen into `TAU_ARMS`; refuses if a re-run derives other arms.
 - Any arm failing sends the design back to you before the batch.
 - **Ran 2026-10-29 (unit 1):** known answer, planted effect and planted null pass; every centred
-  arm fails on both models (plant A 0.21–0.51; 67m's null-matched τ ≤ 0, refused); back to the
-  user as `STATE.md` Blocked 120. Numbers: `status-T.md` "T2 unit 1".
+  arm fails on both models (plant A 0.21–0.51; 67m's null-matched τ ≤ 0, refused), and the
+  uncentred count barely sees plant A (0.04–0.07), the unit cloud near one direction (mean cosine
+  0.9); back to the user as `STATE.md` Blocked 120. Numbers: `status-T.md` "T2 unit 1".
 
 ## Decisions (each yours; recommendation first)
 

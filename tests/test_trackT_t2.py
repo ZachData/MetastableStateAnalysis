@@ -112,6 +112,47 @@ def test_planted_null_is_mostly_neither():
     assert r["label_share"]["neither"] > 0.9 and abs(sum(r["label_share"].values()) - 1) < 1e-9
 
 
+def test_planted_null_over_e1_alone_is_wider():
+    r = t2.planted_null(np.random.default_rng(0), n=500, tok=False, counts=("uncentred",))
+    assert r["counts"] == ["uncentred"] and r["keeps_share"]["step"] > 0.02
+    assert 0 <= r["any_unreadable_share"] < 0.5
+
+
+def _energies(n_states, n_drops):
+    """A rising energy series with ``n_drops`` 1 % drops: n_viol reads n_drops at 1e-4 and 1e-3."""
+    e, out = 1.0, [1.0]
+    for i in range(n_states - 1):
+        e = e * 0.99 if i < n_drops else e * 1.01
+        out.append(e)
+    return out
+
+
+def test_read_end_to_end_from_record_files(tmp_path, monkeypatch):
+    """`read` from record files on disk (`/challenge-pr` on #285, finding 5): E₁ crossing at 263 and
+    the centred count at 574 on both models read "consistent with fraction and step"."""
+    import argparse
+    import json
+    out, pf = tmp_path / "run", tmp_path / "pf"
+    monkeypatch.setattr(t2, "TAU_ARMS", {"32m": (1e-4,), "67m": (1e-4,)})
+    (out).mkdir()
+    (out / "plan.json").write_text(json.dumps({"tokens_524k": None}))
+    for m, n in t2.N_STATES.items():
+        (pf / m).mkdir(parents=True)
+        (pf / m / "preflight_plants.json").write_text(json.dumps({"arms": [1e-4], "gate": {"arms": {"0.0001": {"pass": True}}}}))
+        d = out / m / "records"
+        d.mkdir(parents=True)
+        for s in t2.GRID:
+            for p in t2.V1:
+                rec = {"model": m, "code": "x", "e1": _energies(n, 2 if s >= 263 else 0),
+                       "e1c": _energies(n, 2 if s >= 574 else 0), "e1r": _energies(n, 0), "cos": [0.5] * n}
+                (d / f"step{s}_{p}.json").write_text(json.dumps(rec))
+    assert t2.read(argparse.Namespace(out=str(out), preflight=str(pf))) == 0
+    r = json.loads((out / "reading.json").read_text())
+    assert r["per_model"]["32m"]["uncentred"]["dates"] == [263] and r["per_model"]["67m"]["centred"]["dates"] == [574]
+    assert r["joint"]["label"] == "consistent with fraction and step" and r["joint"]["readable_dates"] == 4
+    assert 0 < r["chance_share_of_this_label"] < 0.01
+
+
 def test_null_matched_refuses_a_zero_uncentred_rate():
     with pytest.raises(t2.T2Refused):
         t2.null_matched_tol([-1e-2] * 10, [1e-3] * 10)

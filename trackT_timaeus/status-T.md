@@ -5,11 +5,11 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** none run; T1 read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `c6d56ab1085e`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"
+- **Inputs:** none run; T1 read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - T2 unit 1 (design frozen on D1–D4 (a)): the producer reproduces A5's seed-0 records on `pythia-410m` exactly and its planted effect and null pass, and Dodecahedron loads as trained with the state convention of GPT-NeoX; but every centred arm fails its gate on both models (plant A, which centring should remove, turns 0.21–0.51 of the free units), so the centred count is not the statistic it was on Pythia and GPT-2 and the design goes back to the user (Blocked 120) — `trackT_timaeus/status-T.md` "T2 unit 1"
+  - T2 unit 1 (design frozen on D1–D4 (a)): the producer reproduces A5's seed-0 records on `pythia-410m` exactly and its planted effect and null pass, and Dodecahedron loads as trained, its hidden states bit-identical to transformers 5.2's; but every centred arm fails its gate on both models (plant A turns 0.21–0.51 of the free units), and the uncentred count departs as far (plant A 0.04–0.07 against 0.79–0.98 on 70m, 160m, GPT-2), because the unit cloud is nearly one direction (middle-state mean cosine 0.82–0.84 at init, 0.90–0.91 at step 9536, against 410m's 0.47 and 0.17); so neither count is the one dated on Pythia, and the design goes back to the user (Blocked 120) — `trackT_timaeus/status-T.md` "T2 unit 1"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -22,7 +22,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-29 · body `60ccca4273`
+- **Reviewed:** 2026-10-29 · body `195ae7d274`
 <!-- /phase-card -->
 
 ## Units
@@ -40,17 +40,21 @@ Design frozen first (`ab6826c`, pushed before any Dodecahedron weight was fetche
 7 v1 prompts (`prompts_hash` `976b62d677bc`), ≤ 512 tokens, float32, eager, TF32 off, RTX 3080;
 `timaeus/dodecahedron-32m` and `-67m` at steps 1 and 9536 only (`model.safetensors`, stored
 float32; `HDD_1TB/mets_data/hf`, 0.76 GB); `pythia-410m` steps 0–4000 from `<main>/data/hf`.
-Code `c6d56ab1085e` (`trackT_timaeus/t2.py`); outputs `data/trackT/t2u1/2026-10-29-{gate,known,
-preflight}/` (main tree): `gate.json` `53c56522e514`, `known_answer.json` `5f3cd65ac02c`,
-`preflight_plants.json` `38bb1b793ccd` (32m), `e41098a01bee` (67m).
+Code `4fd84525dd37` (`trackT_timaeus/t2.py`, after `/challenge-pr` on #285; the first run at
+`c6d56ab1085e` read the same numbers); outputs `data/trackT/t2u1/2026-10-29-{gate,known,preflight,
+diag}/` (main tree): `gate.json` `0bf7c93a3c61`, `known_answer.json` `08a502d6a440`,
+`preflight_plants.json` `9b141c42cff7` (32m), `672a740517bf` (67m), `diag_{410m,32m,67m}.json`
+`56977086d9d0`, `7d465b91f6b9`, `c4a86406d558`. Resolved commits: 32m step 1 `5e1db647f7`, 9536
+`2e976151cc`; 67m `f25fa3d8f4`, `e767b1e55c`.
 
 | check | result |
 |---|---|
 | known answer (410m through this producer's path) | **pass**: e1 equals A5's seed-0 records exactly (max relative deviation 0.0, tokens equal); V 0 through 128, 19 at 256, 56 at 512, plateau 57, half-rise 512 |
 | planted effect (crossing at each band's geometric middle) | **pass**, 4 scored schedules × 2 counts: inst. reads 16 / 35, cum. 65 / 141, frac. 193 / 359, step 263 / 574; each consistent set is the design's outcome-table row (fraction and step not split, as the design says); `joint` keeps the planted schedule. With tokens scored (tested, not in force) tok524k passes too, its centred crossing (2024) inside the early window, which reads 2002 beside the late 2340 (both tok524k's) |
-| planted null (20,000 draws, crossings uniform in log step over (1, 4369], 4 cells independent) | "neither" 98.2 %; each scored schedule survives by chance 0.50–0.54 %; every "consistent with …" label ≤ 0.49 % (not a p) |
+| planted null (20,000 draws, crossings uniform in log step over (1, 4369], 4 cells independent) | "neither" 98.2 %; each scored schedule survives by chance 0.50–0.54 %; every "consistent with …" label ≤ 0.49 % (not a p). 28.5 % of draws have an unreadable cell (a crossing at 1–2), which `joint` passes over: about a third of each schedule's chance survival. **Over E₁ alone (2 cells): each schedule survives 5.4–6.6 %, "neither" 79.6 %** (`/challenge-pr` on #285, finding 2; `planted_null(counts=…)`) |
 | the models load as trained | step 1's mean loss 9.77 / 9.80 nats (ln 16384 = 9.70), step 9536's 3.66 / 3.46 (placed bar < 6) |
 | the state convention | 17 / 21 states; the first equals the embeddings and the last the final norm of the last block's output, exactly (max difference 0.0), as GPT-NeoX and GPT-2 |
+| against transformers 5.2.0, the library that saved them (`t2_v5_check.py`, finding 4) | step 9536, both models, 7 prompts, CPU float32, 5.2's own tokenizer (tokenizers 0.22, merges read natively) and loader: **token ids equal and every hidden state bit-identical** (max difference 0.0) to this producer's 4.44.2 path |
 | tokenizer | one `tokenizer.json` (`4edef5ce3cb6`) at steps 1 and 9536 on both; saved by tokenizers ≥ 0.20 (merges as pairs), read by the env's 0.19 with each pair joined (no piece holds a space; the producer refuses otherwise); no BOS, as Pythia |
 | the re-inits as the init | HF's Llama init at 0.02: every weight's SD within 0.989–1.012 (32m) and 0.994–1.007 (67m) of step 1's |
 | `tools.design_preflight` (both counts, both models) | `floor` only (E 9.18, 10.3 < 20), as every C2 arm: C2 and T2 compute no E. Reports `981d68aecc0e` (32m u), `5351ef132934` (32m c), `460a89a4c486` (67m u), `504e6f9c98f6` (67m c) |
@@ -75,31 +79,50 @@ passed). So the centred count is not the token-centred statistic it was on those
 `TAU_ARMS` is not frozen: `run` refuses. By the design ("Any arm failing sends the design back"),
 **Blocked 120**, the user's, before any scored record.
 
-**The uncentred count at D2's 1e-3** (never gated, as A5, 3b, 3c; the report above cited): re-init
-rate 6.2 % (32m), 8.1 % (67m), trained rate at 9536 0.75, 0.71, plant B share 0.46, 0.78, plant A
-0.04, 0.07. Its re-init rate is above the 5 % the centred arms are held to (3c's GPT-2 re-inits
-read 0); the EARLY check (V at steps 1–2 ≥ half the plateau → unreadable) is what guards it.
+**The uncentred count at D2's 1e-3 departs from Pythia's and GPT-2's as far** (never gated, as
+A5, 3b, 3c; the report above cited; the comparison is `/challenge-pr` on #285's finding 1, checked
+against the C2 preflights in `data/trackC/c2u3{b,c}/2026-10-22-preflight/`):
+
+| at 1e-3 | 70m (3b) | 160m (3b) | GPT-2 small (3c) | 32m | 67m |
+|---|---|---|---|---|---|
+| plant A share | 0.79 | 0.88 | 0.98 | **0.04** | **0.07** |
+| re-init rate | 0.0 | 0.004 | 0.0 | **0.062** | **0.081** |
+| trained base rate | 0.31 | 0.24 | 0.50 | **0.75** | **0.71** |
+
+**Why, beside (post hoc; `t2.py diag`, steps no reading uses):** the unit cloud E₁ is read on is
+nearly one direction on Dodecahedron, at init and trained. Mean cosine over the middle states
+(median over states 1 … L−1, 7 prompts): 410m 0.47 at step 0 and **0.17** at 4000; 32m 0.84
+(re-init), 0.85 (step 1), **0.90** (9536); 67m 0.82, 0.83, **0.91**. The largest token norm over
+the median: 410m 1.2 and 5.4; 32m and 67m 1.2 at init, **23.8 and 13.9** at 9536, and it is
+position 0 on every prompt at every middle state. So a common vector barely moves E₁ (already near
+its maximum), and centring after normalising leaves a small residual that a common plant does move.
+**E₁ on Dodecahedron is not the count that was dated on Pythia**: its "break", if any, would date
+a change on a cloud at cosine 0.9, not Pythia's descent to 0.17. Why the init cloud is already at
+0.84 (Llama's init, RMSNorm, tied embeddings) is not established.
 
 **Defects fixed in this unit:** the null-matched derivation now refuses a zero re-init uncentred
 rate (3c's Parked 0, carried here as the next unit deriving a centred arm; in `t2.py`, not in the
 frozen `c2_seeds.py`, so C4 and C5 still need their own) and a tolerance ≤ 0 (67m's, found here).
 
-**Not established:** why plant A leaks (per-token normalisation before centring on a residual
-stream with a wide norm spread is a guess, not tested); anything about a date on Dodecahedron (no
-grid step but 1 and 9536 has been run).
+**Not established:** the mechanism of the shared direction (the diagnostic shows it, not why);
+whether step 9536 (end of the cosine decay) is the plateau's geometry (the scored grid is not run;
+`/challenge-pr` on #285, question 4); anything about a date on Dodecahedron.
 
-**Parked:** (1) Why plant A leaks on Llama / the token-norm spread of step 9536's states and plant A
-read through `e1r` (raw states centred before normalising, already in every record) / a preflight
-re-read, minutes / Blocked 120 (b) would need it first. (2) The uncentred count's 6–8 % re-init
-rate / a gate for it would be a new rule on a count A5, 3b and 3c read ungated / whether a reading
-on Dodecahedron's E₁ is held to the centred count's null bar.
+**Parked:** (1) Plant A read through `e1r` (raw states centred before normalising, in every record)
+/ a preflight re-read, minutes / only if Blocked 120 (b) is taken; and (b) also needs a rule change
+to the arm family, since the null-matched arm's re-init rate equals the uncentred one (6.2 %,
+8.1 % > 5 %) by construction (finding 3). Carried to Blocked 120 (b). (2) The uncentred count's re-init
+rate / now explained beside by the shared direction / carried to Blocked 120.
 
 **Re-run:** `python -m trackT_timaeus.t2 gate --out <dir>`; `METS_DATA=<main>/data
 HF_HOME=<main>/data/hf python -m trackT_timaeus.t2 known --out <dir>` (2 min); `HF_HOME=<HDD_1TB>/
 mets_data/hf python -m trackT_timaeus.t2 fetch --steps 1 9536`, then `… preflight --model {32m,67m}
 --out <dir>` (1–2 min each), then `python -m tools.design_preflight <dir>/<m>/preflight_input_{u,c}.json
---out …`. Tests: `tests/test_trackT_t2.py` (pure, 15); `python3 tools/math_checks/t2_grid.py`
-(T1–T6; T6 checks the producer's constants and `predicted`).
+--out …`; `… diag --model {410m,32m,67m} --out <dir>` (410m with `HF_HOME=<main>/data/hf`); the 5.2
+check: `trackT_timaeus/t2_v5_check.py` docstring (a throwaway venv, `--system-site-packages` on the
+`mets` env, `transformers==5.2.0`). Tests: `tests/test_trackT_t2.py` (pure, 17, one of them `read`
+end to end from record files, finding 5); `python3 tools/math_checks/t2_grid.py` (T1–T6; T6 checks
+the producer's constants and `predicted`).
 
 ## T2, the design (proposed 2026-10-29; frozen 2026-10-29)
 

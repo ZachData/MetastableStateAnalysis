@@ -73,6 +73,7 @@ REF = d.REF                                     # 410m's 10 seeds' grid dates: E
 HYPS = ("instantaneous", "cumulative", "fraction", "step", "tok4M", "tok524k")
 BASE_SCORED = ("instantaneous", "cumulative", "fraction", "step")
 EXCLUDED_BY_3B = ("instantaneous",)
+COUNTS = ("uncentred", "centred")               # D2 (a): both counts enter `joint`
 READING_3C = "consistent with step"             # trackC_writeup/status-C.md "C2 unit 3c"; its margins there
 #: D4 (a): None, or the date and `status-T.md` pointer of a reply from Timaeus confirming 524,288
 #: tokens a step, quoted there before T2's first scored record. Only then is tok524k scored and
@@ -239,13 +240,13 @@ def model_reading(vu: np.ndarray, vcs: Dict[str, np.ndarray], gate: Dict[str, bo
     return out
 
 
-def joint(per_model: Dict[str, dict], tok: Optional[bool] = None) -> dict:
-    """The scored schedules consistent with every readable date over the models and both counts;
+def joint(per_model: Dict[str, dict], tok: Optional[bool] = None, counts: Sequence[str] = COUNTS) -> dict:
+    """The scored schedules consistent with every readable date over the models and ``counts``;
     beside, the same less the schedule 3b excluded, and 3c's reading."""
     hyps = scored_hyps(tok)
     sets, unread = [], []
     for m, r in per_model.items():
-        for kind in ("uncentred", "centred"):
+        for kind in counts:
             if r[kind]["consistent"] is None:
                 unread.append(f"{m} {kind}")
             else:
@@ -303,22 +304,26 @@ def planted_effect(tok: Optional[bool] = None) -> dict:
     return {"per_schedule": out, "pass": bool(ok)}
 
 
-def planted_null(rng: np.random.Generator, n: int = N_NULL, tok: Optional[bool] = None) -> dict:
+def planted_null(rng: np.random.Generator, n: int = N_NULL, tok: Optional[bool] = None,
+                 counts: Sequence[str] = COUNTS) -> dict:
     """Crossings uniform in log step over (1, 4369], drawn independently for every model × count,
-    through `joint`: each reading's share by chance (not a p)."""
+    through `joint` over ``counts``: each reading's share by chance (not a p), and the share of
+    draws with an unreadable cell (a crossing at 1–2), which `joint` passes over."""
     tok = tokens_scored() if tok is None else tok
     labels: Dict[str, int] = {}
     keeps = {h: 0 for h in scored_hyps(tok)}
+    unread = 0
     for _ in range(n):
         xs = np.exp(rng.uniform(0.0, math.log(SUSTAIN_UNTIL), size=2 * len(MODELS)))
         per = {m: model_reading(synth(xs[2 * i]), _one_arm(synth(xs[2 * i + 1])), {"arm": True}, tok, beside=False)
                for i, m in enumerate(MODELS)}
-        j = joint(per, tok)
+        j = joint(per, tok, counts)
         labels[j["label"]] = labels.get(j["label"], 0) + 1
+        unread += bool(j["unreadable"])
         for h in j["survivors"]:
             keeps[h] += 1
-    return {"n": n, "label_share": {k: v / n for k, v in sorted(labels.items(), key=lambda kv: -kv[1])},
-            "keeps_share": {h: v / n for h, v in keeps.items()}}
+    return {"n": n, "counts": list(counts), "label_share": {k: v / n for k, v in sorted(labels.items(), key=lambda kv: -kv[1])},
+            "keeps_share": {h: v / n for h, v in keeps.items()}, "any_unreadable_share": unread / n}
 
 
 def null_matched_tol(null_u: Sequence[float], null_c: Sequence[float]) -> float:
@@ -350,6 +355,11 @@ def load(repo: str, revision: str, device):
     if m.config.model_type == "llama":
         check_llama_config(m.config)
     return m
+
+
+def commit_of(model) -> Optional[str]:
+    """The commit the branch name resolved to (`stepN` is a branch, which can move)."""
+    return getattr(model.config, "_commit_hash", None)
 
 
 def check_llama_config(cfg) -> None:
@@ -439,7 +449,8 @@ def convention(model, tok, device) -> dict:
         h.remove()
     ok = first["n_states"] == first["n_layers"] + 1 and first["last_is_final_norm_maxdiff"] == 0.0 \
         and first["first_is_embedding_maxdiff"] == 0.0
-    return {**first, "loss_per_prompt": losses, "loss_mean": float(np.mean(losses)), "pass": ok}
+    return {**first, "commit": commit_of(model), "loss_per_prompt": losses, "loss_mean": float(np.mean(losses)),
+            "pass": ok}
 
 
 def rec_path(out: Path, model: str, step: int, prompt: str) -> Path:
@@ -485,9 +496,10 @@ def known(a) -> int:
     out.mkdir(parents=True, exist_ok=True)
     tok = p_tokenizer()
     a5 = DATA / A5_SEED0 / "records"
-    recs, worst = {}, 0.0
+    recs, worst, commits = {}, 0.0, {}
     for step in KNOWN_STEPS:
         model = load(c.MODEL, f"step{step}", device)
+        commits[step] = commit_of(model)
         for p in V1:
             hs, ids = c.states(model, tok, p, device)
             rec = d.record(hs, ids, p, model.config.num_hidden_layers + 1)
@@ -512,7 +524,7 @@ def known(a) -> int:
     checks = {k: bool(x) for k, x in checks.items()}
     res = {"code": code_sha(), "repo": c.MODEL, "a5_records": str(A5_SEED0), "steps": list(KNOWN_STEPS),
            "V_u": v.tolist(), "half_rise": hr, "e1_max_rel_dev": worst, "energy_tol": ENERGY_TOL,
-           "checks": checks, "pass": all(checks.values())}
+           "commits": commits, "checks": checks, "pass": all(checks.values())}
     (out / "known_answer.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps(res, indent=1))
     return 0 if res["pass"] else 1
@@ -523,7 +535,8 @@ def gate(a) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     res = {"code": code_sha(), "tokens_524k": TOKENS_524K, "scored": list(scored_hyps()), "seed": SEED,
-           "planted_effect": planted_effect(), "planted_null": planted_null(np.random.default_rng(SEED))}
+           "planted_effect": planted_effect(), "planted_null": planted_null(np.random.default_rng(SEED)),
+           "beside_planted_null_e1_only": planted_null(np.random.default_rng(SEED), counts=("uncentred",))}
     res["pass"] = res["planted_effect"]["pass"]
     (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps(res, indent=1))
@@ -636,6 +649,47 @@ def preflight(a) -> int:
     return 0 if g["pass"] and conv_ok else 1
 
 
+def diag(a) -> int:
+    """Beside, post hoc (`/challenge-pr` on #285, finding 1), on steps no reading uses: per state,
+    the mean cosine of the unit cloud E₁ is computed on (its shared component) and the token-norm
+    spread (max / median; the share of prompts whose largest token is position 0), over the 7
+    prompts. Dodecahedron at steps 1, 9536 and re-init 0; `pythia-410m` at steps 0 and 4000."""
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    torch, device = c._torch_setup()
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    if a.model == "410m":
+        tok, pops = p_tokenizer(), {f"step{s}": (c.MODEL, f"step{s}") for s in (0, 4000)}
+    else:
+        tok = tokenizer(a.model)
+        pops = {"step1": (MODELS[a.model], "step1"), "reinit:0": None,
+                f"step{SCALE_STEP}": (MODELS[a.model], f"step{SCALE_STEP}")}
+    res = {"code": code_sha(), "model": a.model, "populations": {}}
+    for name, src in pops.items():
+        if src is None:
+            from transformers import AutoConfig
+            model = reinit(AutoConfig.from_pretrained(MODELS[a.model], revision=f"step{SCALE_STEP}"), 0).to(device)
+        else:
+            model = load(*src, device)
+        cos, ratio, first = [], [], []
+        for p in V1:
+            hs, _ = c.states(model, tok, p, device)
+            cos.append([c.mean_cos(c.unit(h)) for h in hs])
+            nrm = [np.linalg.norm(np.asarray(h, np.float64), axis=1) for h in hs]
+            ratio.append([float(x.max() / np.median(x)) for x in nrm])
+            first.append([int(np.argmax(x) == 0) for x in nrm])
+        res["populations"][name] = {"commit": None if src is None else commit_of(model),
+                                    "mean_cos": np.mean(cos, 0).tolist(), "norm_max_over_median": np.mean(ratio, 0).tolist(),
+                                    "norm_max_over_median_max": np.max(ratio, 0).tolist(),
+                                    "max_token_is_first_share": np.mean(first, 0).tolist()}
+        del model
+        torch.cuda.empty_cache()
+    (out / f"diag_{a.model}.json").write_text(json.dumps(res, indent=1) + "\n")
+    print(json.dumps({n: {k: [round(x, 3) for x in v] for k, v in r.items() if k != "commit"}
+                      for n, r in res["populations"].items()}))
+    return 0
+
+
 def run(a) -> int:
     for m_ in a.models:
         _frozen(m_)
@@ -660,7 +714,8 @@ def run(a) -> int:
             for p in todo:
                 hs, ids = c.states(model, tok, p, device)
                 rec = d.record(hs, ids, p, N_STATES[m_])
-                rec.update(model=m_, repo=MODELS[m_], step=step, revision=f"step{step}", code=mt["code"])
+                rec.update(model=m_, repo=MODELS[m_], step=step, revision=f"step{step}", commit=commit_of(model),
+                           code=mt["code"])
                 rec_path(out, m_, step, p).write_text(json.dumps(rec) + "\n")
                 if first:
                     print(f"first record populated: {m_} step {step} {p}, n {rec['n']}, "
@@ -734,10 +789,12 @@ def read(a) -> int:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for cmd in ("gate", "known", "fetch", "preflight", "run", "read"):
+    for cmd in ("gate", "known", "fetch", "preflight", "diag", "run", "read"):
         sp = sub.add_parser(cmd)
         if cmd != "fetch":
             sp.add_argument("--out", required=True)
+        if cmd == "diag":
+            sp.add_argument("--model", choices=list(MODELS) + ["410m"], required=True)
         if cmd in ("fetch", "run"):
             sp.add_argument("--models", nargs="+", choices=list(MODELS), default=list(MODELS))
         if cmd == "fetch":
@@ -747,7 +804,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if cmd == "read":
             sp.add_argument("--preflight", required=True)
     a = ap.parse_args(argv)
-    return {"gate": gate, "known": known, "fetch": fetch, "preflight": preflight, "run": run,
+    return {"gate": gate, "known": known, "fetch": fetch, "preflight": preflight, "diag": diag, "run": run,
             "read": read}[a.cmd](a)
 
 
