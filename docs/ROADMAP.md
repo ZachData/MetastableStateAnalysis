@@ -10,6 +10,10 @@ Stages 3–7, `LESSONS.md`, `docs/readings/2609.28448v1` (Gao–Yang–Chen, rep
 **Revised 2026-10-18** (the user's check-in, docs only): Track S added as candidates (§7a), C2
 re-scoped and given the user's target (§8), process items (§5), a proposed order after B3 (§9
 row 6) and §10 items 8–10. Nothing was run; Hugging Face and the PolyPythias refs were checked (§6).
+**Revised 2026-10-29** (the user's check-in, docs only): Track T added as candidates (§7b) and
+§10 item 11. Nothing was run or downloaded; the search is `docs/lit-T.md`. Same day: §10 item 11
+decided (Blocked 117 (a), the user's), Track T opened and T1 done (`trackT_timaeus/status-T.md`);
+T2's token range corrected (§7b).
 
 **How to use it.** `STATE.md` says what is true now; this file says what comes next. Update it
 when a phase closes, a track's order changes, or a decision in §10 is taken (`CLAUDE.md` Stop).
@@ -276,6 +280,41 @@ selected pairs' displacement at 143000; to C2, `lit-S2.md` Parked 1 and G3′'s 
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
 
+## 7b. Track T: Timaeus's checkpoints and the LLC (opened 2026-10-29; T1 done)
+
+From the user's check-in (2026-10-29): C2's draft places the break against the LLC stages
+(§2.2, Hoogland et al. 2402.02364) but has no figure that sets the two side by side. The search
+that day (`docs/lit-T.md`, a scan of web search and Hugging Face listings, not a full scan) found
+**no published LLC values for any Pythia model**. Each T unit opens under §3 (its own scan, exit
+condition, unit budget). Nothing below has been downloaded or run.
+
+| # | item | why | cost (estimate, not measured) |
+|---|---|---|---|
+| T1 | **inventory**, **done 2026-10-29** (`trackT_timaeus/status-T.md` "T1, the inventory"): no released model deeper than 2 layers has a published whole-model LLC curve (`L4`, 4 layers, has one head's); 2402.02364's settings read, its model most likely `tetrahedron-3m-og`; Dodecahedron's 40B fits a global batch of 8 × 524k; `-pilot-dense` is a different run; `gpt-2-small` is Pythia-160m-shaped | T2 and T3 rest on these | free |
+| T2 | **V and E_β on `timaeus/dodecahedron-32m` / `-67m`** (Llama-style, 16 / 20 layers, FineWeb, 53 checkpoints log-spaced from step 1 to 9536, peak LR 3.5e-3, warmup 1000 steps; 4.19M tokens a step, leaning, or the card's 524k) | **a fourth schedule that separates step from LR dose, and tokens only if the batch is 524k**: the windows for A5's break (128, 512] are in `trackT_timaeus/status-T.md` "T1, the inventory" (Q3; #282's ranges corrected there). **Design proposed 2026-10-29** (Blocked 118 (b): tokens scored only if Timaeus confirms 524k in time): `trackT_timaeus/design-T2.md`, freezing on D1–D4 (STATE Blocked 119); the mapping rule is fixed there before any output; data, tokenizer and architecture also differ, so a date that matches none is not read as one cause | forward passes only |
+| T3 | **positive control for the LLC**: reproduce 2402.02364's published LLC curve on its released model with `devinterp` and its stated settings | the LLC estimate depends on its step size, localisation and nβ, so a number means little until the pipeline reproduces a known curve (`CLAUDE.md` calibration gate) | small model; hours |
+| T4 | **LLC on C2's checkpoints**: `pythia-70m` first, then `pythia-410m` seed 0 at the 18 steps; overlaid on V | the overlay the user asked for, same model and steps as C2's figures | 410m: about 1 s per SGLD step at 8 × 512 tokens (the 40 ms forward pass in `docs/compute_profile.md`, × 3 for the backward, × 8), so 4 chains × 500 steps is about 35 min a checkpoint, about 10 h for 18; 70m about 15× fewer FLOPs (the wall-clock saving smaller on a small model) |
+
+**What the LLC cannot give here, one claim per line.**
+
+- The estimator assumes a local minimum; C2's break (128–512) is inside the warmup, far from one, so the readings that matter most are the least trusted (off-equilibrium estimators: 2606.22389; read before T4's design freezes).
+- Values are comparable only within one fixed setting of the hyperparameters; the overlay compares shapes and dates, not magnitudes.
+- A shared date does not separate either curve from the LR schedule (C2's F1).
+- "Expensive" in the literature is per-token or per-component work (susceptibilities on Pythia-1.4B: about 4,800 H200 hours, Timaeus blog 2026-04-21); one scalar LLC per checkpoint is the cheap case.
+
+**The cheapest overlay, not proposed as a row** (`/challenge-pr` on #282, finding 4): E_β on
+2402.02364's own checkpoints, drawn over its published LLC curve, with no LLC estimated. Not
+taken: that model has 2 layers, so V has two layer-to-layer steps to count. If T1 finds a
+deeper released model with a published curve, this replaces T3–T4. *T1 found none.*
+
+**Carried from T1's Parked** (`trackT_timaeus/status-T.md`, one line each):
+- `timaeus/L0`–`L6`: attention-only at constant LR with no warmup, a schedule where a break cannot be the warmup (forward passes, 3M models).
+- `timaeus/gpt-2-small`: a Pythia-160m-shaped run checkpointed every 100 steps; its data and schedule are in a pickle not yet read.
+- `L4`'s one-head LLC curve (2507.21449) as a partial control, for T3 only if T4 goes per head.
+
+Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 passes.
+Whether T opens, and where it sits against the other open rows, is §10 item 11.
+
 ## 8. Track C: write-ups
 
 | # | paper | inputs | when |
@@ -337,6 +376,12 @@ proposed, not decided.
 10. **The §5 process items:** the preflight tool first (one unit, before S1 freezes; **built
     2026-10-20**, its citation rule STATE Blocked 80); pre-authorised fallbacks and the
     alternatives step as `CLAUDE.md` rules; the start-hook fix.
+11. *Decided (a), 2026-10-29 (Blocked 117, the user's): T1 + T2 first; T1 done (§7b).*
+    **Track T** (§7b, proposed 2026-10-29; `STATE.md` Blocked 117): whether it opens, and where
+    it sits against B7′ and C4. Recommended: T1 and T2 first, since they are cheap and T2 can
+    separate step, LR dose and tokens, C2's F1; T3 and T4 if the LLC overlay is wanted. C2 and
+    C2p are closed, so a T4 figure goes into the user's rewrite of `trackC_writeup/paper/`, not a
+    Claude unit, and costs the December target about T1 + T3 + T4 (estimated 3–4 units).
 
 ## 11. What each phase gives the plan
 

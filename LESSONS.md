@@ -20,6 +20,16 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-29 (Track T, T1): #282 flagged a mismatch on Dodecahedron's card (40B tokens against
+  9536 × 524k = 5.0B), and still built T2's token range (~1024–2048) on 524k; `/challenge-pr` on
+  #282 then made "the three ranges do not overlap" a reason for T2 and merged it. The card's
+  524k is per GPU ("64 micro × 4 accum × 2048", 8 × H100): 8 × 524k × 9536 = 40.0B. T1's first
+  fix then claimed "four disjoint ranges, no decision waits" from seed 0's bracket alone;
+  `/challenge-pr` on #283 re-derived on A5's nine-seed (128, 512], where the tokens window
+  overlaps both others (`trackT_timaeus/status-T.md` "T1, the inventory", Q3). No run was spent.
+  Rule: a number a document has itself marked as conflicting is not used to justify a unit until
+  the conflict is resolved or both readings are carried, and a mapped window starts from the
+  registered spread, not one seed.
 - 2026-10-22 (C2 unit 4): a range typed by hand after `/challenge-pr` on #256, "the centred count
   at the break is 0.17–0.50 of its own plateau", went into `status-C.md` (twice), `PROJECT.md`
   §3.67 and the STATE line, and was reviewed and merged. Computing it from the record for the
@@ -1618,6 +1628,22 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   rotation-relative reading beside it passed both sides (Blocked 106). Rule: **a concentration
   statistic on a signed sum is gated on the real vectors turned to random bases before its bar
   is chosen; a pure test's "spread" case must have mixed signs, as the data does**.
+- 2026-10-25 (B7′ unit 1, caught by the code tests before the gate, and by the gate): the design's
+  confound arm G10 (b) had to make B7's instrument read "depth-local" over a plant that put the
+  sink in 2 prompts of 7, but the interval is a bootstrap over prompts: (5/7)^7 = 9.5 % of draws
+  hold neither, so the 2.5 % bound sits at 0 whatever the sink does. A second arm, G11, required
+  "frozen across depth" with a sub-threshold key confined to layers 7–20, and the two cannot both
+  hold. Both were written and reviewed (#278) as text; neither reviewer computed what the plant
+  gives under the instrument's own resampling. Rule: **before a design freezes, each planted arm's
+  pass condition is checked against the instrument's resampling unit (here prompts): count the
+  draws that miss the planted structure, and keep any added nuisance out of an arm whose
+  condition has no noise to absorb it**. Same unit, found by #279's /challenge-pr: three arms
+  whose condition is "rerouting with the drop" (G10 (c), G13, G14 (c)) would mostly have passed
+  without the drop, since the instrument reads "rerouting" there anyway, and the write-up listed
+  them as evidence for the rule. Rule: **an arm that passes with the treatment records its rate
+  without it beside; an arm with no such contrast is a plant check, not a test of the rule**. And
+  Blocked 115 shipped with 114's option text pasted on its end (two "Recommended" lines on one
+  decision): **re-read the Blocked row you write as the user will, end to end**.
 
 ## 7. Literature found after the construction was built
 

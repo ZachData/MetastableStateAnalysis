@@ -527,6 +527,16 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-25 | B7 close-out (#277), after /challenge-pr (accept with changes; findings 1-4 taken: Blocked 113's estimate wrong, long prompts, S4 depth, the known sink) · subagents: general-purpose opus-5-5 1.4M | 59 | 195k | 8.0M | 61k | #277 |
 | 2026-10-25 | B7′ open: design, scan, sympy check (before /challenge-pr) | 41 | 176k | 4.8M | 49k | #278 |
 | 2026-10-25 | B7′ open (#278), after /challenge-pr (accept with changes; findings 1-6 taken: R2 per head, G14/G15, the sink chain and L, beside columns) · subagents: general-purpose opus-5-5 1.1M | 57 | 209k | 7.9M | 54k | #278 |
+| 2026-10-25 | B7′ unit 1: b7p_sink.py, gate G0-G15 (fails on the plant: G10 (b), G11, G12), before /challenge-pr · subagents: runner haiku-5-5 320k · runner batches, main calls: 8 (haiku-5-5) | 60 | 272k | 11.3M | 52k | #279 |
+| 2026-10-28 | B7′ unit 1 (#279), /challenge-pr and its answers (accept with changes; findings 1-5 taken: G10 (b) the instrument's too, the layer floor, Blocked 115's pasted tail, G12 cause not shown, G8 wording); new session · subagents: general-purpose opus-5-5 2.1M | 24 | 99k | 1.7M | 22k | #279 |
 | 2026-10-28 | Figure 12, the energy ridgeline (before /challenge-pr) | 73 | 239k | 12.2M | 409k | #280 |
 | 2026-10-28 | Figure 12 (#280), after /challenge-pr (accept with changes; findings 1-6 taken: step 8 hidden, colour on the mean's own drops, key/caption/claims split, beta a key, E0 1e-7, tests) · subagents: general-purpose opus-5-5 1.1M | 97 | 278k | 18.4M | 444k | #280 |
   - Over 2× the running median (18.4M against 7.9M): the user's question also asked what other grids exist, so the old Phase 1 and Phase 2 heatmaps were surveyed (seven PNGs viewed) and the 414 KB artifact's data read, before the figure; then a producer re-run and a figure rewrite after `/challenge-pr`, re-reading the long `numbers.py` context.
+| 2026-10-29 | figure 13, the layer × step small multiples, before /challenge-pr | 57 | 169k | 6.6M | 62k | #281 |
+| 2026-10-29 | figure 13, the layer × step small multiples, after /challenge-pr (accept with changes; findings 1, 2 in text + Blocked 116, 4, 5 taken, 3 answered) · subagents: general-purpose opus-5-5 1.6M | 75 | 185k | 9.8M | 65k | #281 |
+| 2026-10-29 | Track T proposed (ROADMAP §7b: Timaeus checkpoints, LLC), docs only, before /challenge-pr | 21 | 116k | 1.5M | 30k | #282 |
+| 2026-10-29 | Track T proposed (#282), after /challenge-pr (accept with changes; findings 1-6 taken) · subagents: general-purpose opus-5-5 1.0M | 38 | 138k | 3.7M | 34k | #282 |
+| 2026-10-29 | Track T opened, T1 the Timaeus inventory (metadata and papers only), before /challenge-pr | 47 | 160k | 5.5M | 40k | #283 |
+| 2026-10-29 | Track T opened, T1 the Timaeus inventory (#283), after /challenge-pr (accept with changes; findings 1-4 taken) · subagents: general-purpose opus-5-5 1.7M | 66 | 182k | 8.7M | 45k | #283 |
+| 2026-10-29 | T2's design proposed (Dodecahedron mapping, outcome table, D1-D4), docs and a math check, before /challenge-pr | 26 | 141k | 2.6M | 35k | #284 |
+| 2026-10-29 | T2's design proposed (#284), after /challenge-pr (accept with changes; findings 1-3 taken) · subagents: general-purpose opus-5-5 901k | 41 | 161k | 4.9M | 38k | #284 |

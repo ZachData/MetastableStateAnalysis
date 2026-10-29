@@ -97,6 +97,7 @@ the page before a draft cites it. Re-check reachability from a cloud session bef
 | 8 | `p8_scale_ladder/lit-8.md` | Active |
 | 9 | — | Pre-design, **no scan yet**; `p9_metric_intervention/notes-9.md` §11 and `plan-9.md` §12 name the searches |
 | 10 | `p10_cluster_function/lit-10.md` | Pre-design. **PARTIAL** — one question settled as **[R]** from companion code, the rest named in `notes-10.md` §12. Does not follow the shape below |
+| Track T | `docs/lit-T.md`; `trackT_timaeus/status-T.md` "T1, the inventory" | The search log (abstracts only), then T1: 2402.02364 App. A.4.1 / F.1.1, 2507.21449 App. E, 2606.22389 from their arXiv HTML through a summarising fetch (sections named; not [R], no `docs/readings/` file); 2402.03698 abstract (withdrawn) |
 
 Each file has the same shape: what the phase rests on → finding-by-finding verdicts →
 what survives → directions to grow → a verification queue → the search log.
