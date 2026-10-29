@@ -1,0 +1,53 @@
+{
+ "what": "GitHub's activity log for the branch that carried P-A5's registration commit (C2 unit 5, /challenge-pr on #260 finding 3): the earliest timestamp outside this project's own writing. GitHub keeps these events for about 90 days, so they are copied here.",
+ "source": "gh api repos/ZachData/MetastableStateAnalysis/activity",
+ "fetched": "2026-10-23",
+ "registration_commit": "c2eb9a754c6a",
+ "contained_in": {
+  "c337961": true
+ },
+ "events": [
+  {
+   "timestamp": "2026-10-20T18:38:17Z",
+   "activity_type": "branch_creation",
+   "ref": "refs/heads/claude/a5-register",
+   "before": "0000000000000000000000000000000000000000",
+   "after": "c33796192ef89d0db3d5b368edfbce75892032e4"
+  },
+  {
+   "timestamp": "2026-10-20T18:45:17Z",
+   "activity_type": "push",
+   "ref": "refs/heads/claude/a5-register",
+   "before": "c33796192ef89d0db3d5b368edfbce75892032e4",
+   "after": "555220b14f551e93e6a39cbf09cf3a52daec0445"
+  },
+  {
+   "timestamp": "2026-10-20T20:03:14Z",
+   "activity_type": "push",
+   "ref": "refs/heads/claude/a5-register",
+   "before": "555220b14f551e93e6a39cbf09cf3a52daec0445",
+   "after": "260c2a22dfe0263402661df80d65535f2043ef2f"
+  },
+  {
+   "timestamp": "2026-10-20T20:04:14Z",
+   "activity_type": "push",
+   "ref": "refs/heads/claude/a5-register",
+   "before": "260c2a22dfe0263402661df80d65535f2043ef2f",
+   "after": "394a1e638f4c0f85169796246e530de664399c77"
+  },
+  {
+   "timestamp": "2026-10-20T20:12:42Z",
+   "activity_type": "push",
+   "ref": "refs/heads/claude/a5-register",
+   "before": "394a1e638f4c0f85169796246e530de664399c77",
+   "after": "1dbfcc673538fb48112e9d2eb223566efc4367d9"
+  },
+  {
+   "timestamp": "2026-10-20T20:13:26Z",
+   "activity_type": "push",
+   "ref": "refs/heads/claude/a5-register",
+   "before": "1dbfcc673538fb48112e9d2eb223566efc4367d9",
+   "after": "d0cabfb75bf468615c14da7e8f522e54d1858b32"
+  }
+ ]
+}
