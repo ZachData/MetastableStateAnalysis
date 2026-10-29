@@ -1,5 +1,5 @@
 <!-- trackT_timaeus/design-T2.md -->
-# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29, not frozen)
+# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29; frozen 2026-10-29)
 
 Opened 2026-10-29 by `STATE.md` Blocked 118 (b), the user's: T2 tests the LR dose against step;
 the user asks Timaeus for the global batch, and T2 tests tokens too if it is 524k. Row:
@@ -8,8 +8,9 @@ their one home; the bands and the outcome table below are printed by
 `tools/math_checks/t2_grid.py` (6 checks pass; what it does not prove is in its docstring).
 Scan: `docs/lit-T.md` (T1's, and T2's line, 2026-10-29: nothing published on Dodecahedron's
 training dynamics); the schedule question's own scan is C2's (`trackA_force/lit-C2.md`,
-`trackC_writeup/lit-C2-unit1.md`). Tier 1, description throughout. **Freezes on your calls on
-D1–D4 (Blocked 119), before any Dodecahedron weight is downloaded.**
+`trackC_writeup/lit-C2-unit1.md`). Tier 1, description throughout. **Frozen 2026-10-29 on the
+user's calls, D1–D4 all (a) (Blocked 119), before any Dodecahedron weight was downloaded**; the
+"Decisions" table below keeps the options as written.
 
 ## What T2 is for
 
