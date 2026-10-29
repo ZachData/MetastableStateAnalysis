@@ -536,3 +536,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-29 | Track T opened, T1 the Timaeus inventory (metadata and papers only), before /challenge-pr | 47 | 160k | 5.5M | 40k | #283 |
 | 2026-10-29 | Track T opened, T1 the Timaeus inventory (#283), after /challenge-pr (accept with changes; findings 1-4 taken) · subagents: general-purpose opus-5-5 1.7M | 66 | 182k | 8.7M | 45k | #283 |
 | 2026-10-29 | T2's design proposed (Dodecahedron mapping, outcome table, D1-D4), docs and a math check, before /challenge-pr | 26 | 141k | 2.6M | 35k | #284 |
+| 2026-10-29 | T2's design proposed (#284), after /challenge-pr (accept with changes; findings 1-3 taken) · subagents: general-purpose opus-5-5 901k | 41 | 161k | 4.9M | 38k | #284 |

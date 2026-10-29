@@ -41,8 +41,12 @@ read on its grid as 3c read GPT-2's (`trackC_writeup/design-C2.md` "Unit 3c"). 4
 | step | t | (128, 512] | (256, 1000] |
 | tokens at 4,194,304 a step (leaning) | t / 2 | (64, 256] | (128, 500] |
 | tokens at 524,288 a step (the card's figure) | 4 t | (512, 2048] | (1024, 4000] |
+| *beside, not scored:* cumulative with the peak LR scaled by d_model / 1024 (μP's convention for hidden matrices; 384 and 512 against 1024) | 0.400 t (32m), 0.346 t (67m) | (51.2, 204.7], (44.3, 177.3] | (102.3, 399.8], (88.6, 346.2] |
 
-Every warmup-dependent mapped step sits inside Dodecahedron's warmup (T3 of the check).
+Every warmup-dependent mapped step sits inside Dodecahedron's warmup (T3 of the check). "LR dose"
+in the scored rows means the raw LR; the width-scaled row lands on step's band at 141–205 (E₁),
+so a step reading does not exclude a width-scaled dose, and every reading below says "raw"
+(`/challenge-pr` on #284, finding 2).
 
 **The outcome table** (each Dodecahedron grid date → the schedules that predict it; others none):
 
@@ -65,7 +69,7 @@ its band lies past step's and is separable from all but step's last date.
 | models | D1 | |
 | the grid | the 53 released steps 1–9536; 9536 is the preflight's trained step only (below) | all the checkpoints there are |
 | per model, per count | D4 (a)'s half-rise (A5) on this grid: the first step with V ≥ half the plateau median; beside, `sustained` (3c): the first step from which V stays ≥ half to 4369 | as 3c |
-| the plateau | D3 | |
+| the plateau | D3: early 1253–3738 unless tokens is scored (D4), then late 5108–8158; the other computed too, and the date set is the union of the two plateaus' dates | a later window reads a later break (A5 D4); a disagreement widens, as 3b's arms |
 | unreadable | the plateau is 0, or V at step 1 or 2 is ≥ half of it | 92 (i)'s early check; every predicted date is ≥ 8 (T5) |
 | the uncentred count | D2's 1e-3, as A5, 3b and 3c; its preflight report cited | refuse rather than degrade on a new model |
 | the centred count | D2 | |
@@ -79,8 +83,8 @@ rewrite; T2's reading goes to `status-T.md` and the user decides any F1 sentence
 
 | reading | what it says |
 |---|---|
-| step (alone, or with fraction) | the dates track the updates applied across an 11.7× peak LR, agreeing with 3c; with 3b's, F1 narrows to "a count of updates (or the warmup's fraction, not split here), not the LR dose", description across models. If tokens was not scored and a date also fits tok4M, that is said beside |
-| cumulative without step | the dates track the LR dose, against 3c's step; F1 stands, the disagreement named with model and data as the confounds |
+| step (alone, or with fraction) | the dates track the updates applied across an 11.7× peak LR, agreeing with 3c; with 3b's, F1 narrows to "a count of updates (or the warmup's fraction, not split here), not the raw LR dose", description across models; a width-scaled dose is not excluded where the date fits its band. If tokens was not scored and a date also fits tok4M, that is said beside |
+| cumulative without step | the dates track the raw LR dose, against 3c's step; F1 stands, the disagreement named with model and data as the confounds |
 | tokens at 524k (scored) without step or cumulative | the dates track the data seen; F1 narrows to tokens, description |
 | instantaneous alone | conflicts with 3b, which excluded it; F1 stands |
 | not told apart, neither, unreadable | F1 stands; "neither" names the model and data |
@@ -109,7 +113,7 @@ rewrite; T2's reading goes to `status-T.md` and the user decides any F1 sentence
 |---|---|---|---|
 | D1 | which models | (a) `-32m` and `-67m` both scored (same recipe and LR, two depths), `joint` over 2 models × 2 counts; (b) `-32m` scored, `-67m` beside; (c) as (a), with `-pilot-dense` (every step 1–160) beside | **(a).** Two sizes on one recipe show whether a date moves with size, as 3b's did; downloads are about 6.7 GB and 14.3 GB (126 MB and 270 MB a checkpoint). (b) halves it but one model's date is one draw. (c) is a different run with no stated schedule (`status-T.md` Q3), so its dates map under no rule |
 | D2 | which counts | (a) E₁'s break and the centred count, both primary, the centred arms derived per model as 3b; (b) E₁'s break only, the centred count described if computed | **(a).** C2's draft heads on two events (98 (c)), and the centred count's band separates step from cumulative as cleanly (65–225 against 308–1072). (b) saves the re-init preflight, about half of unit 1 |
-| D3 | the plateau | (a) median V over 5108, 5970, 6979, 8158 (past every predicted date at either batch, T5; 9536 kept for the preflight); beside, 1072–3738 (Pythia's 1000–4000 under step), and a date that differs between them is reported; (b) the beside as primary | **(a).** It is the only window that lets tokens be scored if 524k is confirmed, since (b) holds tok524k's predicted dates (to 2340 and 4369). Its cost: it sits in the cosine decay (if it decays to 0, 53 % of peak at 5108 down to 6 % at 8158; the beside is at 77–100 %), where V might drift; the beside shows it |
+| D3 | the plateau | **Revised after `/challenge-pr` on #284 (finding 1).** (a) early, the median V over 1253–3738 (Pythia's 1000–4000 under step, less 1072, so past every predicted date but tok524k's; LR 77–98 % of peak), unless tokens is scored under D4, then late, 5108–8158 (past every date, T5; 9536 kept for the preflight); both computed, and a seed's date set is the union of the two plateaus' dates, which can only keep a schedule; (b) late always, the early beside and reported (the first proposal); (c) early always, tokens never scored | **(a).** A later window reads a later break, which is why A5's D4 refused a late reference: on the 9 A5 seeds V's median rises from 1000–4000 to 8000–16000 on every seed (by 3–20, `claims/audits/p_a5_real_run.json`; no date moves on Pythia's octave grid, but Dodecahedron's is 1.17× a step). The late window sits in the cosine decay (53 % of peak at 5108 to 6 % at 8158, if it decays to 0) and leans every date toward step and tok524k, both under test. So it is used only when tokens needs it. (b) pays that lean in the likely case (T1 leans 4.19M) for nothing; (c) gives up Blocked 118 (b) |
 | D4 | when Timaeus's answer counts | (a) tokens at 524k enters `joint` only if a reply confirming 524,288 tokens a step is quoted in `status-T.md`, with its date, before T2's first scored record is written; a later reply is recorded and tokens stays beside. A reply that changes the warmup (length, shape, start) or the peak LR sends the mapping and this design back to you before the batch. The batch does not wait beyond unit 1; (b) as (a), but the scored batch waits up to 14 days for a reply | **(a).** Forward passes are cheap and the December target is close; unit 1 already takes a session, so a quick reply still counts. (b) is right if testing tokens matters more than the date |
 
 ## The question for Timaeus (yours to send; outward)
@@ -137,7 +141,9 @@ cards, configs, branch listings and four LFS hashes (T1); no weight is downloade
 - Scoring fraction at all: on this grid it is 0.7 × step and parts from step only at 420–574 (E₁),
   so "consistent with step and fraction" will be the usual step reading; dropping it would make
   the step reading look sharper than the grid allows.
-- D3 (a)'s plateau in the cosine decay, chosen so tokens can be scored; the alternative is LR near
-  peak but tokens unscoreable.
+- D3 (a)'s plateau switching on D4's trigger (revised after `/challenge-pr` on #284): the late
+  window, in the cosine decay, only when tokens is scored; the union of both plateaus' dates.
+- "Raw LR dose": a width-scaled dose (beside) lands on step's band at 141–205, so a step reading
+  excludes only the raw dose.
 - The centred arms re-derived per model on step 9536 (end of decay), the only trained step not in
   the reading; 3b and 3c used a step past their plateau at higher LR.

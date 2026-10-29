@@ -21,7 +21,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-29 · body `ddadc5deef`
+- **Reviewed:** 2026-10-29 · body `ead27f7016`
 <!-- /phase-card -->
 
 ## Units
@@ -46,7 +46,8 @@ outcome table come from `tools/math_checks/t2_grid.py` (6 of 6 pass; re-run:
 | fraction against step | not split: 0.7 × step; they part only at 420–574 (E₁), 917–1072 (centred) |
 | tokens at 4.19M | overlaps cumulative and step (the step band one octave down); beside, not scored |
 | tokens at 524k | scored only if a reply confirming it is quoted here before the first scored record (D4 (a), proposed) |
-| plateau (D3 (a), proposed) | 5108–8158, past every predicted date at either batch; beside 1072–3738 |
+| plateau (D3 (a), proposed; revised after `/challenge-pr` on #284) | early 1253–3738 unless tokens is scored, then late 5108–8158; the union of both plateaus' dates. V rises late on all 9 A5 seeds (1000–4000 to 8000–16000, by 3–20), so a late window leans dates later |
+| width-scaled dose (beside) | cumulative with LR × d_model / 1024 lands on step's band at 141–205 (E₁): a step reading excludes only the raw dose |
 | downloads | about 6.7 GB (`-32m`) and 14.3 GB (`-67m`) for the 53 steps |
 
 Open for the user: D1–D4 (Blocked 119), and the message to Timaeus (drafted in `design-T2.md`).
@@ -108,7 +109,9 @@ deeper model to use. `L4`'s one-head curve is not a whole-model control.
 seeds (7 at 512, 2 at 256: `trackA_force/status-A.md` "A5 units 2 and 3"), not seed 0's
 256–512 (corrected by `/challenge-pr` on #283, finding 1). Pythia: 2,097,152 tokens a step, LR
 3e-4 over a 1,430-step warmup; Dodecahedron's warmup linear from 0. This table is the one home
-of these windows; other files point here.
+of these crossing windows (the checkpoints *inside* each); the grid dates each schedule
+*predicts*, which add the checkpoint just past a window's top (step's 574, cumulative's 141) and
+so overlap at 141, are `design-T2.md`'s outcome table (`/challenge-pr` on #284, finding 3).
 
 | reading | Dodecahedron steps | checkpoints inside |
 |---|---|---|

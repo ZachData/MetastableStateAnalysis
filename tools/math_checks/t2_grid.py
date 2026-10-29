@@ -13,10 +13,11 @@ T3  Every 410m reference date sits inside 410m's warmup, and its mapped Dodecahe
     the linear forms are the ones in force (numerical).
 T4  `predicted` (interval intersection on the grid) equals a brute-force scan of the mapped
     crossing intervals (numerical).
-T5  The plateau lies past every schedule's latest predicted date at either batch, and EARLY
-    before every schedule's earliest (numerical).
+T5  The early plateau lies past every predicted date but tokens at 524k's, the late plateau past
+    every predicted date at either batch, and EARLY before every schedule's earliest (numerical).
 Then prints the outcome table: per count and Dodecahedron grid date, the schedules consistent with
-it, with tokens at each batch as its own column.
+it, with tokens at each batch as its own column; and, beside (not scored), the cumulative bands
+with the peak LR scaled by width (d_model / 1024, the μP convention for hidden matrices).
 
 NOT proved: that the break follows any schedule (cumulative LR stands in for how far Adam has moved
 the weights, about lr per coordinate per update; an assumption); that Dodecahedron's schedule is
@@ -41,7 +42,9 @@ GRID = (1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 19, 22, 25, 30, 35, 40, 47, 55, 
         1713, 2002, 2340, 2735, 3198, 3738, 4369, 5108, 5970, 6979, 8158, 9536)
 REF = {"u": (256, 512), "c": (512, 1000)}      # 410m's 10 seeds: E₁'s break; the centred count
 HYPS = ("instantaneous", "cumulative", "fraction", "step", "tok4M", "tok524k")
-PLATEAU = (5108, 5970, 6979, 8158)             # past every predicted date; 9536 is the preflight's step
+PLATEAU_EARLY = (1253, 1465, 1713, 2002, 2340, 2735, 3198, 3738)   # 410m's 1000–4000 under step, less 1072
+PLATEAU_LATE = (5108, 5970, 6979, 8158)        # past every predicted date; 9536 is the preflight's step
+WIDTH = {"32m": 384, "67m": 512}               # d_model; 410m's is 1024
 EARLY = (1, 2)
 
 results = []
@@ -135,13 +138,19 @@ for kind in ("u", "c"):
 record("T4 predicted equals a brute-force scan", ok)
 
 allp = [x for k in REF for h in HYPS for x in predicted(REF[k], h)]
-record("T5 the plateau is past, and EARLY before, every predicted date",
-       max(allp) < min(PLATEAU) and max(EARLY) < min(allp), f"predicted dates span {min(allp)}–{max(allp)}")
+nontok = [x for k in REF for h in HYPS if h != "tok524k" for x in predicted(REF[k], h)]
+record("T5 the late plateau is past every predicted date, the early one past all but tok524k's, EARLY before all",
+       max(allp) < min(PLATEAU_LATE) and max(nontok) < min(PLATEAU_EARLY) and max(EARLY) < min(allp),
+       f"predicted dates span {min(allp)}–{max(allp)}; without tok524k to {max(nontok)}")
 
 print("\nCrossing bands (Dodecahedron steps) for 410m's (128, 512] and (256, 1000]:")
 for h in HYPS:
     print(f"  {h:<13} E1 ({to_dodeca(h, 128):.1f}, {to_dodeca(h, 512):.1f}]   centred "
           f"({to_dodeca(h, 256):.1f}, {to_dodeca(h, 1000):.1f}]")
+print("\nBeside, not scored: cumulative with the peak LR scaled by d_model / 1024")
+for m, w_ in WIDTH.items():
+    f = math.sqrt(P_LR * D_WARMUP / (D_LR * w_ / 1024 * P_WARMUP))
+    print(f"  {m}: factor {f:.3f}   E1 ({128 * f:.1f}, {512 * f:.1f}]   centred ({256 * f:.1f}, {1000 * f:.1f}]")
 print("\nOutcome table: per count, the schedules consistent with each grid date (others: none)")
 for kind, name in (("u", "E1 break"), ("c", "centred")):
     rows, last = [], None
