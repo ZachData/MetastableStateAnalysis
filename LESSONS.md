@@ -20,6 +20,16 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-10-29 (Track T, T1): #282 flagged a mismatch on Dodecahedron's card (40B tokens against
+  9536 × 524k = 5.0B), and still built T2's token range (~1024–2048) on 524k; `/challenge-pr` on
+  #282 then made "the three ranges do not overlap" a reason for T2 and merged it. The card's
+  524k is per GPU ("64 micro × 4 accum × 2048", 8 × H100): 8 × 524k × 9536 = 40.0B. T1's first
+  fix then claimed "four disjoint ranges, no decision waits" from seed 0's bracket alone;
+  `/challenge-pr` on #283 re-derived on A5's nine-seed (128, 512], where the tokens window
+  overlaps both others (`trackT_timaeus/status-T.md` "T1, the inventory", Q3). No run was spent.
+  Rule: a number a document has itself marked as conflicting is not used to justify a unit until
+  the conflict is resolved or both readings are carried, and a mapped window starts from the
+  registered spread, not one seed.
 - 2026-10-22 (C2 unit 4): a range typed by hand after `/challenge-pr` on #256, "the centred count
   at the break is 0.17–0.50 of its own plateau", went into `status-C.md` (twice), `PROJECT.md`
   §3.67 and the STATE line, and was reviewed and merged. Computing it from the record for the

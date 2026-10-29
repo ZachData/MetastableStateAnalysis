@@ -5,6 +5,9 @@
 proposed: web search (4 queries, "standard" and "extended") and the Hugging Face API. Abstracts
 and search summaries only; **no paper was read as primary text**, so every row is a lead, not a
 reading. Track T's first unit to open runs its own scan (`CLAUDE.md`).
+**Superseded where they differ by T1** (2026-10-29, primary text and metadata read):
+`trackT_timaeus/status-T.md` "T1, the inventory". §2's "9536 × 524k is ~5.0B" read the card's
+per-GPU batch as global; 8 × 524k gives the card's 40B.
 
 ## 1. The claim T4 rests on
 
