@@ -41,6 +41,11 @@ Not ruled out: unindexed work, workshop papers, Timaeus results without a paper.
 | `timaeus/L2` (and `L0`–`L6`, `H*`, `dm*`) | final model at 75000 plus a `checkpoints/` folder | stub |
 | `timaeus/gpt-2-small`, `-log-spacing`, `-init-seed-5` | ~650 checkpoint folders (`gpt-2-small`) | none |
 
+**T2's scan (2026-10-29, one search, before `design-T2.md` freezes):** nothing published on
+Dodecahedron's training dynamics or its checkpoints' transitions; the cards are the only source.
+The schedule question itself was scanned for C2 (`trackA_force/lit-C2.md`,
+`trackC_writeup/lit-C2-unit1.md`).
+
 ## 3. Bearing
 
 - T4's novelty rests on §1's negative, which is a search result, not a reading.
