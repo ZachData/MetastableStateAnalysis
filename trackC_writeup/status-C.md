@@ -38,7 +38,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-29 · body `0eaeb1aced`
+- **Reviewed:** 2026-10-29 · body `95ca6b8b49`
 <!-- /phase-card -->
 
 ## Units
@@ -65,7 +65,7 @@
 | C2p close-out (109 (a), the user's) | **done 2026-10-24: writing only; the cut and the read's framing points made in `paper/` (28 pages, `paper_check` 0); exit met at 2 units + close-out; no Parked items** | "C2p on one page" below |
 | after C2p: one citation (the user's, 2026-10-24) | **done 2026-10-24: writing only; 2609.28448 (Gao, Yang, Chen) cited in `paper/` §6 (its Sec. V B: negative eigenvalues of one head's map do not establish negative feedback, beside E2's fall) and §8 (the repulsive case as a discrete map that need not settle); `refs.bib` `gao2026`; after `/challenge-pr` on #270, §5 says the OV phase is named for E2's share, not a shown negative feedback (so §6's sentence and §5 agree); still 28 pages, no undefined reference, `paper_check` 0; no number added** | `paper/main.tex`, `paper/refs.bib` |
 | after C2p: appendix D, the rows one by one (the user's, 2026-10-25) | **done 2026-10-25: writing only, on records already read; appendix D rewritten as one entry per row of table 2 with its own panel of figure 5: what it measures, why it is on the timeline, how it is dated, and whether its change clears the locator's floor (reference, σ, ref / σ, the null arm's no-change share, all from A3's `a3_rows.json`); a new table 3 of those numbers; table 2's row names and figure 5's caption link to the entries; `numbers.py` new keys `a3.x0`, `a3.ref`, `a3.ref_step`, `a3.x_ref`, `a3.sigma`, `a3.ref_sigma`, `a3.n_units`, `a3.own_floor`, `a3.null_no_change`, `a3.low_power`, `a3.low_power_9`, `a3.x_last`, `a3.E8_peak_ref`, `a3.E8_peak_step` and `row_panels` (`fig/paper/figD_<row>.pdf`, copied into `paper/fig/`; no half-line on the n-gram rows, dated at their minimum); 93 slots + one literal (the gate's 95 %) in `paper_slots.json`; 34 pages, no undefined reference, `paper_check` 0; the page republished. After `/challenge-pr` on #275 (accept with changes): E8's peak step (256, from the right key), the n-gram panels' half-line, the registration's wording (intermediate checkpoints downloaded) and E1's reason for no σ corrected, panels renamed `figD_`; whether to generate table 3 into `paper/` left to the user (Blocked 108 keeps `paper/` hand-edited)** | `paper/main.tex` appendix D; re-run: `python -m trackC_writeup.numbers produce && python -m trackC_writeup.numbers paper-figures`, then copy `fig/paper/figD_*.pdf` into `paper/fig/` |
-| after C2p: figure 13, the layer × step small multiples (the user's, 2026-10-29) | **done 2026-10-29: tier 1, description; no forward pass; `data/phase12` checked against A5's seed 0 first (passes); `fig/paper/fig13_grid.pdf`, not in `paper/main.tex`** | `c2_grid.py`, `numbers.py` `grid_figure`; "Figure 13" below |
+| after C2p: figure 13, the layer × step small multiples (the user's, 2026-10-29) | **done 2026-10-29: tier 1, description; no forward pass; `data/phase12` checked against A5's seed 0 first (passes); `fig/paper/fig13_grid.pdf`, not in `paper/main.tex`; after `/challenge-pr` on #281 (accept with changes): the input hash covers the gate and A3's rows, the check has refusing tests, and the energy-change and Schur panels' limits are stated; which quantity those two panels draw is Blocked 116** | `c2_grid.py`, `numbers.py` `grid_figure`; "Figure 13" below |
 
 ## Figure 13, the layer × step small multiples (2026-10-29)
 
@@ -77,8 +77,9 @@ the figure drawn from the table after the check passes.
 **Input set:** seed 0 (`pythia-410m`), the 18 steps (`a1a.STEPS`), the 7 v1 prompts; Phase 1's
 runs `a1a.RUNS` (`geometry.json`, `energies.json`, `layer_metrics.csv`, `tokens.txt`) and one
 Phase 2 run per step (`c2_grid.P2_RUNS`, `ov_summary`); A5's seed-0 records
-`data/trackA/a5/2026-10-20-u1/seed0/` and gate. Code `f29008c0525b`; inputs sha256 `4838f046edd0`
-(every file read); record `data/trackC/c2grid/2026-10-29/grid.json` (sha256 `a83a7c439e83`), CPU, 2 s.
+`data/trackA/a5/2026-10-20-u1/seed0/` and gate, A3's rows. Code `d84d6186e3ef`; inputs sha256
+`f7574b8cdac1` (every file read, the gate and A3's rows included after `/challenge-pr` on #281,
+finding 4); record `data/trackC/c2grid/2026-10-29/grid.json` (sha256 `815063581cc3`), CPU, 2 s.
 
 **The check first (refuses on any failure, before a grid value is read): passes.**
 
@@ -107,11 +108,19 @@ Phase 2 run per step (`c2_grid.P2_RUNS`, `ov_summary`); A5's seed-0 records
   transient reaches 0.65 at step 16, state 24; at 143000 the middle states fall to 0.00034, below
   the floor.
 - Energy change: no mean change below −1e-3 through 256; 7–10 of 24 transitions below it from 512
-  on (figure 5's drop map, in a mean over prompts rather than a count).
-- Schur ratio: within ±0.019 of 0 through step 128; every block from 1 to 23 negative (the
-  repulsive block larger) at 256, 512, 1000 and 2000, the minimum −1.10 (block 14, step 2000);
-  mixed after, positive in the last blocks at 143000. `math-2.md` §3.2: a degeneracy flag, not a
-  condition number, and blind to the blocks' coupling.
+  on. **The mean hides step 256** (`/challenge-pr` on #281, finding 2): V is 19 there, but no cell's
+  mean falls below −1e-3 (the lowest −0.0004), because one prompt's drop averages out against the
+  others' rises. So this panel is not figure 5's drop map; it shows the mean change's size, and the
+  break's first step does not appear on it.
+- Schur ratio: within ±0.019 of 0 through step 128; every block from 1 to 23 negative at 256, 512,
+  1000 and 2000, the minimum −1.10 (block 14, step 2000); mixed after, positive in the last blocks
+  at 143000. `math-2.md` §3.2: a degeneracy flag, not a condition number, and blind to the blocks'
+  coupling. **About half of it is the blocks' sizes** (finding 1, re-computed here): the Frobenius
+  norms grow with block dimension, so over the 432 cells log₁₀ `schur_cond` correlates 0.982 with
+  ½ log₁₀(`schur_dim_attract` / `schur_dim_repulse`); with that subtracted, every negative cell
+  stays negative, the range narrows from [−1.10, 0.58] to [−0.79, 0.38] and 47 % of the variance
+  remains. "The repulsive block is larger" is therefore partly a count of repulsive directions.
+- Which quantity each of these two panels should draw is Blocked 116, the user's.
 
 **Not established:** anything per prompt (means only); other seeds; that the Schur ratio's swing
 and E₁'s break are related (beside each other on one grid, no test); the figure's place in

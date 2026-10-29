@@ -69,9 +69,10 @@ def p2_summary(step: int):
 
 
 def inputs_sha() -> str:
-    """sha256 over every file read, in a fixed order (A5's records, then each run's four files)."""
+    """sha256 over every file read, in a fixed order (A5's gate and A3's rows, A5's records, then each
+    run's files)."""
     h = hashlib.sha256()
-    for f in sorted(RECS.glob("step*_*.json")):
+    for f in [GATE0, A3_ROWS] + sorted(RECS.glob("step*_*.json")):
         h.update(f.name.encode() + f.read_bytes())
     for s in STEPS:
         for p in V1:

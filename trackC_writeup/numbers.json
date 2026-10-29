@@ -29,7 +29,7 @@
   "data:trackC/c5/2026-10-23-u1/reading.json": "7daa80cb4830063acbef3985dbc5ca0fc2e85a36ced12bd694a5104a7a777694",
   "data:trackC/c5/2026-10-24-u2/reading.json": "12fcbe65d923fe99af0ed9d56090043e605bc228ab1a70edba767177faf9dcfb",
   "repo:trackC_writeup/c5_mean.py": "27d1880c0aaef165bf63508c9f4544212aaff55a6a17b02712b5ac95bfc8418c",
-  "data:trackC/c2grid/2026-10-29/grid.json": "a83a7c439e8377e35458909a146534e5f2220548976a8975563ad2e25427079a"
+  "data:trackC/c2grid/2026-10-29/grid.json": "815063581cc332b64e7b671be8d53b7ece28a99f7af35b5abca1b499f9246e46"
  },
  "keys": {
   "cfg.train_iters": {
@@ -6109,7 +6109,7 @@
    "record": "repo:trackC_writeup/c5_mean.py"
   },
   "lxs.code": {
-   "value": "f29008c0525b",
+   "value": "d84d6186e3ef",
    "record": "data:trackC/c2grid/2026-10-29/grid.json"
   },
   "lxs.steps": {
