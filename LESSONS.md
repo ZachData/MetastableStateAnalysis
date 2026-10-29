@@ -1621,7 +1621,13 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   gives under the instrument's own resampling. Rule: **before a design freezes, each planted arm's
   pass condition is checked against the instrument's resampling unit (here prompts): count the
   draws that miss the planted structure, and keep any added nuisance out of an arm whose
-  condition has no noise to absorb it**.
+  condition has no noise to absorb it**. Same unit, found by #279's /challenge-pr: three arms
+  whose condition is "rerouting with the drop" (G10 (c), G13, G14 (c)) would mostly have passed
+  without the drop, since the instrument reads "rerouting" there anyway, and the write-up listed
+  them as evidence for the rule. Rule: **an arm that passes with the treatment records its rate
+  without it beside; an arm with no such contrast is a plant check, not a test of the rule**. And
+  Blocked 115 shipped with 114's option text pasted on its end (two "Recommended" lines on one
+  decision): **re-read the Blocked row you write as the user will, end to end**.
 
 ## 7. Literature found after the construction was built
 

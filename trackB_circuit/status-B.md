@@ -31,7 +31,7 @@
   - B7's grid over 18 steps × 23 layer pairs (unit 2, B7 at its exit): nothing is condensed to step 256; from 1000–2000 mid-depth (layers 7–20) reads persistent layer to layer beyond position and beyond distant layers, but what persists is mostly a second sink (an early `.` or `\n` in every prompt at 2000; from 8000 a newline in the two code and LaTeX prompts, which carry about 0.9 of the rows), so content partners persisting is not shown; rerouting appears in only 7 cells (3 → 4, 5 → 6, gone from 32000), early layers are positional, and the last layer pairs are the most condensed but not resolved from distant layers. The intervals are wide because two prompts carry most rows: with the best match held fixed, 22 of 155 read cells change description — `trackB_circuit/status-B.md` "B7 unit 2"
   - B7 closed 2026-10-25 at its exit (Blocked 113 (a)): nothing condensed to step 256; at mid-depth what persists layer to layer is mostly a second sink (an early `.` or `\n`, from 8000 a newline in the code and LaTeX prompts), so routing activity of content partners is not established; rerouting only in 3 → 4 and 5 → 6, early; layers 0, 3, 4 positional; the last layer pairs the most condensed and not resolved from distant layers — `trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"
   - B7′ (sink-excluded routing activity) opened 2026-10-25 with a scan, a `sympy` check and a design, frozen as revised (Blocked 114 (a)): each prompt's second-sink keys (found per head) dropped as position 0 is, N0 re-estimated per draw, and gate arms that plant a second sink over reshuffled, frozen and drifting content with heads that differ by prompt — `trackB_circuit/design-B7p.md` "The rule, fixed here"
-  - B7′'s gate (unit 1) fails on its plant, not its rule: the rule finds every planted sink set and recovers every hidden row that stays in, and B7's arms pass with the rule on; but the confound arm cannot make B7's instrument read "depth-local" (two sink prompts of 7, so a tenth of draws hold neither), the light prompts' sub-threshold key keeps the frozen arm from reading "frozen", and one thinned drift cell reads "frozen". On real attention at 143000 the per-head rule drops 6–21 keys a prompt, 89 of 101 held by one head; no sink-excluded cell read — `trackB_circuit/status-B.md` "B7′ unit 1"
+  - B7′'s gate (unit 1) fails, not on its rule: the rule finds every planted sink set and recovers every hidden row that stays in, and B7's arms pass with the rule on; but the confound arm cannot make B7's instrument read "depth-local" (two sink prompts of 7, so a tenth of draws hold neither; the same holds on real data, so the arms that read "rerouting with the drop" would mostly pass without it), the light prompts' sub-threshold key keeps the frozen arm from reading "frozen", and one thinned drift cell reads "frozen" (cause not shown). On real attention at 143000 the per-head rule drops 6–21 keys a prompt, 89 of 101 held by one head, 81 of those in layers 20–23; no sink-excluded cell read — `trackB_circuit/status-B.md` "B7′ unit 1"
 - **Superseded / wrong:** B3 unit 2's "most of the cone (ℓ ≈ 2.0) is already in the residual after block 6, before any member runs" (2026-10-19, #228): ℓ is a ratio, and the partner's σ there is 8 % of its final size — `trackB_circuit/status-B.md` "B3 unit 2b (2026-10-19)"
 - **Registry:** none, because B1 is a positive control on an exploration rung — `trackB_circuit/design-B.md` "Fences"
 - **Depends on:** none
@@ -45,7 +45,7 @@
   - The weight-space site (a head's OV moved by ε), gated on its own *(forward pass, GPU minutes per step)*
   - From B3 at close, for B4: path patching of L1's 0.54 and the 1.84; the heads that add the partner's response (blocks 6–8, 10–11, 16–23); a block-6 nudge site; a layer-matched same-type control for L1 *(forward pass, GPU minutes at 143000)* — `trackB_circuit/status-B.md` "B3 on one page (closed 2026-10-19)"
   - From B7 at close: B7′, the sink-excluded read with N0 re-estimated per draw, on the stored 7 prompts first, then the long prompts (ROADMAP); for B4, the 5 → 6 two-cycle cells' heads; for S4, B7's instrument on tied and untied arms of ≥ 3 layers *(forward pass, GPU minutes a step, only for the long prompts; the 7-prompt read and the B4 pointer read stored arrays, the S4 arm rides on S4's runs)* — `trackB_circuit/status-B.md` "B7 on one page (closed 2026-10-25)"
-- **Reviewed:** 2026-10-25 · body `d055cb0107`
+- **Reviewed:** 2026-10-28 · body `2b1e5e4988`
 <!-- /phase-card -->
 
 ## Units
@@ -119,7 +119,7 @@ budget", 3 units + close-out, set by Blocked 114 (a)):
 | 1b. reserve | only if an arm fails: **needed** (Blocked 115) | |
 | 2. the 18 steps × 23 layer pairs, sink-excluded | not started | |
 
-## B7′ unit 1 (2026-10-25): the gate fails on the plant (G10 (b), G11, G12)
+## B7′ unit 1 (2026-10-25): the gate fails (G10 (b), G11, G12), not on the rule
 
 **Input:** B7's (A1a's 18 run dirs × the 7 scored v1 prompts, `prompts_hash` `976b62d677bc`, real
 `A_i0` at 512, 8000, 143000; real attention at 143000 for G8; the 252 files' sha256 equal to B7's
@@ -150,38 +150,53 @@ unchanged. N0 per draw is a quadratic form in the multiplicities over per-prompt
 | G10 sink over reshuffled | (a) S_q exact in every prompt (heavy prompts' 1 and 2 keys, light empty); (c) 23 of 23 "rerouting", pooled −4.3 / −1.2 / −0.6 %; (d) 48739 / 39293 / 43149 hidden rows in after the drop, all on their partner; 0 pure rows condensed. **(b) B7's instrument without the drop reads 0 / 1 / 0 of 13 mid cells "depth-local"** (13 / 11 / 10 "rerouting") | **no** |
 | G11 sink over frozen | (a), (d) hold; P ≥ 0.99 and P − N0 ≥ 0.9 everywhere, but **16–21 of 23 cells read "depth-local", not "frozen"** (N1 0.995–0.998 at full rows, 0.991–1.000 at the minimum entry, against P up to 1.000) | **no** |
 | G12 sink over drift | (a), (d) hold; full rows pass at every step (r 0.789–0.809); at the minimum entry 8000 and 143000 pass, **512 fails on one cell: 7 → 8 reads "frozen"** (P 0.79, N1 0.25, but P − N1's interval [−0.03, 0.64]) | **no** |
-| G13 false persistence | 0 of 1380 at full rows, 0 of 1365 at the minimum entry (15 unread); every plant's S_q exact | yes |
+| G13 false persistence | 0 of 1380 at full rows, 0 of 1365 at the minimum entry (15 unread); every plant's S_q exact; no-drop rate not recorded (no positive control; see 1 below) | yes |
 | G14 head-sparse sink | (a) exact, (c), (d) hold; (b) beside: 0 of 13 "depth-local" each | yes |
 | G15 sub-threshold leak | S_q empty (as expected); mid cells read other than "rerouting" 1 / 0 / 0 of 13; near-miss heads in [⅛, ¼) 83 / 96 / 73, largest share 0.21 / 0.22 / 0.21; no N0k flag | recorded |
 | G8 planted on real | S_q the same with and without the plant; 10 → 11 "depth-local", planted heads P = 1, h\* `L11H3`; other cells' N1 moves at most 0.022, no description changed | yes |
 | G9 | as B7's | yes |
 
-**Why each fails (the plant, not the rule):**
+**Why each fails (not the rule; G10 (b) is also the instrument's, and G12's cause is not shown):**
 
 1. **G10 (b) cannot pass with this plant.** Two heavy prompts of 7 carry the persistence, and
    (5/7)^7 = 9.5 % of bootstrap draws hold neither; in those draws the light prompts' reshuffled
    content gives P ≈ N0, so P − N0's 2.5 % bound sits at about 0 even where P ≈ 0.5 and N0 ≈ 0.013.
    B7 read L on real data because every prompt carried a sink at 2000; that it still read L from
-   8000 implies (not checked) that draws without the two newline prompts persisted beyond N0, so
-   B7's other five prompts were not reshuffled content; the plant's are.
+   8000 implies (not checked; checkable from B7's stored stage, no forward pass) that draws
+   without the two newline prompts persisted beyond N0, so B7's other five prompts were not
+   reshuffled content; the plant's are. **This is the instrument's too** (#279's /challenge-pr,
+   finding 1): without the drop B7's instrument already reads 13 / 11 / 10 of 13 mid cells
+   "rerouting" here (G14 (b) 0 of 13 "depth-local", G15 1 / 0 / 0 not "rerouting"), so the arms
+   whose condition is "rerouting with the drop" (G10 (c), G13, G14 (c)) would mostly pass without
+   it; only (a) and (d) test the rule. In unit 2 a B7 L cell that reads R with the drop can come
+   from persistence carried by ≤ 2 prompts, not from the sink (B7: two prompts carry about 0.9 of
+   the rows from 8000).
 2. **G11:** the light prompts' own key (share U(0, 0.04), below R2) sits in 7–20 only. Over frozen
    content, a row on it disagrees with every full-content layer, so distant pairs that reach
    layers 0–6 or 21–23 agree a little less than adjacent ones (N1 about 0.997 against P about
    1.000). G1's frozen content has no other noise, so the intervals are tight and the cells read
    "depth-local". G1's condition ("every cell frozen") and a key confined to 7–20 cannot both hold.
 3. **G12 at 512, minimum entry:** one cell of 23 at one step has a lower P − N1 tail below 0 on thinned
-   rows (plausibly folds whose h\* is chosen on very few drawn rows); its r (0.79) is in the band.
-   Re-run on its seed, it reproduces.
+   rows; its r (0.79) is in the band. Re-run on its seed, it reproduces. **Cause not shown** (a
+   guess: folds whose h\* is chosen on very few drawn rows). G3 and G3d at 512 on the minimum entry
+   pass in this run with no sink, so what differs is the plant plus the drop's thinning.
 
 **Seen on real attention (G8, an input, not a cell; the design allowed it before unit 2):** at
 143000 R2 drops 7, 18, 21, 6, 15, 15, 19 keys (camus, hdbscan, homer, latex, paper, sullivan,
 wiki). Only the two known newlines are held widely (`hdbscan_code` key 34 in 238 heads,
 `latex_monograph` key 10 in 268, share up to 1.0); of the 101 keys 89 qualified in exactly one head
-of 384, many just above ¼. `camus_letranger` and `sullivan_ballou` still add keys at pass 3
-(unconverged: 20, 273 and 119, 337). This is the design's "Worth challenging" 1 (one head's focus
-on a content key drops it prompt-wide), now with a count: per head at ¼, the rule is mostly
-removing single heads' keys at 143000. No sink-excluded partner, P, N0 or cell was computed on real
-attention.
+of 384, many just above ¼; 81 of the 89 qualify in layers 20–23 (L22 44, L21 26, L20 9, L23 2),
+8 in 7–19; they come from 23 heads, 41 from four (`L22H1` 14, `L21H11` 10, `L22H15` 9, `L21H8` 8).
+`camus_letranger` and `sullivan_ballou` still add keys at pass 3 (unconverged: 20, 273 and 119,
+337, all `L22H1`'s). This is the design's "Worth challenging" 1 (one head's focus on a content key
+drops it prompt-wide), now with a count: per head at ¼, the rule is mostly removing single late
+heads' keys at 143000, prompt-wide, from the mid layers B7′ reads. Of the 101 keys, 26 have a
+qualifying head in 7–20 (14 in 7–19; 13 of the 26 single-head, 9 of those at L20; approximate past
+pass 1, which is computed after earlier drops). A floor of ≥ 2 heads keeps all 12 multi-head keys; one of ≥ 2
+different layers keeps 10 (drops `homer_iliad` 298 and `latex_monograph` 108, two heads in one
+layer). Both are placed after seeing this S_q, at one step; 2000 not looked at. No sink-excluded
+cell was read: G8 (`run_step_p` on real input, `b7p_sink.py:768`) computes 143000's sink-excluded
+cells in memory and records differences only (the 10 → 11 description, the largest change in N1).
 
 ## B7 on one page (closed 2026-10-25)
 
