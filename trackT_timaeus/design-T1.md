@@ -18,8 +18,7 @@ Free: no download beyond configs, cards and file listings; nothing is run. Tier 
 ## What counts as an answer
 
 - **Confirmed**: read in a primary source (the paper's text, a `config.json`, a checkpoint's
-  file listing, the training code), with the source named. A paper read only through a
-  summarising fetch says so beside the grade (this sentence added during T1, after the fetches).
+  file listing, the training code), with the source named.
 - **Leaning**: a card, a blog or a search summary only.
 - **Unknown**: neither found within the budget.
 

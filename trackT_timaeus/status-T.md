@@ -8,9 +8,9 @@
 - **Inputs:** none run; T1 read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
-  - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, so T2's token range is 128–256 under that reading (1024–2048 under the card's figure), and T2 carries both; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
+  - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Superseded / wrong:**
-  - The ROADMAP's T2 token range (~1024–2048) read the card's per-GPU batch as the global one; T2 now carries both readings — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
+  - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1 and nothing has run
 - **Depends on:** none
 - **Feeds:** none
@@ -20,7 +20,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-29 · body `3cfc4cb15a`
+- **Reviewed:** 2026-10-29 · body `e7635e0e72`
 <!-- /phase-card -->
 
 ## Units
@@ -57,8 +57,12 @@ deeper model to use. `L4`'s one-head curve is not a whole-model control.
 ### Q2. 2402.02364's model and settings — **settings confirmed; model leaning `tetrahedron-3m-og`**
 
 - **Settings** (App. A.4.1, Table 1, two-layer): SGLD, 20 chains × 200 steps, 1 draw a step,
-  ε = 0.001, γ = 100, nβ = 21.7, minibatch 100, data lines 10m–11m of the DSIR-filtered Pile
+  ε = 0.001, γ = 100, nβ = 21.7, minibatch m = 100, data lines 10m–11m of the DSIR-filtered Pile
   (10m–10.1m for validation); burn-in not stated for the LM. One-layer: ε = 0.003, γ = 300.
+  nβ is m / log m (100 / ln 100 = 21.7), not n / log n (A.4.1). Table 1 also lists μ = 13m,
+  "dataset size for gradient minibatches", beside A.4.1's 1M-line SGLD set; which set the
+  minibatches are drawn from is not stated, and T3's design settles it before it freezes
+  (`/challenge-pr` on #283, finding 2).
 - **Model** (F.1.1): 2 layers attention-only, d_model 256, 8 heads, ctx 1024, Shortformer,
   vocab 5000, 3,355,016 parameters. The paper links only `github.com/timaeus-research/icl`.
 - **Repo**: `icl`'s `sweeps/language/training-runs/tetrahedron-3m.yaml` is a 2-layer, 50,000-step
@@ -81,20 +85,25 @@ deeper model to use. `L4`'s one-head curve is not a whole-model control.
 | LR | 3.5e-3, 1,000 warmup, cosine; AdamW β 0.9 / 0.95, wd 0.01, clip 1.0; bf16 | card only, leaning |
 | tokens a step | the card's "64 micro × 4 accum × 2048" is 524,288; with its 8 × H100, 8 × 524,288 = 4,194,304, and 9,536 × 4,194,304 = 40.0B, the card's total (524k alone gives 5.0B) | **leaning 4.19M**: arithmetic on the card, no training log |
 
-**What this does to T2's mapping** (Pythia-410m's break at steps 256–512; Pythia 2,097,152
-tokens a step, LR 3e-4 over a 1,430-step warmup; Dodecahedron's warmup linear from 0):
+**What this does to T2's mapping.** The break window is A5's registered (128, 512] over 9
+seeds (7 at 512, 2 at 256: `trackA_force/status-A.md` "A5 units 2 and 3"), not seed 0's
+256–512 (corrected by `/challenge-pr` on #283, finding 1). Pythia: 2,097,152 tokens a step, LR
+3e-4 over a 1,430-step warmup; Dodecahedron's warmup linear from 0. This table is the one home
+of these windows; other files point here.
 
 | reading | Dodecahedron steps | checkpoints inside |
 |---|---|---|
-| cumulative LR | 63–125 | 65, 75, 88, 103, 121 |
-| tokens at 4.19M a step (leaning) | 128–256 | 141, 165, 193, 225 |
-| step | 256–512 | 263, 308, 359, 420, 491 |
-| tokens at 524k a step (the card's figure) | 1024–2048 | 1072, 1253, 1465, 1713, 2002 |
+| cumulative LR | (31, 125] | 35, 40, 47, 55, 65, 75, 88, 103, 121 |
+| step | (128, 512] | 141, 165, 193, 225, 263, 308, 359, 420, 491 |
+| tokens at 4.19M a step (leaning) | (64, 256] | 65 … 121 and 141 … 225: **overlaps both rows above** |
+| tokens at 524k a step (the card's figure) | (512, 2048] | 574, 671, 785, 917, 1072, 1253, 1465, 1713, 2002 |
 
-The four ranges are disjoint, so T2 can carry both token readings without a decision; but the
-leaning reading puts tokens next to step (they share the endpoint 256), so a date near 256 reads
-neither. `-pilot-dense` covers steps 1–160 at every step and would resolve the first two ranges
-finely, but it is a different run with no stated schedule.
+**What T2 can separate.** Cumulative LR from step under either batch (the windows abut at
+125 / 128). Tokens only under 524k a step: at 4.19M, Dodecahedron takes twice Pythia's tokens
+a step, so the token window is the step window one octave down and covers half of each of the
+other two. So the batch decides whether T2 tests tokens at all (Blocked 118).
+`-pilot-dense` covers steps 1–160 at every step, finer in the LR window, but it is a different
+run with no stated schedule.
 
 ### Q4. `timaeus/gpt-2-small` — **architecture confirmed; data, schedule and LLC unknown**
 
