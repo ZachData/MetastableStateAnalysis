@@ -26,6 +26,7 @@
   - C2p unit 2 (107 (a), 108 (a), the user's; writing only): the draft's source is now `trackC_writeup/paper/` (the Overleaf folder; `paper_check` lists any number no record renders to, CI-checked); M2's results in the draft's section 4.1, level first; §8 and F9 meet 2510.06477, whose Pythia grid reads no step between 1 and 1000, so its "around 1k" bounds rather than dates (a correction to C5); m15, m19, m25 done; pdfLaTeX compiles (26 pages); a second fresh read (major revision, 6 major, 20 minor) answered in `referee-C2p.md`, its framing points Blocked 109 — `trackC_writeup/status-C.md` "C2p unit 2"
   - **C2p closed 2026-10-24 at its exit** (2 units + close-out; Blocked 109 (a), the user's; writing only): `paper/` is an Overleaf-ready draft (pdfLaTeX, 28 pages, `paper_check` 0), cut to seven figures in the main text and three in appendices (the illustration out), with the second read's framing points made: the title and abstract lead with the count, its drops at β = 1 being falls of the mean (one direction), §4 leads with a per-seed table and p and E follow it, out of the abstract, §5 states the alignments' base rate (anchored at the break too), a glossary and per-row definitions; revised after `/challenge-pr` on #269 (findings 1–5 taken); no number moved; no Parked items; m11, m12, M3 (iii), a code and data statement and posting are the user's — `trackC_writeup/status-C.md` "C2p on one page (closed 2026-10-24)"
   - After C2p (2026-10-24, the user's; writing only): `paper/` cites 2609.28448 in §6 (Sec. V B: a head's negative eigenvalues do not establish negative feedback) and §8, and §5 says the OV phase is named for E2's share; 28 pages, `paper_check` 0. 2026-10-25 (the user's): appendix D takes the timeline's rows one by one, each with its panel and its floor numbers; 34 pages — `trackC_writeup/status-C.md` "Units"
+  - Figure 13 (2026-10-29, the user's; tier 1, description, no forward pass): effective rank, mass near 1, energy change and the Schur ratio by depth and step on seed 0, from `data/phase12`, drawn only after those runs reproduced A5's seed-0 energies (max relative difference 1.5e-6, tokens and V equal); `fig/paper/fig13_grid.pdf`, not yet in `paper/` — `trackC_writeup/status-C.md` "Figure 13, the layer × step small multiples (2026-10-29)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -37,7 +38,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-25 · body `fab1a04846`
+- **Reviewed:** 2026-10-29 · body `95ca6b8b49`
 <!-- /phase-card -->
 
 ## Units
@@ -64,6 +65,70 @@
 | C2p close-out (109 (a), the user's) | **done 2026-10-24: writing only; the cut and the read's framing points made in `paper/` (28 pages, `paper_check` 0); exit met at 2 units + close-out; no Parked items** | "C2p on one page" below |
 | after C2p: one citation (the user's, 2026-10-24) | **done 2026-10-24: writing only; 2609.28448 (Gao, Yang, Chen) cited in `paper/` §6 (its Sec. V B: negative eigenvalues of one head's map do not establish negative feedback, beside E2's fall) and §8 (the repulsive case as a discrete map that need not settle); `refs.bib` `gao2026`; after `/challenge-pr` on #270, §5 says the OV phase is named for E2's share, not a shown negative feedback (so §6's sentence and §5 agree); still 28 pages, no undefined reference, `paper_check` 0; no number added** | `paper/main.tex`, `paper/refs.bib` |
 | after C2p: appendix D, the rows one by one (the user's, 2026-10-25) | **done 2026-10-25: writing only, on records already read; appendix D rewritten as one entry per row of table 2 with its own panel of figure 5: what it measures, why it is on the timeline, how it is dated, and whether its change clears the locator's floor (reference, σ, ref / σ, the null arm's no-change share, all from A3's `a3_rows.json`); a new table 3 of those numbers; table 2's row names and figure 5's caption link to the entries; `numbers.py` new keys `a3.x0`, `a3.ref`, `a3.ref_step`, `a3.x_ref`, `a3.sigma`, `a3.ref_sigma`, `a3.n_units`, `a3.own_floor`, `a3.null_no_change`, `a3.low_power`, `a3.low_power_9`, `a3.x_last`, `a3.E8_peak_ref`, `a3.E8_peak_step` and `row_panels` (`fig/paper/figD_<row>.pdf`, copied into `paper/fig/`; no half-line on the n-gram rows, dated at their minimum); 93 slots + one literal (the gate's 95 %) in `paper_slots.json`; 34 pages, no undefined reference, `paper_check` 0; the page republished. After `/challenge-pr` on #275 (accept with changes): E8's peak step (256, from the right key), the n-gram panels' half-line, the registration's wording (intermediate checkpoints downloaded) and E1's reason for no σ corrected, panels renamed `figD_`; whether to generate table 3 into `paper/` left to the user (Blocked 108 keeps `paper/` hand-edited)** | `paper/main.tex` appendix D; re-run: `python -m trackC_writeup.numbers produce && python -m trackC_writeup.numbers paper-figures`, then copy `fig/paper/figD_*.pdf` into `paper/fig/` |
+| after C2p: figure 13, the layer × step small multiples (the user's, 2026-10-29) | **done 2026-10-29: tier 1, description; no forward pass; `data/phase12` checked against A5's seed 0 first (passes); `fig/paper/fig13_grid.pdf`, not in `paper/main.tex`; after `/challenge-pr` on #281 (accept with changes): the input hash covers the gate and A3's rows, the check has refusing tests, and the energy-change and Schur panels' limits are stated; which quantity those two panels draw is Blocked 116** | `c2_grid.py`, `numbers.py` `grid_figure`; "Figure 13" below |
+
+## Figure 13, the layer × step small multiples (2026-10-29)
+
+The user's request: effective rank, mass near 1, energy change and the Schur ratio by depth and
+step, for the paper, from `data/phase12`, after a check that those runs reproduce A5's energies.
+Tier 1, a description: nothing registered, no threshold, no date, no forward pass. One unit; exit:
+the figure drawn from the table after the check passes.
+
+**Input set:** seed 0 (`pythia-410m`), the 18 steps (`a1a.STEPS`), the 7 v1 prompts; Phase 1's
+runs `a1a.RUNS` (`geometry.json`, `energies.json`, `layer_metrics.csv`, `tokens.txt`) and one
+Phase 2 run per step (`c2_grid.P2_RUNS`, `ov_summary`); A5's seed-0 records
+`data/trackA/a5/2026-10-20-u1/seed0/` and gate, A3's rows. Code `d84d6186e3ef`; inputs sha256
+`f7574b8cdac1` (every file read, the gate and A3's rows included after `/challenge-pr` on #281,
+finding 4); record `data/trackC/c2grid/2026-10-29/grid.json` (sha256 `815063581cc3`), CPU, 2 s.
+
+**The check first (refuses on any failure, before a grid value is read): passes.**
+
+| arm | result |
+|---|---|
+| `tokens.txt` against A5's record tokens | equal in 126 of 126 |
+| E₁ at the 25 states against A5's `e1` | max relative difference 1.5e-6 (A5's ENERGY_TOL 1e-4; A5's own gate read 1.5e-6, GPU against CPU) |
+| `layer_metrics.csv` `energy_beta1.0` against `energies.json` | equal (exact) in 126 of 126 |
+| V counted from these energies by A5's rule | equal to A5's gate known answer at all 18 steps (also a sentence claim in `numbers.py`) |
+| beside: each prompt's minimum effective rank over states, prompt mean, against A3's E5 | max relative difference 4.2e-4 (A3's own rtol 5e-4; the reports print 2 decimals) |
+
+**The quantities** (prompt means; the Schur ratio is the weights' alone):
+
+| panel | depth | source | colour |
+|---|---|---|---|
+| effective rank of the unit tokens (paper E5's quantity) | 25 states | `geometry.json` `effective_rank_normed` | log, one hue |
+| mass near 1, the share of pairs with cosine > 0.9 | 25 states | `ip_mass_near_1` | log, one hue |
+| energy change (E₁(t) − E₁(t−1)) / E₁(t−1) | 24 transitions | `energies.json`, β = 1 | symmetric log, linear inside ±1e-3 (A5's REL_TOL) |
+| Schur ratio log₁₀ ‖T₊₊‖ / ‖T₋₋‖ | 24 blocks | `ov_summary` `schur_cond` | diverging at 0 |
+
+**What it shows (description, read after drawing; leans, not readings):**
+
+- Effective rank: the last state falls from 14.7 (step 0) to 2.1 at step 16 and climbs back past
+  its start by 1000 (31.1); the minimum of the grid is that cell.
+- Mass near 1: state 0 is the duplicate-token floor, 0.0166 at every step (`design-1.md`); the
+  transient reaches 0.65 at step 16, state 24; at 143000 the middle states fall to 0.00034, below
+  the floor.
+- Energy change: no mean change below −1e-3 through 256; 7–10 of 24 transitions below it from 512
+  on. **The mean hides step 256** (`/challenge-pr` on #281, finding 2): V is 19 there, but no cell's
+  mean falls below −1e-3 (the lowest −0.0004), because one prompt's drop averages out against the
+  others' rises. So this panel is not figure 5's drop map; it shows the mean change's size, and the
+  break's first step does not appear on it.
+- Schur ratio: within ±0.019 of 0 through step 128; every block from 1 to 23 negative at 256, 512,
+  1000 and 2000, the minimum −1.10 (block 14, step 2000); mixed after, positive in the last blocks
+  at 143000. `math-2.md` §3.2: a degeneracy flag, not a condition number, and blind to the blocks'
+  coupling. **About half of it is the blocks' sizes** (finding 1, re-computed here): the Frobenius
+  norms grow with block dimension, so over the 432 cells log₁₀ `schur_cond` correlates 0.982 with
+  ½ log₁₀(`schur_dim_attract` / `schur_dim_repulse`); with that subtracted, every negative cell
+  stays negative, the range narrows from [−1.10, 0.58] to [−0.79, 0.38] and 47 % of the variance
+  remains. "The repulsive block is larger" is therefore partly a count of repulsive directions.
+- Which quantity each of these two panels should draw is Blocked 116, the user's.
+
+**Not established:** anything per prompt (means only); other seeds; that the Schur ratio's swing
+and E₁'s break are related (beside each other on one grid, no test); the figure's place in
+`paper/` (the user's: copy `fig/paper/fig13_grid.pdf` to `paper/fig/` and include it).
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c2_grid`, then
+`METS_DATA=<main>/data python -m trackC_writeup.numbers produce` and `python -m trackC_writeup.numbers
+paper-figures` (two draws byte-equal). Tests: `tests/test_trackC_grid.py`, `test_trackC_figures.py`.
 
 ## C2p on one page (closed 2026-10-24)
 

@@ -15,7 +15,7 @@ Three steps, so that only the first needs the main tree's `data/`:
   Markdown draft and `tex/fig/fig*.pdf` for the LaTeX one (`to_tex.py`), both deterministic.
   Figure 6 is an illustration computed in `_toy`, not a record.
 - **paper-figures** draws the figures only the user's LaTeX source `paper/` uses (C2p unit 2,
-  Blocked 108 (a): appendix A's ρ) into `fig/paper/`, from the table alone; nothing here writes
+  Blocked 108 (a): appendix A's ρ; figure 13, the layer × step small multiples) into `fig/paper/`, from the table alone; nothing here writes
   into `paper/`, so each is copied there by hand.
 
 Numbers a paper reports are that paper's and carry its citation; numbers from this project's
@@ -82,6 +82,8 @@ RECORDS = {
     "c5u2": "data:trackC/c5/2026-10-24-u2/reading.json",
     # C2p unit 2 (§4.1's M2 paragraph): unit 2's frozen constants (the plant's size, "few", recurrence)
     "c5mean_src": "repo:trackC_writeup/c5_mean.py",
+    # figure 13 (the user's, 2026-10-29): the layer × step small multiples from data/phase12 (`c2_grid.py`)
+    "lxs": "data:trackC/c2grid/2026-10-29/grid.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -687,6 +689,18 @@ KEYS: Dict[str, tuple] = {
     "m2.n_plant": ("c5mean_src", lambda s: int(constant(s, "N_PLANT"))),
     "m2.n_rot": ("c5mean_src", lambda s: int(constant(s, "N_ROT"))),
     "m2.few": ("c5mean_src", lambda s: int(constant(s, "FEW"))),
+    # figure 13: four quantities by depth and step, after the check that the runs are A5's
+    "lxs.code": ("lxs", lambda r: r["code"]),
+    "lxs.steps": ("lxs", lambda r: r["steps"]),
+    "lxs.a5_pass": ("lxs", lambda r: r["a5_check"]["pass"]),
+    "lxs.a5_rel": ("lxs", lambda r: r["a5_check"]["energy_max_rel_diff"]),
+    "lxs.a5_tol": ("lxs", lambda r: r["a5_check"]["energy_tol"]),
+    "lxs.a5_V": ("lxs", lambda r: r["a5_check"]["V"]),
+    "lxs.e5_rel": ("lxs", lambda r: r["e5_check"]["max_rel_diff"]),
+    "lxs.eff_rank": ("lxs", lambda r: [r["eff_rank"][str(s)] for s in r["steps"]]),
+    "lxs.mass": ("lxs", lambda r: [r["mass_near_1"][str(s)] for s in r["steps"]]),
+    "lxs.de": ("lxs", lambda r: [r["energy_change"][str(s)] for s in r["steps"]]),
+    "lxs.schur": ("lxs", lambda r: [r["log10_schur"][str(s)] for s in r["steps"]]),
 }
 
 
@@ -694,6 +708,9 @@ KEYS: Dict[str, tuple] = {
 #: (a failing claim refuses the table) and by CI on the tracked table, so a re-run that keeps the
 #: render consistent but makes a sentence false cannot pass. Each names its sentence.
 CLAIMS: List[tuple] = [
+    ("figure 13: the data/phase12 runs are A5's seed 0 (tokens, E₁ to tolerance, V at every step)",
+     lambda k: k["lxs.a5_pass"] and k["lxs.a5_rel"] <= k["lxs.a5_tol"] and k["lxs.a5_V"] == k["s0.V"]
+     and tuple(k["lxs.steps"]) == GRID),
     ("§3.1 the grid is A5's", lambda k: tuple(k["grid.steps"]) == GRID),
     ("§3.2 one date at every tolerance and prompt left out",
      lambda k: len(set(k["s0.tol_steps"])) == 1 and len(set(k["s0.loo_steps"])) == 1
@@ -1410,7 +1427,60 @@ def paper_figures(keys: Dict[str, dict]) -> List[Path]:
     fig.savefig(path, format="pdf", bbox_inches="tight",
                 metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
     plt.close(fig)
-    return [path] + row_panels(keys)
+    return [path] + row_panels(keys) + [grid_figure(keys)]
+
+
+def grid_figure(keys: Dict[str, dict]) -> Path:
+    """Figure 13 (the user's, 2026-10-29): effective rank, mass near 1, energy change and the Schur
+    ratio by depth and step on seed 0, means over the 7 prompts (the Schur ratio is the weights';
+    `c2_grid.py`), into `fig/paper/fig13_grid.pdf`."""
+    import math
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib.colors import LinearSegmentedColormap, LogNorm, SymLogNorm, TwoSlopeNorm
+    _style(plt)
+    k = {n: v["value"] for n, v in keys.items()}
+    steps, warmup = k["lxs.steps"], k["cfg.warmup_steps"]
+    seq = LinearSegmentedColormap.from_list("seq", ["#ffffff", SERIES[0], "#0d2f5c"])
+    div = LinearSegmentedColormap.from_list("div", ["#8a3510", SERIES[1], "#f2f1ee", SERIES[0], "#0d2f5c"])
+    de_lim = max(abs(np.min(k["lxs.de"])), np.max(k["lxs.de"]))
+    sc_lim = float(np.max(np.abs(k["lxs.schur"])))
+    panels = (
+        ("effective rank of the unit tokens", "lxs.eff_rank", seq, LogNorm(), "state", 0),
+        ("mass near 1 (share of pairs with cosine > 0.9)", "lxs.mass", seq, LogNorm(), "state", 0),
+        ("energy change (E₁(t) − E₁(t−1)) / E₁(t−1)", "lxs.de", div,
+         SymLogNorm(linthresh=1e-3, vmin=-de_lim, vmax=de_lim, base=10), "transition t", 1),
+        ("Schur ratio log₁₀ ‖T₊₊‖ / ‖T₋₋‖ (weights)", "lxs.schur", div,
+         TwoSlopeNorm(0.0, -sc_lim, sc_lim), "block", 0),
+    )
+    i0 = steps.index(1000)
+    x_warm = i0 + (math.log(warmup) - math.log(1000)) / (math.log(steps[i0 + 1]) - math.log(1000))
+    shown = [s for s in steps if s in (0, 8, 128, 512, 2000, 8000, 32000, 143000)]
+    fig, axs = plt.subplots(2, 2, figsize=(7.2, 5.4), gridspec_kw={"hspace": 0.55, "wspace": 0.35})
+    for ax, (title, key, cmap, norm, ylab, first) in zip(axs.flat, panels):
+        z = np.asarray(k[key], float).T                       # depth × step
+        im = ax.imshow(z, aspect="auto", cmap=cmap, norm=norm, interpolation="nearest",
+                       extent=(-0.5, len(steps) - 0.5, first + len(z) - 0.5, first - 0.5))
+        ax.axvline(x_warm, color=INK, lw=0.8, ls=(0, (3, 2)))
+        ax.set_xticks([steps.index(s) for s in shown], [_tick(s) for s in shown], fontsize=7)
+        ax.set_yticks([first, 6, 12, 18, first + len(z) - 1])
+        ax.tick_params(axis="y", labelsize=7)
+        ax.grid(False)
+        ax.set_title(title, fontsize=8, loc="left")
+        ax.set_ylabel(ylab, fontsize=8)
+        cb = fig.colorbar(im, ax=ax, fraction=0.05, pad=0.02)
+        cb.ax.tick_params(labelsize=6.5)
+    for ax in axs[1]:
+        ax.set_xlabel("training step (grid order); dashed: end of warmup", fontsize=8)
+    PAPERFIG.mkdir(parents=True, exist_ok=True)
+    path = PAPERFIG / "fig13_grid.pdf"
+    fig.savefig(path, format="pdf", bbox_inches="tight",
+                metadata={"CreationDate": None, "ModDate": None, "Creator": None, "Producer": None})
+    plt.close(fig)
+    return path
 
 
 # ---------------------------------------------------------------------------
