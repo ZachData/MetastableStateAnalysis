@@ -531,3 +531,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-28 | B7′ unit 1 (#279), /challenge-pr and its answers (accept with changes; findings 1-5 taken: G10 (b) the instrument's too, the layer floor, Blocked 115's pasted tail, G12 cause not shown, G8 wording); new session · subagents: general-purpose opus-5-5 2.1M | 24 | 99k | 1.7M | 22k | #279 |
 | 2026-10-29 | figure 13, the layer × step small multiples, before /challenge-pr | 57 | 169k | 6.6M | 62k | #281 |
 | 2026-10-29 | figure 13, the layer × step small multiples, after /challenge-pr (accept with changes; findings 1, 2 in text + Blocked 116, 4, 5 taken, 3 answered) · subagents: general-purpose opus-5-5 1.6M | 75 | 185k | 9.8M | 65k | #281 |
+| 2026-10-29 | Track T proposed (ROADMAP §7b: Timaeus checkpoints, LLC), docs only, before /challenge-pr | 21 | 116k | 1.5M | 30k | #282 |
+| 2026-10-29 | Track T proposed (#282), after /challenge-pr (accept with changes; findings 1-6 taken) · subagents: general-purpose opus-5-5 1.0M | 38 | 138k | 3.7M | 34k | #282 |
