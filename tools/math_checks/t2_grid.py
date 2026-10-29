@@ -15,6 +15,9 @@ T4  `predicted` (interval intersection on the grid) equals a brute-force scan of
     crossing intervals (numerical).
 T5  The early plateau lies past every predicted date but tokens at 524k's, the late plateau past
     every predicted date at either batch, and EARLY before every schedule's earliest (numerical).
+T6  The producer (`trackT_timaeus/t2.py`) carries these constants and its `predicted` equals this
+    one for every schedule and count, so T2–T4 hold for the code that reads (numerical; needs the
+    `mets` env, as the producer imports numpy and the repo's modules).
 Then prints the outcome table: per count and Dodecahedron grid date, the schedules consistent with
 it, with tokens at each batch as its own column; and, beside (not scored), the cumulative bands
 with the peak LR scaled by width (d_model / 1024, the μP convention for hidden matrices).
@@ -142,6 +145,17 @@ nontok = [x for k in REF for h in HYPS if h != "tok524k" for x in predicted(REF[
 record("T5 the late plateau is past every predicted date, the early one past all but tok524k's, EARLY before all",
        max(allp) < min(PLATEAU_LATE) and max(nontok) < min(PLATEAU_EARLY) and max(EARLY) < min(allp),
        f"predicted dates span {min(allp)}–{max(allp)}; without tok524k to {max(nontok)}")
+
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[2]))
+from trackT_timaeus import t2 as producer  # noqa: E402
+
+same = (producer.GRID + (producer.SCALE_STEP,) == GRID and producer.REF == REF and producer.HYPS == HYPS
+        and (producer.P_LR, producer.P_WARMUP, producer.P_TOKENS, producer.D_LR, producer.D_WARMUP)
+        == (P_LR, P_WARMUP, P_TOKENS, D_LR, D_WARMUP) and producer.BATCHES == BATCHES
+        and producer.PLATEAU_EARLY == PLATEAU_EARLY and producer.PLATEAU_LATE == PLATEAU_LATE
+        and producer.EARLY == EARLY)
+agree = all(producer.predicted(REF[k], h) == predicted(REF[k], h) for k in REF for h in HYPS)
+record("T6 the producer's constants and `predicted` are this check's", same and agree)
 
 print("\nCrossing bands (Dodecahedron steps) for 410m's (128, 512] and (256, 1000]:")
 for h in HYPS:

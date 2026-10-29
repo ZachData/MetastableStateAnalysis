@@ -107,6 +107,9 @@ rewrite; T2's reading goes to `status-T.md` and the user decides any F1 sentence
   (re-init rate ≤ 5 %, plant B ≥ 0.4 at the smallest dose the uncentred count sees at 0.4, plant
   A at 0.5 ≤ 0.1); frozen into `TAU_ARMS`; refuses if a re-run derives other arms.
 - Any arm failing sends the design back to you before the batch.
+- **Ran 2026-10-29 (unit 1):** known answer, planted effect and planted null pass; every centred
+  arm fails on both models (plant A 0.21–0.51; 67m's null-matched τ ≤ 0, refused); back to the
+  user as `STATE.md` Blocked 120. Numbers: `status-T.md` "T2 unit 1".
 
 ## Decisions (each yours; recommendation first)
 
