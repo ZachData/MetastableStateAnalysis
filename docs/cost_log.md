@@ -528,3 +528,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-25 | B7′ open: design, scan, sympy check (before /challenge-pr) | 41 | 176k | 4.8M | 49k | #278 |
 | 2026-10-25 | B7′ open (#278), after /challenge-pr (accept with changes; findings 1-6 taken: R2 per head, G14/G15, the sink chain and L, beside columns) · subagents: general-purpose opus-5-5 1.1M | 57 | 209k | 7.9M | 54k | #278 |
 | 2026-10-28 | Figure 12, the energy ridgeline (before /challenge-pr) | 73 | 239k | 12.2M | 409k | #280 |
+| 2026-10-28 | Figure 12 (#280), after /challenge-pr (accept with changes; findings 1-6 taken: step 8 hidden, colour on the mean's own drops, key/caption/claims split, beta a key, E0 1e-7, tests) · subagents: general-purpose opus-5-5 1.1M | 97 | 278k | 18.4M | 444k | #280 |
+  - Over 2× the running median (18.4M against 7.9M): the user's question also asked what other grids exist, so the old Phase 1 and Phase 2 heatmaps were surveyed (seven PNGs viewed) and the 414 KB artifact's data read, before the figure; then a producer re-run and a figure rewrite after `/challenge-pr`, re-reading the long `numbers.py` context.

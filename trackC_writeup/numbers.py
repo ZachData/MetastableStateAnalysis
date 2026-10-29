@@ -698,11 +698,13 @@ KEYS: Dict[str, tuple] = {
     # Figure 12: the ridges (seed 0, mean over the prompts) and the identity-weight flow from step 0's embeddings
     "ridge.e1": ("ridge", lambda r: [_pmean(r["ridges"]["e1"][str(s)].values()) for s in r["steps"]]),
     "ridge.drops": ("ridge", lambda r: r["ridges"]["drops"]),
+    "ridge.mean_drops": ("ridge", lambda r: r["ridges"]["mean_drops"]),
     "ridge.V": ("ridge", lambda r: r["ridges"]["V"]),
     "ridge.n_prompts": ("ridge", lambda r: len(r["prompts"])),
     "ridge.ident_full": ("ridge", lambda r: _pmean(p["full"] for p in r["identity"]["prompts"].values())),
     "ridge.ident_causal": ("ridge", lambda r: _pmean(p["causal"] for p in r["identity"]["prompts"].values())),
     "ridge.ident_T": ("ridge", lambda r: r["identity"]["T"]),
+    "ridge.ident_beta": ("ridge", lambda r: r["identity"]["beta"]),
     "ridge.ident_full_min": ("ridge", lambda r: min(p["full_min_fine_diff"] for p in r["identity"]["prompts"].values())),
     "ridge.ident_causal_min": ("ridge", lambda r: min(p["causal_min_fine_diff"] for p in r["identity"]["prompts"].values())),
 }
@@ -714,9 +716,11 @@ KEYS: Dict[str, tuple] = {
 CLAIMS: List[tuple] = [
     ("§3.1 the grid is A5's", lambda k: tuple(k["grid.steps"]) == GRID),
     ("figure 12: the ridges' V is seed 0's", lambda k: k["ridge.V"] == k["s0.V"]),
-    ("figure 12's caption: the identity flow's E never falls under either mask; the mean ends above the embeddings at every step",
-     lambda k: k["ridge.ident_full_min"] >= 0 and k["ridge.ident_causal_min"] >= 0
-     and all(e[-1] > e[0] for e in k["ridge.e1"])),
+    ("figure 12, left: the identity flow from step 0's embeddings never falls under the full mask (the theorem's "
+     "case) nor, observed on these prompts at this step size, the causal one",
+     lambda k: k["ridge.ident_full_min"] >= 0 and k["ridge.ident_causal_min"] >= 0),
+    ("figure 12, right: the model's E₁, averaged over the prompts, ends above the embeddings at every step",
+     lambda k: all(e[-1] > e[0] for e in k["ridge.e1"])),
     ("§3.2 one date at every tolerance and prompt left out",
      lambda k: len(set(k["s0.tol_steps"])) == 1 and len(set(k["s0.loo_steps"])) == 1
      and k["s0.tol_steps"][0] == k["s0.break"]),
@@ -1435,39 +1439,64 @@ def paper_figures(keys: Dict[str, dict]) -> List[Path]:
     return [path, ridge_figure(keys)] + row_panels(keys)
 
 
+RIDGE_AMP = 2.4      # a ridge's height, in rows; at 3.4 step 16 hid 69 % of step 8 (/challenge-pr on #280, 1)
+
+
+def ridge_hidden(e1: Sequence[Sequence[float]], amp: float, per_seg: int = 20) -> List[float]:
+    """Each ridge's share of sampled points that a ridge in front of it (a later step, drawn over it
+    with an opaque fill) covers, at height `amp` rows on one scale; figure 12 refuses above 0."""
+    lo, hi, n, m = min(min(e) for e in e1), max(max(e) for e in e1), len(e1), len(e1[0])
+    xs = [i / per_seg for i in range((m - 1) * per_seg + 1)]
+
+    def y(si, x):
+        j = min(int(x), m - 2)
+        e = e1[si][j] + (e1[si][j + 1] - e1[si][j]) * (x - j)
+        return n - 1 - si + (e - lo) / (hi - lo) * amp
+
+    return [sum(any(y(sj, x) > y(si, x) for sj in range(si + 1, n)) for x in xs) / len(xs) for si in range(n)]
+
+
 def ridge_figure(keys: Dict[str, dict]) -> Path:
     """Figure 12 (the user's, 2026-10-28; `c2_ridge.py`): left, the identity-weight flow from step 0's
-    embeddings, both masks, with the model at step 0 beside; right, seed 0's E₁ against depth at every
-    step on one height scale, step 0 at the back, each transition where a prompt drops drawn in the
-    drop colour (stronger with more prompts), V at the right."""
+    embeddings, both masks, with the model at step 0 beside; right, seed 0's E₁ (mean over the prompts)
+    against depth at every step on one height scale, step 0 at the back, drawn in the drop colour where
+    that mean itself drops by A5's rule; V (each prompt's drops, summed) at the right. Refuses if a
+    ridge is covered by one in front of it."""
+    import math
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     from matplotlib.collections import LineCollection
+    from matplotlib.lines import Line2D
     _style(plt)
     k = {n: v["value"] for n, v in keys.items()}
-    steps, e1, cnt, v = k["grid.steps"], k["ridge.e1"], k["ridge.drops"], k["ridge.V"]
-    n_p, n, states = k["ridge.n_prompts"], len(steps), list(range(len(e1[0])))
+    steps, e1, falls, v = k["grid.steps"], k["ridge.e1"], k["ridge.mean_drops"], k["ridge.V"]
+    n, states = len(steps), list(range(len(e1[0])))
+    hidden = ridge_hidden(e1, RIDGE_AMP)
+    if max(hidden) > 0:
+        raise Refused(f"refusing: figure 12 hides {max(hidden):.0%} of step {steps[hidden.index(max(hidden))]}'s "
+                      f"ridge at height {RIDGE_AMP}")
     fig = plt.figure(figsize=(7.2, 4.6))
 
     ax = fig.add_axes([0.07, 0.47, 0.25, 0.45])
-    ceiling = 2.718281828459045 / 2                  # E₁ of one point: exp(1) / 2
+    beta = k["ridge.ident_beta"]
+    ceiling = math.exp(beta) / (2 * beta)            # E_β of one point
+    curves = (k["ridge.ident_full"], k["ridge.ident_causal"], e1[0])
     ax.axhline(ceiling, color=MUTED, lw=0.8, ls=(0, (1, 2)))
-    ax.text(0.3, ceiling - 0.02, "e/2: one point", ha="left", va="top", fontsize=7, color=MUTED)
-    ax.plot(states, k["ridge.ident_full"], color=SERIES[2], lw=1.6, label="identity, full mask")
-    ax.plot(states, k["ridge.ident_causal"], color=SERIES[2], lw=1.2, ls=(0, (3, 2)), label="identity, causal mask")
-    ax.plot(states, e1[0], color=INK, lw=1.0, label="the model at step 0")
+    ax.text(0.3, ceiling - 0.02, "exp(β) / 2β: one point", ha="left", va="top", fontsize=7, color=MUTED)
+    ax.plot(states, curves[0], color=SERIES[2], lw=1.6, label="identity, full mask")
+    ax.plot(states, curves[1], color=SERIES[2], lw=1.2, ls=(0, (3, 2)), label="identity, causal mask")
+    ax.plot(states, curves[2], color=INK, lw=1.0, label="the model at step 0")
     t_end = k["ridge.ident_T"]
     ax.set_xticks([0, 12, 24], ["0", f"{t_end / 2:g}", f"{t_end:g}"])
     ax.set_xlabel("t, read at 25 equal times\n(the model: state 0–24)", fontsize=8)
-    ax.set_ylabel("E₁, mean over the prompts")
-    ax.set_ylim(0.45, 1.42)
+    ax.set_ylabel(f"E at β = {beta:g}, mean over the prompts")
+    ax.set_ylim(min(min(c) for c in curves) - 0.07, max(ceiling, max(max(c) for c in curves)) + 0.06)
     fig.legend(*ax.get_legend_handles_labels(), loc="upper left", bbox_to_anchor=(0.045, 0.30), fontsize=7)
     ax.set_title("Q = K = V = I, from step 0's embeddings", fontsize=8.5, loc="left", color=INK)
 
     ax = fig.add_axes([0.42, 0.06, 0.50, 0.90])
-    lo, hi = min(min(e) for e in e1), max(max(e) for e in e1)
-    amp = 3.4                                        # ridge height, in rows: ridges overlap
+    lo, hi, amp = min(min(e) for e in e1), max(max(e) for e in e1), RIDGE_AMP
     for si in range(n):
         base = n - 1 - si
         y = [base + (e - lo) / (hi - lo) * amp for e in e1[si]]
@@ -1476,12 +1505,10 @@ def ridge_figure(keys: Dict[str, dict]) -> Path:
         ax.fill_between(states, base, y, color=SERIES[0], alpha=0.04 + 0.10 * si / (n - 1), lw=0, zorder=z)
         ax.plot([states[0], states[-1]], [base, base], color=RULE, lw=0.6, zorder=z)
         segs = [[(t, y[t]), (t + 1, y[t + 1])] for t in range(len(y) - 1)]
-        flat = [s for s, c in zip(segs, cnt[si]) if c == 0]
-        ax.add_collection(LineCollection(flat, colors=INK, linewidths=1.0, zorder=z + 1))
-        for s, c in zip(segs, cnt[si]):
-            if c:
-                ax.add_collection(LineCollection([s], colors=SERIES[1], linewidths=1.9, zorder=z + 1,
-                                                 alpha=0.45 + 0.55 * min(1.0, 2 * c / n_p)))
+        ax.add_collection(LineCollection([s for s, f in zip(segs, falls[si]) if not f], colors=INK,
+                                         linewidths=1.0, zorder=z + 1))
+        ax.add_collection(LineCollection([s for s, f in zip(segs, falls[si]) if f], colors=SERIES[1],
+                                         linewidths=2.0, zorder=z + 1))
         ax.text(-0.7, base, _tick(steps[si]), ha="right", va="center", fontsize=7,
                 color=INK if steps[si] <= k["cfg.warmup_steps"] else MUTED)
         ax.text(len(states) - 0.3, base, f"{v[si]}", ha="left", va="center", fontsize=7,
@@ -1492,8 +1519,11 @@ def ridge_figure(keys: Dict[str, dict]) -> Path:
             color=SERIES[0])
     ax.text(-0.7, n - 0.2, "step", ha="right", va="center", fontsize=7, color=MUTED)
     ax.text(len(states) - 0.3, n - 0.2, "V", ha="left", va="center", fontsize=7, color=MUTED)
+    ax.legend([Line2D([], [], color=INK, lw=1.0), Line2D([], [], color=SERIES[1], lw=2.0)],
+              ["E₁, mean over the prompts", "where that mean drops (A5's rule)"], loc="upper right",
+              bbox_to_anchor=(1.0, 1.0), fontsize=7)
     ax.set_xlim(0, len(states) - 1)
-    ax.set_ylim(-0.4, n - 1 + amp + 0.2)
+    ax.set_ylim(-0.4, n - 1 + amp + 1.2)
     ax.set_xticks([0, 4, 8, 12, 16, 20, 24], ["emb", "4", "8", "12", "16", "20", "24"])
     ax.set_yticks([])
     ax.spines["left"].set_visible(False)

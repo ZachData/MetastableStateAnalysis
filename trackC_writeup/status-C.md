@@ -37,7 +37,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-28 · body `5232dc1d48`
+- **Reviewed:** 2026-10-28 · body `5495578205`
 <!-- /phase-card -->
 
 ## Units
@@ -73,17 +73,36 @@ description; nothing registered, no threshold, no date.
 
 | | |
 |---|---|
-| figure | `fig/paper/fig12_ridge.pdf` (`numbers.py paper-figures`, `ridge_figure`); deterministic on this machine (two draws byte-equal) |
-| record | `data/trackC/c2ridge/2026-10-28/ridge.json` (sha256 `2bac42c9c601…` in `numbers.json`), producer `c2_ridge.py` code `a76f7ad95b22`, CPU 2.5 min |
+| figure | `fig/paper/fig12_ridge.pdf` (`numbers.py paper-figures`, `ridge_figure`); deterministic on this machine (two draws byte-equal); refuses if any ridge is covered by one in front of it (`ridge_hidden`, sampled at 20 points a segment) |
+| record | `data/trackC/c2ridge/2026-10-28/ridge.json` (sha256 in `numbers.json`), producer `c2_ridge.py` (code in the record), CPU 2.5 min |
 | inputs | A5's seed-0 records `data/trackA/a5/2026-10-20-u1/seed0/records` (126 files, sha256 over the files in name order `6ecb21551a8d…`); V checked against that run's `gate.json` known answer at every step; step-0 `embed_in` of `EleutherAI/pythia-410m`, tokenizer A5's (`step143000`), offline |
-| right panel | E₁ (β = 1) at the 25 states, mean over the 7 prompts, the 18 steps on one height scale, step 0 at the back; a transition is drawn in the drop colour where any prompt drops (A5's D2 rule, 10⁻³), stronger with more prompts; V at the right; claim: equal to `s0.V` |
-| left panel | Q = K = V = I from each prompt's step-0 embedding rows (E at t = 0 equal to the record's `e1[0]` to 10⁻⁵, token ids hashed to the record's), β = 1, 2400 Euler steps to T = 8 renormalised to the sphere, read at 25 equal times; both masks, mean over the prompts; the model at step 0 beside |
+| right panel | E₁ (β = 1) at the 25 states, mean over the 7 prompts, the 18 steps on one height scale (each ridge 2.4 rows tall), step 0 at the back; a transition is drawn in the drop colour where **that mean** drops by A5's D2 rule (10⁻³); V at the right counts each prompt's drops (claim: equal to `s0.V`); where the drops sit by transition, per prompt, is figure 5's map |
+| left panel | Q = K = V = I from each prompt's step-0 embedding rows (E at t = 0 equal to the record's `e1[0]` to 10⁻⁷, observed ≤ 4 × 10⁻⁹; token ids hashed to the record's), β = 1 (a key; the ceiling exp(β)/2β and the limits follow it), 2400 Euler steps to T = 8 renormalised to the sphere, read at 25 equal times; both masks, mean over the prompts; the model at step 0 beside |
 | what it shows | full mask: smallest fine-step change 3.7 × 10⁻⁸ (it refuses on a fall), within 1 % of e/2 (one point) by read 14 of 24; causal (no theorem): smallest change 1.7 × 10⁻⁵, ends 1.33–1.34; the model at step 0 rises 0.52 → 0.88; ridges at 0–128 have no drop; the highest ridge is step 16's (1.23); the mean ends above the embeddings at every step (claim) |
 | matches | the page's identity numbers to 7 × 10⁻¹⁶ (its scratch `identity_ref.py`, ported unchanged in what it computes) |
 
 **Caveats.** t is not depth: T = 8 is figure 6's choice, so the identity curve's rate against the
-model's states means nothing; its shape (monotone, to a ceiling) is the reference. The ridges are the
-mean over prompts; a single prompt's drop shows only as the segment's colour. Seed 0 only.
+model's states means nothing; its shape (monotone, to a ceiling) is the reference. The causal mask's
+monotonicity is an observation on 7 prompts at one step size (dt = 1/300), not a theorem. The ridges
+are the mean over prompts: a prompt's drop where the mean rises is in V, not in the colour. Seed 0 only.
+
+**After `/challenge-pr` on #280** (accept with changes; findings 1–6 taken): at 3.4 rows step 16's ridge
+hid 69 % of step 8's, now 2.4 with a refusal on any cover (the page TBed9FFnPDLDWKAeN1duSQ draws its
+ridges taller still, so it likely hides step 8 too; not republished here); the colour was "any prompt
+drops" on the mean's line (64 of 145 coloured segments rose), now the mean's own drops; a key on the
+right panel and the caption below; the claim split by subject; β a key; the E(0) tolerance 10⁻⁷; the
+drop rule imported from `c2_readings`, the model name from `a5_seeds.repo_for`; tests
+(`tests/test_trackC_ridge.py`).
+
+**Caption (draft, for `paper/`; yours to edit).** *The interaction energy through depth, at every
+checkpoint (seed 0). Left: $E_1$ under identity weights ($Q = K = V = I$, $\beta = 1$), run from step 0's
+embedding rows of each prompt and read at 25 equal times to $t = 8$; $t$ is not depth. Under the full
+mask $E_\beta$ is non-decreasing [Geshkovski et al.] and rises to $e/2$, every token at one point; under
+the causal mask it also never falls here (observed on these prompts, no theorem). The model at step 0
+(black) rises too, more slowly. Right: the model's $E_1$, averaged over the 7 prompts, against the 25
+states, one ridge per checkpoint, step 0 at the back; orange where that average falls by more than
+$10^{-3}$ of its value; at the right, V, the drops of the 7 prompts summed. Through step 128 no prompt
+drops; from 256 the ridges fold. The average ends above the embeddings at every step.*
 
 **Also in this unit.** `p_a5_push_record.json` (a `repo:` record of `numbers.py`, §3.4's outside
 timestamp) was gitignored and its one copy sat untracked in `../Mets-work`; now whitelisted and tracked,

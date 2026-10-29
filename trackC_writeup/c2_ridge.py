@@ -5,9 +5,11 @@ Two things, in one record:
 
 - **the ridges**: seed 0's E₁ at the 25 states, every step of the grid and every prompt, from A5's
   seed-0 records (field `e1`); each transition's count of prompts that drop (A5's rule, REL_TOL);
-  V per step. Refuses unless V equals A5's known answer at every step.
+  V per step; and where the prompts' mean itself drops by the same rule (what figure 12 colours).
+  Refuses unless V equals A5's known answer at every step.
 - **the identity reference**: each prompt's step-0 embedding rows (the records' state 0: the
-  token ids must hash to the record's `ids_sha`, and E at t = 0 must equal its `e1[0]` to 1e-5) run
+  token ids must hash to the record's `ids_sha`, and E at t = 0 must equal its `e1[0]` to 1e-7,
+  observed ≤ 4e-9; the ids alone cannot tell seeds apart) run
   under ẋᵢ = P_{xᵢ}(Σⱼ softmaxⱼ(β⟨xᵢ, xⱼ⟩) xⱼ), Q = K = V = I, β = 1 [Geshkovski et al. 2023], Euler
   steps of DT renormalised to the sphere, to t = T, read at 25 equally spaced times (as 410m's 25
   states; t is not a layer count). The full mask is the case E_β is proved non-decreasing in, and
@@ -29,13 +31,15 @@ import numpy as np
 
 from core.config import PROMPTS
 from trackA_force.a1a import DATA, REPO, STEPS, V1
-from trackA_force.a5_seeds import MAX_TOKENS, REL_TOL, TOKENIZER
+from trackA_force.a5_seeds import MAX_TOKENS, REL_TOL, TOKENIZER, repo_for
+from trackC_writeup.c2_readings import drops
 
 RECS = DATA / "trackA" / "a5" / "2026-10-20-u1" / "seed0" / "records"
 GATE0 = DATA / "trackA" / "a5" / "2026-10-20-u1" / "seed0" / "gate.json"
 OUT = DATA / "trackC" / "c2ridge" / "2026-10-28"
 BETA, T, N_FINE, STATES = 1.0, 8.0, 2400, 25    # T as figure 6's toy; 100 fine steps between reads
-MODEL = ("EleutherAI/pythia-410m", "step0")
+MODEL = (repo_for(0), "step0")
+E0_TOL = 1e-7                                   # placed: observed ≤ 4e-9 on the 7 prompts (/challenge-pr on #280, 5)
 
 
 class RidgeRefused(SystemExit):
@@ -44,7 +48,8 @@ class RidgeRefused(SystemExit):
 
 def code_sha() -> str:
     h = hashlib.sha256()
-    for f in ("trackC_writeup/c2_ridge.py", "trackA_force/a1a.py", "trackA_force/a5_seeds.py", "core/config.py"):
+    for f in ("trackC_writeup/c2_ridge.py", "trackC_writeup/c2_readings.py", "trackA_force/a1a.py",
+              "trackA_force/a5_seeds.py", "core/config.py"):
         h.update((REPO / f).read_bytes())
     return h.hexdigest()[:12]
 
@@ -58,11 +63,6 @@ def inputs_sha() -> str:
 
 
 # ---------------------------------------------------------------- pure
-
-def drops(e: np.ndarray) -> np.ndarray:
-    """D2 (a): transition t is a drop when E₁ falls by more than REL_TOL of its value."""
-    return (-np.diff(e) / np.maximum(np.abs(e[:-1]), 1e-12)) > REL_TOL
-
 
 def energy(c: np.ndarray, beta: float = BETA) -> float:
     return float(np.exp(beta * (c @ c.T)).sum() / (2 * beta * len(c) ** 2))
@@ -105,16 +105,17 @@ def span_coords(x: np.ndarray) -> np.ndarray:
 
 def ridges() -> dict:
     v_known = json.loads(GATE0.read_text())["known_answer"]["V"]
-    e, cnt, v = {}, [], []
+    e, cnt, v, mean_d = {}, [], [], []
     for s in STEPS:
         rows = {p: json.loads((RECS / f"step{s}_{p}.json").read_text()) for p in V1}
         e[str(s)] = {p: rows[p]["e1"] for p in V1}
         d = np.sum([drops(np.asarray(rows[p]["e1"], float)) for p in V1], axis=0)
         cnt.append(d.astype(int).tolist())
         v.append(int(d.sum()))
+        mean_d.append(drops(np.mean([rows[p]["e1"] for p in V1], axis=0)).tolist())
     if v != list(v_known):
         raise RidgeRefused(f"refusing: V from the records {v} is not A5's known answer {v_known}")
-    return {"e1": e, "drops": cnt, "V": v}
+    return {"e1": e, "drops": cnt, "V": v, "mean_drops": mean_d}
 
 
 def identity() -> dict:
@@ -133,7 +134,7 @@ def identity() -> dict:
         x /= np.linalg.norm(x, axis=1, keepdims=True)
         c = span_coords(x)
         e0 = energy(c)
-        if abs(e0 - rec["e1"][0]) > 1e-5:
+        if abs(e0 - rec["e1"][0]) > E0_TOL:
             raise RidgeRefused(f"refusing: {p}'s E at t = 0 is {e0}, the record's e1[0] {rec['e1'][0]}")
         row = {"n": len(ids), "e0": e0, "e1_0_record": rec["e1"][0]}
         for m in ("full", "causal"):
