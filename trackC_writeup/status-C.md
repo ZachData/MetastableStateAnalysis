@@ -38,7 +38,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-29 · body `233391c381`
+- **Reviewed:** 2026-10-29 · body `0eaeb1aced`
 <!-- /phase-card -->
 
 ## Units
@@ -77,8 +77,8 @@ the figure drawn from the table after the check passes.
 **Input set:** seed 0 (`pythia-410m`), the 18 steps (`a1a.STEPS`), the 7 v1 prompts; Phase 1's
 runs `a1a.RUNS` (`geometry.json`, `energies.json`, `layer_metrics.csv`, `tokens.txt`) and one
 Phase 2 run per step (`c2_grid.P2_RUNS`, `ov_summary`); A5's seed-0 records
-`data/trackA/a5/2026-10-20-u1/seed0/` and gate. Code `825bb88d8ac8`; inputs sha256 `4838f046edd0`
-(every file read); record `data/trackC/c2grid/2026-10-29/grid.json` (sha256 `d02f21df95c7`), CPU, 2 s.
+`data/trackA/a5/2026-10-20-u1/seed0/` and gate. Code `f29008c0525b`; inputs sha256 `4838f046edd0`
+(every file read); record `data/trackC/c2grid/2026-10-29/grid.json` (sha256 `a83a7c439e83`), CPU, 2 s.
 
 **The check first (refuses on any failure, before a grid value is read): passes.**
 
