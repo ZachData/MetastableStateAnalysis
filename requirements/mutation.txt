@@ -4,3 +4,8 @@
 # `mutmut run` and `python tools/mutation_check.py --write` review.
 -r test.txt
 mutmut==3.8.0
+# pytest 9.2.0 dropped Item._nodeid, which mutmut 3.8.0's harness reads at
+# teardown (AttributeError on every test, 2026-10-29); 9.1.1 was the last green.
+# Remove when mutmut is bumped to >= 3.8.1 (reads item.nodeid), with a fresh
+# `mutmut run` and `tools/mutation_check.py` review as above.
+pytest==9.1.1
