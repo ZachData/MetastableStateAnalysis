@@ -162,9 +162,10 @@ centred count built for Dodecahedron and a new arm family, the budget extended o
 here is fixed before any Dodecahedron value of the new count exists, and the exit is pre-committed.
 
 **Why unit 1's count failed (L3, `tools/math_checks/t2_llama_count.py`).** e1c normalises, then
-centres: on n unit rows at mean cosine ρ the centred rows keep a squared norm (n − 1)(1 − ρ)/n,
+centres: on n unit rows at mean cosine ρ the centred rows keep a mean squared norm (n − 1)(1 − ρ)/n
+(a mean over rows; "each row" corrected after `/challenge-pr` on #288, finding 3),
 about 0.10 on Dodecahedron (ρ 0.90–0.91) against 0.83 on 410m at 4000 (ρ 0.17). So e1c there
-re-normalises a tenth of each row, and anything that turns the mean direction moves it. L3 says
+re-normalises, on average, a tenth of each row, and anything that turns the mean direction moves it. L3 says
 how much is left, not that this is why plant A leaked (measured, `status-T.md` "T2 unit 1").
 
 **Lean.** No value of the new count on Dodecahedron has been computed. On 410m, e1r (below) is
@@ -206,8 +207,8 @@ A_s and P0 through e1r on a cloud with unit 1's measured cosine and step 9536's 
 (iii) **freeze as written, with P0 added** to D6 and run 1b under its pre-committed exit; (iv)
 freeze with D5 (d), position 0 dropped on both sides: adds 410m passes over 10 seeds × 18 steps,
 budget 5 units. **Recommended (i)**: no option makes a count that ignores a common direction on a
-cloud at cosine 0.9, since whichever order the centring takes, a tenth of each row is what is
-left (L3, L4); (ii) is the cheapest way to check that before spending 1b.
+cloud at cosine 0.9, since whichever order the centring takes, about a tenth of each row on average is what is
+left at equal norms (L3, L4; a reason, not a computed gate result); (ii) is the cheapest way to check that before spending 1b.
 
 **Worth challenging (for the PR):** D6's A_s is a plant chosen to fit the nuisance the diagnostic
 found, after the data showed it; a plant that e1r passes because of how it is built (as plant A
