@@ -1,5 +1,5 @@
 <!-- trackT_timaeus/design-T2.md -->
-# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29, not frozen)
+# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29; frozen 2026-10-29)
 
 Opened 2026-10-29 by `STATE.md` Blocked 118 (b), the user's: T2 tests the LR dose against step;
 the user asks Timaeus for the global batch, and T2 tests tokens too if it is 524k. Row:
@@ -8,8 +8,9 @@ their one home; the bands and the outcome table below are printed by
 `tools/math_checks/t2_grid.py` (6 checks pass; what it does not prove is in its docstring).
 Scan: `docs/lit-T.md` (T1's, and T2's line, 2026-10-29: nothing published on Dodecahedron's
 training dynamics); the schedule question's own scan is C2's (`trackA_force/lit-C2.md`,
-`trackC_writeup/lit-C2-unit1.md`). Tier 1, description throughout. **Freezes on your calls on
-D1–D4 (Blocked 119), before any Dodecahedron weight is downloaded.**
+`trackC_writeup/lit-C2-unit1.md`). Tier 1, description throughout. **Frozen 2026-10-29 on the
+user's calls, D1–D4 all (a) (Blocked 119), before any Dodecahedron weight was downloaded**; the
+"Decisions" table below keeps the options as written.
 
 ## What T2 is for
 
@@ -106,6 +107,10 @@ rewrite; T2's reading goes to `status-T.md` and the user decides any F1 sentence
   (re-init rate ≤ 5 %, plant B ≥ 0.4 at the smallest dose the uncentred count sees at 0.4, plant
   A at 0.5 ≤ 0.1); frozen into `TAU_ARMS`; refuses if a re-run derives other arms.
 - Any arm failing sends the design back to you before the batch.
+- **Ran 2026-10-29 (unit 1):** known answer, planted effect and planted null pass; every centred
+  arm fails on both models (plant A 0.21–0.51; 67m's null-matched τ ≤ 0, refused), and the
+  uncentred count barely sees plant A (0.04–0.07), the unit cloud near one direction (mean cosine
+  0.9); back to the user as `STATE.md` Blocked 120. Numbers: `status-T.md` "T2 unit 1".
 
 ## Decisions (each yours; recommendation first)
 

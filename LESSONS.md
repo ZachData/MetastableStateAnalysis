@@ -649,6 +649,16 @@ well-formed but empty/zero result. It looks exactly like a real result.
   so `produce` refused in any other worktree, and removing that worktree would have lost it. CI did
   not see it because CI never runs `produce`. Rule: **a `repo:` record is checked with `git
   ls-files` when it is added; `git check-ignore -v` on any new non-`.py`/`.md` file before commit.**
+- 2026-10-29, Track T T2 unit 1, a derivation that returned nonsense quietly: on `dodecahedron-67m`
+  `c2_seeds.null_matched_tol` gave a centred tolerance of −3.05e-4, which counts energy rises as
+  violations; only the gate failing on other grounds kept it out (3c's Parked 0 had already named
+  the same function's zero-rate case). The env also met a transformers-5 checkpoint: its
+  `tokenizer.json` did not load under tokenizers 0.19, and its config carries `head_dim` and
+  `rope_parameters`, which 4.44 ignores. Rule: **a derived threshold refuses outside its meaning
+  (τ ≤ 0, a quantile set by one unit); a model saved by a newer library is loaded with a check of
+  each field the old one ignores and a known-trained test (loss), not trusted because it loads**
+  (`trackT_timaeus/t2.py` `null_matched_tol`, `check_llama_config`, `convention`). A tracked doc
+  (`status-T.md`'s card) was again edited by a Python script, against the Edit-tool rule.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

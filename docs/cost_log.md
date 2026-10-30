@@ -540,3 +540,6 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-29 | Track T opened, T1 the Timaeus inventory (#283), after /challenge-pr (accept with changes; findings 1-4 taken) · subagents: general-purpose opus-5-5 1.7M | 66 | 182k | 8.7M | 45k | #283 |
 | 2026-10-29 | T2's design proposed (Dodecahedron mapping, outcome table, D1-D4), docs and a math check, before /challenge-pr | 26 | 141k | 2.6M | 35k | #284 |
 | 2026-10-29 | T2's design proposed (#284), after /challenge-pr (accept with changes; findings 1-3 taken) · subagents: general-purpose opus-5-5 901k | 41 | 161k | 4.9M | 38k | #284 |
+| 2026-10-29 | T2 unit 1: producer, gate, preflight (centred gate fails; Blocked 120), before /challenge-pr | 67 | 216k | 9.7M | 54k | #285 |
+| 2026-10-29 | T2 unit 1 (#285), after /challenge-pr (accept with changes; findings 1-5 taken: E1 off its Pythia behaviour, cloud at cosine 0.9; E1-only null; commits; 5.2 bit-identical; read end to end) · subagents: general-purpose opus-5-5 2.2M | 99 | 267k | 17.3M | 64k | #285 |
+  Over 2× the running median (17.3M against 7.75M): a code unit with GPU runs (the producer read against four C2 modules, two preflight re-runs after defects) and then five findings answered with new code, a diagnostic, a transformers-5.2 venv cross-check and a full re-run, plus /challenge-pr's fork (2.2M).
