@@ -1,11 +1,12 @@
 <!-- trackT_timaeus/design-T5.md -->
-# Track T — design: T5, why the Pythia counts fail on Dodecahedron (proposed 2026-10-30; not frozen)
+# Track T — design: T5, why the Pythia counts fail on Dodecahedron (proposed 2026-10-30; frozen 2026-10-30)
 
 Opened 2026-10-30 by `STATE.md` Blocked 122 (a), the user's, as recommended: all units, U4 after
 U3. Row: `docs/ROADMAP.md` §7b T5, which states H1 and H2 and the recorded 70m prediction; this
 file fixes the rules. Scan: `docs/lit-T.md` §4 (2026-10-30). U0's reads (no forward pass):
-`status-T.md` "T5 U0". Tier 1, description throughout. **Nothing is frozen until you take D1–D3
-(Blocked 123); no forward pass of T5 has run.**
+`status-T.md` "T5 U0". Tier 1, description throughout. **Frozen 2026-10-30 on the user's calls, D1–D3
+all (a) (Blocked 123), as revised after `/challenge-pr` on #290, before any forward pass of T5**;
+the "Decisions" table keeps the options as written.
 
 ## What T5 is for
 

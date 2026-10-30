@@ -19,11 +19,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design proposed (Blocked 123) — `trackT_timaeus/design-T5.md`
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 next — `trackT_timaeus/design-T5.md`
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `4e53d8976e`
+- **Reviewed:** 2026-10-30 · body `aaf7af422f`
 <!-- /phase-card -->
 
 ## Units
@@ -34,7 +34,7 @@
 | T2. V and E_β on Dodecahedron | **closed 2026-10-30 at unit 1** (Blocked 121 (i)), before the batch: design frozen 2026-10-29 (Blocked 119), unit 1's centred arms fail their gate on both models (Blocked 120), the Llama-fit count proposed (Blocked 120 (b)) and not frozen | "T2 on one page" below; `design-T2.md` |
 | T3. LLC positive control | candidate | `docs/ROADMAP.md` §7b |
 | T4. LLC on C2's checkpoints | candidate, after T3 | `docs/ROADMAP.md` §7b |
-| T5. why the Pythia counts fail on Dodecahedron (the cloud's geometry; H1 the init, H2 no biases) | **opened 2026-10-30** (Blocked 122 (a)); U0 done: design proposed (Blocked 123: D1–D3), scan, `gpt-2-small`'s init read (flat 0.02, biases on); homes "T2 on one page"'s "why the counts fail" | `design-T5.md`; "T5 U0", "T5's proposal" below |
+| T5. why the Pythia counts fail on Dodecahedron (the cloud's geometry; H1 the init, H2 no biases) | **opened 2026-10-30** (Blocked 122 (a)); U0 done: design frozen 2026-10-30 (Blocked 123: D1–D3 all (a)), scan, `gpt-2-small`'s init read (flat 0.02, biases on); homes "T2 on one page"'s "why the counts fail" | `design-T5.md`; "T5 U0", "T5's proposal" below |
 
 ## T5's proposal: the init scales measured (2026-10-30)
 
@@ -54,7 +54,7 @@ Re-run: `python -I trackT_timaeus/t5_init_sd.py <checkpoint file>`; `python3 too
 
 ## T5 U0: the design, the scan, `gpt-2-small`'s init (2026-10-30)
 
-Opened by Blocked 122 (a), the user's. Design proposed, not frozen (Blocked 123):
+Opened by Blocked 122 (a), the user's. Design frozen 2026-10-30 (Blocked 123: D1–D3 all (a), the user's):
 `trackT_timaeus/design-T5.md`; scan `docs/lit-T.md` §4. No forward pass.
 
 **`timaeus/gpt-2-small`'s init is flat.** `timaeus/gpt-2-small-init-seed-5` (commit
