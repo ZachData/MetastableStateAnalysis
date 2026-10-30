@@ -12,7 +12,7 @@
   - T2 unit 1 (design frozen on D1–D4 (a)): the producer reproduces A5's seed-0 records on `pythia-410m` exactly and its planted effect and null pass, and Dodecahedron loads as trained, its hidden states bit-identical to transformers 5.2's; but every centred arm fails its gate on both models (plant A turns 0.21–0.51 of the free units), and the uncentred count departs as far (plant A 0.04–0.07 against 0.79–0.98 on 70m, 160m, GPT-2); beside, not shown to be the cause, the unit cloud is nearly one direction (middle-state mean cosine 0.82–0.84 at init, 0.90–0.91 at step 9536, against 410m's 0.47 and 0.17); so neither count is the one dated on Pythia, and the design goes back to the user (Blocked 120) — `trackT_timaeus/status-T.md` "T2 unit 1"
   - T2 closed 2026-10-30 at unit 1, before any scored record (Blocked 121 (i), the user's, as recommended): a count fit to Llama was proposed (Blocked 120 (b)) and not frozen, since at equal token norms the raw-centred count equals the centred one exactly (L4) and differs from it only through the token-norm spread (L2), while centring leaves the rows a mean squared norm of about 0.09 at cosine 0.9 (L3); whether it would pass was not computed; no Dodecahedron date, and C2's F1 gets no fourth schedule from it — `trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)"
   - T5 opened 2026-10-30 (Blocked 122 (a)); U0, weights only: Timaeus's `gpt-2-small` starts from 0.02 on every weight with zero biases, so it is Pythia-160m's architecture under Dodecahedron's flat init, a released run whose architecture matches a model that passed and whose init does not (its data and the rest of its schedule unknown) — `trackT_timaeus/status-T.md` "T5 U0"
-  - T5 U1 (gate passes): the init alone does not concentrate the cloud: `pythia-70m` step 0 (mean cosine over states 1–5, 0.28) and `gpt-2-small`'s flat init (0.23) both sit at or below the falsifying 0.30; on random weights the flat init raises the middle-state mean cosine in Llama by 0.18–0.37 at every shape and in GPT-NeoX by none (−0.06 to 0.02), and Pythia's init takes a Llama at 32m's shape 0.84 of the way to a GPT-NeoX's, so H1 at init reads "partly": an interaction of init and architecture, the architecture's part not identified (its factor carries the tokenizer) — `trackT_timaeus/status-T.md` "T5 U1"
+  - T5 U1 (gate passes): the init alone does not concentrate the cloud: `pythia-70m` step 0 (mean cosine over states 1–5, 0.28) and `gpt-2-small`'s flat init (0.23) both sit at or below the falsifying 0.30; on random weights the flat init raises the middle-state mean cosine in Llama by 0.18–0.37 at every shape (at matched depth 0.20–0.42, smallest at 70m's dose, as H1 predicts), and in GPT-NeoX not at all (−0.06 to 0.02, lower than Pythia's init at 3 of 4 shapes), and Pythia's init takes a Llama at 32m's shape 0.84 of the way to a GPT-NeoX's, so H1 at init reads "partly": an interaction of init and architecture, the architecture's part not identified (its factor carries the tokenizer) — `trackT_timaeus/status-T.md` "T5 U1"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -24,7 +24,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `92423332ab`
+- **Reviewed:** 2026-10-30 · body `9ab32b2be8`
 <!-- /phase-card -->
 
 ## Units
@@ -84,12 +84,20 @@ concentrated at init.**
   −0.18, −0.30 at 70m's, 160m's, 410m's, 32m's shapes. ρ_mid⁻⁰ is within 0.003 of ρ_mid in every
   cell and real model: **position 0 is not what concentrates the cloud at init.** m_ℓ tracks ρ_ℓ
   (as it must at near-equal norms; n0 at middle states 1.18–1.24 on the real models).
+- **Post hoc, at matched depth** (`/challenge-pr` on #291, finding 1; the frozen rule scores the
+  order on ρ_mid, which `design-T5.md` itself calls unfair across depths, so the label stays
+  "partly"). On ρ_1:5, E_init in Llama is **0.20, 0.32, 0.40, 0.42** at 70m's, 160m's, 410m's, 32m's
+  shapes (doses 1.36, 3.33, 7.68, 3.14): 70m's the smallest, as H1's dose predicts; "halfway" 1.02.
+  In NeoX −0.05, −0.02, 0.02, −0.05. The ρ_mid order failure in Llama is a depth artefact.
 
 **What it says.** At init the cloud's concentration is an **interaction**: the flat init
-concentrates a Llama (Dodecahedron's architecture) and does nothing to a GPT-NeoX (Pythia's).
-Dodecahedron's step-1 ρ_mid 0.85 is reproduced by its own architecture under 0.02 and mostly
-removed (to 0.48) by Pythia's init in that architecture. H1 as recorded (the init alone, per block
-or over depth) is falsified on the two real checkpoints that test it.
+concentrates a Llama (Dodecahedron's architecture), with the size ordered by H1's dose at matched
+depth, and in a GPT-NeoX (Pythia's) it leaves ρ_mid *slightly lower* than Pythia's init at 3 of 4
+shapes (by up to 0.058, 2.9 τ; R1b points the same way), the opposite of H1's direction
+(`/challenge-pr` on #291, finding 3). Dodecahedron's step-1 ρ_mid 0.85 is reproduced by its own
+architecture under 0.02 and mostly removed (to 0.48) by Pythia's init in that architecture. H1 as
+recorded (the init alone, per block or over depth) is falsified on the two real checkpoints that
+test it.
 
 **Not established.** Which part of the Llama makes the init matter: RMSNorm against LayerNorm
 (LayerNorm removes each token's feature mean), the sequential against the parallel residual,
@@ -103,9 +111,16 @@ cannot show a flat init "keeping" the cloud concentrated. Whether to read it any
 to find the Llama component first, is **Blocked 124**.
 
 **Parked** (why / cost / which decision it could change): the Llama component ablation at init,
-one component of Llama-32m-F swapped to NeoX's at a time (norm, residual, MLP, rotary fraction,
-tying, tokenizer), 20 seeds each, under a rule fixed before output / about 2 GPU-minutes /
-which factor U4 trains (D3) — Blocked 124.
+one component of Llama-32m swapped to NeoX's at a time (norm, residual, MLP, rotary fraction,
+tying), **under both inits** so a part that moves the cloud whatever the init is told from one
+that makes the init matter (`/challenge-pr` on #291, finding 2), plus one cell of Llama-32m fed
+GPT-NeoX's tokenizer (random weights see the tokenizer only through the token sequence), 20 seeds
+each, under a rule fixed before output / about 5 GPU-minutes / which factor U4 trains (D3) —
+Blocked 124.
+
+**Environment** (`/challenge-pr` on #291, finding 4): the run's `meta.json` records torch only;
+transformers was 4.44.2 (the `mets` env at the run, read from the env, not the record). `t5.py`
+records it from now on (a later edit, so `read` on these records reports a different reader sha).
 
 Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m trackT_timaeus.t5 run --out <dir>`
 (skips records present), then `python -m trackT_timaeus.t5 read --out <dir>` (gate first; refuses

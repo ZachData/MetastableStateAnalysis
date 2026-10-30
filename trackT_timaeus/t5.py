@@ -345,13 +345,15 @@ def run(a) -> int:
     if prompts_hash() != PROMPTS_HASH:
         raise T5Refused(f"prompts_hash {prompts_hash()} != {PROMPTS_HASH}")
     torch, device = c._torch_setup()
+    import transformers
     from transformers import AutoConfig
     roots = a.hf_roots
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     meta = {"design": "trackT_timaeus/design-T5.md", "code": code_sha(), "prompts_hash": prompts_hash(),
             "prompts": list(V1), "max_tokens": t2.MAX_TOKENS, "dtype": "float32", "tf32": False,
-            "device": torch.cuda.get_device_name(0), "torch": torch.__version__, "hf_roots": list(roots),
+            "device": torch.cuda.get_device_name(0), "torch": torch.__version__,
+            "transformers": transformers.__version__, "hf_roots": list(roots),
             "seed": SEED, "n_seeds": N_SEEDS, "shapes": SHAPES}
     _write(out / "meta.json", meta)
     toks = {"neox": t2.p_tokenizer(), "llama": t2.tokenizer("32m")}
