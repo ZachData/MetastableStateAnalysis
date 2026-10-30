@@ -2301,6 +2301,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   and 410m is the Pythia where that init is smallest. By H1's own mechanism `pythia-70m` (r 7.5) is
   as marked as Dodecahedron-32m (7.7), and the counts passed on 70m. Rule: a hypothesis built
   on a contrast is checked against every model on the side that passed, not only the one at hand.
+- 2026-10-30, T5 U2 (found by its own reading): T2 read Dodecahedron's cloud at steps 1 and 9536
+  and wrote "the cloud at mean cosine 0.9" as its state; T2 closed with that as a candidate cause,
+  and T5's proposal, U1 and U1b set out to explain a concentration. On all 53 steps the cloud falls
+  to 0.10–0.11 between those two steps (lower than any Pythia minimum), and steps 1 and 9536 are its
+  two peaks. The trajectory took 8 GPU-minutes; T2's close and T5's two units of init work came
+  before it. The ROADMAP row did ask "whether it ever spreads in between", but scheduled it third.
+  Rule: a property read at two checkpoints is written "at steps a and b", not as a state, and the
+  cheap trajectory is read before a thread spends units explaining it.
 
 ## 12. Deleted, then needed
 

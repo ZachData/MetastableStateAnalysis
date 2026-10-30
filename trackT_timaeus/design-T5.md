@@ -135,6 +135,26 @@ reported as position 0's.
   at most init, and Dodecahedron's 0.90 at 9536 is something else (H2, or the rest). If it **does
   not spread**, then H1 is consistent through training, and H2 is not needed for that run.
 
+**U2's details (fixed 2026-10-30 before any U2 output; Blocked 125 (a), the user's, as
+recommended: U2 next as frozen, the pair screen and the reverse ablation go to U4's design as its
+first step).** Producer `trackT_timaeus/t5c.py`.
+
+| item | fixed as |
+|---|---|
+| trajectories | `dodecahedron-32m`, `-67m` at `t2.GRID` and 9536 (53 steps); `pythia-70m`, `-160m`, `-410m` at C2's 18 steps (0 … 143000); `timaeus/gpt-2-small`: its init (`-init-seed-5`, as step 0) and `checkpoint-N` for N in 100, 200, 300, 400, 500, 800, 1100, 1500, 2100, 3000, 4300, 6000, 8400, 11800, 16600, 23400, 32900, 46200, 65000 (`geomspace(100, 65000, 20)` rounded to 100, distinct: 19), each with its own `config.json`, GPT-NeoX's tokenizer as in U1, stored weights upcast to float32 |
+| first checkpoint | the earliest: Dodecahedron step 1, Pythia step 0, `gpt-2-small` its init |
+| the bootstrap | one resample of the 7 prompts (with replacement) is used at every step of a trajectory: ρ_ℓ averaged over the resampled prompts, ρ_mid per step, Δ_b = first − min; `numpy.random.default_rng(20261030)` |
+| the label | "spreads" is checked first (Δ ≥ 0.15 and 5th percentile > 0.05), then "does not spread" (95th < 0.15), else "not told apart" |
+| scored | Dodecahedron `-32m` and `-67m`, each its own label (the exit's question), and `gpt-2-small` (D1). Pythia's three are read under the rule beside, a real descent (410m's 0.47 → 0.17, T2) the rule should see; not gating |
+| H1 through training | `gpt-2-small`'s init ρ_mid is 0.335 (U1), below 0.75, so **neither branch applies**: its label is reported and sizes U4 (D3), with no H1 reading |
+| gate, the rule's synthetic | per prompt and step ρ_p(t) = μ(t) + N(0, s²), i.i.d.; s = the SD (ddof 1) of the 7 prompts' own ρ_mid at `-32m` step 9536 (from U2's record; U1's equal record gives 0.0072); flat μ = 0.90; planted μ(t) = 0.90 − 0.15 · min(1, ln t / ln 1072), linear in log step to 1072, flat after (15 steps at the bottom); 1,000 draws, each with its own 1,000-resample bootstrap through the reading's code. Beside, not gating: s from step 1 (0.026), and planted 0.10 and 0.20 |
+
+What the synthetic implies, stated before it runs: the planted size equals the bar, so under
+i.i.d. noise a planted descent reads Δ ≥ 0.15 when the first point lies above the least of the 15
+at the bottom, probability about 1 − 1/16 = 0.94 whatever s is. The gate's 90 % is then met by the
+trough's length, and a planted dip at 0.15 lasting one step would read "spreads" about half the
+time. The bar applies to descents that stay down.
+
 **U3, where the shared direction is written (H2).** At 8 checkpoints a model (Dodecahedron 1, ~10,
 ~100, ~300, ~1000, ~3000, ~6000, 9536 on its grid; 410m 0, 16, 128, 512, 1000, 4000, 32000,
 143000). u_ℓ = x̄_ℓ / ‖x̄_ℓ‖ at the block's output. For each block and token, the write's component
@@ -201,3 +221,6 @@ clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
   to 1, so it is constant, but a reviewer may count it as attention.
 - Promoting `gpt-2-small` into U2 (D1) and letting it size U4: its data are unknown, so a spread
   there may be the data, not the init's leaving.
+- U2's synthetic plants the descent at the bar and draws noise i.i.d. over steps: its pass is
+  set by the trough's length (15 steps), not by s; a real prompt's offset persists over steps, which
+  this noise model does not have. A plant at 0.20 is reported beside.
