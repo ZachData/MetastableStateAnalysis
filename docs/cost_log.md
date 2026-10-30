@@ -547,3 +547,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-30 | T2 Blocked 120 (b): Llama-fit count proposed (#287), after /challenge-pr (accept with changes; findings 1-5 taken: e1r = e1c at equal norms, L4; recommendation now close T2) · subagents: general-purpose opus-5-5 1.2M | 57 | 177k | 7.0M | 49k | #287 |
 | 2026-10-30 | T2 close-out (Blocked 121 (i)), before /challenge-pr | 38 | 142k | 4.2M | 43k | #288 |
 | 2026-10-30 | T2 close-out (Blocked 121 (i), #288), after /challenge-pr (accept with changes; findings 1-5 taken: no 'rescues' or causal claim, mean over rows, card Inputs) · subagents: general-purpose opus-5-5 1.9M | 54 | 163k | 6.6M | 50k | #288 |
+| 2026-10-30 | T5 proposed (docs only; the opening discussion and the roadmap entry), before /challenge-pr | 36 | 131k | 3.2M | 34k | #289 |
