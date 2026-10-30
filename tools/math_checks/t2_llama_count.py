@@ -15,6 +15,10 @@ L3  For n unit rows with mean off-diagonal cosine ρ, the mean row ‖x̄‖² =
     the token-centred rows' mean squared norm is 1 − ‖x̄‖² = (n − 1)(1 − ρ) / n: at ρ = 0.9 e1c
     re-normalises a residual of squared norm about 0.1, at 410m's 0.17 about 0.83 (sympy identity;
     the values printed for n = 512).
+L4  At equal token norms (h_i = r x_i, ‖x_i‖ = 1) the raw-centred rows are r (x_i − x̄), a positive
+    multiple of e1c's centred rows, so e1r = e1c exactly: e1r re-normalises the same residual L3
+    sizes, and differs from e1c only through the spread of token norms (sympy; added after
+    `/challenge-pr` on #287, finding 1, which found D5's first reason false).
 
 NOT proved: that a small residual is why unit 1's centred arms leaked plant A (the leak is
 measured, `status-T.md` "T2 unit 1"; L3 says only how much of each row centring leaves); that
@@ -72,7 +76,22 @@ def l3() -> None:
     print("L3 ok: ‖x̄‖² = (1 + (n − 1) ρ) / n; centred residual (n − 1)(1 − ρ) / n")
 
 
+def l4() -> None:
+    n, d = 3, 2
+    x = sp.Matrix(n, d, lambda i, j: sp.Symbol(f"x{i}{j}"))      # rows of norm 1 (not needed below)
+    r = sp.Symbol("r", positive=True)
+
+    def centre(m):
+        return m - sp.ones(n, 1) * (sp.ones(1, n) * m) / n
+
+    # raw rows r x_i: centred raw rows equal r × the centred unit rows, a positive scalar multiple,
+    # so each row normalises to the same unit vector and the two clouds' energies are equal
+    assert sp.simplify(centre(r * x) - r * centre(x)) == sp.zeros(n, d)
+    print("L4 ok: at equal norms the raw-centred rows are r × e1c's centred rows; e1r = e1c")
+
+
 if __name__ == "__main__":
     l1()
     l2()
     l3()
+    l4()

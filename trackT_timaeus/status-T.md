@@ -17,7 +17,7 @@
 - **Feeds:** none
 - **Open threads:**
   - Dodecahedron's global batch is inferred from the card's arithmetic, not read from a training log; the user asks Timaeus (Blocked 118 (b)), and tokens is scored in T2 only on `design-T2.md` D4's condition — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - T2's centred count fails its gate on Dodecahedron; Blocked 120 decided (b), the user's: a count fit to Llama (e1r, plant A_s, scale-matched arms, REF_r on 410m), proposed and not frozen (Blocked 121), closing at unit 1b if it fails — `trackT_timaeus/design-T2.md` "Blocked 120 (b)"
+  - T2's centred count fails its gate on Dodecahedron; Blocked 120 decided (b), the user's: a count fit to Llama (e1r, plant A_s, scale-matched arms, REF_r on 410m), proposed and not frozen (Blocked 121), closing at unit 1b if it fails; after `/challenge-pr` on #287, e1r equals e1c at equal token norms (L4), and Claude recommends closing T2 — `trackT_timaeus/design-T2.md` "Blocked 120 (b)"
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
