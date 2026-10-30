@@ -765,6 +765,9 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   four nights with nobody noticing. 14 live files iterate the live battery.
 - `6de78d0`: a cache asserted by identity, which scipy 1.18 showed it never did.
 - `0ef60d0`: transformers 5 broke the smoke tier; pinned `<5`.
+- 2026-10-29: pytest 9.2.0 (released between 10-26 and 10-29) broke mutmut 3.8.0's harness
+  (`Item._nodeid` gone); the mutation tier went red on #285, which only touched `pyproject.toml`.
+  mutmut was pinned exactly, but pytest was not; it is now pinned in `requirements/mutation.txt`.
 - 2026-09-29, the audit: `run_7.py` (Phase 7's producer, read by four
   registered rows) rebuilt pair positions from the live text and recorded a
   key list as its "battery hash". A text edited under an unchanged key would
