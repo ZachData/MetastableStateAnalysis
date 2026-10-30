@@ -51,3 +51,24 @@ The schedule question itself was scanned for C2 (`trackA_force/lit-C2.md`,
 - T4's novelty rests on §1's negative, which is a search result, not a reading.
 - T3's positive control needs a released model with a published curve and its settings; §2 does not confirm one.
 - No released Timaeus model was found with a published LLC curve deep enough for V (ROADMAP §7b, "the cheapest overlay").
+
+## 4. T5's scan (2026-10-30; web search, abstracts and listing pages, not full texts)
+
+What bears on why Dodecahedron's unit cloud sits at mean cosine 0.84 from init (`trackT_timaeus/design-T5.md`).
+
+| work | what it says (abstract level) | bears on |
+|---|---|---|
+| Noci et al. 2022, 2206.03126 (already cited in C2's draft) | rank collapse at init: stacked self-attention makes tokens near-identical; scaling the residual branches with depth prevents it | **H1's mechanism, published**: T5 tests it on released runs, not in theory |
+| Dong et al. 2021, 2103.03404 (cited in `trackC_writeup/lit-C2-unit1.md`) | pure attention loses rank doubly exponentially with depth | U1's positive control (a known collapse) |
+| Giorlandino & Goldt 2025, 2505.24333 (ICLR 2026; in `docs/readings/meanfield_reading_list_2026-10-01.md`) | rank collapse and entropy collapse at init; the attention residual strength and the Q/K scale set the regime; the critical strength depends on depth | H1's depth form (r · L); a phase diagram U1's factorial could be placed on (not proposed) |
+| Karagodin, Ge, Polyanskiy, Rigollet 2025, 2510.22026 (in `trackA_force/lit-A.md`) | normalization as speed regulation in the particle picture; Pre-LN contracts polynomially | the same Pre-LN family on both models; not a difference between them |
+| Sun et al. 2024, 2402.17762 (cited in C2's draft) | massive activations act as fixed biases; **explicit attention biases remove the need to learn them** | related to H2 but **not H2's contrast** (corrected after `/challenge-pr` on #290, finding 3). Their explicit bias is an extra key–value slot a head can attend to. Pythia's linear biases give no such slot: the key bias cancels in the softmax, and the value and output biases are a constant write. Pythia has sinks too. Dodecahedron has no biases, and position 0's norm is 13.9–23.8× the median at 9536 |
+| Gu et al. 2024, 2410.10781 (ICLR 2025; in `p1d_cluster_ensemble/lit-1d.md`) | attention sinks emerge after effective optimisation; they act like a key bias; sigmoid attention removes them | the sink path U3 describes |
+| Timkey & van Schijndel 2021, 2109.04404; Machina & Mercer 2024 (NAACL; Pythia's 143 checkpoints) | 1–5 rogue dimensions dominate cosine similarity; large Pythia models are isotropic through the final LayerNorm, and anisotropy does not grow steadily over training | ρ_mid can be dominated by a few dimensions (m_ℓ and ρ_mid⁻⁰ are read beside for this reason); Pythia's spreading has precedent |
+| "Two failure modes", "Curse of Depth" 2502.05795 | Pre-LN variance grows with depth; deep layers near identity | context only |
+
+**Not found:** any measurement of token cosine at init or along training under GPT-NeoX's
+depth-scaled init against Llama's flat 0.02 (HF's Llama init has no depth scaling), and anything
+published on Dodecahedron's or Timaeus's `gpt-2-small`'s geometry. So T5's comparison is new as
+a measurement, not as a mechanism, for H1 (Noci et al.'s mechanism). For H2 no published result
+contrasts linear biases with none on the shared direction; Sun et al.'s is a different bias.
