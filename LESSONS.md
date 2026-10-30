@@ -2282,6 +2282,11 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   design and its review cost a session (7.0M context) for a unit that was then not run. Rule: when a
   design's choice rests on a closed-form claim that one statistic differs from another, the
   sympy check covers the claim the choice rests on, starting with the case where the two coincide.
+- 2026-10-30, T5's proposal (found by `/challenge-pr` on #289, finding 1, before T5 opened): H1
+  was argued from one contrast, Pythia-410m's output-projection SD against Dodecahedron's (7.7×),
+  and 410m is the Pythia where that init is smallest. By H1's own mechanism `pythia-70m` (r 7.5) is
+  as marked as Dodecahedron-32m (7.7), and the counts passed on 70m. Rule: a hypothesis built
+  on a contrast is checked against every model on the side that passed, not only the one at hand.
 
 ## 12. Deleted, then needed
 
