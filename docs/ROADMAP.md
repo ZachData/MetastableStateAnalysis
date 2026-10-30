@@ -280,7 +280,7 @@ selected pairs' displacement at 143000; to C2, `lit-S2.md` Parked 1 and G3′'s 
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
 
-## 7b. Track T: Timaeus's checkpoints and the LLC (opened 2026-10-29; T1 done; T2 closed 2026-10-30 at unit 1)
+## 7b. Track T: Timaeus's checkpoints and the LLC (opened 2026-10-29; T1 done; T2 closed 2026-10-30 at unit 1; T5 proposed 2026-10-30)
 
 From the user's check-in (2026-10-29): C2's draft places the break against the LLC stages
 (§2.2, Hoogland et al. 2402.02364) but has no figure that sets the two side by side. The search
@@ -294,6 +294,7 @@ condition, unit budget). Nothing below has been downloaded or run.
 | T2 | **V and E_β on `timaeus/dodecahedron-32m` / `-67m`** (Llama-style, 16 / 20 layers, FineWeb, 53 checkpoints log-spaced from step 1 to 9536, peak LR 3.5e-3, warmup 1000 steps; 4.19M tokens a step, leaning, or the card's 524k) | **a fourth schedule that separates step from LR dose, and tokens only if the batch is 524k**: the windows for A5's break (128, 512] are in `trackT_timaeus/status-T.md` "T1, the inventory" (Q3; #282's ranges corrected there). **Design frozen 2026-10-29** (Blocked 118 (b): tokens scored only if Timaeus confirms 524k in time; Blocked 119: D1–D4 (a)): `trackT_timaeus/design-T2.md`; **closed 2026-10-30 at unit 1, before the batch (Blocked 121 (i), the user's, as recommended): no date.** The centred count fails its gate on both models and the uncentred count is off its Pythia behaviour (the cloud near one direction, mean cosine 0.9); a count fit to Llama (Blocked 120 (b)) was proposed and not frozen, since at equal token norms it equals the centred one (L4): `trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)". C2's F1 gets no fourth schedule from Dodecahedron | spent: design, unit 1, 1b's design, close-out; steps 1 and 9536 downloaded |
 | T3 | **positive control for the LLC**: reproduce 2402.02364's published LLC curve on its released model with `devinterp` and its stated settings | the LLC estimate depends on its step size, localisation and nβ, so a number means little until the pipeline reproduces a known curve (`CLAUDE.md` calibration gate) | small model; hours |
 | T4 | **LLC on C2's checkpoints**: `pythia-70m` first, then `pythia-410m` seed 0 at the 18 steps; overlaid on V | the overlay the user asked for, same model and steps as C2's figures | 410m: about 1 s per SGLD step at 8 × 512 tokens (the 40 ms forward pass in `docs/compute_profile.md`, × 3 for the backward, × 8), so 4 chains × 500 steps is about 35 min a checkpoint, about 10 h for 18; 70m about 15× fewer FLOPs (the wall-clock saving smaller on a small model) |
+| T5 | **Why the Pythia counts fail on Dodecahedron: the cloud's geometry** (proposed 2026-10-30, the user's: "why did they work for the first two classes of models, but not this one?"; the compute budget generous, the user's). Description only: no count, no date, no V read on Dodecahedron. **Asked:** why the middle-state unit cloud sits at mean cosine ρ 0.84 at init and 0.90 at 9536, against 410m's 0.47 → 0.17 (T2 unit 1's diagnostic), and whether it ever spreads in between. T2's "Not established" (why the counts fail) is homed here. **Two hypotheses, neither tested:** **H1, the init.** Measured 2026-10-30 from the weights: Pythia-410m's step 0 has its output projections (attention `dense`, `dense_4h_to_h`) at SD 0.0026 and the rest at 0.0198; Dodecahedron-32m's step 1 has 0.020 on every weight, output projections included (7.7× Pythia's). The mechanism is the guess: each block's write then outweighs the embedding, and near-uniform attention at init makes that write a prefix average the tokens share. **H2, no biases.** Dodecahedron's config has `attention_bias` and `mlp_bias` false; Pythia and GPT-2 have a bias in every linear layer (zero at init, so H2 cannot explain step 0). A bias-free model must build its constant in the residual stream, as a common direction and position 0's massive norm (13.9–23.8× the median at 9536; attention sinks and massive activations, read at the scan). **Shared with a family that passed, so not the sole cause:** tied embeddings (GPT-2), rotary positions (Pythia). **Not told apart from H1, H2 without U4:** RMSNorm, SwiGLU, GQA, peak LR 3.5e-3, FineWeb, the 16k tokenizer. **Proposed units** (the design fixes each rule before output, with its calibration as `CLAUDE.md` asks): U0 design and scan. U1 random weights: {GPT-NeoX, Llama} at 32m's and 410m's shapes × {Pythia's init, 0.02 everywhere} × {biases on, off}, ≥ 20 seeds, ρ, ‖x̄‖² over the mean squared norm and position 0's norm ratio per layer (settles H1 at init). U2 all 53 checkpoints of `-32m` and `-67m`: the same per layer, plus ρ with position 0 dropped and x̄'s cosine across prompts (a bias reads as constant across prompts). U3 which blocks write x̄: each attention and MLP write projected on x̄ at about 8 checkpoints. U4 the causal arm: Llama at 32m's shape trained from scratch, {biases on, off} × {0.02, Pythia's depth-scaled output init}, dense early checkpoints, the U2 geometry at each; its harness also serves C4. U5 controls through the same geometry: `timaeus/gpt-2-small` (Pythia-160m's shape, the same lab) and 410m's 10 seeds at the 18 steps. **Exit:** H1 and H2 each read supported, not supported, or not told apart under a rule fixed before output, and "does Dodecahedron's cloud spread at any checkpoint" answered on the 53. **Why it matters beyond T:** Pythia's cloud spreads across the break and Dodecahedron's concentrates; if H1 holds, part of C2's break may be Pythia's init leaving, a limit on the paper's generality (a lean, nothing measured) | the user's rewrite of `trackC_writeup/paper/` would need it as a limit before posting; U4 builds the training harness C4 needs | **design + 5 units + close-out.** Compute generous by the user's choice (estimates, not measured): about 21 GB of checkpoints (53 × both models, from unit 1's 0.76 GB for 2 steps); U1–U3 and U5 forward passes, under an hour each on the RTX 3080; U4 up to 3 GPU-days (an allowance, not a need), plus a FineWeb sample |
 
 **What the LLC cannot give here, one claim per line.**
 
@@ -312,8 +313,9 @@ deeper released model with a published curve, this replaces T3–T4. *T1 found n
 - `timaeus/gpt-2-small`: a Pythia-160m-shaped run checkpointed every 100 steps; its data and schedule are in a pickle not yet read.
 - `L4`'s one-head LLC curve (2507.21449) as a partial control, for T3 only if T4 goes per head.
 
-Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 passes.
-Whether T opens, and where it sits against the other open rows, is §10 item 11.
+Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 passes; T5
+after T2's close, independent of T3–T4. Whether T opens, and where it sits against the other
+open rows, is §10 item 11; whether T5 opens is §10 item 12.
 
 ## 8. Track C: write-ups
 
@@ -382,6 +384,11 @@ proposed, not decided.
     separate step, LR dose and tokens, C2's F1; T3 and T4 if the LLC overlay is wanted. C2 and
     C2p are closed, so a T4 figure goes into the user's rewrite of `trackC_writeup/paper/`, not a
     Claude unit, and costs the December target about T1 + T3 + T4 (estimated 3–4 units).
+12. **T5, why the Pythia counts fail on Dodecahedron** (§7b, proposed 2026-10-30; `STATE.md`
+    Blocked 122): whether it opens, and where it sits against B7′ (Blocked 115), C4 and the
+    user's paper rewrite. Recommended: open it now, U1 and U2 first. They are cheap and bear on
+    whether C2's break is general or Pythia's init, which a reader of the paper will ask; U4's
+    harness is also C4's. Against: about 7 units before the rewrite, if U4 runs.
 
 ## 11. What each phase gives the plan
 

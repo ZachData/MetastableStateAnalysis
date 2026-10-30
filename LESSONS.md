@@ -394,6 +394,9 @@ origin/main:STATE.md` and then the open PR's branch. The same session appended a
 with a heredoc and resolved a LESSONS conflict with a Python script, against the Edit-tool rule.
 Rule: **the hook should print `git show origin/main:STATE.md` after a `git fetch` (a settings
 change, so the user's), and until then the age check is not optional.**
+Again the same day, the next session (T5's proposal): the hook printed the 2026-10-20 file, and
+the newest work was on an unmerged branch (`claude/t2-close`), so even `origin/main`'s STATE was a
+PR behind; caught by the age check, the hook not yet changed.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files

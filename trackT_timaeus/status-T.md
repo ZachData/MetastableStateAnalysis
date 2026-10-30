@@ -18,10 +18,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases), proposed as T5, not opened — `docs/ROADMAP.md` §7b
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `a8c4537e30`
+- **Reviewed:** 2026-10-30 · body `8b574f71f4`
 <!-- /phase-card -->
 
 ## Units
@@ -32,6 +33,7 @@
 | T2. V and E_β on Dodecahedron | **closed 2026-10-30 at unit 1** (Blocked 121 (i)), before the batch: design frozen 2026-10-29 (Blocked 119), unit 1's centred arms fail their gate on both models (Blocked 120), the Llama-fit count proposed (Blocked 120 (b)) and not frozen | "T2 on one page" below; `design-T2.md` |
 | T3. LLC positive control | candidate | `docs/ROADMAP.md` §7b |
 | T4. LLC on C2's checkpoints | candidate, after T3 | `docs/ROADMAP.md` §7b |
+| T5. why the Pythia counts fail on Dodecahedron (the cloud's geometry; H1 the init, H2 no biases) | **proposed 2026-10-30** (the user's; opening is Blocked 122); homes "T2 on one page"'s "why the counts fail" | `docs/ROADMAP.md` §7b |
 
 ## T2 on one page (closed 2026-10-30)
 
