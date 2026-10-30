@@ -2969,6 +2969,29 @@ stored attention on v1's 7 prompts over 18 steps, condensed rows only, nothing r
 
 ---
 
+## 3.75 Track T's T2 closed at unit 1: the energy counts dated on Pythia are not those counts on a Llama-style model whose cloud sits at cosine 0.9 (2026-10-30)
+
+**`trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)"** holds the numbers; this
+section only says why it is project-wide. Tier 1, `timaeus/dodecahedron-32m` and `-67m` at steps
+1 and 9536 with 3 re-inits each, v1's 7 prompts; nothing scored, no date read.
+
+- The counts C2 dated (E₁'s break, the centred count) were gated on Pythia, GPT-2 small and the
+  PolyPythias seeds. On Dodecahedron, a Llama-style model, both fail as instruments before any
+  date: the centred count lets a common plant move 0.21–0.51 of its free units, and the uncentred
+  count barely registers one (0.04–0.07 against 0.79–0.98). Its unit cloud is at mean cosine
+  0.82–0.84 from init and 0.90–0.91 trained, against 410m's 0.47 and 0.17.
+- On a cloud at cosine ρ, centring leaves each row a squared norm (n − 1)(1 − ρ)/n, about 0.09 at
+  0.9. Centring the raw states first equals the centred count exactly at equal token norms
+  (`tools/math_checks/t2_llama_count.py` L3, L4). So "the energy break" as measured here is a
+  statement about clouds that spread. A model whose cloud stays near one direction needs a
+  different count, and none was built (Blocked 121 (i)).
+- C2's F1 (whether the break waits for steps or for LR dose) gets no fourth schedule from
+  Dodecahedron; it stands as §3.68–3.69 leave it. Any later architecture read should print the
+  middle-state mean cosine (`t2.py diag`) before its gate: here it would have flagged the failure
+  one step earlier (one case, not a tested rule).
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
