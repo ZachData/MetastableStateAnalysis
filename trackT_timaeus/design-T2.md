@@ -1,5 +1,5 @@
 <!-- trackT_timaeus/design-T2.md -->
-# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29; frozen 2026-10-29)
+# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29; frozen 2026-10-29; Blocked 120 (b) section proposed 2026-10-30)
 
 Opened 2026-10-29 by `STATE.md` Blocked 118 (b), the user's: T2 tests the LR dose against step;
 the user asks Timaeus for the global batch, and T2 tests tokens too if it is 524k. Row:
@@ -138,7 +138,8 @@ A draft, for email (contact on timaeus.co) or the model repo's Community tab (pu
 and the tokens columns' status stated. **Budget: 3 units + close-out** after this design: (1) the
 producer (`trackT_timaeus/t2.py`, pure tests, `t2_grid.py` re-pointed at its `predicted`), the
 calibration gate and the preflight on step 1, step 9536 and the re-inits; (2) the download and
-the batch (`runner`); (3) the reading. **No lean:** nothing of Dodecahedron has been read but its
+the batch (`runner`); (3) the reading. **Revised by Blocked 120 (b)** (the user's, 2026-10-30): 4
+units + close-out, unit 1b and its pre-committed exit in "Blocked 120 (b)" below. **No lean:** nothing of Dodecahedron has been read but its
 cards, configs, branch listings and four LFS hashes (T1); no weight is downloaded before the freeze.
 
 ## Worth challenging (for the PR)
@@ -152,3 +153,64 @@ cards, configs, branch listings and four LFS hashes (T1); no weight is downloade
   excludes only the raw dose.
 - The centred arms re-derived per model on step 9536 (end of decay), the only trained step not in
   the reading; 3b and 3c used a step past their plateau at higher LR.
+
+## Blocked 120 (b): a centred count fit to Llama (proposed 2026-10-30; not frozen)
+
+Taken 2026-10-30 by the user (Blocked 120 (b), over the recommended (c)): T2 continues with a
+centred count built for Dodecahedron and a new arm family, the budget extended on the record
+(below). **This is a statistic and a rule chosen after the frozen ones failed**, so everything
+here is fixed before any Dodecahedron value of the new count exists, and the exit is pre-committed.
+
+**Why unit 1's count failed (L3, `tools/math_checks/t2_llama_count.py`).** e1c normalises, then
+centres: on n unit rows at mean cosine ρ the centred rows keep a squared norm (n − 1)(1 − ρ)/n,
+about 0.10 on Dodecahedron (ρ 0.90–0.91) against 0.83 on 410m at 4000 (ρ 0.17). So e1c there
+re-normalises a tenth of each row, and anything that turns the mean direction moves it. L3 says
+how much is left, not that this is why plant A leaked (measured, `status-T.md` "T2 unit 1").
+
+**Lean.** No value of the new count on Dodecahedron has been computed. On 410m, e1r (below) is
+in every C2 record, and its V per seed under 3s's arms is printed beside in
+`data/trackC/c2u3s/2026-10-22-run/reading.json` (seed 0's also in `trackC_writeup/status-C.md`).
+Seeds 0–7 were printed again in the session that wrote this, before the rule: they rise at
+512–1000, as e1c's `REF` does. So D8's reference is not blind; the Dodecahedron side is.
+
+| # | choice | options | recommended, and why |
+|---|---|---|---|
+| D5 | the count | (a) **e1r**: centre the raw states over tokens, then normalise (C2's "raw-centred", beside in 3a–3c); (b) e1 on the unit cloud with its first principal direction projected out; (c) e1c with position 0 dropped | **(a), on a narrower reason (revised after `/challenge-pr` on #287, finding 1).** e1r is in every record on both sides (410m's 10 seeds, C2 3a–3c), so the reference needs no new Pythia pass, and plant A cancels from it exactly (L1). ~~It never re-normalises the small residual L3 describes~~: false. At equal token norms e1r = e1c exactly (L4), so e1r re-normalises the same tenth of each row and differs from e1c only through the spread of token norms, which on Dodecahedron is mostly position 0 (finding 3). (d) **e1r with position 0 dropped on both sides** removes that one token's weight in the mean, but it is in no record: 410m's 10 seeds × 18 steps would need new passes. (b) needs 10 seeds × 18 steps of new 410m passes and is a statistic C2 never computed. (c) does not touch the shared direction: position 0 is one row of up to 512, and the mean cosine is over all pairs |
+| D6 | the plants | (a) plant A is kept and recorded, but it **cancels exactly** from e1r (L1), so it cannot fail. **A_s** is added as the leak test: every row moved by 0.5 ‖h_i‖ u, a common direction on the sphere, the shape the diagnostic found. Gate: A_s ≤ 0.1, as A was. Plant B is unchanged; (b) plant A only | **(a).** A_s reaches e1r only through the spread of token norms (L2), and that spread is large at 9536 (position 0 at 13.9–23.8× the median), so the gate can fail. Under (b) the leak gate is vacuous. **Added after `/challenge-pr` on #287:** A_s reaches e1r by the route plant A reached e1c to first order (norm spread), and on a toy cloud at cosine 0.9 it moved e1r about as much as A moved e1c (+0.003 to +0.014 against +0.000 to +0.009; finding 2, a toy, not the models), so **the A_s gate is predicted to fail**. And position 0's norm, which grows over training (1.2× the median at init, 13.9–23.8× at 9536), moves e1r on its own (toy: 1.0051 → 1.0284, e1c 1.0024 throughout; finding 3); a plant **P0** that changes only position 0's norm, read as A_s, would test it |
+| D7 | the arms | (a) **scale-matched arms gate**: the re-init quantile arm τ_q (the re-inits' 95th percentile of e1r drops; its re-init rate is ≤ 5 % by construction, so its gate is A_s and B) and the B-matched arm. 1e-4 and 3e-4 are reported beside and do not gate. The null-matched arm is dropped; (b) unit 1's family with null-matched replaced by τ_q, every arm gating | **(a).** The null-matched arm's re-init rate equals the uncentred count's (6.2 %, 8.1 %) by construction, so it fails the 5 % bar on Dodecahedron whatever the count. 1e-4 and 3e-4 are absolute tolerances set on Pythia's scale of energy drops. (b) can fail on a fixed tolerance that measures nothing about the count. **Which bars can fail (finding 4):** τ_q's re-init bar cannot (≤ 5 % by definition), so τ_q is gated by A_s, B (and P0 if taken); the B-matched arm's B bar cannot (it is matched to it), so it is gated by the re-init rate, A_s (and P0). Plant A cannot fail on either arm (L1) |
+| D8 | the reference | (a) **REF_r on 410m by the same rule**: D5–D7 run on 410m's 3 re-inits and step 7000, as in 3s. REF_r is the set of the 10 seeds' e1r half-rise dates over 410m's gated arms, as `REF`'s centred entry was built. e1r must pass the gate on 410m too; (b) `REF`'s centred entry {512, 1000} reused for e1r | **(a).** The same statistic and the same rule on both sides. (b) maps e1c's Pythia event onto e1r's Dodecahedron count |
+| D9 | what enters `joint` | (a) **e1r alone** over 2 models; E₁'s break beside, read but not scored; (b) E₁ and e1r both, 2 × 2 | **(a).** Unit 1's diagnostic says E₁ at cosine 0.9 is not Pythia's event (its plant A share is 0.04 / 0.07 against 0.79–0.98). The cost: over 2 cells, chance survival per schedule was 5.4–6.6 % for E₁ (unit 1). It is re-computed for REF_r in unit 1b and stated beside any reading. **Wording fixed now (finding 4):** over E₁'s 2 cells, about 1 null draw in 5 reads some schedule as "consistent" (unit 1: "neither" 79.6 %); a T2 reading is then printed as "consistent with X, which 1 in N null draws also reads", with N from 1b's null, and is description, never an F1 test |
+
+**Unit 1b (one unit; GPU, no new download):** `t2.py` gains e1r and A_s in the preflight
+(plants per `_plants`, reading the raw states), the arm rule of D7, the 410m preflight of D8 and
+REF_r from the seed records, plus pure tests (L1 and L2 on the code's own functions, τ_q's rate).
+It is then run on 410m, 32m and 67m: the re-inits, step 1 and step 9536 only (Dodecahedron), and
+step 7000 (410m). The planted effect and planted null are re-run on REF_r.
+
+**Exit, pre-committed.** If e1r fails a gating arm on any of 410m, 32m or 67m, **T2 closes at
+unit 1b with what it knows; no third count is built**. If it passes, unit 2 (the download and
+the batch) and unit 3 (the reading) run as frozen, with D9's `joint`. **Budget: 4 units +
+close-out** (the frozen 3, plus 1b; the user's, Blocked 120 (b)). The first reading is the
+pre-registered half-rise on D3's plateau. Everything else is beside.
+
+**After `/challenge-pr` on #287 (accept with changes; Claude's recommendation changes).** With L4
+(checked: equal norms give e1r = e1c to every digit), e1r is e1c with plant A cancelled, and it
+differs from e1c only through the spread of token norms, which here is mostly one token whose norm
+grows with training. So the reasons left for (b) are weak: the A_s gate is predicted to fail on
+the route that failed unit 1 (a toy prediction), and if it passed, an e1r break could date
+position 0's growth. The options for Blocked 121, in the order Claude now recommends:
+(i) **close T2 now** (Blocked 120 (c) after all): unit 1 and this section recorded, L1–L4 kept,
+nothing else built; (ii) a **synthetic pre-check first** (minutes, no Dodecahedron e1r value):
+A_s and P0 through e1r on a cloud with unit 1's measured cosine and step 9536's norm spread
+(the norms are a preflight-step quantity, not the count), then freeze or close on what it predicts;
+(iii) **freeze as written, with P0 added** to D6 and run 1b under its pre-committed exit; (iv)
+freeze with D5 (d), position 0 dropped on both sides: adds 410m passes over 10 seeds × 18 steps,
+budget 5 units. **Recommended (i)**: no option makes a count that ignores a common direction on a
+cloud at cosine 0.9, since whichever order the centring takes, a tenth of each row is what is
+left (L3, L4); (ii) is the cheapest way to check that before spending 1b.
+
+**Worth challenging (for the PR):** D6's A_s is a plant chosen to fit the nuisance the diagnostic
+found, after the data showed it; a plant that e1r passes because of how it is built (as plant A
+is) would be no test, and the converse risk is a plant e1r fails for a reason Pythia's e1c was
+never asked about (A_s has not been run on 410m's e1c). D7 drops the absolute arms from the gate
+after they failed: that is defensible on scale, but it is a rule loosened after seeing a failure.
