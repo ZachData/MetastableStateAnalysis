@@ -671,6 +671,14 @@ well-formed but empty/zero result. It looks exactly like a real result.
   each field the old one ignores and a known-trained test (loss), not trusted because it loads**
   (`trackT_timaeus/t2.py` `null_matched_tol`, `check_llama_config`, `convention`). A tracked doc
   (`status-T.md`'s card) was again edited by a Python script, against the Edit-tool rule.
+- 2026-10-30, T5 U1b (`/challenge-pr` on #292, finding 1): the 2026-10-14 rule above (smoke test in
+  both `mets` and `.venv` before the PR) was not followed. `t5b.py`'s parallel-residual forward
+  returned 4.44's tuple, and the rotary smoke test called 4.44's `GPTNeoXRotaryEmbedding(dim, …)`;
+  both crash under CI's 4.57, so the first nightly after merge would have gone red. The review
+  caught it, not the author. The design's rotary gate row also lived only in a test, not in
+  `gate()`. Fixed, re-run, numbers identical. `status-T.md` and `STATE.md` were again edited by
+  Python scripts. Rule unchanged; **run `.venv/bin/python -m pytest <new>_smoke.py -m smoke` with
+  `SMOKE_REAL_DEPS=1` before opening the PR, and a gate row the design names is a row of `gate()`.**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not
