@@ -5,7 +5,7 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `c8c454d4ea52`, listed in `trackT_timaeus/status-T.md` "T5 U1b"
+- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
@@ -13,7 +13,7 @@
   - T2 closed 2026-10-30 at unit 1, before any scored record (Blocked 121 (i), the user's, as recommended): a count fit to Llama was proposed (Blocked 120 (b)) and not frozen, since at equal token norms the raw-centred count equals the centred one exactly (L4) and differs from it only through the token-norm spread (L2), while centring leaves the rows a mean squared norm of about 0.09 at cosine 0.9 (L3); whether it would pass was not computed; no Dodecahedron date, and C2's F1 gets no fourth schedule from it — `trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)"
   - T5 opened 2026-10-30 (Blocked 122 (a)); U0, weights only: Timaeus's `gpt-2-small` starts from 0.02 on every weight with zero biases, so it is Pythia-160m's architecture under Dodecahedron's flat init, a released run whose architecture matches a model that passed and whose init does not (its data and the rest of its schedule unknown) — `trackT_timaeus/status-T.md` "T5 U0"
   - T5 U1 (gate passes): the init alone does not concentrate the cloud: `pythia-70m` step 0 (mean cosine over states 1–5, 0.28) and `gpt-2-small`'s flat init (0.23) both sit at or below the falsifying 0.30; on random weights the flat init raises the middle-state mean cosine in Llama by 0.18–0.37 at every shape (at matched depth 0.20–0.42, smallest at 70m's dose, as H1 predicts), and in GPT-NeoX not at all (−0.06 to 0.02, lower than Pythia's init at 3 of 4 shapes), and Pythia's init takes a Llama at 32m's shape 0.84 of the way to a GPT-NeoX's, so H1 at init reads "partly": an interaction of init and architecture, the architecture's part not identified (its factor carries the tokenizer) — `trackT_timaeus/status-T.md` "T5 U1"
-  - T5 U1b (Blocked 124 (a), one unit beyond the budget; gate passes): no single part of the Llama carries the init's effect at 32m's shape: swapping its SwiGLU MLP for GeLU at 4d removes 0.16 of the 0.36, and LayerNorm, the parallel residual, 0.25 rotary, 6 KV heads and GPT-NeoX's tokenizer each remove under 0.01 (the tokenizer is not R2's architecture factor); all six at once remove 0.43, so most of the effect needs parts together, which pair or set not tested — `trackT_timaeus/status-T.md` "T5 U1b"
+  - T5 U1b (Blocked 124 (a), one unit beyond the budget; gate passes): no single part of the Llama carries the init's effect at 32m's shape: swapping its SwiGLU MLP for GeLU at 4d removes 0.16 of the 0.36 (about half on logit or atanh scales), and LayerNorm, the parallel residual, 0.25 rotary, 6 KV heads and GPT-NeoX's tokenizer each remove under 0.01 (the tokenizer is not R2's architecture factor); all six at once remove 0.43, so much of the effect appears only with parts together (its size depends on the scale of ρ), which set not tested — `trackT_timaeus/status-T.md` "T5 U1b"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -25,7 +25,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `d2ec09e93c`
+- **Reviewed:** 2026-10-30 · body `5f851790ad`
 <!-- /phase-card -->
 
 ## Units
@@ -44,8 +44,10 @@
 
 Added by Blocked 124 (a), the user's, as recommended (one unit beyond T5's budget, on the record).
 Rule and gate: `design-T5.md` "U1b", frozen and pushed before output (`e92f8f6`). Producer
-`trackT_timaeus/t5b.py` (code `c8c454d4ea52`); records `data/trackT/t5u1b/2026-10-30/` (main tree;
-360 models, 70 s on the RTX 3080). **Input:** the 7 v1 prompts (`976b62d677bc`), ≤ 512 tokens,
+`trackT_timaeus/t5b.py` (code `d205f0b180e3`); records `data/trackT/t5u1b/2026-10-30/` (main tree;
+360 models, 69 s on the RTX 3080). *Re-run after `/challenge-pr` on #292 (finding 1): the first run's
+code `c8c454d4ea52` broke under transformers 4.57 (CI's) and left the rotary check out of `gate()`;
+the fix changes no number (every cell median identical, labels identical).* **Input:** the 7 v1 prompts (`976b62d677bc`), ≤ 512 tokens,
 float32, eager, TF32 off, torch 2.10.0, transformers 4.44.2; Llama at 32m's shape without biases
 (U1's cell, U1's seeds for the base), Dodecahedron's tokenizer except `tok`; 18 cells × 20 seeds.
 
@@ -55,7 +57,7 @@ float32, eager, TF32 off, torch 2.10.0, transformers 4.44.2; Llama at 32m's shap
 |---|---|---|
 | known answer: the base through `t5b`'s code against U1's `32m-llama-{P,F}-nob` | max \|Δρ_ℓ\| 0.0 over 40 models | ≤ 1e-6 |
 | the init: per role, seed 0 of every cell against P's / F's formula | largest relative gap 0.10 % | ≤ 2 % |
-| the rotary swap against NeoX's own partial rotary, permuted dims (`tests/test_trackT_t5b_smoke.py`) | ≤ 1e-5 (full rotary differs by > 1e-2) | ≤ 1e-5 |
+| the rotary swap against NeoX's own partial rotary, permuted dims (`t5b.rotary_check`, in the gate; smoke test too, 4.44 and 4.57) | 8.6e-7 (full rotary differs by 34) | ≤ 1e-5 |
 | planted null, `untied` | M −0.003 (P), −0.001 (F); τ 0.02, bar 0.1 | ≤ 0.05 |
 | `all` against U1's `32m-neox-{P,F}-nob` | 0.418 vs 0.407 (P), 0.347 vs 0.354 (F) | ≤ 0.05 |
 | positive control: `all` read as a swap | ΔE 0.434 of E0 0.363: "carries" | "carries" |
@@ -75,26 +77,33 @@ float32, eager, TF32 off, torch 2.10.0, transformers 4.44.2; Llama at 32m's shap
 
 - No swap "moves the cloud at both inits" (beside). `gelu` moves it in opposite directions under the
   two inits (up under P, down under F), closing the gap from both sides.
-- **Not additive:** the single swaps remove 0.115 between them (gelu 0.164, par −0.040), against
-  0.434 for all at once: 0.32 more than the singles' sum appears only when parts are swapped
-  together (beside, not scored).
+- **Not additive, by a scale-dependent amount** (beside, not scored; `/challenge-pr` on #292,
+  finding 2): as shares of E0, the single swaps sum to 0.32 on ρ, 0.45 on logit ρ, 0.52 on atanh ρ,
+  against 1.19, 1.17, 1.12 for all at once. All at once exceeds 1 partly because GPT-NeoX's own
+  init effect is negative (E_all −0.07).
+- **`gelu`'s share depends on the scale:** 0.452 on ρ ("partly" under the frozen rule, which reads
+  ρ), 0.501 on logit ρ, 0.517 on atanh ρ (both would read "carries"). A seed bootstrap (2,000
+  resamples of the 20 seeds per cell) puts the ρ share at 0.40–0.50 (5–95 %), at or above 0.5 in
+  4 %. The label stays as frozen; the share is about a half on every scale.
 - **The tokenizer is not R2's architecture factor:** `tok` moves nothing (|M| ≤ 0.004).
 - ρ_1:5 beside (same depth, so no fairness change): base E 0.416, `gelu` 0.249, `par` 0.338, `all`
   −0.049. ρ_mid⁻⁰ within 0.003 of ρ_mid in every cell.
 
 **What it says.** At init, in Dodecahedron's architecture, the flat init's concentrating effect does
-not live in one part. The MLP's form (SwiGLU 1024 against GeLU 1536) carries about 45 % of it, and
-the norm, the rotary fraction, the KV heads and the tokenizer carry none. Most of the effect comes
-from parts acting together. Which combination was not tested.
+not live in one part. The MLP's form (SwiGLU 1024 against GeLU 1536) carries about half of it
+(0.45–0.52 by scale), and the norm, the rotary fraction, the KV heads and the tokenizer carry none
+alone. The rest appears only when parts are swapped together. Which combination was not tested.
 
-**Not established.** Which pair or set of parts carries the rest. Whether one Llama part put into
-GPT-NeoX is enough (the reverse ablation). Why the MLP's form matters, or why GeLU raises ρ under P.
-Anything through training (U2, U4).
+**Not established.** Which set of parts carries the rest. Whether one Llama part put into
+GPT-NeoX is enough (the reverse ablation). Which of `gelu`'s three changes matters: the gate dropped,
+SiLU for GeLU, width 1024 for 1536 (finding 3). Why it raises ρ under P; one untested candidate is that
+GeLU of a centred Gaussian has a positive mean (1/(2√π) at unit variance), which the output map turns into one vector every
+token shares, while SwiGLU's gated product has mean 0. Anything through training (U2, U4).
 
-**Parked** (why / cost / which decision it could change): a pair screen (`gelu` with each other
-part, then any pair that carries) and the reverse ablation (NeoX-32m with one Llama part), both
-under both inits / about 10 GPU-minutes and a unit of writing / which architecture contrast U4
-trains (D3). Blocked 125.
+**Parked** (why / cost / which decision it could change): a full screen of the six swaps (all 64
+subsets, so a three-part effect is not missed; finding 4) with `gelu` split into its three changes,
+and the reverse ablation (NeoX-32m with one Llama part), all under both inits / about 10 GPU-minutes
+and a unit of writing / which architecture contrast U4 trains (D3). Blocked 125.
 
 Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m trackT_timaeus.t5b run --out <dir>`
 (skips records present), then `METS_DATA=<main>/data python -m trackT_timaeus.t5b read --out <dir>`

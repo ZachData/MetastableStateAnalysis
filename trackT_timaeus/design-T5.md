@@ -113,7 +113,7 @@ Gate (before the reading; any failure goes back to the user):
 |---|---|
 | **known answer:** the base cells, built through U1b's code with no swap, against U1's records `32m-llama-{P,F}-nob` (same seeds) | max \|Δρ_ℓ\| ≤ 1e-6 over the 40 models |
 | **the init:** per role, seed 0's weight SD in every cell against P's or F's formula | within 2 % |
-| **the rotary swap:** attention logits of the patched Llama against NeoX's partial rotary on permuted dimensions (a test, `tests/test_trackT_t5b.py`) | ≤ 1e-5 |
+| **the rotary swap:** attention logits of the patched Llama against NeoX's partial rotary on permuted dimensions (frozen as a test; put in `gate()` as `t5b.rotary_check` after `/challenge-pr` on #292, finding 1, which found it missing there; the bar unchanged) | ≤ 1e-5 |
 | **planted null:** \|M_untied,i\| at both inits | ≤ 0.05 |
 | **`all` is GPT-NeoX:** \|med(all, i) − U1's `32m-neox-i-nob`\| at both inits | ≤ 0.05 |
 | **positive control at the rule's size:** `all` read as a swap | "carries" |

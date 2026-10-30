@@ -39,6 +39,7 @@ NEOX_ROT_PCT, NEOX_ROT_BASE, NEOX_VOCAB, LN_EPS = 0.25, 10000.0, 50304, 1e-5
 U1_DIR = "trackT/t5u1/2026-10-30"
 # the gate (design-T5.md "U1b")
 KNOWN_TOL = 1e-6
+ROT_TOL = 1e-5
 SD_TOL = 0.02
 NULL_MAX = 0.05
 NEOX_MAX = 0.05
@@ -137,13 +138,24 @@ def _gelu_mlp(d: int):
     return NeoXMLP()
 
 
-def _par_forward(self, hidden_states, attention_mask=None, position_ids=None, past_key_value=None,
-                 output_attentions=False, use_cache=False, cache_position=None, position_embeddings=None, **kw):
-    """GPT-NeoX's parallel residual: x + attn(ln₁ x) + mlp(ln₂ x)."""
-    attn = self.self_attn(hidden_states=self.input_layernorm(hidden_states), attention_mask=attention_mask,
-                          position_ids=position_ids, past_key_value=None, output_attentions=False,
-                          use_cache=False, cache_position=cache_position, position_embeddings=position_embeddings)[0]
-    return (hidden_states + attn + self.mlp(self.post_attention_layernorm(hidden_states)),)
+def _layer_returns_tuple() -> bool:
+    """Whether the installed Llama decoder layer returns a tuple (transformers 4.44) or a tensor (4.57)."""
+    import inspect
+    from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+    ann = str(inspect.signature(LlamaDecoderLayer.forward).return_annotation)
+    if "tuple" in ann.lower():
+        return True
+    if "Tensor" in ann:
+        return False
+    raise T5bRefused(f"LlamaDecoderLayer.forward returns {ann}: neither a tuple nor a tensor")
+
+
+def _par_forward(self, hidden_states, **kw):
+    """GPT-NeoX's parallel residual: x + attn(ln₁ x) + mlp(ln₂ x). The model's keyword arguments go
+    to attention unchanged; the return type is the installed layer's (`_layer_returns_tuple`)."""
+    attn = self.self_attn(hidden_states=self.input_layernorm(hidden_states), **kw)[0]
+    out = hidden_states + attn + self.mlp(self.post_attention_layernorm(hidden_states))
+    return (out,) if self._t5b_tuple else out
 
 
 def set_partial_rotary(model) -> None:
@@ -155,6 +167,49 @@ def set_partial_rotary(model) -> None:
         f = torch.tensor(partial_inv_freq(hd), dtype=r.inv_freq.dtype, device=r.inv_freq.device)
         r.register_buffer("inv_freq", f, persistent=False)
         r.original_inv_freq = f
+
+
+def rotary_check(head_dim: int = 64, n: int = 37) -> dict:
+    """The rotary swap against GPT-NeoX's own partial rotary (design-T5.md "U1b" gate): attention
+    logits of the patched Llama on permuted dimensions against NeoX's on the same vectors; full
+    rotary as the contrast, which must differ. CPU, float64; transformers 4.44 or 4.57."""
+    import inspect
+    import torch
+    from transformers import GPTNeoXConfig, LlamaConfig
+    from transformers.models.gpt_neox import modeling_gpt_neox as nx
+    from transformers.models.llama import modeling_llama as ll
+    rot = int(head_dim * NEOX_ROT_PCT)
+    g = torch.Generator().manual_seed(0)
+    q = torch.randn(1, 2, n, head_dim, generator=g, dtype=torch.float64)
+    k = torch.randn(1, 2, n, head_dim, generator=g, dtype=torch.float64)
+    pos = torch.arange(n)[None]
+    if "config" in inspect.signature(nx.GPTNeoXRotaryEmbedding.__init__).parameters:      # 4.57
+        re = nx.GPTNeoXRotaryEmbedding(config=GPTNeoXConfig(hidden_size=2 * head_dim, num_attention_heads=2,
+                                                             rotary_pct=NEOX_ROT_PCT, rotary_emb_base=NEOX_ROT_BASE))
+        cos, sin = re(q.float(), pos)
+        qn, kn = nx.apply_rotary_pos_emb(q, k, cos.double(), sin.double())
+    else:                                                                                   # 4.44
+        re = nx.GPTNeoXRotaryEmbedding(rot, 2048, base=NEOX_ROT_BASE)
+        cos, sin = re(q, seq_len=n)
+        qr, kr = nx.apply_rotary_pos_emb(q[..., :rot], k[..., :rot], cos.double(), sin.double(), pos)
+        qn, kn = torch.cat((qr, q[..., rot:]), -1), torch.cat((kr, k[..., rot:]), -1)
+    if cos.shape[-1] != rot:
+        raise T5bRefused(f"NeoX's rotary has {cos.shape[-1]} dims, not {rot}")
+    ref = qn @ kn.transpose(-1, -2)
+    cfg = LlamaConfig(hidden_size=2 * head_dim, num_attention_heads=2, num_key_value_heads=2, rope_theta=NEOX_ROT_BASE)
+    src = torch.tensor(neox_to_llama_dims(head_dim))
+
+    def logits(patched: bool):
+        lre = ll.LlamaRotaryEmbedding(config=cfg)
+        if patched:
+            lre.register_buffer("inv_freq", torch.tensor(partial_inv_freq(head_dim), dtype=torch.float32),
+                                persistent=False)
+        c_, s_ = lre(q.float(), pos)
+        ql, kl = ll.apply_rotary_pos_emb(q[..., src], k[..., src], c_.double(), s_.double())
+        return ql @ kl.transpose(-1, -2)
+    diff = float((logits(True) - ref).abs().max())
+    full = float((logits(False) - ref).abs().max())
+    return {"max_diff": diff, "full_rotary_diff": full, "pass": diff <= ROT_TOL and full > 1e-2}
 
 
 def cfg_edit(parts: Sequence[str]):
@@ -172,6 +227,7 @@ def model_edit(parts: Sequence[str]):
     def f(m):
         import torch.nn as nn
         d = m.config.hidden_size
+        as_tuple = _layer_returns_tuple() if "par" in parts else None
         for layer in m.model.layers:
             if "ln" in parts:
                 layer.input_layernorm = nn.LayerNorm(d, eps=LN_EPS)
@@ -179,6 +235,7 @@ def model_edit(parts: Sequence[str]):
             if "gelu" in parts:
                 layer.mlp = _gelu_mlp(d)
             if "par" in parts:
+                layer._t5b_tuple = as_tuple
                 layer.forward = types.MethodType(_par_forward, layer)
         if "ln" in parts:
             m.model.norm = nn.LayerNorm(d, eps=LN_EPS)
@@ -267,6 +324,7 @@ def gate(recs: Dict[Tuple[str, Optional[str]], List[dict]], u1: Path) -> dict:
         rel = {k: got[k] / t5.init_sd(k, i, d, L) - 1 for k in ("emb", "qkv", "attn_out", "mlp_in", "mlp_out")}
         sd[cell_key(i, s)] = max(abs(v) for v in rel.values())
     g["init_sds"] = {"max_rel_by_cell": sd, "pass": max(sd.values()) <= SD_TOL}
+    g["rotary"] = rotary_check()
     med = {k: float(np.median([r["rho_mid"] for r in v])) for k, v in recs.items()}
     nul = {i: med[(i, NULL)] - med[(i, None)] for i in t5.INITS}
     g["planted_null"] = {"M_untied": nul, "pass": max(abs(v) for v in nul.values()) <= NULL_MAX}
