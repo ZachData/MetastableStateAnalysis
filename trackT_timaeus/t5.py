@@ -243,14 +243,20 @@ def init_sd(cls: str, init: str, d: int, L: int) -> float:
     return wang_init(d, L) if cls in ("attn_out", "mlp_out") else small_init(d)
 
 
-def build(shape: str, arch: str, init: str, bias: bool, seed: int, dodeca_cfg, device):
+def build(shape: str, arch: str, init: str, bias: bool, seed: int, dodeca_cfg, device, cfg_edit=None,
+          model_edit=None):
     """A random model of the cell: every 2-D weight N(0, init_sd), biases 0 (absent when off), norm
-    gains 1 and LayerNorm shifts 0, from one CUDA generator seeded ``seed``."""
+    gains 1 and LayerNorm shifts 0, from one CUDA generator seeded ``seed``. U1b's swaps enter through
+    ``cfg_edit(cfg)`` before construction and ``model_edit(model)`` before the weights are drawn."""
     import torch
     from transformers import GPTNeoXForCausalLM, LlamaForCausalLM
     cfg = config_of(shape, arch, bias, dodeca_cfg)
+    if cfg_edit is not None:
+        cfg_edit(cfg)
     with torch.device(device):
         m = (GPTNeoXForCausalLM if arch == "neox" else LlamaForCausalLM)(cfg)
+        if model_edit is not None:
+            model_edit(m)
     if arch == "neox" and not bias:
         for layer in m.gpt_neox.layers:
             layer.mlp.dense_h_to_4h.bias = None
