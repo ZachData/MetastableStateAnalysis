@@ -394,6 +394,9 @@ origin/main:STATE.md` and then the open PR's branch. The same session appended a
 with a heredoc and resolved a LESSONS conflict with a Python script, against the Edit-tool rule.
 Rule: **the hook should print `git show origin/main:STATE.md` after a `git fetch` (a settings
 change, so the user's), and until then the age check is not optional.**
+Again the same day, the next session (T5's proposal): the hook printed the 2026-10-20 file, and
+the newest work was on an unmerged branch (`claude/t2-close`), so even `origin/main`'s STATE was a
+PR behind; caught by the age check, the hook not yet changed.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
@@ -2282,6 +2285,11 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   design and its review cost a session (7.0M context) for a unit that was then not run. Rule: when a
   design's choice rests on a closed-form claim that one statistic differs from another, the
   sympy check covers the claim the choice rests on, starting with the case where the two coincide.
+- 2026-10-30, T5's proposal (found by `/challenge-pr` on #289, finding 1, before T5 opened): H1
+  was argued from one contrast, Pythia-410m's output-projection SD against Dodecahedron's (7.7×),
+  and 410m is the Pythia where that init is smallest. By H1's own mechanism `pythia-70m` (r 7.5) is
+  as marked as Dodecahedron-32m (7.7), and the counts passed on 70m. Rule: a hypothesis built
+  on a contrast is checked against every model on the side that passed, not only the one at hand.
 
 ## 12. Deleted, then needed
 
