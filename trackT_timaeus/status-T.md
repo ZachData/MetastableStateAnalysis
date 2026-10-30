@@ -17,12 +17,12 @@
 - **Feeds:** none
 - **Open threads:**
   - Dodecahedron's global batch is inferred from the card's arithmetic, not read from a training log; the user asks Timaeus (Blocked 118 (b)), and tokens is scored in T2 only on `design-T2.md` D4's condition — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - T2's centred count fails its gate on Dodecahedron; whether T2 reads E₁ alone, a re-built centred count or stops is Blocked 120 — `trackT_timaeus/status-T.md` "T2 unit 1"
+  - T2's centred count fails its gate on Dodecahedron; Blocked 120 decided (b), the user's: a count fit to Llama (e1r, plant A_s, scale-matched arms, REF_r on 410m), proposed and not frozen (Blocked 121), closing at unit 1b if it fails — `trackT_timaeus/design-T2.md` "Blocked 120 (b)"
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-29 · body `195ae7d274`
+- **Reviewed:** 2026-10-30 · body `7311f45063`
 <!-- /phase-card -->
 
 ## Units
@@ -30,7 +30,7 @@
 | unit | state | where |
 |---|---|---|
 | T1. the inventory | **done 2026-10-29** (one unit, at budget) | `design-T1.md`; "T1, the inventory" below |
-| T2. V and E_β on Dodecahedron | design **frozen 2026-10-29** (Blocked 119: D1–D4 (a)); **unit 1 done 2026-10-29** (1 of 3): producer, known answer and planted gate pass; **the centred count's arms fail their gate on both models**, so the design goes back to the user (Blocked 120) before the batch | `design-T2.md`; "T2 unit 1" below |
+| T2. V and E_β on Dodecahedron | design **frozen 2026-10-29** (Blocked 119: D1–D4 (a)); **unit 1 done 2026-10-29** (1 of 3): producer, known answer and planted gate pass; **the centred count's arms fail their gate on both models**, so the design goes back to the user (Blocked 120) before the batch; **Blocked 120 decided (b) 2026-10-30**: unit 1b's count (e1r) proposed, budget 4 units + close-out, freezes on Blocked 121 | `design-T2.md` (and its "Blocked 120 (b)"); "T2 unit 1" below |
 | T3. LLC positive control | candidate | `docs/ROADMAP.md` §7b |
 | T4. LLC on C2's checkpoints | candidate, after T3 | `docs/ROADMAP.md` §7b |
 
@@ -111,8 +111,11 @@ whether step 9536 (end of the cosine decay) is the plateau's geometry (the score
 **Parked:** (1) Plant A read through `e1r` (raw states centred before normalising, in every record)
 / a preflight re-read, minutes / only if Blocked 120 (b) is taken; and (b) also needs a rule change
 to the arm family, since the null-matched arm's re-init rate equals the uncentred one (6.2 %,
-8.1 % > 5 %) by construction (finding 3). Carried to Blocked 120 (b). (2) The uncentred count's re-init
-rate / now explained beside by the shared direction / carried to Blocked 120.
+8.1 % > 5 %) by construction (finding 3). Carried to Blocked 120 (b); **taken 2026-10-30** as
+`design-T2.md` "Blocked 120 (b)" D5–D7. Plant A cancels exactly from e1r (`tools/math_checks/
+t2_llama_count.py` L1), so plant A_s is added as its leak test. (2) The uncentred count's re-init
+rate / now explained beside by the shared direction / carried to Blocked 120; **taken** as D9 (E₁
+beside, not in `joint`).
 
 **Re-run:** `python -m trackT_timaeus.t2 gate --out <dir>`; `METS_DATA=<main>/data
 HF_HOME=<main>/data/hf python -m trackT_timaeus.t2 known --out <dir>` (2 min); `HF_HOME=<HDD_1TB>/

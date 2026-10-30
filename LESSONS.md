@@ -386,6 +386,15 @@ had been sent to unit 3b, which never picked it up. Found by `/challenge-pr` on 
 close-out sweeps for every deferral form (`grep -n "close-out\|carried to\|Parked"` over the
 phase's files) and checks that each item sent to a unit was closed there.
 
+2026-10-30: **the startup hook printed a `STATE.md` nine days and ten merges old.** The hook reads
+the main tree's file, and the main tree sat at `f22cf52` (2026-10-20) while `origin/main` was at
+`0c3a0d4` (2026-10-29): work happens in `../Mets-work`, the user merges on GitHub, and nothing
+pulls the main tree. Start step 1's age check caught it, and the session read `git show
+origin/main:STATE.md` and then the open PR's branch. The same session appended a design section
+with a heredoc and resolved a LESSONS conflict with a Python script, against the Edit-tool rule.
+Rule: **the hook should print `git show origin/main:STATE.md` after a `git fetch` (a settings
+change, so the user's), and until then the age check is not optional.**
+
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
 point to it. Updating it is step 1 of the stop protocol, not a request.
