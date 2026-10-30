@@ -23,7 +23,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `8d90624585`
+- **Reviewed:** 2026-10-30 · body `4e53d8976e`
 <!-- /phase-card -->
 
 ## Units
@@ -70,7 +70,10 @@ unpickled): peak LR 6e-4, cosine, warmup 1 % of the total steps (`warmup_steps` 
 0.1, Adam (0.9, 0.95), clip 1.0, per-device batch 32, gradient accumulation 1, bf16, seed 5, one
 epoch, `hub_model_id` `georgeyw/gpt-2-small`. Not in the file: the data, the GPU count, the
 sequence length, the total steps. Checkpoints: `checkpoint-100` … `checkpoint-65000` every 100
-(325 MB each); no step 0 except the init repo.
+(325 MB each); no step 0 except the init repo. **The init repo is the run's start**
+(`/challenge-pr` on #290, finding 6): its weights correlate 0.9995–0.9997 with `checkpoint-100`'s
+(`embed_in`, layer 0's QKV, layer 11's MLP out), SDs equal to 4 places. HF's GPT-NeoX default init
+is 0.02 on every weight, which this matches.
 
 Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf python -c "from huggingface_hub import hf_hub_download as h;
 print(h('timaeus/gpt-2-small-init-seed-5','model.safetensors'))"`, then `t5_init_sd.py` on the path.

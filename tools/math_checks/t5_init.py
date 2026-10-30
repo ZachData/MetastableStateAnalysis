@@ -15,6 +15,9 @@ I3  Timaeus's `gpt-2-small` (Pythia-160m's GPT-NeoX shape, biases on, its init
     `timaeus/gpt-2-small-init-seed-5` at 0.02 on every weight, measured in T5 U0) has the
     largest r of all, 0.02 / wang_init(768, 12) = 3.33× Pythia-160m's, so both of H1's forms
     mark it (r 15.4, r·L 184).
+I4  U1's dose per shape (`trackT_timaeus/design-T5.md`, R2; `/challenge-pr` on #290, finding 2):
+    under Pythia's init the embedding and input maps share small_init, so r_F / r_P =
+    0.02 / wang_init(d, L): 1.36 at 70m's shape, 3.33 at 160m's, 7.68 at 410m's, 3.14 at 32m's.
 
 NOT proved: that r predicts the cloud's mean cosine at init. r ignores attention's averaging
 (which shrinks a write's norm and makes it shared), the MLP, the norm gains and the 4d or SwiGLU
@@ -80,6 +83,23 @@ def i2() -> None:
           f"{rs[flat]:.2f}, {rs[flat] / rs[p160]:.2f}× Pythia-160m's, r·L {rs[flat] * 12:.0f}")
 
 
+def i4() -> None:
+    flat = sp.Rational(2, 100)
+    want = {"pythia-70m": 1.36, "pythia-160m": 3.33, "pythia-410m": 7.68, "dodecahedron-32m": 3.14}
+    for name, dv, Lv, _, _, _ in SHAPES:
+        if name not in want:
+            continue
+        r_f = flat * flat * d / flat
+        r_p = WANG * SMALL * d / SMALL
+        ratio = sp.simplify(r_f / r_p)
+        assert sp.simplify(ratio - flat / WANG) == 0
+        got = float(ratio.subs({d: dv, L: Lv}))
+        assert abs(got - want[name]) < 0.005, (name, got)
+        print(f"   {name:22s} r_F / r_P {got:.2f}")
+    print("I4 ok: r_F / r_P = 0.02 / wang_init(d, L); 70m's shape gets the smallest dose")
+
+
 if __name__ == "__main__":
     i1()
     i2()
+    i4()
