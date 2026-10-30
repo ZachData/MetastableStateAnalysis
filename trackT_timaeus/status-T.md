@@ -14,7 +14,7 @@
   - T5 opened 2026-10-30 (Blocked 122 (a)); U0, weights only: Timaeus's `gpt-2-small` starts from 0.02 on every weight with zero biases, so it is Pythia-160m's architecture under Dodecahedron's flat init, a released run whose architecture matches a model that passed and whose init does not (its data and the rest of its schedule unknown) — `trackT_timaeus/status-T.md` "T5 U0"
   - T5 U1 (gate passes): the init alone does not concentrate the cloud: `pythia-70m` step 0 (mean cosine over states 1–5, 0.28) and `gpt-2-small`'s flat init (0.23) both sit at or below the falsifying 0.30; on random weights the flat init raises the middle-state mean cosine in Llama by 0.18–0.37 at every shape (at matched depth 0.20–0.42, smallest at 70m's dose, as H1 predicts), and in GPT-NeoX not at all (−0.06 to 0.02, lower than Pythia's init at 3 of 4 shapes), and Pythia's init takes a Llama at 32m's shape 0.84 of the way to a GPT-NeoX's, so H1 at init reads "partly": an interaction of init and architecture, the architecture's part not identified (its factor carries the tokenizer) — `trackT_timaeus/status-T.md` "T5 U1"
   - T5 U1b (Blocked 124 (a), one unit beyond the budget; gate passes): no single part of the Llama carries the init's effect at 32m's shape: swapping its SwiGLU MLP for GeLU at 4d removes 0.16 of the 0.36 (about half on logit or atanh scales), and LayerNorm, the parallel residual, 0.25 rotary, 6 KV heads and GPT-NeoX's tokenizer each remove under 0.01 (the tokenizer is not R2's architecture factor); all six at once remove 0.43, so much of the effect appears only with parts together (its size depends on the scale of ρ), which set not tested — `trackT_timaeus/status-T.md` "T5 U1b"
-  - T5 U2 (Blocked 125 (a); gate passes): Dodecahedron's cloud is not concentrated throughout training: on both models the middle-state mean cosine rises to 1.00 by step 30–47, falls to 0.10–0.11 at 671–917 (lower than any Pythia minimum read, 0.17–0.21) and rises again to 0.90 by 9536, so T2 read it only at its two peaks; Pythia has the same rise, fall and rise, with lower ends; `gpt-2-small` spreads (0.34 → 0.17) and stays spread; position 0 decides none of it — `trackT_timaeus/status-T.md` "T5 U2"
+  - T5 U2 (Blocked 125 (a); gate passes): Dodecahedron's cloud is not concentrated throughout training: on both models the middle-state mean cosine rises to 1.00 by step 30–47, falls to 0.10–0.11 at 671–917 (lower than any Pythia minimum read, 0.17–0.21) and rises again to 0.90 by 9536, so T2 read it only at its two peaks; Pythia has the same rise, fall and rise, with lower ends; `gpt-2-small` spreads (0.34 → 0.17) and stays spread; position 0 decides none of it; so the trained cloud's 0.90 is not the init's concentration persisting, and arises after step ~1253 — `trackT_timaeus/status-T.md` "T5 U2"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -26,7 +26,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `e059d23386`
+- **Reviewed:** 2026-10-30 · body `165e67866d`
 <!-- /phase-card -->
 
 ## Units
@@ -85,13 +85,29 @@ init 0.335 < 0.75, as U1 found).
 
 **What it says.** Dodecahedron's cloud is not concentrated throughout training. T2 read it at step 1
 and step 9536 only, and both sit at peaks. The trajectory has Pythia's shape: a rise to an early
-peak, a long fall, a rise again. The trough (0.10–0.12, at 491–1072) is lower than any Pythia
-model's minimum read here (0.17–0.21). What differs is the two ends: the start (0.85 against
+peak, a long fall, a rise again. The minimum (0.111 at 917 on `-32m`, 0.100 at 671 on `-67m`) is
+lower than any Pythia model's minimum read here (0.17–0.21). What differs is the two ends: the start (0.85 against
 0.30–0.46, U1's init × architecture interaction) and the late rise (to 0.90 against 0.37–0.44),
 which comes with the position-0 norm growing on every model. Since ρ_mid⁻⁰ rises the same way,
 the late re-concentration is in the other tokens, not position 0's direction. `gpt-2-small`
 (Pythia-160m's architecture under the flat init, biases on) spreads and stays spread to 65000.
-D3: U4's flat-init arms carry its question (the design's "if it spreads" branch).
+**For H1** (description, not a label; `/challenge-pr` on #293, finding 1): the cloud is at
+0.10–0.11 by 671–917, so the 0.90 at 9536 is not the init's concentration persisting. Whatever
+holds it there arises after ~1253 in training. H1 as an account of the trained cloud is
+not supported by this trajectory; U1's init effect explains step 1 only.
+**D3:** D1's question (does a flat init keep the cloud concentrated through training) is not
+answered, since `gpt-2-small` does not start concentrated (0.335); U4's flat-init arms carry it,
+as under the design's "if it spreads" branch (finding 3).
+
+**Post hoc, against the rule's choices** (`/challenge-pr` on #293, findings 2–3; not labels):
+- At matched depth (ρ_1:5, the design's statistic across depths) the minima are `-32m` 0.085 at
+  917, `-67m` 0.087 at 671, 410m **0.116 at 128**, 160m 0.175 and 70m 0.199 at 2000,
+  `gpt-2-small` 0.176 at 6000. Dodecahedron's trough is still the lowest. 410m's minimum moves
+  to 128, and Dodecahedron's grid (53 steps against 18) gives its minimum more chances to fall.
+- "Spreads" is measured from the first checkpoint, so it reads the starting level. From each
+  trajectory's early peak the falls are `-32m` 0.89, `-67m` 0.90, 410m 0.64, 160m 0.59, 70m 0.46
+  (its "does not spread" is from 0.30 at step 0), `gpt-2-small` 0.48. `gpt-2-small`'s Δ 0.168
+  sits within its step-to-step jitter of the bar.
 
 **Not established.** Why Dodecahedron re-concentrates after ~1253 and Pythia much less (H2, the
 data, LR or tokenizer: not told apart; U3 describes which paths write the shared direction, U4
