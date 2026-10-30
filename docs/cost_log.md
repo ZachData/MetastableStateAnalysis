@@ -548,3 +548,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-30 | T2 close-out (Blocked 121 (i)), before /challenge-pr | 38 | 142k | 4.2M | 43k | #288 |
 | 2026-10-30 | T2 close-out (Blocked 121 (i), #288), after /challenge-pr (accept with changes; findings 1-5 taken: no 'rescues' or causal claim, mean over rows, card Inputs) · subagents: general-purpose opus-5-5 1.9M | 54 | 163k | 6.6M | 50k | #288 |
 | 2026-10-30 | T5 proposed (docs only; the opening discussion and the roadmap entry), before /challenge-pr | 36 | 131k | 3.2M | 34k | #289 |
+| 2026-10-30 | T5 proposed (#289), after /challenge-pr (accept with changes; findings 1-5 taken: H1 per block marks 70m as much as Dodecahedron, H2's test to U3, U4 sized after U2) · subagents: general-purpose opus-5-5 779k | 53 | 156k | 5.7M | 37k | #289 |
