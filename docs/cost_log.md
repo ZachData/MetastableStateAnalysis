@@ -545,3 +545,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   Over 2× the running median (17.3M against 7.75M): a code unit with GPU runs (the producer read against four C2 modules, two preflight re-runs after defects) and then five findings answered with new code, a diagnostic, a transformers-5.2 venv cross-check and a full re-run, plus /challenge-pr's fork (2.2M).
 | 2026-10-30 | T2 Blocked 120 (b): Llama-fit count proposed (#285 brought up to main), before /challenge-pr | 44 | 152k | 4.9M | 42k | #287 |
 | 2026-10-30 | T2 Blocked 120 (b): Llama-fit count proposed (#287), after /challenge-pr (accept with changes; findings 1-5 taken: e1r = e1c at equal norms, L4; recommendation now close T2) · subagents: general-purpose opus-5-5 1.2M | 57 | 177k | 7.0M | 49k | #287 |
+| 2026-10-30 | T2 close-out (Blocked 121 (i)), before /challenge-pr | 38 | 142k | 4.2M | 43k | #288 |
+| 2026-10-30 | T2 close-out (Blocked 121 (i), #288), after /challenge-pr (accept with changes; findings 1-5 taken: no 'rescues' or causal claim, mean over rows, card Inputs) · subagents: general-purpose opus-5-5 1.9M | 54 | 163k | 6.6M | 50k | #288 |

@@ -1,5 +1,5 @@
 <!-- trackT_timaeus/design-T2.md -->
-# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29; frozen 2026-10-29; Blocked 120 (b) section proposed 2026-10-30)
+# Track T — design: T2, V and E_β on Dodecahedron (proposed 2026-10-29; frozen 2026-10-29; Blocked 120 (b) section proposed 2026-10-30; **T2 closed 2026-10-30 at unit 1**, Blocked 121 (i), the Blocked 120 (b) section never frozen: `status-T.md` "T2 on one page")
 
 Opened 2026-10-29 by `STATE.md` Blocked 118 (b), the user's: T2 tests the LR dose against step;
 the user asks Timaeus for the global batch, and T2 tests tokens too if it is 524k. Row:
@@ -121,7 +121,7 @@ rewrite; T2's reading goes to `status-T.md` and the user decides any F1 sentence
 | D3 | the plateau | **Revised after `/challenge-pr` on #284 (finding 1).** (a) early, the median V over 1253–3738 (Pythia's 1000–4000 under step, less 1072, so past every predicted date but tok524k's; LR 77–98 % of peak), unless tokens is scored under D4, then late, 5108–8158 (past every date, T5; 9536 kept for the preflight); both computed, and a seed's date set is the union of the two plateaus' dates, which can only keep a schedule; (b) late always, the early beside and reported (the first proposal); (c) early always, tokens never scored | **(a).** A later window reads a later break, which is why A5's D4 refused a late reference: on the 9 A5 seeds V's median rises from 1000–4000 to 8000–16000 on every seed (by 3–20, `claims/audits/p_a5_real_run.json`; no date moves on Pythia's octave grid, but Dodecahedron's is 1.17× a step). The late window sits in the cosine decay (53 % of peak at 5108 to 6 % at 8158, if it decays to 0) and leans every date toward step and tok524k, both under test. So it is used only when tokens needs it. (b) pays that lean in the likely case (T1 leans 4.19M) for nothing; (c) gives up Blocked 118 (b) |
 | D4 | when Timaeus's answer counts | (a) tokens at 524k enters `joint` only if a reply confirming 524,288 tokens a step is quoted in `status-T.md`, with its date, before T2's first scored record is written; a later reply is recorded and tokens stays beside. A reply that changes the warmup (length, shape, start) or the peak LR sends the mapping and this design back to you before the batch. The batch does not wait beyond unit 1; (b) as (a), but the scored batch waits up to 14 days for a reply | **(a).** Forward passes are cheap and the December target is close; unit 1 already takes a session, so a quick reply still counts. (b) is right if testing tokens matters more than the date |
 
-## The question for Timaeus (yours to send; outward)
+## The question for Timaeus (yours to send; outward; not sent, moot since T2 closed 2026-10-30)
 
 A draft, for email (contact on timaeus.co) or the model repo's Community tab (public):
 
@@ -154,7 +154,7 @@ cards, configs, branch listings and four LFS hashes (T1); no weight is downloade
 - The centred arms re-derived per model on step 9536 (end of decay), the only trained step not in
   the reading; 3b and 3c used a step past their plateau at higher LR.
 
-## Blocked 120 (b): a centred count fit to Llama (proposed 2026-10-30; not frozen)
+## Blocked 120 (b): a centred count fit to Llama (proposed 2026-10-30; never frozen: Blocked 121 (i), T2 closed)
 
 Taken 2026-10-30 by the user (Blocked 120 (b), over the recommended (c)): T2 continues with a
 centred count built for Dodecahedron and a new arm family, the budget extended on the record
@@ -162,9 +162,10 @@ centred count built for Dodecahedron and a new arm family, the budget extended o
 here is fixed before any Dodecahedron value of the new count exists, and the exit is pre-committed.
 
 **Why unit 1's count failed (L3, `tools/math_checks/t2_llama_count.py`).** e1c normalises, then
-centres: on n unit rows at mean cosine ρ the centred rows keep a squared norm (n − 1)(1 − ρ)/n,
+centres: on n unit rows at mean cosine ρ the centred rows keep a mean squared norm (n − 1)(1 − ρ)/n
+(a mean over rows; "each row" corrected after `/challenge-pr` on #288, finding 3),
 about 0.10 on Dodecahedron (ρ 0.90–0.91) against 0.83 on 410m at 4000 (ρ 0.17). So e1c there
-re-normalises a tenth of each row, and anything that turns the mean direction moves it. L3 says
+re-normalises, on average, a tenth of each row, and anything that turns the mean direction moves it. L3 says
 how much is left, not that this is why plant A leaked (measured, `status-T.md` "T2 unit 1").
 
 **Lean.** No value of the new count on Dodecahedron has been computed. On 410m, e1r (below) is
@@ -206,8 +207,8 @@ A_s and P0 through e1r on a cloud with unit 1's measured cosine and step 9536's 
 (iii) **freeze as written, with P0 added** to D6 and run 1b under its pre-committed exit; (iv)
 freeze with D5 (d), position 0 dropped on both sides: adds 410m passes over 10 seeds × 18 steps,
 budget 5 units. **Recommended (i)**: no option makes a count that ignores a common direction on a
-cloud at cosine 0.9, since whichever order the centring takes, a tenth of each row is what is
-left (L3, L4); (ii) is the cheapest way to check that before spending 1b.
+cloud at cosine 0.9, since whichever order the centring takes, about a tenth of each row on average is what is
+left at equal norms (L3, L4; a reason, not a computed gate result); (ii) is the cheapest way to check that before spending 1b.
 
 **Worth challenging (for the PR):** D6's A_s is a plant chosen to fit the nuisance the diagnostic
 found, after the data showed it; a plant that e1r passes because of how it is built (as plant A

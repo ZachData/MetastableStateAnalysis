@@ -2969,6 +2969,27 @@ stored attention on v1's 7 prompts over 18 steps, condensed rows only, nothing r
 
 ---
 
+## 3.75 Track T's T2 closed at unit 1: the energy counts dated on Pythia fail their gates on a Llama-style model, cause not shown (2026-10-30)
+
+**`trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)"** holds the numbers; this
+section only says why it is project-wide. Tier 1, `timaeus/dodecahedron-32m` and `-67m` at steps
+1 and 9536 with 3 re-inits each, v1's 7 prompts; nothing scored, no date read.
+
+- The counts C2 dated (E₁'s break, the centred count) were gated on Pythia, GPT-2 small and the
+  PolyPythias seeds. On Dodecahedron, the one Llama-style family read, both fail their plant
+  gates before any date, so neither is the instrument there that it was on those models.
+- Why is not shown. Beside, post hoc: the unit cloud sits at mean cosine about 0.9 (410m's
+  falls to 0.17), and L3 sizes what centring leaves at that cosine (the rows' mean squared
+  norm, about 0.09; `tools/math_checks/t2_llama_count.py`). But position 0's norm (14–24× the
+  median at 9536), Llama's init (the re-inits already at 0.84), and architecture, tokenizer
+  and data were not told apart. No count fit to Llama was built (Blocked 121 (i)).
+- C2's F1 (whether the break waits for steps or for LR dose) gets no fourth schedule from
+  Dodecahedron; it stands as §3.68–3.69 leave it. A remark, not a rule: a later architecture
+  read could print `t2.py diag` (mean cosine, the norm of position 0) before its gate. Here that
+  would have flagged the trouble one step earlier (one case).
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this

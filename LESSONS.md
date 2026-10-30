@@ -2274,6 +2274,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   sub-threshold sinks. Rule: a threshold said to sit in a seen gap names the producer of that gap
   and shows it computes the rule's own statistic; otherwise it is placed against a null and
   labelled so.
+- 2026-10-30, T2's Blocked 120 (b) design (found by `/challenge-pr` on #287, finding 1, before the
+  freeze): D5 chose e1r because it "never re-normalises the small residual" e1c does. The same
+  commit added sympy checks L1–L3 for the claims around it, but not for that one. One line (equal
+  token norms) shows e1r = e1c exactly (L4), so the count's main reason was false. The
+  recommendation went from freezing to closing T2, which the user took (Blocked 121 (i)). The
+  design and its review cost a session (7.0M context) for a unit that was then not run. Rule: when a
+  design's choice rests on a closed-form claim that one statistic differs from another, the
+  sympy check covers the claim the choice rests on, starting with the case where the two coincide.
 
 ## 12. Deleted, then needed
 

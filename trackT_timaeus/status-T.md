@@ -5,24 +5,23 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** none run; T1 read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"
+- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - T2 unit 1 (design frozen on D1–D4 (a)): the producer reproduces A5's seed-0 records on `pythia-410m` exactly and its planted effect and null pass, and Dodecahedron loads as trained, its hidden states bit-identical to transformers 5.2's; but every centred arm fails its gate on both models (plant A turns 0.21–0.51 of the free units), and the uncentred count departs as far (plant A 0.04–0.07 against 0.79–0.98 on 70m, 160m, GPT-2), because the unit cloud is nearly one direction (middle-state mean cosine 0.82–0.84 at init, 0.90–0.91 at step 9536, against 410m's 0.47 and 0.17); so neither count is the one dated on Pythia, and the design goes back to the user (Blocked 120) — `trackT_timaeus/status-T.md` "T2 unit 1"
+  - T2 unit 1 (design frozen on D1–D4 (a)): the producer reproduces A5's seed-0 records on `pythia-410m` exactly and its planted effect and null pass, and Dodecahedron loads as trained, its hidden states bit-identical to transformers 5.2's; but every centred arm fails its gate on both models (plant A turns 0.21–0.51 of the free units), and the uncentred count departs as far (plant A 0.04–0.07 against 0.79–0.98 on 70m, 160m, GPT-2); beside, not shown to be the cause, the unit cloud is nearly one direction (middle-state mean cosine 0.82–0.84 at init, 0.90–0.91 at step 9536, against 410m's 0.47 and 0.17); so neither count is the one dated on Pythia, and the design goes back to the user (Blocked 120) — `trackT_timaeus/status-T.md` "T2 unit 1"
+  - T2 closed 2026-10-30 at unit 1, before any scored record (Blocked 121 (i), the user's, as recommended): a count fit to Llama was proposed (Blocked 120 (b)) and not frozen, since at equal token norms the raw-centred count equals the centred one exactly (L4) and differs from it only through the token-norm spread (L2), while centring leaves the rows a mean squared norm of about 0.09 at cosine 0.9 (L3); whether it would pass was not computed; no Dodecahedron date, and C2's F1 gets no fourth schedule from it — `trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - Dodecahedron's global batch is inferred from the card's arithmetic, not read from a training log; the user asks Timaeus (Blocked 118 (b)), and tokens is scored in T2 only on `design-T2.md` D4's condition — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - T2's centred count fails its gate on Dodecahedron; Blocked 120 decided (b), the user's: a count fit to Llama (e1r, plant A_s, scale-matched arms, REF_r on 410m), proposed and not frozen (Blocked 121), closing at unit 1b if it fails; after `/challenge-pr` on #287, e1r equals e1c at equal token norms (L4), and Claude recommends closing T2 — `trackT_timaeus/design-T2.md` "Blocked 120 (b)"
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `7311f45063`
+- **Reviewed:** 2026-10-30 · body `a8c4537e30`
 <!-- /phase-card -->
 
 ## Units
@@ -30,9 +29,78 @@
 | unit | state | where |
 |---|---|---|
 | T1. the inventory | **done 2026-10-29** (one unit, at budget) | `design-T1.md`; "T1, the inventory" below |
-| T2. V and E_β on Dodecahedron | design **frozen 2026-10-29** (Blocked 119: D1–D4 (a)); **unit 1 done 2026-10-29** (1 of 3): producer, known answer and planted gate pass; **the centred count's arms fail their gate on both models**, so the design goes back to the user (Blocked 120) before the batch; **Blocked 120 decided (b) 2026-10-30**: unit 1b's count (e1r) proposed, budget 4 units + close-out, freezes on Blocked 121 | `design-T2.md` (and its "Blocked 120 (b)"); "T2 unit 1" below |
+| T2. V and E_β on Dodecahedron | **closed 2026-10-30 at unit 1** (Blocked 121 (i)), before the batch: design frozen 2026-10-29 (Blocked 119), unit 1's centred arms fail their gate on both models (Blocked 120), the Llama-fit count proposed (Blocked 120 (b)) and not frozen | "T2 on one page" below; `design-T2.md` |
 | T3. LLC positive control | candidate | `docs/ROADMAP.md` §7b |
 | T4. LLC on C2's checkpoints | candidate, after T3 | `docs/ROADMAP.md` §7b |
+
+## T2 on one page (closed 2026-10-30)
+
+**Asked** (`design-T2.md`): on Dodecahedron (`-32m`, `-67m`; 53 log-spaced checkpoints, peak LR
+3.5e-3, warmup 1000), a fourth schedule, does C2's energy break fall in step's band or the LR
+dose's (tokens only if the batch is 524k)? **Closed at unit 1, before the scored batch:** Blocked
+121 (i), the user's, as Claude recommended after `/challenge-pr` on #287. The exit's
+"a recorded refusal" branch: no scored record, no reading. Downloaded: steps 1 and 9536 only
+(0.76 GB). Writing only at close.
+
+**Established (tier 1; `pythia-410m` 0–4000, Dodecahedron steps 1 and 9536 and 3 re-inits each,
+v1's 7 prompts; no date read):**
+
+1. **The producer reads a Llama-style model through C2's path.** `t2.py` equals A5's seed-0
+   records on 410m exactly, its planted effect and null pass, and Dodecahedron's hidden states are
+   bit-identical to transformers 5.2's ("T2 unit 1").
+2. **Neither count dated on Pythia is that count on Dodecahedron.** Every centred arm fails its
+   gate on both models (plant A 0.21–0.51 of the free units, bar ≤ 0.1). The uncentred count's
+   plant A share is 0.04 / 0.07 against 0.79–0.98 on 70m, 160m and GPT-2 small.
+3. **Beside (post hoc): the unit cloud is nearly one direction.** Middle-state mean cosine
+   0.82–0.84 at init and 0.90–0.91 at 9536, against 410m's 0.47 and 0.17. The largest token
+   norm, position 0 on every prompt, is 13.9–23.8× the median at 9536. Neither this nor position
+   0's norm is shown to be why the gates fail (they were not told apart; "Not established").
+4. **On paper: no reordering removes the small residual (L3, L4); whether one passes the gate was
+   not computed** (`tools/math_checks/t2_llama_count.py`, L1–L4, sympy; heading corrected after
+   `/challenge-pr` on #288, finding 1). Centring after normalising leaves the rows a mean squared
+   norm (n − 1)(1 − ρ)/n, 0.09 at ρ 0.91 (L3; a mean over rows, not each row). Centring before
+   normalising (e1r) cancels plant A exactly (L1), but at equal token norms e1r = e1c exactly
+   (L4). So e1r differs only through the norm spread, mostly position 0, and a common direction on
+   the sphere (A_s) reaches it by that route (L2). That A_s would fail on the models is a
+   prediction from an isotropic toy (position 0 at 20× the median; `/challenge-pr` on #287,
+   finding 2), not measured; option (ii)'s pre-check on step 9536's norm spread was not run.
+5. **The grid separates step from cumulative LR under either batch; fraction does not split from
+   step** (`tools/math_checks/t2_grid.py`, 6 of 6). That holds for a count whose Pythia window is
+   no wider than E₁'s or the centred count's (their windows already abut at the shared step).
+
+**Not established:**
+
+- Any date on Dodecahedron, so C2's F1 (step or LR dose) gets no fourth schedule here. It stands
+  as `PROJECT.md` §3.68–3.69 leave it.
+- Whether e1r, or any count, would pass the gate on Dodecahedron: no e1r value was computed there.
+- Why the counts fail their gates. The cloud's cosine, position 0's norm (plant A is 0.5 of the
+  median norm, so it barely moves position 0), Llama's init (0.84 already on the re-inits), and
+  architecture, tokenizer and data were not told apart. No plant-A share was recomputed with
+  position 0 dropped (`/challenge-pr` on #288, finding 2).
+- Why the cloud sits at cosine 0.84 from init (Llama's init, RMSNorm and the embeddings were not
+  told apart), and whether step 9536 is the plateau's geometry.
+- Dodecahedron's global batch (inferred from the card, never asked); tokens never scored.
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| design | #284 | frozen 2026-10-29 (Blocked 119, D1–D4 (a), `ab6826c`) |
+| 1. producer, gate, preflight | #285 | centred arms fail on both models; E₁ off its Pythia behaviour (Blocked 120) |
+| 1b's design (Blocked 120 (b)) | #287 | proposed, never frozen; L4 found by its `/challenge-pr` (Blocked 121) |
+| close-out | this | writing only (Blocked 121 (i)) |
+
+Budget at close: 4 units + close-out allowed (Blocked 120 (b)); unit 1 and the two designs spent.
+
+**Parked at close:**
+
+| item | fate |
+|---|---|
+| unit 1's Parked 1 (plant A through e1r, preflight re-read) | taken into Blocked 120 (b), not frozen; **dropped**: L1 says plant A cannot fail on e1r, and L4 says what it would add (norm spread) |
+| unit 1's Parked 2 (the uncentred re-init rate) | explained beside by the shared direction; **dropped**, nothing left to read |
+| Blocked 121's other options: (ii) a synthetic pre-check of A_s and P0, (iii) freeze with plant P0, (iv) position 0 dropped on both sides | **not taken** (Blocked 121 (i)); written in `design-T2.md` "After `/challenge-pr` on #287" for any later Llama-style reading |
+| the batch question to Timaeus (Blocked 118 (b), never sent) | **dropped**: T2 was its only consumer; the draft stays in `design-T2.md` |
+| 3c's Parked 0 (the zero-rate refusal), fixed in `t2.py` only | still carried to C4 (`trackC_writeup/status-C.md`), as before T2 |
 
 ## T2 unit 1: the producer, the calibration gate, the preflight (2026-10-29)
 
@@ -144,8 +212,8 @@ outcome table come from `tools/math_checks/t2_grid.py` (6 of 6 pass; re-run:
 | width-scaled dose (beside) | cumulative with LR × d_model / 1024 lands on step's band at 141–205 (E₁): a step reading excludes only the raw dose |
 | downloads | about 6.7 GB (`-32m`) and 14.3 GB (`-67m`) for the 53 steps |
 
-D1–D4 decided all (a) (Blocked 119, 2026-10-29). Open for the user: the message to Timaeus
-(drafted in `design-T2.md`), and Blocked 120 ("T2 unit 1" above).
+D1–D4 decided all (a) (Blocked 119, 2026-10-29). T2 closed 2026-10-30 at unit 1 ("T2 on one
+page" above); the message to Timaeus was not sent.
 
 ## T1, the inventory (2026-10-29)
 
