@@ -2151,6 +2151,9 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   (`status-10.md`, number fixes) was rewritten through a `python` heredoc against `CLAUDE.md`
   "While working" (use Edit); the rule exists for the re-inject cost.
   Again 2026-10-25 (B7 unit 0): `lit-B.md`'s B7 section appended with a `cat >>` heredoc.
+  Again 2026-10-30 (T5 U0): `lit-T.md` §4 appended with `cat >>`, and three one-line ROADMAP /
+  STATE replacements done in `python`; the same scan-append slip as B7 unit 0, so the trigger is
+  "append a scan section", where the Edit tool needs a Read of the file's tail first.
 - 2026-10-17, A2's close-out (#216's text, found while writing the one page): unit 5 wrote "1e's
   ≤ 0.05 holds to 1000 and fails in 17 of 24 blocks from 8000" and STATE carried it. A2's share
   is the sink's per-token norm over the update's per-token norm; 1e's is the sink's projection on

@@ -5,12 +5,13 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"
+- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
   - T2 unit 1 (design frozen on D1–D4 (a)): the producer reproduces A5's seed-0 records on `pythia-410m` exactly and its planted effect and null pass, and Dodecahedron loads as trained, its hidden states bit-identical to transformers 5.2's; but every centred arm fails its gate on both models (plant A turns 0.21–0.51 of the free units), and the uncentred count departs as far (plant A 0.04–0.07 against 0.79–0.98 on 70m, 160m, GPT-2); beside, not shown to be the cause, the unit cloud is nearly one direction (middle-state mean cosine 0.82–0.84 at init, 0.90–0.91 at step 9536, against 410m's 0.47 and 0.17); so neither count is the one dated on Pythia, and the design goes back to the user (Blocked 120) — `trackT_timaeus/status-T.md` "T2 unit 1"
   - T2 closed 2026-10-30 at unit 1, before any scored record (Blocked 121 (i), the user's, as recommended): a count fit to Llama was proposed (Blocked 120 (b)) and not frozen, since at equal token norms the raw-centred count equals the centred one exactly (L4) and differs from it only through the token-norm spread (L2), while centring leaves the rows a mean squared norm of about 0.09 at cosine 0.9 (L3); whether it would pass was not computed; no Dodecahedron date, and C2's F1 gets no fourth schedule from it — `trackT_timaeus/status-T.md` "T2 on one page (closed 2026-10-30)"
+  - T5 opened 2026-10-30 (Blocked 122 (a)); U0, weights only: Timaeus's `gpt-2-small` starts from 0.02 on every weight with zero biases, so it is Pythia-160m's architecture under Dodecahedron's flat init, a released run whose architecture matches a model that passed and whose init does not (its data and the rest of its schedule unknown) — `trackT_timaeus/status-T.md` "T5 U0"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -18,11 +19,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases), proposed as T5, not opened — `docs/ROADMAP.md` §7b
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design proposed (Blocked 123) — `trackT_timaeus/design-T5.md`
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-10-30 · body `7e6a0e0ba6`
+- **Reviewed:** 2026-10-30 · body `8d90624585`
 <!-- /phase-card -->
 
 ## Units
@@ -33,7 +34,7 @@
 | T2. V and E_β on Dodecahedron | **closed 2026-10-30 at unit 1** (Blocked 121 (i)), before the batch: design frozen 2026-10-29 (Blocked 119), unit 1's centred arms fail their gate on both models (Blocked 120), the Llama-fit count proposed (Blocked 120 (b)) and not frozen | "T2 on one page" below; `design-T2.md` |
 | T3. LLC positive control | candidate | `docs/ROADMAP.md` §7b |
 | T4. LLC on C2's checkpoints | candidate, after T3 | `docs/ROADMAP.md` §7b |
-| T5. why the Pythia counts fail on Dodecahedron (the cloud's geometry; H1 the init, H2 no biases) | **proposed 2026-10-30** (the user's; opening is Blocked 122); homes "T2 on one page"'s "why the counts fail" | `docs/ROADMAP.md` §7b; "T5's proposal" below |
+| T5. why the Pythia counts fail on Dodecahedron (the cloud's geometry; H1 the init, H2 no biases) | **opened 2026-10-30** (Blocked 122 (a)); U0 done: design proposed (Blocked 123: D1–D3), scan, `gpt-2-small`'s init read (flat 0.02, biases on); homes "T2 on one page"'s "why the counts fail" | `design-T5.md`; "T5 U0", "T5's proposal" below |
 
 ## T5's proposal: the init scales measured (2026-10-30)
 
@@ -48,8 +49,31 @@ r: `tools/math_checks/t5_init.py` I1–I2 (sympy; what it does not prove is in i
 | Mistral GPT-2 small (`alias-gpt2-small-x21`) checkpoint 0 | 0.0200 | **0.0041** (0.02 / √(2L)) | all 0 |
 | `dodecahedron-32m` step 1 | 0.0200 | **0.0200** | none in the config (`-67m` too) |
 
-Not read: `pythia-160m` (its formula only), `timaeus/gpt-2-small` (U0), any step-0 cloud.
+Not read: `pythia-160m` (its formula only), any step-0 cloud. `timaeus/gpt-2-small`: "T5 U0" below.
 Re-run: `python -I trackT_timaeus/t5_init_sd.py <checkpoint file>`; `python3 tools/math_checks/t5_init.py`.
+
+## T5 U0: the design, the scan, `gpt-2-small`'s init (2026-10-30)
+
+Opened by Blocked 122 (a), the user's. Design proposed, not frozen (Blocked 123):
+`trackT_timaeus/design-T5.md`; scan `docs/lit-T.md` §4. No forward pass.
+
+**`timaeus/gpt-2-small`'s init is flat.** `timaeus/gpt-2-small-init-seed-5` (commit
+`4f072cfb2d`, `model.safetensors` sha256 `6dc399b6ed6d`, float32, `HDD_1TB/mets_data/hf`), read by
+`t5_init_sd.py`: **every 2-D weight at SD 0.0200** (embedding, QKV, attention out, MLP in and out,
+`embed_out`; range over layers 0.01997–0.02004), every bias and LayerNorm shift 0, gains 1. The
+config is GPT-NeoX, 12 × 768, 12 heads, rotary 0.25, parallel residual, untied, biases on, vocab
+50,304: Pythia-160m's shape. So **it is Pythia-160m under Dodecahedron's flat init**, and its r is
+the largest of the seven shapes, 15.4, 3.33× Pythia-160m's (r · L 184; `tools/math_checks/t5_init.py` I3).
+
+**Its training arguments** (`checkpoint-100/training_args.bin`, read with `pickletools`, never
+unpickled): peak LR 6e-4, cosine, warmup 1 % of the total steps (`warmup_steps` 0), weight decay
+0.1, Adam (0.9, 0.95), clip 1.0, per-device batch 32, gradient accumulation 1, bf16, seed 5, one
+epoch, `hub_model_id` `georgeyw/gpt-2-small`. Not in the file: the data, the GPU count, the
+sequence length, the total steps. Checkpoints: `checkpoint-100` … `checkpoint-65000` every 100
+(325 MB each); no step 0 except the init repo.
+
+Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf python -c "from huggingface_hub import hf_hub_download as h;
+print(h('timaeus/gpt-2-small-init-seed-5','model.safetensors'))"`, then `t5_init_sd.py` on the path.
 
 ## T2 on one page (closed 2026-10-30)
 
