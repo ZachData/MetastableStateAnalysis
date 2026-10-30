@@ -387,7 +387,9 @@ proposed, not decided.
 12. *Decided (a), 2026-10-30 (Blocked 122, the user's, as recommended): T5 opened, every unit,
     U4 after U3; U0 done, its design frozen 2026-10-30 (`trackT_timaeus/design-T5.md`; Blocked
     123, D1–D3 all (a), the user's: `gpt-2-small` read in U2 and sizing U4, fixed bands, U4
-    designed after U2).*
+    designed after U2). U1 done; budget extended by one unit, U1b, the Llama's parts at init
+    (Blocked 124 (a), the user's, as recommended, 2026-10-30); done: no single part
+    (`trackT_timaeus/status-T.md` "T5 U1b"). Next is Blocked 125.*
 
 ## 11. What each phase gives the plan
 

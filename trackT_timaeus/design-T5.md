@@ -76,6 +76,51 @@ dose order at 70m's.
 - **Partly** otherwise, naming which condition failed. The architecture's effect (F and P pooled)
   is reported beside, not scored.
 
+**U1b, the Llama's parts at init (added 2026-10-30 by Blocked 124 (a), the user's, as
+recommended: one unit beyond the budget, on the record; rule and gate fixed here before any U1b
+output).** U1 found the flat init concentrates a Llama and not a GPT-NeoX (`status-T.md` "T5 U1").
+U1b asks which part of the Llama makes the init matter, so U4 trains that part. **Base:** U1's
+cell Llama-32m without biases (Dodecahedron's architecture: RMSNorm, sequential residual, SwiGLU
+1024, full rotary, 2 KV heads, tied, its tokenizer), under P and under F. **Swaps**, one at a time
+to GPT-NeoX's, each under both inits (`/challenge-pr` on #291, finding 2), 20 seeds:
+
+| swap | to | how |
+|---|---|---|
+| `ln` | LayerNorm (gain 1, shift 0, eps 1e-5) for RMSNorm, every norm | modules replaced |
+| `par` | parallel residual, x + attn(ln₁ x) + mlp(ln₂ x) | the block's forward |
+| `gelu` | GeLU MLP at 4d (1536) for SwiGLU 1024 | module replaced; P puts small_init on its input, wang_init on its output |
+| `rot` | rotary on 0.25 of each head (8 of 32 pairs, NeoX's frequencies, base 10⁴) for all 32 | pairs 8 … 31 at frequency 0. A permutation of head dimensions from NeoX's layout, so the same in distribution under i.i.d. weights (checked: a test against NeoX's `apply_rotary_pos_emb`) |
+| `mha` | 6 KV heads for 2 | config |
+| `tok` | GPT-NeoX's tokenizer (vocab 50,304) for Dodecahedron's | random weights see it only through the token sequence |
+| `untied` | untied unembedding | **planted null**: the unembedding never reaches a hidden state |
+| `all` | every swap above at once | GPT-NeoX-32m without biases, in distribution (U1's cell) |
+
+Statistic: ρ_mid (every cell has 32m's depth, so ρ_mid is fair); ρ_1:5 beside. Per cell, the median
+over seeds. B_i = the base's median under init i; **E0 = B_F − B_P**; per swap k, M_k,i = med(k, i) −
+B_i, **E_k = med(k, F) − med(k, P)** and **ΔE_k = E0 − E_k** (what the swap removes of the init's
+effect). τ = max(0.02, |M_untied,P|, |M_untied,F|); bar = max(0.1, 2τ), as U1's.
+
+- Swap k **carries the init's effect** if ΔE_k ≥ E0 / 2; **partly** if bar ≤ ΔE_k < E0 / 2; **does
+  not** if |ΔE_k| < bar; **amplifies** if ΔE_k ≤ −bar.
+- Beside, not a label of the init: k **moves the cloud at both inits** if M_k,P and M_k,F share a
+  sign and both |M| ≥ bar (a part that moves the cloud whatever the init).
+- The unit's reading names the swaps that carry; **none carries** reads "no single part": the
+  effect is spread over parts or needs two together. Beside: Σ_k ΔE_k against ΔE_all (additivity).
+
+Gate (before the reading; any failure goes back to the user):
+
+| check | pass |
+|---|---|
+| **known answer:** the base cells, built through U1b's code with no swap, against U1's records `32m-llama-{P,F}-nob` (same seeds) | max \|Δρ_ℓ\| ≤ 1e-6 over the 40 models |
+| **the init:** per role, seed 0's weight SD in every cell against P's or F's formula | within 2 % |
+| **the rotary swap:** attention logits of the patched Llama against NeoX's partial rotary on permuted dimensions (frozen as a test; put in `gate()` as `t5b.rotary_check` after `/challenge-pr` on #292, finding 1, which found it missing there; the bar unchanged) | ≤ 1e-5 |
+| **planted null:** \|M_untied,i\| at both inits | ≤ 0.05 |
+| **`all` is GPT-NeoX:** \|med(all, i) − U1's `32m-neox-i-nob`\| at both inits | ≤ 0.05 |
+| **positive control at the rule's size:** `all` read as a swap | "carries" |
+
+Not in U1b: the reverse ablation (one Llama part into GPT-NeoX, whether a part suffices), pairs of
+swaps, biases (null at init, U1). It cannot say what training does with the part (U4).
+
 **U2, the trajectories.** Every statistic above per state at all 53 checkpoints of `-32m` and
 `-67m`, plus references at their on-disk steps: `pythia-70m`, `-160m`, `-410m` (C2's 18 steps);
 `timaeus/gpt-2-small` under D1. **"Spreads"** for one trajectory: Δ = ρ_mid(first checkpoint) −
@@ -141,7 +186,7 @@ Any failure goes back to you before that unit's reading.
 **Exit** (ROADMAP): H1 and H2 each read supported, not supported or not told apart (H2 only from
 U4; "not told apart" if U4 does not run) under the rules above, and "does Dodecahedron's cloud spread at any
 checkpoint" answered on the 53. **Budget: U0 (this design and scan) + U1–U5 + close-out**, U4 ≤ 3
-GPU-days. **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
+GPU-days, **plus U1b** (extended on the record, Blocked 124 (a), 2026-10-30). **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
 clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 
 ## Worth challenging (for the PR)
