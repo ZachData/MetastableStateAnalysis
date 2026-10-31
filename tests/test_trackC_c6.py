@@ -54,6 +54,36 @@ def test_plant_under_step_is_the_profile():
     assert w.plant(v, "cumulative")[STEPS.index(4000)] == STEPS.index(1000)
 
 
+def test_late_plants_change_only_instantaneous_past_its_peak():
+    v = list(range(len(STEPS)))
+    for late in w.LATE:
+        assert w.plant(v, "step", late) == w.plant(v, "step")
+        p = w.plant(v, "instantaneous", late)
+        assert p[:STEPS.index(8000) + 1] == w.plant(v, "instantaneous")[:STEPS.index(8000) + 1]
+    assert w.plant(v, "instantaneous")[STEPS.index(16000)] == STEPS.index(143000)
+    assert w.plant(v, "instantaneous", "same_step")[STEPS.index(16000)] == STEPS.index(16000)
+
+
+def _fake_run(out, codes, readable=True, gate_code="x"):
+    import json
+    (out / "gate.json").write_text(json.dumps({"readable": readable, "code": gate_code}))
+    for i, s in enumerate(STEPS):
+        for p in w.V1:
+            f = w.rec_path(out, "run", s, p)
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(json.dumps({"model": "run", "code": codes[i % len(codes)]}))
+
+
+def test_read_refuses_an_unpassed_gate_and_mixed_code(tmp_path):
+    from types import SimpleNamespace
+    _fake_run(tmp_path, ["x"], readable=False)
+    with pytest.raises(w.C6Refused, match="gate"):
+        w.read(SimpleNamespace(out=str(tmp_path)))
+    _fake_run(tmp_path, ["x", "y"])
+    with pytest.raises(w.C6Refused, match="one version"):
+        w.read(SimpleNamespace(out=str(tmp_path)))
+
+
 def test_ref70_is_frozen_per_arm():
     assert w.REF70 == {"u": (256, 512), "c": {"9.61e-05": (512, 1000), "0.0001": (512, 1000),
                                               "0.0003": (512, 1000), "0.00478": (1000, 2000)}}

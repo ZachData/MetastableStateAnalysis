@@ -51,7 +51,7 @@ conservative reference; seed 0's own dates are read beside.
 
 ## The reading, frozen
 
-Code `trackC_writeup/c6_warmup.py` (`618576084ad4`), pure tests `tests/test_trackC_c6.py`,
+Code `trackC_writeup/c6_warmup.py` (`9e9aa860bdf2`), pure tests `tests/test_trackC_c6.py`,
 closed forms `tools/math_checks/c6_bands.py` (B1–B6 and what it does not prove). A first version
 was committed and pushed in `fbc2fdd` before any 70m seed's date was read; **the window, the
 per-arm reference and the every-arm rule below were revised after the ten seeds' profiles were
@@ -96,8 +96,8 @@ any readable 70m date is read inside its band under each schedule.
 
 Records `data/trackC/c6/2026-10-31-u0-seeds/<seed>/records` (126 per seed: 18 steps × 7
 prompts; forward code `5aa5eb7a067b`, GPU, float32, eager, TF32 off); reading
-`data/trackC/c6/2026-10-31-u0-seeds/seeds.json` (code `618576084ad4`, sha256
-`0d228b0de3b0…`; `ref70_frozen_equal: true`). **Seed 0 is unit 3b's 70m**: its records equal
+`data/trackC/c6/2026-10-31-u0-seeds/seeds.json` (code `9e9aa860bdf2`, sha256
+`237fea0ffcfe…`; `ref70_frozen_equal: true`). **Seed 0 is unit 3b's 70m**: its records equal
 3b's (max relative difference in e1 0.0, the tokens' hash equal), and its dates are 3b's (256, 1000).
 Re-run: `python -m trackC_writeup.c6_warmup run --out <dir> --models seed0 … seed9` (offline,
 `HF_HOME=<HDD_1TB>/mets_data/hf`), then `seeds --out <dir>`.
@@ -132,9 +132,13 @@ schedule predicts:
 | centred, 4.78e-3 | 1000, 2000 | 2000, 4000, 8000 | 8000, 16 000 |
 
 Each window and early set: step 1000/2000/4000, early ≤ 128; cumulative 4000/8000, early
-≤ 512; instantaneous 16 000, early ≤ 2000. Neighbouring schedules' bands share a step on
-every count (V: 512, 2000). A run date there is not decided by the band; the window and the
-early set must decide it. Against seed 0 alone (beside, `bands_seed0`), the bands are disjoint:
+≤ 512; instantaneous 16 000, early ≤ 2000. On V the shared steps are not shared in effect
+(`/challenge-pr` on #295, finding 3). A date at 512 lies in cumulative's early set and a date
+at 2000 in instantaneous's, so each excludes the later schedule. V's effective bands are step
+256–512, cumulative 1000–2000, instantaneous 4000–8000. On the centred count the overlaps are
+real: 1000 for step and cumulative, 4000 for cumulative and instantaneous. Step's plants still
+read "step and cumulative" 3 times in 10, because V's second rise at 8000 lifts cumulative's
+plateau (its window is 4000/8000). Against seed 0 alone (beside, `bands_seed0`), the bands are disjoint:
 V step 256, cumulative 512–1000, instantaneous 2000–4000; centred step 1000, cumulative
 2000–4000, instantaneous 8000–16 000.
 
@@ -159,7 +163,29 @@ interval window, one band pooled over arms, any arm sufficing) read the same pla
 alone 1, cumulative alone 1 and instantaneous alone 9 of 10, and lost cumulative on 2. Its
 centred count read "consistent" under every schedule on every plant. Not calibrated: a run whose
 own init and order spread is narrower than ten seeds' (it shares seed 0's, "What the run is").
-The plants carry no noise beyond the seeds' own.
+The plants carry no noise beyond the seeds' own. **The table is in-sample**: the rule was revised
+on these 30 plants, and the leave-one-out version re-derives only the bands, so nothing tuned is
+held out (#295, finding 2). Two of the four arms (9.61e-5, 1e-4) give the same date on every seed,
+so "every arm" counts about three distinct arms (finding 5).
+
+**The instantaneous plant depends on an untested assumption** (#295, finding 1). Under that
+schedule the window is the single step 16 000. What the run holds there depends on how 70m's
+states past its peak are reached. Taken literally, all are reached at once, so 16 000 holds 70m's
+143 000, where V has fallen (1–5 on 8 of 10 seeds). Two softer versions are recorded in
+`seeds.json` `calibration_late`; step and cumulative plants are unaffected:
+
+| instantaneous's late states | its plants read |
+|---|---|
+| literal (all at once; the table above) | instantaneous 9, neither 1 |
+| at 70m's same step | **instantaneous 2, neither 8** |
+| at 70m's summed rate (cumulative) | **instantaneous 4, neither 6** |
+
+Every failure is V's count; the centred count stays consistent with instantaneous on every
+plant. So under this rule a "neither" on the run cannot be told from an instantaneous run whose
+late states are not literal. One alternative, measured and not adopted (Blocked 127, the user's):
+V's instantaneous verdict is not read, since its window depends on the late states. Its plants
+then read identically under all three versions: step 7 alone and 3 with cumulative;
+cumulative 2 alone, 7 with instantaneous, 1 instantaneous; instantaneous 10 alone.
 
 ## The run's gate (U1, before any scored record on the run)
 
@@ -169,7 +195,8 @@ The plants carry no noise beyond the seeds' own.
 | per step | unit 3b's preflight: plant A (a common vector) and plant B (token-independent spread) per transition, through both counts; plant B's dose by 3b's rule 100 (a) (the smallest dose the uncentred count sees at a share ≥ 0.4) | the procedure that gated 70m |
 | an arm is gated | it passes at both steps: re-init centred rate ≤ 5 %, plant B ≥ 0.4, plant A at 0.5 ≤ 0.1 (unit 3s's thresholds) | conservative across the two |
 | the uncentred count is read | if rule 100 (a) finds plant B's dose at both steps | 3b reported the uncentred count's preflight without a gate; here a refusal is possible |
-| known answer | the re-inits' centred rates equal unit 3b's 70m preflight (≤ 0.005 at each arm), else refuse; seed 0's records here equal unit 3b's e1 (≤ 1e-4, the tokens' hash equal), else refuse | the same config, seeds and code path |
+| known answer | the re-inits' centred rates equal unit 3b's 70m preflight (≤ 0.005 at each arm), else refuse; seed 0's records, run into U1's own directory first, equal unit 3b's e1 (≤ 1e-4, the tokens' hash equal), else `gate` refuses | the same config, seeds and code path |
+| one version | `read` refuses unless `gate.json` reads readable and the run's records, the gate and the code share one code hash | added after `/challenge-pr` on #295, finding 4 |
 | refused | no arm gated and the uncentred count not read: the exit's "read refused by its gate" | refuse rather than degrade |
 
 `run --models run` refuses until `REF70` is set and `gate.json` reads readable.
@@ -200,7 +227,7 @@ it closes at what it knows unless the user extends it on the record.
 | unit | what | done when |
 |---|---|---|
 | 0 (this) | the run's schedule, init and first batch from the weights; 70m's date range from seeds 0–9; the bands, the reading and the gate frozen | this file frozen, `REF70` set and pushed |
-| 1 | `gate` on the run's steps 7000 and 20 000; `run --models run` (18 steps, offline); `read` | the label, or the gate's refusal |
+| 1 | Blocked 127 decided; `run --models seed0`, then `gate` on the run's steps 7000 and 20 000; `run --models run` (18 steps, offline); `read` | the label, or the gate's refusal |
 | close-out | writing only: what C6 established, §7 and F1 for 70m in `paper/` if the label is clean, Parked items homed, the card current | the card current |
 
 ## Worth challenging (for the PR)
@@ -221,8 +248,9 @@ it closes at what it knows unless the user extends it on the record.
    taken as the stricter at equal measured power. "Any arm" (the first version) excluded nothing.
 4. **The instantaneous plant assumes everything past the rate's peak is reached at once.** That
    is the hypothesis taken literally (a date waits for a rate level), and it makes the run's
-   16 000 hold 70m's final state. A softer version (dates past 70m's peak follow the cumulative
-   rate) is not tested.
+   16 000 hold 70m's final state. Two softer versions, measured after `/challenge-pr` on #295,
+   leave the instantaneous truth at 2 and 4 of 10 ("Calibration"). Whether to stop reading V
+   under instantaneous is Blocked 127.
 5. **70m's arms are not re-derived on the run** (the gate checks them on its steps 7000 and
    20 000). The dates are compared at the same tolerances, but the run's energy scale at a given
    step could differ from 70m's.

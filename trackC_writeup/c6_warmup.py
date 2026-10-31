@@ -178,9 +178,27 @@ def early(hyp: str) -> Tuple[int, ...]:
     return tuple(s for s in STEPS if held(s, hyp) <= EARLY_TOP)
 
 
-def plant(v: Sequence[float], hyp: str) -> List[float]:
+LATE = ("literal", "same_step", "cumulative")   # the instantaneous plant past 70m's peak
+
+
+@functools.lru_cache(None)
+def _held_late(s: int, late: str) -> int:
+    """`held` under instantaneous with 70m's states past its peak (g > W_BASE) reached as ``late``
+    says: "literal" all at once (m_h's turn, `reached`); "same_step" when the run reaches 70m's
+    step g; "cumulative" when it reaches g's summed rate (`/challenge-pr` on #295, finding 1)."""
+    def r(g):
+        if g <= W_BASE or late == "literal":
+            return reached(g, "instantaneous")
+        top = m("instantaneous", W_BASE)
+        return max(top, g if late == "same_step" else m("cumulative", g))
+    return max(g for g in STEPS if r(g) <= s * (1 + 1e-9) + 1e-6)
+
+
+def plant(v: Sequence[float], hyp: str, late: str = "literal") -> List[float]:
     """A 70m profile on the run's grid if the run follows ``hyp``: V at each run step is 70m's V
-    at the state it holds (the calibration's planted effect)."""
+    at the state it holds (the calibration's planted effect); ``late`` only for instantaneous."""
+    if hyp == "instantaneous":
+        return [float(v[STEPS.index(_held_late(s, late))]) for s in STEPS]
     return [float(v[STEPS.index(held(s, hyp))]) for s in STEPS]
 
 
@@ -256,9 +274,10 @@ def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: 
     return out
 
 
-def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False) -> dict:
+def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str = "literal") -> dict:
     """The planted effect: each 70m seed's own profiles planted under each schedule (`plant`),
-    read with every arm gated against ``ref`` (or, with ``loo``, the other seeds' dates)."""
+    read with every arm gated against ``ref`` (or, with ``loo``, the other seeds' dates). The rule
+    was revised on these plants, so the table is in-sample to it (#295, finding 2)."""
     rows = {}
     for name, b in beside.items():
         r = ref
@@ -266,7 +285,7 @@ def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False) -> dict:
             others = {n: seed_dates(x["V_u"], x["V_c"]) for n, x in beside.items() if n != name}
             r = ref70(others)
         for truth in HYPS:
-            vu, vcs = plant(b["V_u"], truth), {k: plant(v, truth) for k, v in b["V_c"].items()}
+            vu, vcs = plant(b["V_u"], truth, late), {k: plant(v, truth, late) for k, v in b["V_c"].items()}
             counts = {"u": count_reading({"1e-3": vu}, {"1e-3": True}, "u", r),
                       "c": count_reading(vcs, {k: True for k in vcs}, "c", r)}
             rows[f"{name}|{truth}"] = {"joint": joint(counts),
@@ -400,6 +419,7 @@ def seeds(a) -> int:
     ka = known_answer(load_model(out, "seed0"))
     ref, ref0 = ref70(per), ref70({"seed0": per["seed0"]})
     cal, cal_loo = calibrate(beside, ref), calibrate(beside, ref, loo=True)
+    cal_late = {lt: calibrate(beside, ref, late=lt) for lt in LATE[1:]}
     res = {"code": code_sha(), "seed0_known_answer_max_rel": ka, "per_seed": per, "ref70": ref,
            "ref70_frozen_equal": REF70 is not None and _jsonable(REF70) == _jsonable(ref),
            "ref_seed0": ref0, "bands": bands(ref), "bands_seed0": bands(ref0),
@@ -407,12 +427,13 @@ def seeds(a) -> int:
            "windows": {h: list(window(h)) for h in HYPS}, "early": {h: list(early(h)) for h in HYPS},
            "held": {h: {str(s): held(s, h) for s in STEPS} for h in HYPS},
            "maps": {h: {str(t): m(h, t) for t in (64, 128, 256, 512, 1000, 2000, 4000)} for h in HYPS},
-           "calibration": cal, "calibration_loo": cal_loo, "beside": beside}
+           "calibration": cal, "calibration_loo": cal_loo, "calibration_late": cal_late, "beside": beside}
     (out / "seeds.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({n: {"u": r["u_date"], "c": r["c_arm_dates"]} for n, r in per.items()}))
     print(json.dumps({"ref70": ref, "frozen_equal": res["ref70_frozen_equal"], "bands": res["bands"],
                       "windows": res["windows"], "early_top": {h: early(h)[-1] for h in HYPS}, "known_answer": ka,
-                      "calibration": cal["summary"], "calibration_loo": cal_loo["summary"]}, indent=1))
+                      "calibration": cal["summary"], "calibration_loo": cal_loo["summary"],
+                      "calibration_late": {lt: c_["summary"] for lt, c_ in cal_late.items()}}, indent=1))
     return 0
 
 
@@ -451,7 +472,10 @@ def gate_one(pops: dict, reinits: Sequence[str], step: str) -> dict:
 
 
 def gate(a) -> int:
+    """U1's gate. Needs `run --models seed0` into the same --out first: seed 0's records there must
+    equal unit 3b's (`known_answer`), else refuse (#295, finding 4)."""
     _frozen()
+    ka = known_answer(load_model(Path(a.out), "seed0"))
     os.environ["HF_HUB_OFFLINE"] = "1"
     torch, device = c._torch_setup()
     from transformers import AutoConfig, AutoTokenizer
@@ -482,7 +506,8 @@ def gate(a) -> int:
     arms = {f"{t:.3g}": all(g["arms"].get(f"{t:.3g}", {}).get("pass", False) for g in per_step.values())
             for t in ARMS}
     u_ok = all(g["b_dose"] is not None for g in per_step.values())
-    res = {"code": code_sha(), "meta": meta(torch), "per_step": per_step, "arms_gated": arms,
+    res = {"code": code_sha(), "meta": meta(torch), "seed0_known_answer_max_rel": ka,
+           "per_step": per_step, "arms_gated": arms,
            "uncentred_read": u_ok, "readable": u_ok or any(arms.values()), "null_vs_3b": [null_now, null_3b]}
     (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({"arms_gated": arms, "uncentred_read": u_ok,
@@ -494,7 +519,13 @@ def read(a) -> int:
     ref = _frozen()
     out = Path(a.out)
     g = json.loads((out / "gate.json").read_text())
+    if not g.get("readable"):
+        raise C6Refused("gate.json: the run's gate has not passed")
     recs = load_model(out, "run")
+    codes = {r["code"] for r in recs.values()}
+    if codes != {g["code"]} or codes != {code_sha()}:
+        raise C6Refused(f"the run's records ({sorted(codes)}), the gate ({g['code']}) and this code "
+                        f"({code_sha()}) must be one version")
     vu = c.series(recs, "e1")
     vcs = {f"{t:.3g}": c.series(recs, "e1c", t) for t in ARMS}
     counts = {"u": count_reading({"1e-3": vu}, {"1e-3": g["uncentred_read"]}, "u", ref),

@@ -28,7 +28,7 @@
   - After C2p (2026-10-24, the user's; writing only): `paper/` cites 2609.28448 in §6 (Sec. V B: a head's negative eigenvalues do not establish negative feedback) and §8, and §5 says the OV phase is named for E2's share; 28 pages, `paper_check` 0. 2026-10-25 (the user's): appendix D takes the timeline's rows one by one, each with its panel and its floor numbers; 34 pages. 2026-10-28 (the user's): figure 12, the energy ridgeline with the identity-weight reference, drawn from a new record, not yet in `paper/` — `trackC_writeup/status-C.md` "Units"
   - Figure 13 (2026-10-29, the user's; tier 1, description, no forward pass): effective rank, mass near 1, energy change and the Schur ratio by depth and step on seed 0, from `data/phase12`, drawn only after those runs reproduced A5's seed-0 energies (max relative difference 1.5e-6, tokens and V equal); `fig/paper/fig13_grid.pdf`, not yet in `paper/` — `trackC_writeup/status-C.md` "Figure 13, the layer × step small multiples (2026-10-29)"
   - C2p readings audit (2026-10-30, the user's; writing only): every claim `paper/` attributes to a paper checked against its source in `docs/readings/`; 6 corrected (Pendharkar's section 10 is about orthogonal subspaces, its Theorem 17 conditional; 2604.01978 proves ‖m‖² rises in depth under per-layer random attention weights, so the draft's "no result" is narrowed; Razzhigaev's anisotropy is centred; Ethayarajh's non-input layers; Gao's circle), 9 missed items, 8 added to the text; a released `pythia-70m` with a ten-times warmup (M1), on which the n-gram KL minima come 1–2 octaves later (M2), opens C6 — `trackC_writeup/status-C.md` "C2p readings audit (2026-10-30)"
-  - C6 unit 0, the design (2026-10-31; tier 1, description; no energy on the run): `pythia-70m-warmup01` read off its weights is Pythia-70m's init and first batch (76 of 76 tensors bit-equal at step 0), its in-warmup rate a tenth of Pythia's (W 14 300 at peak 1e-3, H0 confirmed), its peak Pythia's within ~10 %; 70m's dates over `pythia-70m` and PolyPythias seeds 1–9: V 256 or 512 (5 and 5), the centred date 512–1000 (1000–2000 at 4.78e-3); bands per schedule and arm frozen into `c6_warmup.REF70`, with the reading revised after it was calibrated on the seeds' own profiles (planted truth survives 10, 9, 9 of 10; alone 7, 4, 9); the gate fixed for U1 — `trackC_writeup/status-C.md` "C6 unit 0, the design (2026-10-31)"
+  - C6 unit 0, the design (2026-10-31; tier 1, description; no energy on the run): `pythia-70m-warmup01` read off its weights is Pythia-70m's init and first batch (76 of 76 tensors bit-equal at step 0), its in-warmup rate a tenth of Pythia's (W 14 300 at peak 1e-3, H0 confirmed), its peak Pythia's within ~10 %; 70m's dates over `pythia-70m` and PolyPythias seeds 1–9: V 256 or 512 (5 and 5), the centred date 512–1000 (1000–2000 at 4.78e-3); bands per schedule and arm frozen into `c6_warmup.REF70`, with the reading revised after it was calibrated on the seeds' own profiles (planted truth survives 10, 9, 9 of 10; alone 7, 4, 9; the instantaneous truth only 2–4 of 10 if 70m's late states are planted less literally, all on V's count: Blocked 127); the gate fixed for U1 — `trackC_writeup/status-C.md` "C6 unit 0, the design (2026-10-31)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -40,7 +40,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-31 · body `df5909816f`
+- **Reviewed:** 2026-10-31 · body `ba1a21e72b`
 <!-- /phase-card -->
 
 ## Units
@@ -84,26 +84,30 @@ bands", "Calibration"); this section says how to check them.
 |---|---|---|
 | the run, from its weights | same init (76 of 76 tensors), same first batch (sign agreement 1.000), same order to ~16 steps; in-warmup rate 0.094–0.103 of Pythia's (H0, W 14 300 at peak 1e-3); peak within ~10 % | `data/trackC/c6/2026-10-31-u0-schedule/schedule.json` (code `798c2da33a8a`) |
 | seed 0 against unit 3b | records equal (max relative difference in e1 0.0); dates 256 and 1000 | `seeds.json` `seed0_known_answer_max_rel` |
-| 70m's dates, seeds 0–9 | V 256 ×5, 512 ×5; centred 512–1000 at the three small arms, 1000–2000 at 4.78e-3; all readable | `data/trackC/c6/2026-10-31-u0-seeds/seeds.json` (code `618576084ad4`, sha256 `0d228b0de3b0…`) |
+| 70m's dates, seeds 0–9 | V 256 ×5, 512 ×5; centred 512–1000 at the three small arms, 1000–2000 at 4.78e-3; all readable | `data/trackC/c6/2026-10-31-u0-seeds/seeds.json` (code `9e9aa860bdf2`, sha256 `237fea0ffcfe…`) |
 | `REF70` | `{"u": (256, 512), "c": per arm}`, pinned by a test | `c6_warmup.py` |
-| calibration (planted on the seeds' profiles) | truth survives 10 / 9 / 9 of 10 (step / cumulative / instantaneous), alone 7 / 4 / 9; the first version (`fbc2fdd`) 10 / 8 / 9 and 1 / 1 / 9 | `seeds.json` `calibration`, `calibration_loo` |
+| calibration (planted on the seeds' profiles) | truth survives 10 / 9 / 9 of 10 (step / cumulative / instantaneous), alone 7 / 4 / 9; the first version (`fbc2fdd`) 10 / 8 / 9 and 1 / 1 / 9; instantaneous 2 or 4 of 10 under softer late-state plants | `seeds.json` `calibration`, `calibration_loo`, `calibration_late` |
 
 **Caveats.** The reading was revised after the seeds' profiles were read (not the run's), which
 `design-C6.md` "Worth challenging" 1 states. The seeds' records ran on forward code `5aa5eb7a067b`.
-The revision changed only the reading, and the seeds' reading was re-run on `618576084ad4`. The
-union over ten seeds makes neighbouring bands share a step, so a run date there is decided by the
-window and early set. The calibration has no noise beyond the seeds' own.
+The revision changed only the reading, and the seeds' reading was re-run on `9e9aa860bdf2`. The
+calibration is in-sample to the revision and has no noise beyond the seeds' own. **The
+instantaneous truth survives 9, 2 or 4 of 10** depending on how 70m's states past its peak are
+planted (`calibration_late`; `/challenge-pr` on #295, finding 1). The failures are all V's
+count, so a "neither" on the run is ambiguous under this rule; whether to stop reading V under
+instantaneous (then 10 of 10 under every version) is Blocked 127.
 
 **Re-run.** `HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_schedule --out <dir>` (CPU);
 `METS_DATA=<main>/data HF_HOME=… python -m trackC_writeup.c6_warmup run --out <dir> --models seed0 … seed9`
 (GPU, offline, ~70 s a seed), then `… c6_warmup seeds --out <dir>`;
-`python3 tools/math_checks/c6_bands.py` (B1–B6); `pytest tests/test_trackC_c6.py` (20).
+`python3 tools/math_checks/c6_bands.py` (B1–B6); `pytest tests/test_trackC_c6.py` (22).
 
 **Parked.** 1. A finer grid between 4000 and 16 000 (the run releases every 1000 steps).
-*Why:* both calibration misses are one grid step, and the bands share 512 and 2000 on V. *Cost:*
-about 24 checkpoints per model, and the disk is nearly full (13 GB free on HDD_1TB). *Could change:*
-whether a run date on a shared step is decided. 2. A softer instantaneous hypothesis (past 70m's
-peak, the cumulative rate) is not planted. *Could change:* a lone "instantaneous" label.
+*Why:* both literal-plant misses are one grid step, and instantaneous's window is the single
+step 16 000 because no grid step lies in 10 000–14 300. *Cost:* about 24 checkpoints per model,
+and the disk is nearly full (13 GB free on HDD_1TB). *Could change:* instantaneous's window and its
+dependence on the late states. 2. (Was: the softer instantaneous plants are not tested.) Measured
+after `/challenge-pr` on #295 (`calibration_late`); now Blocked 127.
 
 ## C2p readings audit (2026-10-30)
 
