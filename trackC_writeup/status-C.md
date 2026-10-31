@@ -39,7 +39,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-30 · body `c79907cc30`
+- **Reviewed:** 2026-10-30 · body `fc5d1f9519`
 <!-- /phase-card -->
 
 ## Units
@@ -79,8 +79,8 @@ forward pass, no number from a record moved. The table, with marks and line refe
 
 | in `paper/main.tex` | change | source |
 |---|---|---|
-| §2.1 | Pendharkar cited for Theorem 17 as conditional (§4.2), for tying as Remark 5's idealisation; the §10 misattribution dropped; "no result" made "no monotonicity result for E_β"; 2604.01978 added (‖m‖² logistic in depth, per-layer random attention weights, small β) and the step-0 sentence narrowed; the mean pairwise cosine = (n‖m‖² − 1)/(n − 1) | W1–W3, M8 |
-| §1, §7 | the released `pythia-70m-warmup01` (14 300-step warmup) named as a run that could separate the schedule, not read; Belrose's KL minima later under it | M1, M2 |
+| §2.1 | Pendharkar cited for Theorem 17 as conditional (§4.2), for tying as Remark 5's idealisation; the §10 misattribution dropped; "no result" made "no monotonicity result for E_β"; 2604.01978 added (‖m‖² logistic in depth, per-layer random attention weights, small β, from all-positive overlaps) as context, not a prediction, since 0.48–0.50 of each prompt's step-0 embedding pairs have a negative cosine (measured after `/challenge-pr`, finding 1); the mean pairwise cosine = (n‖m‖² − 1)/(n − 1) | W1–W3, M8 |
+| §1, §7 | the released `pythia-70m-warmup01` (14 300-step warmup) named as a run that could separate the schedule for 70m, not 410m, not read; on point dates only the instantaneous rate stands apart, step against cumulative needs 70m's date range; Belrose's KL minima (on sampled sequences) later under it | M1, M2 |
 | §2.2 | Hoogland's model at a constant rate; Tigges's induction heads at 2 × 10⁹ tokens, about step 950 | M3, M4 |
 | §3.1 | PolyPythias' "batch composition" | wording |
 | §8 | Ethayarajh non-input layers; Razzhigaev's measure centred, so not ‖m‖²; warmup precedents (Olsson, Chen, PolyPythias); Gao on the circle; Isobe's final-layer escape against our mid-stack drops; Koubbi et al. in Theory | W4–W6, M5–M7 |
