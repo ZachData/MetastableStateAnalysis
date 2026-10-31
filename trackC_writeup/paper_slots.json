@@ -554,5 +554,13 @@
  {
   "slot": "{{a3.E8_peak_step}}",
   "where": "appendix D, the rows one by one"
+ },
+ {
+  "literal": "950",
+  "why": "§2.2: Tigges et al.'s 2 x 10^9 tokens at Pythia's 2 097 152 tokens a step (953.7), rounded; a cited paper's number converted, no record (lit-C2p-fulltext.md M4)"
+ },
+ {
+  "literal": "14 300",
+  "why": "§7: Belrose et al.'s warmup length for pythia-14m/70m-warmup01, as their text states (2402.04362, Pythia experiments); a cited paper's number (lit-C2p-fulltext.md M1)"
  }
 ]

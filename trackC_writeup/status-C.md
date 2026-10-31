@@ -27,18 +27,19 @@
   - **C2p closed 2026-10-24 at its exit** (2 units + close-out; Blocked 109 (a), the user's; writing only): `paper/` is an Overleaf-ready draft (pdfLaTeX, 28 pages, `paper_check` 0), cut to seven figures in the main text and three in appendices (the illustration out), with the second read's framing points made: the title and abstract lead with the count, its drops at β = 1 being falls of the mean (one direction), §4 leads with a per-seed table and p and E follow it, out of the abstract, §5 states the alignments' base rate (anchored at the break too), a glossary and per-row definitions; revised after `/challenge-pr` on #269 (findings 1–5 taken); no number moved; no Parked items; m11, m12, M3 (iii), a code and data statement and posting are the user's — `trackC_writeup/status-C.md` "C2p on one page (closed 2026-10-24)"
   - After C2p (2026-10-24, the user's; writing only): `paper/` cites 2609.28448 in §6 (Sec. V B: a head's negative eigenvalues do not establish negative feedback) and §8, and §5 says the OV phase is named for E2's share; 28 pages, `paper_check` 0. 2026-10-25 (the user's): appendix D takes the timeline's rows one by one, each with its panel and its floor numbers; 34 pages. 2026-10-28 (the user's): figure 12, the energy ridgeline with the identity-weight reference, drawn from a new record, not yet in `paper/` — `trackC_writeup/status-C.md` "Units"
   - Figure 13 (2026-10-29, the user's; tier 1, description, no forward pass): effective rank, mass near 1, energy change and the Schur ratio by depth and step on seed 0, from `data/phase12`, drawn only after those runs reproduced A5's seed-0 energies (max relative difference 1.5e-6, tokens and V equal); `fig/paper/fig13_grid.pdf`, not yet in `paper/` — `trackC_writeup/status-C.md` "Figure 13, the layer × step small multiples (2026-10-29)"
+  - C2p readings audit (2026-10-30, the user's; writing only): every claim `paper/` attributes to a paper checked against its source in `docs/readings/`; 6 corrected (Pendharkar's section 10 is about orthogonal subspaces, its Theorem 17 conditional; 2604.01978 proves ‖m‖² rises in depth under per-layer random attention weights, so the draft's "no result" is narrowed; Razzhigaev's anisotropy is centred; Ethayarajh's non-input layers; Gao's circle), 9 missed items, 8 added to the text; a released `pythia-70m` with a ten-times warmup (M1), on which the n-gram KL minima come 1–2 octaves later (M2), opens C6 — `trackC_writeup/status-C.md` "C2p readings audit (2026-10-30)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
-  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0) — `trackC_writeup/status-C.md` "C2 unit 3c"
+  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0), and for 70m the released long-warmup run, ROADMAP C6 (opened 2026-10-30) — `trackC_writeup/status-C.md` "C2 unit 3c", "C2p readings audit (2026-10-30)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-29 · body `1714217f9e`
+- **Reviewed:** 2026-10-30 · body `c79907cc30`
 <!-- /phase-card -->
 
 ## Units
@@ -67,6 +68,37 @@
 | after C2p: appendix D, the rows one by one (the user's, 2026-10-25) | **done 2026-10-25: writing only, on records already read; appendix D rewritten as one entry per row of table 2 with its own panel of figure 5: what it measures, why it is on the timeline, how it is dated, and whether its change clears the locator's floor (reference, σ, ref / σ, the null arm's no-change share, all from A3's `a3_rows.json`); a new table 3 of those numbers; table 2's row names and figure 5's caption link to the entries; `numbers.py` new keys `a3.x0`, `a3.ref`, `a3.ref_step`, `a3.x_ref`, `a3.sigma`, `a3.ref_sigma`, `a3.n_units`, `a3.own_floor`, `a3.null_no_change`, `a3.low_power`, `a3.low_power_9`, `a3.x_last`, `a3.E8_peak_ref`, `a3.E8_peak_step` and `row_panels` (`fig/paper/figD_<row>.pdf`, copied into `paper/fig/`; no half-line on the n-gram rows, dated at their minimum); 93 slots + one literal (the gate's 95 %) in `paper_slots.json`; 34 pages, no undefined reference, `paper_check` 0; the page republished. After `/challenge-pr` on #275 (accept with changes): E8's peak step (256, from the right key), the n-gram panels' half-line, the registration's wording (intermediate checkpoints downloaded) and E1's reason for no σ corrected, panels renamed `figD_`; whether to generate table 3 into `paper/` left to the user (Blocked 108 keeps `paper/` hand-edited)** | `paper/main.tex` appendix D; re-run: `python -m trackC_writeup.numbers produce && python -m trackC_writeup.numbers paper-figures`, then copy `fig/paper/figD_*.pdf` into `paper/fig/` |
 | after C2p: figure 12, the energy ridgeline (the user's, 2026-10-28) | **drawn 2026-10-28, not yet in `paper/` (yours to include): tier 1, description, no forward pass; from the page https://claude.ai/artifact/TBed9FFnPDLDWKAeN1duSQ, its identity prototype ported to a tracked producer** | `c2_ridge.py`, `numbers.py` `ridge_figure`, `fig/paper/fig12_ridge.pdf`; "Figure 12, the energy ridgeline" below |
 | after C2p: figure 13, the layer × step small multiples (the user's, 2026-10-29) | **done 2026-10-29: tier 1, description; no forward pass; `data/phase12` checked against A5's seed 0 first (passes); `fig/paper/fig13_grid.pdf`, not in `paper/main.tex`; after `/challenge-pr` on #281 (accept with changes): the input hash covers the gate and A3's rows, the check has refusing tests, and the energy-change and Schur panels' limits are stated; which quantity those two panels draw is Blocked 116** | `c2_grid.py`, `numbers.py` `grid_figure`; "Figure 13" below |
+| after C2p: the readings audit (the user's, 2026-10-30) | **done 2026-10-30: writing only; the draft's citations against the full texts; W1–W6 fixed, M1–M8 in the text (M9 not), C6 opened; 34 pages, `paper_check` 0** | `lit-C2p-fulltext.md`, `paper/`, `tools/math_checks/c2p_mean_cosine.py`; "C2p readings audit" below |
+
+## C2p readings audit (2026-10-30)
+
+The user's request, after populating `docs/readings/` with the PDFs and arXiv sources: look through
+the papers in depth for anything missed and for incorrect claims in `paper/`. Writing only; no
+forward pass, no number from a record moved. The table, with marks and line references, is
+`lit-C2p-fulltext.md`; this section holds what changed in `paper/` and how to check it.
+
+| in `paper/main.tex` | change | source |
+|---|---|---|
+| §2.1 | Pendharkar cited for Theorem 17 as conditional (§4.2), for tying as Remark 5's idealisation; the §10 misattribution dropped; "no result" made "no monotonicity result for E_β"; 2604.01978 added (‖m‖² logistic in depth, per-layer random attention weights, small β) and the step-0 sentence narrowed; the mean pairwise cosine = (n‖m‖² − 1)/(n − 1) | W1–W3, M8 |
+| §1, §7 | the released `pythia-70m-warmup01` (14 300-step warmup) named as a run that could separate the schedule, not read; Belrose's KL minima later under it | M1, M2 |
+| §2.2 | Hoogland's model at a constant rate; Tigges's induction heads at 2 × 10⁹ tokens, about step 950 | M3, M4 |
+| §3.1 | PolyPythias' "batch composition" | wording |
+| §8 | Ethayarajh non-input layers; Razzhigaev's measure centred, so not ‖m‖²; warmup precedents (Olsson, Chen, PolyPythias); Gao on the circle; Isobe's final-layer escape against our mid-stack drops; Koubbi et al. in Theory | W4–W6, M5–M7 |
+| appendix D, E6 | Belrose also read this KL, same direction, on sampled sequences | minor |
+
+Not taken into the text: M9 (Godey's drift and attention sharpness), as nothing here reads it.
+`paper_slots.json` gains two literals (950, 14 300), each a cited paper's number with its reason.
+
+**Caveats.** Mostly targeted reads of each source at the claim, not cover to cover. M2 is a figure
+read by eye (octaves, not values). `pythia-70m-warmup01` has no model card: the 14 300 steps are
+Belrose's text; its peak rate and data order are unconfirmed, so §7 says "its other settings are not
+published with it".
+
+**Re-run.** `python -m trackC_writeup.paper_check` (0); `python3 tools/math_checks/c2p_mean_cosine.py`;
+pdfLaTeX + BibTeX on a copy of `paper/` (34 pages, no undefined citation).
+
+**Parked.** 1 (run the counts on `warmup01`) and 2 (confirm its schedule): *carried to C6*
+(ROADMAP §8, opened 2026-10-30, the user's).
 
 ## Figure 12, the energy ridgeline (2026-10-28)
 
@@ -1290,4 +1322,5 @@ ROADMAP row carried it. Inputs read: the one-page closes of A3, A5, S1 and S2 an
 
 ## Corrections received
 
+- 2026-10-30 (C2p readings audit): C2 unit 1's F5 row (`lit-C2-unit1.md` §1) gave Pendharkar §10 as "the conditions are never exactly satisfied in trained transformers"; §10 says it of Condition 6 (orthogonal subspaces) only, and tying is Remark 5's idealisation. Its "no result covers … weights that change from layer to layer" misses 2604.01978 (‖m‖² logistic in depth under per-layer random attention weights). §8's Razzhigaev comparison read a centred measure as ‖m‖². No date or reading moves; `paper/` corrected — "C2p readings audit (2026-10-30)", `lit-C2p-fulltext.md` W1–W4.
 - 2026-10-24 (C2p unit 2): C5's finding 4 ("the lean from 2510.06477, 'around 1k', did not hold") and `lit-C5.md`'s row read the paper's "around step 1k" as a date; its appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … only, so it bounds its changes to (1, 1000] (both C2 dates inside), and its training figure reads entropy, sink rate and the BOS norm, not σ₁²/‖X‖²_F. The coordinates' 16000–32000 stands; it is not a date the paper's grid could contradict. "C2p unit 2" below; `LESSONS.md` 7.
