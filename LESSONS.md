@@ -948,6 +948,22 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-10-31, C6 U0 (a schedule that could not lose; caught by the design's own planted test,
+  before any output on the run): the first rule read the run under each schedule's own plateau
+  window and let a count that came out "unreadable" there (plateau 0, or already high in the
+  schedule's early set, 92 (i)'s one-model rule) drop out of the joint. But a zero plateau under
+  step is exactly what a stretched run shows, and a count high at 1000 is exactly what a run on
+  step shows under the instantaneous map, so step could never exclude instantaneous and
+  vice versa. Rule: **when a reading maps a reference profile onto a new run, every part of the
+  mapped profile (low early, a plateau, the rise in the band) is a prediction; failing any part
+  is "inconsistent", not "unreadable"; plant each hypothesis as truth and check the others lose**.
+  `design-C6.md` "The reading, frozen". That planted test used step functions; **re-run on the
+  ten seeds' real profiles** (`c6_warmup.calibrate`), the fixed rule still let step's plants
+  survive cumulative 9 times in 10, from two things only real profiles show: with "any gated
+  arm in its band" over a band pooled across arms, the centred count fit every schedule on
+  every seed; and the window read at grid_of(m_h(4000)) = 16 000 under cumulative holds 70m's
+  state at 8000, where V rises a second time. Rule: **calibrate on the reference's own
+  profiles, not only on idealised ones; per-arm references, and every arm must fit**.
 - 2026-10-25, B7 unit 2 (a planted gate homogeneous where the real input is not; found by
   `/challenge-pr` on #276 after the real grid was read): every planted arm put one partner map in
   every head of every prompt, at every row. On the real rows two prompts carry about 0.9 of

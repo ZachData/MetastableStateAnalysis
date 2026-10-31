@@ -11,6 +11,9 @@ B3  `c6_warmup.cum` equals the integral of `c6_warmup.lr` after the warmup (symp
 B4  `c6_warmup.band` equals a fine scan of m_h over each reference interval (numerical), the
     instantaneous map's turn at 70m's warmup end included.
 B5  Under "step" the window and early set are unit 3b's (1000, 2000, 4000; steps <= 128).
+B6  A one-step rise at a 70m date g, planted under h (`c6_warmup.plant`), is read under h inside
+    band([g], h): the window, early set and band are one map (numerical, g = 256 … 2000; a rise
+    at 4000 leaves the window's median at 0, unreadable under step and cumulative by construction).
 
 NOT proved: that a date follows any of the three schedules (Adam's step ~ lr per coordinate makes
 "summed rate" a stylised dose; "the rate reaches a level" is another); that the run's warmup is
@@ -76,6 +79,15 @@ ok = all(w.band([g], h) == frozenset(fine_band(g, h)) for g in STEPS[1:12] for h
 record("B4 band equals a fine scan (dates 2 … 2000)", ok)
 record("B5 step's window and early set are unit 3b's",
        w.window("step") == (1000, 2000, 4000) and w.early("step") == tuple(s for s in STEPS if s <= 128))
+bad = []
+for g in STEPS[8:12]:     # 70m dates 256 … 2000; a rise at 4000 is unreadable (the window's median is 0)
+    v = [0.0 if s < g else 1.0 for s in STEPS]
+    for h in w.HYPS:
+        d = w.date_on(w.plant(v, h), h)
+        if d["unreadable"] or d["step"] not in w.band([g], h):
+            bad.append((g, h, d["step"]))
+record("B6 a rise planted at 70m's date g under h is dated in band([g], h) (window, early set, band agree)",
+       not bad, str(bad))
 
 print("\nper 70m date, the run's grid steps under each schedule:")
 for g in STEPS[1:13]:

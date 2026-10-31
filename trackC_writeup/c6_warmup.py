@@ -10,15 +10,18 @@ C2 unit 3b's (`c2_dose.py`), with two changes the run forces:
   re-derived here) and PolyPythias' `pythia-70m-seed1..9`, each read as unit 3b read 70m (V at
   D2's 1e-3; the centred V at 70m's four frozen arms; `a3.d4a`'s half-rise on the 1000–4000
   plateau). A count's reference set (`REF70`) is the union of its readable dates over the ten
-  seeds and, for the centred count, the four arms (the conservative band, as 3b's `REF`);
+  seeds, per arm for the centred count (the conservative band, as 3b's `REF`);
 - **each schedule maps the whole reading, its plateau window included**: under a schedule h the
   run's timeline is 70m's through h's map m_h (step: t; cumulative: Σ rate equal; instantaneous:
-  the rate itself equal, on the run's rising warmup), so the run is read under h on the grid steps
-  holding m_h(1000), m_h(2000), m_h(4000) (h's plateau window) with h's early set (grid steps
-  ≤ m_h(128)) for 92 (i)'s unreadable check, and h is consistent with a count if that date is in
-  h's band: the grid steps whose interval (prev(s), s] meets some (m_h(prev g), m_h(g)], g in
-  `REF70`. A window fixed at 1000–4000 would read a stretched run mid-rise and date it early,
-  which favours "step" (`design-C6.md` "Why each schedule has its own window").
+  the rate itself equal, on the run's rising warmup). The run's grid step s then holds 70m's
+  latest grid state that h has reached by s (`held`), so the run is read under h on the grid
+  steps holding a 70m state in 1000–4000 (h's plateau window) with h's early set (the steps
+  holding a state ≤ 128) for 92 (i)'s unreadable check, and h is consistent with a count if every
+  gated arm's date is in that arm's band under h: the grid steps whose interval (prev(s), s]
+  meets some (m_h(prev g), m_h(g)], g in the arm's `REF70`. A window fixed at 1000–4000 would
+  read a stretched run mid-rise and date it early, which favours "step" (`design-C6.md` "Why
+  each schedule has its own window"). `plant` maps a 70m profile onto the run's grid under h; the
+  reading was calibrated on the ten seeds' profiles planted under each h before it froze (`calibrate`).
 
 Under step the reading is exactly unit 3b's (`date_on(v, "step") == c2_dose.date_reading(v)`).
 
@@ -39,6 +42,7 @@ Tier 1, description (nothing here is registered).
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import math
@@ -65,12 +69,14 @@ HYPS = cd.HYPS                                  # step, cumulative, instantaneou
 WINDOW = (1000, 2000, 4000)                     # a3.d4a's plateau steps on 70m
 EARLY_TOP = 128                                 # 92 (i): the early set is the steps ≤ 128 on 70m
 GATE_STEPS = (7000, 20000)                      # the run's off-grid gate steps (U1)
-#: the 70m dates over seeds 0–9 (union; the centred over the four arms too), from `seeds`;
-#: None: not frozen, `bands`-dependent commands refuse.
-REF70: Optional[Dict[str, Tuple[int, ...]]] = None
+#: the 70m dates over seeds 0–9 (union; the centred per arm), from `seeds`
+#: (`data/trackC/c6/2026-10-31-u0-seeds/seeds.json`); frozen 2026-10-31 before any output on the run.
+REF70: Optional[dict] = {"u": (256, 512),
+                         "c": {"9.61e-05": (512, 1000), "0.0001": (512, 1000), "0.0003": (512, 1000),
+                               "0.00478": (1000, 2000)}}
 U3B_70M = DATA / "trackC/c2u3b/2026-10-22-run/70m/records"    # seed 0's known answer
 U3B_PREFLIGHT = DATA / "trackC/c2u3b/2026-10-22-preflight/70m/preflight_plants.json"
-ENERGY_TOL = 1e-4                               # |Δe1| / e1 against unit 3b's records
+ENERGY_TOL = 1e-4                               # placed: |Δe1| / e1 against unit 3b's records (seed 0 gives 0.0)
 SEED = 20261031
 
 
@@ -146,13 +152,36 @@ def band(ref: Iterable[int], hyp: str) -> FrozenSet[int]:
     return frozenset(out)
 
 
+@functools.lru_cache(None)
+def reached(g: int, hyp: str) -> float:
+    """The run's step by which it has reached 70m's state at g under ``hyp`` (m_h's running max:
+    the instantaneous map turns at 70m's warmup end, and a state is reached once, not undone)."""
+    return max([m(hyp, g)] + ([m(hyp, W_BASE)] if g >= W_BASE else []))
+
+
+@functools.lru_cache(None)
+def held(s: int, hyp: str) -> int:
+    """70m's latest grid state the run holds at its grid step s under ``hyp``."""
+    return max(g for g in STEPS if reached(g, hyp) <= s * (1 + 1e-9) + 1e-6)
+
+
+@functools.lru_cache(None)
 def window(hyp: str) -> Tuple[int, ...]:
-    return tuple(sorted({grid_of(m(hyp, s)) for s in WINDOW}))
+    """The run's grid steps holding a 70m state in 70m's window; if none (the instantaneous map
+    jumps it), the first holding a later one."""
+    w = tuple(s for s in STEPS if WINDOW[0] <= held(s, hyp) <= WINDOW[-1])
+    return w or (next(s for s in STEPS if held(s, hyp) >= WINDOW[0]),)
 
 
+@functools.lru_cache(None)
 def early(hyp: str) -> Tuple[int, ...]:
-    top = m(hyp, EARLY_TOP)
-    return tuple(s for s in STEPS if s <= top)
+    return tuple(s for s in STEPS if held(s, hyp) <= EARLY_TOP)
+
+
+def plant(v: Sequence[float], hyp: str) -> List[float]:
+    """A 70m profile on the run's grid if the run follows ``hyp``: V at each run step is 70m's V
+    at the state it holds (the calibration's planted effect)."""
+    return [float(v[STEPS.index(held(s, hyp))]) for s in STEPS]
 
 
 # ---------------------------------------------------------------- pure: the reading
@@ -174,19 +203,31 @@ def seed_dates(vu: Sequence[float], vcs: Dict[str, Sequence[float]]) -> dict:
     u = date_on(vu, "step")
     arms = {k: date_on(v, "step") for k, v in vcs.items()}
     return {"u": u, "c": arms, "u_date": u["step"],
-            "c_dates": sorted({a["step"] for a in arms.values() if not a["unreadable"]})}
+            "c_dates": sorted({a["step"] for a in arms.values() if not a["unreadable"]}),
+            "c_arm_dates": {k: a["step"] for k, a in arms.items() if not a["unreadable"]}}
 
 
-def ref70(per_seed: Dict[str, dict]) -> Dict[str, Tuple[int, ...]]:
+def ref70(per_seed: Dict[str, dict]) -> dict:
+    """{"u": dates, "c": {arm: dates}}: each count's (each arm's) readable dates over the seeds."""
     u = sorted({r["u_date"] for r in per_seed.values() if r["u_date"] is not None})
-    cc = sorted({d for r in per_seed.values() for d in r["c_dates"]})
+    arms = sorted({k for r in per_seed.values() for k in r["c_arm_dates"]})
+    cc = {k: tuple(sorted({r["c_arm_dates"][k] for r in per_seed.values() if k in r["c_arm_dates"]}))
+          for k in arms}
     if not u or not cc:
         raise C6Refused(f"a count has no readable date on any 70m seed (u {u}, c {cc})")
-    return {"u": tuple(u), "c": tuple(cc)}
+    return {"u": tuple(u), "c": cc}
 
 
-def bands(ref: Dict[str, Sequence[int]]) -> dict:
-    return {k: {h: sorted(band(ref[k], h)) for h in HYPS} for k in ("u", "c")}
+def _arm_ref(ref_k, arm: str) -> Tuple[int, ...]:
+    return tuple(ref_k.get(arm, ())) if isinstance(ref_k, dict) else tuple(ref_k)
+
+
+def bands(ref: dict) -> dict:
+    out = {"u": {h: sorted(band(ref["u"], h)) for h in HYPS}}
+    rc = ref["c"]
+    out["c"] = ({a: {h: sorted(band(d, h)) for h in HYPS} for a, d in rc.items()} if isinstance(rc, dict)
+                else {h: sorted(band(rc, h)) for h in HYPS})
+    return out
 
 
 def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: str,
@@ -195,16 +236,46 @@ def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: 
     readable reading onto the run (low through h's early set, a plateau on h's window, the
     half-rise in h's band), so an arm whose run count fails any of the three contradicts h: a
     plateau of 0 there or an early count ≥ half of it is not "unreadable" under h, as 92 (i) has
-    it for one model, but "inconsistent". h is consistent if any gated arm's date is in its band,
-    inconsistent otherwise; the count is unreadable only if no arm is gated."""
+    it for one model, but "inconsistent". An arm counts if it is gated and has a reference date
+    (``ref[kind]`` is one set for every arm, or one per arm); h is consistent if every counted
+    arm's date is in that arm's band, inconsistent otherwise; the count is unreadable only if no
+    arm counts. (Any one arm sufficing let the centred count fit every schedule: `calibrate`.)"""
     out = {}
     for h in HYPS:
-        b = band(ref[kind], h)
-        per = {k: date_on(v, h) for k, v in vs.items() if gated[k]}
-        dates = sorted({r["step"] for r in per.values() if not r["unreadable"]})
-        status = ("unreadable" if not per else "consistent" if set(dates) & b else "inconsistent")
-        out[h] = {"dates": dates, "band": sorted(b), "status": status, "per_arm": per}
+        per, ok, bnd = {}, [], {}
+        for k, v in vs.items():
+            r = _arm_ref(ref[kind], k)
+            if not gated[k] or not r:
+                continue
+            b = band(r, h)
+            per[k], bnd[k] = date_on(v, h), sorted(b)
+            ok.append(not per[k]["unreadable"] and per[k]["step"] in b)
+        dates = sorted({r_["step"] for r_ in per.values() if not r_["unreadable"]})
+        status = "unreadable" if not per else "consistent" if all(ok) else "inconsistent"
+        out[h] = {"dates": dates, "band": bnd, "status": status, "per_arm": per}
     return out
+
+
+def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False) -> dict:
+    """The planted effect: each 70m seed's own profiles planted under each schedule (`plant`),
+    read with every arm gated against ``ref`` (or, with ``loo``, the other seeds' dates)."""
+    rows = {}
+    for name, b in beside.items():
+        r = ref
+        if loo:
+            others = {n: seed_dates(x["V_u"], x["V_c"]) for n, x in beside.items() if n != name}
+            r = ref70(others)
+        for truth in HYPS:
+            vu, vcs = plant(b["V_u"], truth), {k: plant(v, truth) for k, v in b["V_c"].items()}
+            counts = {"u": count_reading({"1e-3": vu}, {"1e-3": True}, "u", r),
+                      "c": count_reading(vcs, {k: True for k in vcs}, "c", r)}
+            rows[f"{name}|{truth}"] = {"joint": joint(counts),
+                                       "status": {k: {h: counts[k][h]["status"] for h in HYPS} for k in counts}}
+    summary = {t: {"truth_survives": sum(t in rows[f"{n}|{t}"]["joint"]["survivors"] for n in beside),
+                   "truth_alone": sum(rows[f"{n}|{t}"]["joint"]["survivors"] == [t] for n in beside),
+                   "labels": sorted({rows[f"{n}|{t}"]["joint"]["label"] for n in beside})}
+               for t in HYPS}
+    return {"summary": summary, "rows": rows}
 
 
 def joint(counts: Dict[str, dict]) -> dict:
@@ -327,18 +398,26 @@ def seeds(a) -> int:
         per[name] = seed_dates(vu, vcs)
         beside[name] = {"V_u": vu.tolist(), "V_c": {k: v.tolist() for k, v in vcs.items()}}
     ka = known_answer(load_model(out, "seed0"))
-    ref = ref70(per)
+    ref, ref0 = ref70(per), ref70({"seed0": per["seed0"]})
+    cal, cal_loo = calibrate(beside, ref), calibrate(beside, ref, loo=True)
     res = {"code": code_sha(), "seed0_known_answer_max_rel": ka, "per_seed": per, "ref70": ref,
-           "ref_seed0": {"u": [per["seed0"]["u_date"]], "c": per["seed0"]["c_dates"]},
-           "bands": bands(ref), "bands_seed0": bands({"u": [per["seed0"]["u_date"]], "c": per["seed0"]["c_dates"]}),
+           "ref70_frozen_equal": REF70 is not None and _jsonable(REF70) == _jsonable(ref),
+           "ref_seed0": ref0, "bands": bands(ref), "bands_seed0": bands(ref0),
+           "c_union": sorted({d for r in per.values() for d in r["c_dates"]}),
            "windows": {h: list(window(h)) for h in HYPS}, "early": {h: list(early(h)) for h in HYPS},
+           "held": {h: {str(s): held(s, h) for s in STEPS} for h in HYPS},
            "maps": {h: {str(t): m(h, t) for t in (64, 128, 256, 512, 1000, 2000, 4000)} for h in HYPS},
-           "beside": beside}
+           "calibration": cal, "calibration_loo": cal_loo, "beside": beside}
     (out / "seeds.json").write_text(json.dumps(res, indent=1) + "\n")
-    print(json.dumps({n: {"u": r["u_date"], "c": r["c_dates"]} for n, r in per.items()}))
-    print(json.dumps({"ref70": ref, "bands": res["bands"], "windows": res["windows"], "early": res["early"],
-                      "known_answer": ka}, indent=1))
+    print(json.dumps({n: {"u": r["u_date"], "c": r["c_arm_dates"]} for n, r in per.items()}))
+    print(json.dumps({"ref70": ref, "frozen_equal": res["ref70_frozen_equal"], "bands": res["bands"],
+                      "windows": res["windows"], "early_top": {h: early(h)[-1] for h in HYPS}, "known_answer": ka,
+                      "calibration": cal["summary"], "calibration_loo": cal_loo["summary"]}, indent=1))
     return 0
+
+
+def _jsonable(x):
+    return json.loads(json.dumps(x))
 
 
 # ---------------------------------------------------------------- the run's gate (U1)

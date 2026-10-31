@@ -41,8 +41,40 @@ def test_bands_seed0_dates(g, want):
 
 
 def test_windows_and_early():
-    assert w.window("cumulative") == (4000, 8000, 16000) and w.window("instantaneous") == (16000,)
-    assert w.early("cumulative")[-1] == 256 and w.early("instantaneous")[-1] == 1000
+    # the run's steps holding a 70m state in 1000–4000 (cumulative: 4000 holds 1000, 8000 holds 2000,
+    # 16 000 holds 8000); instantaneous jumps the window, so its first later step
+    assert w.window("cumulative") == (4000, 8000) and w.window("instantaneous") == (16000,)
+    assert w.early("cumulative")[-1] == 512 and w.early("instantaneous")[-1] == 2000
+    assert w.held(16000, "cumulative") == 8000 and w.held(16000, "instantaneous") == 143000
+
+
+def test_plant_under_step_is_the_profile():
+    v = list(range(len(STEPS)))
+    assert w.plant(v, "step") == [float(x) for x in v]
+    assert w.plant(v, "cumulative")[STEPS.index(4000)] == STEPS.index(1000)
+
+
+def test_ref70_is_frozen_per_arm():
+    assert w.REF70 == {"u": (256, 512), "c": {"9.61e-05": (512, 1000), "0.0001": (512, 1000),
+                                              "0.0003": (512, 1000), "0.00478": (1000, 2000)}}
+    assert set(w.REF70["c"]) == {f"{t:.3g}" for t in w.ARMS}
+
+
+def test_every_counted_arm_must_fit():
+    ref = {"c": {"a": (1000,), "b": (1000,), "z": ()}}
+    r = w.count_reading({"a": _v(1000), "b": _v(4000), "z": _v(4000)}, {"a": True, "b": True, "z": True}, "c", ref)
+    assert r["step"]["status"] == "inconsistent"          # b's date is outside step's band
+    assert set(r["step"]["per_arm"]) == {"a", "b"}          # z has no reference date: not counted
+    r = w.count_reading({"a": _v(1000), "b": _v(1000)}, {"a": True, "b": True}, "c", ref)
+    assert r["step"]["status"] == "consistent"
+
+
+def test_calibration_recovers_planted_step_functions():
+    beside = {f"s{i}": {"V_u": _v(du).tolist(), "V_c": {"x": _v(dc).tolist()}}
+              for i, (du, dc) in enumerate([(256, 1000), (512, 1000), (256, 512)])}
+    per = {n: w.seed_dates(b["V_u"], b["V_c"]) for n, b in beside.items()}
+    cal = w.calibrate(beside, w.ref70(per))["summary"]
+    assert all(cal[h]["truth_survives"] == 3 for h in w.HYPS)
 
 
 def _v(rise_at, plateau=10.0):
@@ -85,10 +117,10 @@ def test_joint_labels():
     assert j["survivors"] == ["cumulative"] and j["unreadable"] == ["step"]
 
 
-def test_ref70_is_the_union():
-    per = {"a": {"u_date": 256, "c_dates": [1000]}, "b": {"u_date": None, "c_dates": [512, 1000]},
-           "c": {"u_date": 512, "c_dates": []}}
-    assert w.ref70(per) == {"u": (256, 512), "c": (512, 1000)}
+def test_ref70_is_the_union_per_arm():
+    per = {"a": {"u_date": 256, "c_arm_dates": {"x": 1000}}, "b": {"u_date": None, "c_arm_dates": {"x": 512, "y": 1000}},
+           "c": {"u_date": 512, "c_arm_dates": {}}}
+    assert w.ref70(per) == {"u": (256, 512), "c": {"x": (512, 1000), "y": (1000,)}}
 
 
 def test_schedule_hypotheses_and_verdict():
