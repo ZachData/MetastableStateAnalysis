@@ -1727,6 +1727,16 @@ reading the paper's own checkpoint list before §8 cited it. In the same read a 
 the row's quote "in more than one stage" was not in the paper; the raw HTML had it (it is about
 depth). Rule: a date taken from a paper names the paper's grid beside it; a fetch summary's
 "not found" is checked against the raw text before it is acted on.
+2026-10-30 (C2p readings audit, `trackC_writeup/lit-C2p-fulltext.md`): with every cited source's
+LaTeX in `docs/readings/`, six of the draft's citations needed fixing, and the run C2 unit 1 had
+searched suites for, a Pythia model with a different warmup and checkpoints inside it, was in a
+paper the draft already cited for something else: Belrose et al. trained `pythia-70m-warmup01` (a
+14 300-step warmup, released on Pythia's grid) "to isolate the effect of LR warmup", and their
+figure shows the n-gram minima moving with it. C2 had read that paper for its trough only. The
+§10 misattribution (Pendharkar) came from a fetch that read 100 000 of 119 909 characters. Rule:
+when a scan asks "does a run or result X exist", it greps the full texts of the papers already
+cited for X's terms (here `warmup`) before searching outside; a claim from a part of a paper the
+fetch did not reach is not stated.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).
