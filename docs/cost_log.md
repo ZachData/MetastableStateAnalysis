@@ -553,3 +553,9 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-10-30 | T5 U1: producer, gate, R1a/R1b/R2 (685 models); after /challenge-pr (accept with changes; findings 1-4 taken: matched-depth E_init, U1b under both inits, NeoX sign, transformers version) · subagents: general-purpose opus-5-5 829k | 55 | 176k | 7.1M | 39k | #291 |
 | 2026-10-30 | T5 U1b: the Llama's parts at init (360 models), no single part; after /challenge-pr (accept with changes; findings 1-4 taken: 4.57 compatibility and rotary in the gate, scale-dependent shares, gelu's three changes, a full screen) · subagents: general-purpose opus-5-5 1.9M | 54 | 180k | 6.9M | 42k | #292 |
 | 2026-10-30 | T5 U2: the trajectories (180 checkpoints), Dodecahedron spreads between T2's two peaks; after /challenge-pr (accept with changes; findings 1-5 taken: H1's consequence, rho_1:5 minima, the rule reads the start, one trough quote, Blocked 126 fair) · subagents: general-purpose opus-5-5 1.1M, runner haiku-5-5 323k | 55 | 200k | 7.6M | 53k | #293 |
+| 2026-10-30 | C2p readings audit (citations vs full texts; C6 opened); before /challenge-pr | 109 | 335k | 23.8M | 159k | #294 |
+  Over 2× the median (7.6M): two units in one session by the user's request (the audit of ~40
+  papers' sources, then the edits to `paper/` and C6's opening after "yes, open it"); the
+  audit's ~60 targeted greps and reads put 159k of tool output into context, re-read by every
+  later call. Splitting the audit (record) from the edits (PR) at the user's first answer
+  would have halved it.
