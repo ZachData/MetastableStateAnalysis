@@ -559,3 +559,9 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   audit's ~60 targeted greps and reads put 159k of tool output into context, re-read by every
   later call. Splitting the audit (record) from the edits (PR) at the user's first answer
   would have halved it.
+| 2026-11-01 | CLAIM-C closed (n=20 calibration refuses by design; withdrawn; Stage 0 + CLAIM-C data deleted, 47 -> 315 GB free; ROADMAP C7); same session: the morning's disk cleanup and the Isobe/scale discussion; before /challenge-pr | 166 | 297k | 29.5M | 79k | #296 |
+  Over 2× the median (7.6M), ~3.9×: three units in one session as the user's questions led
+  (the disk survey and first deletions, a discussion of clustering scale and 2605.07772 with
+  outreach advice, then this close-out), and the SessionStart hook printed the main tree's 98 KB
+  STATE.md, which was stale (the tree lagged `origin/main`), so the right one was read again.
+  A fresh session after the cleanup would have cut it by about a third.
