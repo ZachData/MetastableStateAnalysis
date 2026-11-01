@@ -71,7 +71,8 @@ WINDOW = (1000, 2000, 4000)                     # a3.d4a's plateau steps on 70m
 EARLY_TOP = 128                                 # 92 (i): the early set is the steps ≤ 128 on 70m
 GATE_STEPS = (7000, 20000)                      # the run's off-grid gate steps (U1)
 #: beside, not gating (added in U1 after the gate refused, #297): `pythia-70m` at 7000, unit 3b's
-#: gate step, under this gate's plant draw, so a refusal can be told from the draw's.
+#: gate step, with this gate's plant direction u but its own plant-B draws (it is drawn last from
+#: the shared stream), so it shows whether that population passes, not whether the run's draw does.
 BESIDE_STEPS = (("seed0", 7000),)
 #: the 70m dates over seeds 0–9 (union; the centred per arm), from `seeds`
 #: (`data/trackC/c6/2026-10-31-u0-seeds/seeds.json`); frozen 2026-10-31 before any output on the run.
