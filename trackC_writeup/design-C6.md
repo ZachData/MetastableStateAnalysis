@@ -182,10 +182,26 @@ states past its peak are reached. Taken literally, all are reached at once, so 1
 
 Every failure is V's count; the centred count stays consistent with instantaneous on every
 plant. So under this rule a "neither" on the run cannot be told from an instantaneous run whose
-late states are not literal. One alternative, measured and not adopted (Blocked 127, the user's):
-V's instantaneous verdict is not read, since its window depends on the late states. Its plants
-then read identically under all three versions: step 7 alone and 3 with cumulative;
-cumulative 2 alone, 7 with instantaneous, 1 instantaneous; instantaneous 10 alone.
+late states are not literal.
+
+**Decided 2026-11-01, Blocked 127 (a), the user's, before any output on the run: V is not read
+under instantaneous** (`c6_warmup.NOT_READ`; code `9c9e91f715ad`). Its window depends on the
+late states, which are untested. That count gives no verdict there ("not read", which `joint`
+treats as unreadable), so the instantaneous verdict rests on the centred count alone. Everything
+else is as frozen above. This is a second in-sample revision, so `read` scores this rule and
+records the rule as frozen on 2026-10-31 beside it (`reading.json` `beside.as_frozen`).
+Re-derived by `recalibrate` from U0's `seeds.json` (record `calibration_127a.json`), the plants
+read identically under all three late-state versions:
+
+| planted | scored rule (127 (a)), every late version | as frozen, literal (above) |
+|---|---|---|
+| step | step 7; step and cumulative 3 | the same |
+| cumulative | cumulative 2; **cumulative and instantaneous 7**; instantaneous 1 | 4; 5; 1 |
+| instantaneous | **instantaneous 10** | instantaneous 9, neither 1 |
+
+The cost: on a cumulative plant, instantaneous is now excluded on 2 of 10 (4 of 10 as frozen),
+because V no longer votes against it. With leave-one-seed-out bands, the truth survives on
+10 / 9 / 10 and alone on 7 / 2 / 10.
 
 ## The run's gate (U1, before any scored record on the run)
 
@@ -200,6 +216,10 @@ cumulative 2 alone, 7 with instantaneous, 1 instantaneous; instantaneous 10 alon
 | refused | no arm gated and the uncentred count not read: the exit's "read refused by its gate" | refuse rather than degrade |
 
 `run --models run` refuses until `REF70` is set and `gate.json` reads readable.
+
+**U1 (2026-11-01): refused.** Rule 100 (a) found no plant-B dose on the run at either step, and
+the centred arms take their dose from it, so no arm is gated. "V read" and "an arm gated" were
+not separable as this table implies (`status-C.md` "C6 unit 1"; Blocked 128).
 
 ## What each outcome changes (fixed now)
 
@@ -249,8 +269,8 @@ it closes at what it knows unless the user extends it on the record.
 4. **The instantaneous plant assumes everything past the rate's peak is reached at once.** That
    is the hypothesis taken literally (a date waits for a rate level), and it makes the run's
    16 000 hold 70m's final state. Two softer versions, measured after `/challenge-pr` on #295,
-   leave the instantaneous truth at 2 and 4 of 10 ("Calibration"). Whether to stop reading V
-   under instantaneous is Blocked 127.
+   leave the instantaneous truth at 2 and 4 of 10 ("Calibration"). Blocked 127 (a), the user's:
+   V is not read under instantaneous; the rule as frozen is read beside.
 5. **70m's arms are not re-derived on the run** (the gate checks them on its steps 7000 and
    20 000). The dates are compared at the same tolerances, but the run's energy scale at a given
    step could differ from 70m's.

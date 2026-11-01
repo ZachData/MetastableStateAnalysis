@@ -29,6 +29,7 @@
   - Figure 13 (2026-10-29, the user's; tier 1, description, no forward pass): effective rank, mass near 1, energy change and the Schur ratio by depth and step on seed 0, from `data/phase12`, drawn only after those runs reproduced A5's seed-0 energies (max relative difference 1.5e-6, tokens and V equal); `fig/paper/fig13_grid.pdf`, not yet in `paper/` — `trackC_writeup/status-C.md` "Figure 13, the layer × step small multiples (2026-10-29)"
   - C2p readings audit (2026-10-30, the user's; writing only): every claim `paper/` attributes to a paper checked against its source in `docs/readings/`; 6 corrected (Pendharkar's section 10 is about orthogonal subspaces, its Theorem 17 conditional; 2604.01978 proves ‖m‖² rises in depth under per-layer random attention weights, so the draft's "no result" is narrowed; Razzhigaev's anisotropy is centred; Ethayarajh's non-input layers; Gao's circle), 9 missed items, 8 added to the text; a released `pythia-70m` with a ten-times warmup (M1), on which the n-gram KL minima come 1–2 octaves later (M2), opens C6 — `trackC_writeup/status-C.md` "C2p readings audit (2026-10-30)"
   - C6 unit 0, the design (2026-10-31; tier 1, description; no energy on the run): `pythia-70m-warmup01` read off its weights is Pythia-70m's init and first batch (76 of 76 tensors bit-equal at step 0), its in-warmup rate a tenth of Pythia's (W 14 300 at peak 1e-3, H0 confirmed), its peak Pythia's within ~10 %; 70m's dates over `pythia-70m` and PolyPythias seeds 1–9: V 256 or 512 (5 and 5), the centred date 512–1000 (1000–2000 at 4.78e-3); bands per schedule and arm frozen into `c6_warmup.REF70`, with the reading revised after it was calibrated on the seeds' own profiles (planted truth survives 10, 9, 9 of 10; alone 7, 4, 9; the instantaneous truth only 2–4 of 10 if 70m's late states are planted less literally, all on V's count: Blocked 127); the gate fixed for U1 — `trackC_writeup/status-C.md` "C6 unit 0, the design (2026-10-31)"
+  - C6 unit 1 (2026-11-01; Blocked 127 (a), the user's: V not read under instantaneous, frozen before output): seed 0's known answer exact, but **the run's gate refuses**. On the run, V sees plant B at 0.38 (7000; 13 of 34 units, 14 needed) and 0.33 (20 000) against the bar of 0.4 (`pythia-70m` at 7000, its own plant draws: 0.45, 13 of 29). The frozen gate takes the centred arms' dose from V's rule, so no arm is gated, though three would pass at the top dose (beside). Nothing on the run's grid was computed; the exit is met as "refused by its gate"; whether to read the centred count alone is Blocked 128 — `trackC_writeup/status-C.md` "C6 unit 1, Blocked 127 (a) and the run's gate (2026-11-01)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -40,7 +41,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-10-31 · body `ba1a21e72b`
+- **Reviewed:** 2026-11-01 · body `d6ed986c88`
 <!-- /phase-card -->
 
 ## Units
@@ -71,6 +72,58 @@
 | after C2p: figure 13, the layer × step small multiples (the user's, 2026-10-29) | **done 2026-10-29: tier 1, description; no forward pass; `data/phase12` checked against A5's seed 0 first (passes); `fig/paper/fig13_grid.pdf`, not in `paper/main.tex`; after `/challenge-pr` on #281 (accept with changes): the input hash covers the gate and A3's rows, the check has refusing tests, and the energy-change and Schur panels' limits are stated; which quantity those two panels draw is Blocked 116** | `c2_grid.py`, `numbers.py` `grid_figure`; "Figure 13" below |
 | after C2p: the readings audit (the user's, 2026-10-30) | **done 2026-10-30: writing only; the draft's citations against the full texts; W1–W6 fixed, M1–M8 in the text (M9 not), C6 opened; 34 pages, `paper_check` 0** | `lit-C2p-fulltext.md`, `paper/`, `tools/math_checks/c2p_mean_cosine.py`; "C2p readings audit" below |
 | C6 0. the design (opened 2026-10-30, the user's; budget 3 units) | **done 2026-10-31: the run's schedule, init and first batch from its weights (H0); 70m's dates on seeds 0–9; `REF70` and the bands frozen, the reading calibrated on the seeds' profiles and revised before freezing; the gate fixed; no energy on the run** | `design-C6.md`, `c6_schedule.py`, `c6_warmup.py`, `tools/math_checks/c6_bands.py`; "C6 unit 0" below |
+| C6 1. Blocked 127 (a), the gate | **done 2026-11-01: 127 (a) frozen before output (`98d3f38`); seed 0's known answer exact; the run's gate refuses (no plant-B dose for the uncentred count at 7000 or 20 000, so no arm gated); no record on the run's grid; the exit met ("refused by its gate"); Blocked 128** | `c6_warmup.py`; "C6 unit 1" below |
+
+## C6 unit 1, Blocked 127 (a) and the run's gate (2026-11-01)
+
+The user decided Blocked 127 (a): V is not read under instantaneous. It was frozen and pushed
+before any output on the run (`98d3f38`, code `9c9e91f715ad`; `design-C6.md` "Decided
+2026-11-01"). Then seed 0 ran into U1's directory, and the gate ran on the run's steps 7000 and
+20 000. **The gate refuses**, so nothing on the run's grid was computed and no date was read.
+
+| item | result | record |
+|---|---|---|
+| 127 (a)'s calibration, from U0's `seeds.json` | the same under all three late-state versions: step 7 alone (3 with cumulative); cumulative 2 alone (7 with instantaneous, 1 instantaneous); instantaneous 10 alone; as frozen, the first table again | `calibration_127a.json` `scored`, `as_frozen` (+ `_loo`) |
+| seed 0's known answer | e1 equal to unit 3b's (max relative difference 0.0), tokens' hashes equal | `seed0/records/`, `gate.json` |
+| the re-inits' known answer | every arm's null rate 0.0, as unit 3b's; the uncentred re-init null rate 0.0, as 3b's (recorded, not checked by code) | `gate.json` `null_vs_3b`, `uncentred_null_rate` |
+| plant B through V (rule 100 (a), bar 0.4) | **the run: 0.38 at 7000 (13 of 34 units not already violating; 14 needed), 0.33 at 20 000 (7 of 21), at the top dose 0.5; no dose found, so V is not read and no arm is gated**. Beside, `pythia-70m` at 7000 with the same plant direction but its own plant-B draws (drawn last from the shared stream): 0.45 (13 of 29); unit 3b's draw: 0.41 (12 of 29) | `gate.json` `per_step`, `beside_not_gating` |
+| the centred arms at the top dose, beside (not gating) | 9.61e-5, 1e-4 and 3e-4 would pass at both steps (B 0.96–1.0, A ≤ 0.04, null 0); 4.78e-3 passes at 7000 (B 0.40), fails at 20 000 (B 0.39) | `gate.json` `arms_beside_top_dose` |
+| a centred-only reading, for Blocked 128 | on the 3 arms: truth survives 10 / 10 / 10 of 10, alone 1 / 2 / 10, the same under every late version; all 4 arms: alone 3 / 2 / 10 | `calibration_127a.json` `centred_only_3arms`, `centred_only_4arms` |
+
+Records: `data/trackC/c6/2026-11-01-u1/` (main tree): `gate.json` (code `412e53d8eca4`),
+`calibration_127a.json` (`fe0b7b132612`, from `seeds.json` sha256 `237fea0ffcfe…`), and
+`seed0/records/` (`9c9e91f715ad`, 126 records). Set aside: `gate_v0_9c9e91f715ad.json` (the same
+refusal, made before the fix below) and `calibration_127a_9c9e91f715ad.json` (equal on its keys).
+
+**The defect, fixed before the re-gate.** The first gate (`9c9e91f715ad`) refused in 26 s and
+recorded no shares. Its known-answer row compared the re-inits' rates through the per-arm
+results, and a refused dose leaves those empty, so the check passed on nothing. Now the null
+rates are computed whatever the dose, the check refuses unless it covers every arm, and a refused
+step records its B shares and its arms at the top dose (beside). Rule and outcome unchanged;
+LESSONS 2.
+
+**Caveats.** The refusal is about the denominator more than the sensitivity
+(`/challenge-pr` on #297, finding 3). At 7000 the plant turns 13 units on the run, as it turns
+12–13 on `pythia-70m` over two draws. But only 8 of the run's 42 units already violate, against
+13 of 42 on 70m, so the run needs 14 of 34 where 70m needs 12 of 29. One draw moved 70m's count
+by one unit, which is the run's whole margin at 7000. At 20 000 it misses by two (7 of 21; 9
+needed). The frozen gate takes the centred arms' plant-B dose from V's rule. That is unit 3b's
+design, intended, so V's refusal also stops the centred count, whose own plants pass. C6's design
+table read "V read" and "an arm gated" as separable ("The run's gate"); they are not. The
+`pythia-70m` row was added after the first refusal. Its plant-B draws are its own, so it shows
+that the population at 7000 passes, not that this draw passes. The centred-only calibration is
+in-sample (the same plants) and was computed after the gate's output was seen, though not after
+any output on the run's grid. It separates step from the other two (step survives on 10 of 10
+step plants, 0 of 20 others), not cumulative from instantaneous (8 of 10 cumulative plants read
+both). The key-set guard added to the known-answer check cannot fire as the code now stands, so
+it guards only against a later edit.
+
+**Re-run.** `METS_DATA=<main>/data HF_HOME=<HDD_1TB>/mets_data/hf HF_HUB_OFFLINE=1 python -m
+trackC_writeup.c6_warmup run --out <dir> --models seed0`, then `… gate --out <dir>` (GPU, ~2 min
+together); `… recalibrate --seeds <U0 dir>/seeds.json --out <dir>` (CPU, no forward pass);
+`pytest tests/test_trackC_c6.py` (25).
+
+**Parked.** None new. U0's Parked 1 (a finer grid between 4000 and 16 000) stands.
 
 ## C6 unit 0, the design (2026-10-31)
 

@@ -37,6 +37,7 @@ Tier 1, description (nothing here is registered).
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_warmup gate --out <dir>      # U1
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_warmup run --out <dir> --models run   # U1
     python -m trackC_writeup.c6_warmup read --out <dir>           # U1
+    python -m trackC_writeup.c6_warmup recalibrate --seeds <U0>/seeds.json --out <dir>   # Blocked 127 (a)
 """
 
 from __future__ import annotations
@@ -69,6 +70,10 @@ HYPS = cd.HYPS                                  # step, cumulative, instantaneou
 WINDOW = (1000, 2000, 4000)                     # a3.d4a's plateau steps on 70m
 EARLY_TOP = 128                                 # 92 (i): the early set is the steps ≤ 128 on 70m
 GATE_STEPS = (7000, 20000)                      # the run's off-grid gate steps (U1)
+#: beside, not gating (added in U1 after the gate refused, #297): `pythia-70m` at 7000, unit 3b's
+#: gate step, with this gate's plant direction u but its own plant-B draws (it is drawn last from
+#: the shared stream), so it shows whether that population passes, not whether the run's draw does.
+BESIDE_STEPS = (("seed0", 7000),)
 #: the 70m dates over seeds 0–9 (union; the centred per arm), from `seeds`
 #: (`data/trackC/c6/2026-10-31-u0-seeds/seeds.json`); frozen 2026-10-31 before any output on the run.
 REF70: Optional[dict] = {"u": (256, 512),
@@ -76,6 +81,11 @@ REF70: Optional[dict] = {"u": (256, 512),
                                "0.00478": (1000, 2000)}}
 U3B_70M = DATA / "trackC/c2u3b/2026-10-22-run/70m/records"    # seed 0's known answer
 U3B_PREFLIGHT = DATA / "trackC/c2u3b/2026-10-22-preflight/70m/preflight_plants.json"
+#: Blocked 127 (a), the user's, 2026-11-01, before any output on the run: V is not read under
+#: instantaneous (its window, the single step 16 000, holds a 70m state that depends on how 70m's
+#: states past its peak are reached; #295, finding 1). The scored rule; the rule as frozen on
+#: 2026-10-31 (``not_read=()``) is read beside it. A second in-sample revision (`design-C6.md`).
+NOT_READ: FrozenSet[Tuple[str, str]] = frozenset({("u", "instantaneous")})
 ENERGY_TOL = 1e-4                               # placed: |Δe1| / e1 against unit 3b's records (seed 0 gives 0.0)
 SEED = 20261031
 
@@ -249,7 +259,7 @@ def bands(ref: dict) -> dict:
 
 
 def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: str,
-                  ref: Dict[str, Sequence[int]]) -> dict:
+                  ref: Dict[str, Sequence[int]], not_read: Iterable[Tuple[str, str]] = NOT_READ) -> dict:
     """One count on the run: per schedule h and gated arm, the date on h's window. h maps 70m's
     readable reading onto the run (low through h's early set, a plateau on h's window, the
     half-rise in h's band), so an arm whose run count fails any of the three contradicts h: a
@@ -257,10 +267,15 @@ def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: 
     it for one model, but "inconsistent". An arm counts if it is gated and has a reference date
     (``ref[kind]`` is one set for every arm, or one per arm); h is consistent if every counted
     arm's date is in that arm's band, inconsistent otherwise; the count is unreadable only if no
-    arm counts. (Any one arm sufficing let the centred count fit every schedule: `calibrate`.)"""
-    out = {}
+    arm counts. (Any one arm sufficing let the centred count fit every schedule: `calibrate`.)
+    A (count, schedule) pair in ``not_read`` gives no verdict (status "not read", which `joint`
+    treats as unreadable): Blocked 127 (a) for V under instantaneous; ``()`` is the rule as frozen."""
+    out, skip = {}, set(not_read)
     for h in HYPS:
         per, ok, bnd = {}, [], {}
+        if (kind, h) in skip:
+            out[h] = {"dates": [], "band": {}, "status": "not read", "per_arm": {}}
+            continue
         for k, v in vs.items():
             r = _arm_ref(ref[kind], k)
             if not gated[k] or not r:
@@ -274,11 +289,13 @@ def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: 
     return out
 
 
-def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str = "literal") -> dict:
+def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str = "literal",
+              not_read: Iterable[Tuple[str, str]] = ()) -> dict:
     """The planted effect: each 70m seed's own profiles planted under each schedule (`plant`),
     read with every arm gated against ``ref`` (or, with ``loo``, the other seeds' dates). The rule
-    was revised on these plants, so the table is in-sample to it (#295, finding 2)."""
-    rows = {}
+    was revised on these plants, so the table is in-sample to it (#295, finding 2). ``not_read``
+    as in `count_reading`; the default ``()`` is the rule U0 calibrated (its `seeds.json`)."""
+    rows, nr = {}, tuple(not_read)
     for name, b in beside.items():
         r = ref
         if loo:
@@ -286,8 +303,8 @@ def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str =
             r = ref70(others)
         for truth in HYPS:
             vu, vcs = plant(b["V_u"], truth, late), {k: plant(v, truth, late) for k, v in b["V_c"].items()}
-            counts = {"u": count_reading({"1e-3": vu}, {"1e-3": True}, "u", r),
-                      "c": count_reading(vcs, {k: True for k in vcs}, "c", r)}
+            counts = {"u": count_reading({"1e-3": vu}, {"1e-3": True}, "u", r, nr),
+                      "c": count_reading(vcs, {k: True for k in vcs}, "c", r, nr)}
             rows[f"{name}|{truth}"] = {"joint": joint(counts),
                                        "status": {k: {h: counts[k][h]["status"] for h in HYPS} for k in counts}}
     summary = {t: {"truth_survives": sum(t in rows[f"{n}|{t}"]["joint"]["survivors"] for n in beside),
@@ -302,7 +319,7 @@ def joint(counts: Dict[str, dict]) -> dict:
     surv, unread = [], []
     for h in HYPS:
         st = [counts[k][h]["status"] for k in counts]
-        if all(s == "unreadable" for s in st):
+        if all(s in ("unreadable", "not read") for s in st):
             unread.append(h)
         elif "inconsistent" not in st:
             surv.append(h)
@@ -437,6 +454,34 @@ def seeds(a) -> int:
     return 0
 
 
+def recalibrate(a) -> int:
+    """Blocked 127 (a)'s calibration, from U0's `seeds.json` (its seeds' profiles and REF70), under
+    every late-state version, the rule as frozen beside: no forward pass."""
+    src = json.loads(Path(a.seeds).read_text())
+    ref = {"u": tuple(src["ref70"]["u"]), "c": {k: tuple(v) for k, v in src["ref70"]["c"].items()}}
+    if _jsonable(ref) != _jsonable(_frozen()):
+        raise C6Refused(f"{a.seeds}: its REF70 {ref} is not the frozen one")
+    beside = src["beside"]
+    res = {"code": code_sha(), "seeds_json": str(a.seeds),
+           "seeds_json_sha256": hashlib.sha256(Path(a.seeds).read_bytes()).hexdigest(),
+           "not_read": sorted(NOT_READ), "ref70": ref}
+    for tag, nr in (("scored", NOT_READ), ("as_frozen", ())):
+        res[tag] = {lt: calibrate(beside, ref, late=lt, not_read=nr) for lt in LATE}
+        res[tag + "_loo"] = calibrate(beside, ref, loo=True, not_read=nr)
+    # for Blocked 128 (U1, after the gate refused the uncentred count): the centred count alone, on
+    # the arms the run's steps pass at the top dose (all but 4.78e-3), and on all four beside
+    c3 = {n: {"V_u": b["V_u"], "V_c": {k: v for k, v in b["V_c"].items() if k != "0.00478"}} for n, b in beside.items()}
+    u_off = tuple(("u", h) for h in HYPS)
+    for tag, bs in (("centred_only_3arms", c3), ("centred_only_4arms", beside)):
+        res[tag] = {lt: calibrate(bs, ref, late=lt, not_read=u_off) for lt in LATE}
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "calibration_127a.json").write_text(json.dumps(res, indent=1) + "\n")
+    tags = ("scored", "as_frozen", "centred_only_3arms", "centred_only_4arms")
+    print(json.dumps({tag: {lt: res[tag][lt]["summary"] for lt in LATE} for tag in tags}, indent=1))
+    return 0
+
+
 def _jsonable(x):
     return json.loads(json.dumps(x))
 
@@ -462,12 +507,20 @@ def gate_one(pops: dict, reinits: Sequence[str], step: str) -> dict:
                                   for d in (cs.DOSES_A if k[0] == "A" else cd.DOSES_B)}
                               for k in ("A_u", "A_c", "B_u", "B_c")}}
              for pop, ns in (("reinit", reinits), ("trained", [step]))}
+    tr = units["trained"]
+    base_u = cs.rate(tr["base"]["u"], REL_TOL)
+    diag = {"uncentred_null_rate": cs.rate(units["reinit"]["base"]["u"], REL_TOL), "base_rate_u": base_u,
+            "B_u_share": {k: cs.share(cs.rate(v, REL_TOL), base_u) for k, v in tr["plants"]["B_u"].items()},
+            "null_rates": {f"{t:.3g}": cs.rate(units["reinit"]["base"]["c"], t) for t in ARMS}}
     try:
-        bd = cd.b_dose(units["trained"]["base"]["u"], units["trained"]["plants"]["B_u"])
+        bd = cd.b_dose(tr["base"]["u"], tr["plants"]["B_u"])
     except cd.DoseRefused as e:
-        return {"b_dose": None, "refused": str(e), "arms": {}, "pass": False}
+        # beside only (U1, #297): the arms read at the top dose, which 100 (a) did not pick
+        top = max(tr["plants"]["B_u"], key=float)
+        return {"b_dose": None, "refused": str(e), "arms": {}, "pass": False, **diag,
+                "arms_beside_top_dose": cd.gate_arms(units, ARMS, top)["arms"]}
     g = cd.gate_arms(units, ARMS, bd)
-    g["uncentred_null_rate"] = cs.rate(units["reinit"]["base"]["u"], REL_TOL)
+    g.update(diag)
     return g
 
 
@@ -492,26 +545,30 @@ def gate(a) -> int:
         model = reinit_model(cfg, int(name.split(":")[1])).to(device)
         pops[name] = _units(model, tok, device, rng, u)
         del model
-    for s in GATE_STEPS:
-        model = cs.load(MODELS["run"], s, device)
-        pops[f"step{s}"] = _units(model, tok, device, rng, u)
+    for name, s in [("run", s) for s in GATE_STEPS] + list(BESIDE_STEPS):   # beside last: the run's draws unchanged
+        model = cs.load(MODELS[name], s, device)
+        pops[f"step{s}" if name == "run" else f"{name}:step{s}"] = _units(model, tok, device, rng, u)
         del model
         torch.cuda.empty_cache()
     per_step = {f"step{s}": gate_one(pops, reinits, f"step{s}") for s in GATE_STEPS}
+    beside = {f"{n}:step{s}": gate_one(pops, reinits, f"{n}:step{s}") for n, s in BESIDE_STEPS}
     pf = json.loads(U3B_PREFLIGHT.read_text())
-    null_now = {k: v["null_rate"] for k, v in per_step[f"step{GATE_STEPS[0]}"]["arms"].items()}
+    null_now = per_step[f"step{GATE_STEPS[0]}"]["null_rates"]
     null_3b = {k: pf["gate"]["arms"][k]["null_rate"] for k in null_now}
+    if set(null_now) != {f"{t:.3g}" for t in ARMS}:     # was vacuous when 100 (a) refused (U1, #297)
+        raise C6Refused(f"the re-inits' rates cover {sorted(null_now)}, not every arm")
     if any(abs(null_now[k] - null_3b[k]) > 0.005 for k in null_now):
         raise C6Refused(f"the re-inits' rates {null_now} differ from unit 3b's {null_3b}")
     arms = {f"{t:.3g}": all(g["arms"].get(f"{t:.3g}", {}).get("pass", False) for g in per_step.values())
             for t in ARMS}
     u_ok = all(g["b_dose"] is not None for g in per_step.values())
     res = {"code": code_sha(), "meta": meta(torch), "seed0_known_answer_max_rel": ka,
-           "per_step": per_step, "arms_gated": arms,
+           "per_step": per_step, "beside_not_gating": beside, "arms_gated": arms,
            "uncentred_read": u_ok, "readable": u_ok or any(arms.values()), "null_vs_3b": [null_now, null_3b]}
     (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({"arms_gated": arms, "uncentred_read": u_ok,
-                      "b_dose": {k: g["b_dose"] for k, g in per_step.items()}}, indent=1))
+                      "b_dose": {k: g["b_dose"] for k, g in {**per_step, **beside}.items()},
+                      "B_u_share": {k: g["B_u_share"] for k, g in {**per_step, **beside}.items()}}, indent=1))
     return 0 if res["readable"] else 1
 
 
@@ -530,29 +587,34 @@ def read(a) -> int:
     vcs = {f"{t:.3g}": c.series(recs, "e1c", t) for t in ARMS}
     counts = {"u": count_reading({"1e-3": vu}, {"1e-3": g["uncentred_read"]}, "u", ref),
               "c": count_reading(vcs, g["arms_gated"], "c", ref)}
+    frozen = {"u": count_reading({"1e-3": vu}, {"1e-3": g["uncentred_read"]}, "u", ref, ()),
+              "c": count_reading(vcs, g["arms_gated"], "c", ref, ())}
     res = {"code": code_sha(), "record_codes": sorted({r["code"] for r in recs.values()}), "ref70": ref,
            "early_first": {k: {h: {a_: r["early"] for a_, r in counts[k][h]["per_arm"].items()} for h in HYPS}
                            for k in counts},
-           "counts": counts, "joint": joint(counts),
-           "beside": {"V_u": vu.tolist(), "V_c": {k: v.tolist() for k, v in vcs.items()},
+           "not_read": sorted(NOT_READ), "counts": counts, "joint": joint(counts),
+           "beside": {"as_frozen": {"counts": frozen, "joint": joint(frozen)}, "V_u": vu.tolist(), "V_c": {k: v.tolist() for k, v in vcs.items()},
                       "c2_window_dates": {"u": date_on(vu, "step")["step"],
                                           "c": {k: date_on(v, "step")["step"] for k, v in vcs.items()}}}}
     (out / "reading.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({k: {h: (counts[k][h]["dates"], counts[k][h]["status"]) for h in HYPS} for k in counts}))
     print(json.dumps(res["joint"]))
+    print("as frozen (beside):", json.dumps(res["beside"]["as_frozen"]["joint"]))
     return 0
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for cmd in ("run", "seeds", "gate", "read"):
+    for cmd in ("run", "seeds", "gate", "read", "recalibrate"):
         sp = sub.add_parser(cmd)
         sp.add_argument("--out", required=True)
+        if cmd == "recalibrate":
+            sp.add_argument("--seeds", required=True, help="U0's seeds.json")
         if cmd == "run":
             sp.add_argument("--models", nargs="+", choices=sorted(MODELS), required=True)
     a = ap.parse_args(argv)
-    return {"run": run, "seeds": seeds, "gate": gate, "read": read}[a.cmd](a)
+    return {"run": run, "seeds": seeds, "gate": gate, "read": read, "recalibrate": recalibrate}[a.cmd](a)
 
 
 if __name__ == "__main__":

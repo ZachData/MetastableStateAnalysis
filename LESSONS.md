@@ -679,6 +679,16 @@ well-formed but empty/zero result. It looks exactly like a real result.
   `gate()`. Fixed, re-run, numbers identical. `status-T.md` and `STATE.md` were again edited by
   Python scripts. Rule unchanged; **run `.venv/bin/python -m pytest <new>_smoke.py -m smoke` with
   `SMOKE_REAL_DEPS=1` before opening the PR, and a gate row the design names is a row of `gate()`.**
+- 2026-11-01, C6 U1: the gate's known-answer row ("the re-inits' rates equal unit 3b's, else
+  refuse") read its rates from the per-arm results. When rule 100 (a) found no plant-B dose,
+  `gate_one` returned no arms, so the check compared two empty dicts and passed. That gate also
+  wrote no B shares, so its refusal could not be told from a broken instrument. Found by reading
+  `gate.json` after a 26 s refusal. Fixed before the re-gate (`412e53d8eca4`): the null rates are
+  computed whatever the dose, the check refuses unless it covers every arm, and a refused step
+  records its shares. The result was unchanged. **A known-answer check asserts that it compared
+  something (the key set it was meant to cover). A refusal records the numbers it refused on.**
+  In the same unit, an Edit to this file failed (not yet read) and the commit went out without
+  it; caught at `git status`.
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

@@ -565,3 +565,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   matched itself never exited), and the reading revised after its calibration on the seeds'
   real profiles failed, which re-opened the code, tests and design. Fetching the checkpoints in a
   separate session before the design would have saved the waiting calls.
+| 2026-11-01 | C6 U1: Blocked 127 (a) frozen, the run's gate refused (V's plant B 0.38/0.33 < 0.4), a vacuous known-answer check fixed, Blocked 128; after /challenge-pr (accept with changes; findings 1-3, 5 taken) · subagents: general-purpose opus-5-5 1.3M, runner haiku-5-5 93k · runner batches, main calls: 4 (haiku-5-5) | 69 | 197k | 8.8M | 58k | #297 |
