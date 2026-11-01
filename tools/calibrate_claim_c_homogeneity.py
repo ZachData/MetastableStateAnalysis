@@ -137,7 +137,10 @@ CURVE_SCHEMA_VERSION = 2
 #: already bites (five prompts cannot express a p below 0.061 at all, so no
 #: curve can help); the upper end is generous against the eight metastability
 #: prompts, since "spend effort on prompts" is the standing remedy.
-N_PROMPTS_TABULATED: Tuple[int, ...] = (6, 7, 8, 9, 10, 11, 12)
+#: 20 appended 2026-11-01 for the v2 battery (`CLAIM-C`'s 2026-09-19 refusal,
+#: PROJECT.md §3.46); appended rather than inserted so rows 6-12 keep their
+#: per-index seeds and must regenerate byte-identically.
+N_PROMPTS_TABULATED: Tuple[int, ...] = (6, 7, 8, 9, 10, 11, 12, 20)
 
 #: Homogeneity bins. 0.5 is the floor of the statistic (a metric column can be
 #: no more balanced than half and half) and 1.0 is the degeneracy the gate

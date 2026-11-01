@@ -441,6 +441,29 @@ The alternative that was **not** taken — amend `CLAIM-C` to a five-metric
 statistic — is a registry amendment, and it inherits the constant-metric
 problem above unless `cluster_membership` goes with it.
 
+### `CLAIM-C` closed: the deferred calibration, then retirement (2026-11-01)
+
+**Decided before the rescore (user, 2026-11-01): `CLAIM-C` is retired and its
+four arms deleted whatever the rescore returns.** Why: two of its six metrics
+are HDBSCAN cluster count and membership, which Phase 10 found carry a
+re-measurement floor set by float32 distances (`p10_cluster_function/status-10.md`
+§3) and mostly reflect copy count early on (§1.7); Phase 10 closed with "the
+cluster object is weak and late"; and the project's tracks no longer read
+cluster identity (`docs/ROADMAP.md` §1). Already seen when this was decided:
+the September record's uncorrected p for the full table, 0.949 (54 of 120
+cells concordant). The rescore is run for completeness ("just for fun", the
+user's words), so the 2026-09-19 refusal's prescribed fix is on the record.
+
+**What runs, fixed before the run:** `N_PROMPTS_TABULATED` gains 20 (appended,
+so rows 6–12 keep their seeds, `seed + 1000 * i`); `--write` regenerates the
+curve; rows 6–12 must come back byte-identical to `claims/calibration/claim_c_homogeneity.json`
+as committed (`34a6f14`), else that is drift in the gate and the rescore does
+not run; then `python -m tools.score_claim_c` on the four v2 run directories
+(table below), writing `claims/audits/claim_c_real_run.json`. Not run: the
+contiguous 13–19 rows (not needed at 20 prompts), the step-0 sensitivity arm
+(never on disk), and Phase 10's carried item "the two HDBSCAN metrics against
+the reproducibility floor" (dropped with the claim).
+
 ### The v2 battery ran too, and the gate refused on its own calibration (2026-09-19)
 
 All four arms re-run on prompt battery v2 (21 prompts), one invocation each:
