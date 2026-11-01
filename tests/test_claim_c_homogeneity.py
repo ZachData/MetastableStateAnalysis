@@ -766,6 +766,25 @@ class TestTheGateReadsTheRightSlab:
 # The refusal, and that it is derived rather than placed
 # ---------------------------------------------------------------------------
 
+class TestTheCurveIsReadOnlyOnItsSupport:
+    """/challenge-pr on #296, finding 1: at 20 prompts the gate's null is
+    SAMPLED, and `--n-perm 1000000` gives a floor (1e-6) below the exact
+    null's (2^-19 = 1.9e-6) on which the curve was simulated. Below every
+    stored quantile `rejection_rate_at` reads the smallest level (2e-4), so a
+    perfect table used to pass the floor check. The lookup is clamped to the
+    exact floor."""
+
+    def test_a_p_below_the_exact_floor_reads_the_rate_at_the_floor(self):
+        corr = homogeneity_correction(20, 0.875, 0, 120)
+        assert corr["available"]
+        floor = corr["exact_floor"]
+        assert floor == pytest.approx(2.0 ** -19)
+        at_floor = apply_homogeneity_correction(corr, floor, CLAIM_C_ALTERNATIVE)
+        below = apply_homogeneity_correction(corr, 1e-6, CLAIM_C_ALTERNATIVE)
+        assert below == at_floor
+        assert below > 0.05          # so the gate refuses at 0.875, sampled or not
+
+
 class TestTheDerivedRefusal:
     """
     The second question this construction had to settle was whether there is a
@@ -877,6 +896,7 @@ class TestRefusesRatherThanFallingBackToTheUncorrectedP:
 # What reaches the ledger
 # ---------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("claim_c_active")    # tests/conftest.py
 class TestTheRecordSaysWhatWasCorrected:
 
     def test_the_note_carries_both_p_values_and_the_bin(self, tmp_path):

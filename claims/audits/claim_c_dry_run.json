@@ -5,9 +5,9 @@
   "_not": "Not evidence about pythia-1.4b and not an adjudication. The inputs are synthetic; what is being checked is the gate.",
   "generated_by": "tools/dry_run_claim_c.py --write",
   "gate_file": "p1_mstate_tracking/replication_gate.py",
-  "gate_sha256": "f8a6ea0a1d0778ee9a5f834749b7f987cb41a6453d97924a5e525edcbede524d",
+  "gate_sha256": "d4efa36cd8d69e2de6b8f8f73858d97c03e06a7a7e231af28cbd37134c37b310",
   "curve_file": "claims/calibration/claim_c_homogeneity.json",
-  "curve_sha256": "dd583a92df081c1e8073c3e072c5180e9ba06f303d6c8206fe0fe25e1dbd03a8",
+  "curve_sha256": "2f0376d96d2b381a1df8b7fa754234ca8059d07d4302f6e229085efa4d873b1d",
   "alpha": 0.05,
   "metrics": [
     "mass_near_1",
@@ -4185,6 +4185,15 @@
         "rate_at_floor": 0.076283
       },
       "drop_slab": "no cells dropped"
+    },
+    "20": {
+      "best_attainable_p": 1.9073468138248312e-06,
+      "first_refusing_bin": {
+        "bin_lo": 0.825,
+        "bin_hi": 0.85,
+        "rate_at_floor": 0.076283
+      },
+      "drop_slab": "no cells dropped"
     }
   },
   "independent_prompt_reference": {
@@ -4242,7 +4251,7 @@
     }
   },
   "correction_monotonicity": {
-    "n_quantile_vectors_checked": 1914,
+    "n_quantile_vectors_checked": 2194,
     "monotone": true,
     "violations": []
   },

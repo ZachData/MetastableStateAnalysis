@@ -81,7 +81,10 @@ REQUIRED_FIELDS = (
     "calibration_record", "real_run_record",
 )
 EVALUABLE_VALUES = ("e-value", "measurement", "needs-null")
-STATUS_VALUES = ("active", "dormant")
+#: `withdrawn` (added 2026-11-01, `CLAIM-C`): retired by the user on the record,
+#: kept visible and uncounted like `dormant`, but not expected back. Needs a
+#: `withdrawn_reason` saying what was known when it was withdrawn.
+STATUS_VALUES = ("active", "dormant", "withdrawn")
 #: INDEX.md's phase table, live and archived. A new phase extends this list.
 PHASE_VALUES = ("1", "1b", "1c", "2", "2b", "2d", "3", "4", "5", "5b", "5c",
                 "6", "7", "7d", "7e", "8", "A")
@@ -254,6 +257,11 @@ def check_registry(reg: dict, msgs: List[str],
             _fail(msgs, f"{where}: dormant with no dormant_reason; a prediction taken out "
                         f"of circulation without a stated reason is indistinguishable "
                         f"from one quietly dropped")
+        elif status == "withdrawn" and not (
+                str(p.get("withdrawn_reason", "")).strip()
+                and str(p.get("withdrawn_date", "")).strip()):
+            _fail(msgs, f"{where}: withdrawn needs withdrawn_reason and withdrawn_date; "
+                        f"a withdrawal must say what was already seen when it was made")
 
         if p.get("phase") not in PHASE_VALUES:
             _fail(msgs, f"{where}: phase={p.get('phase')!r} not one of {PHASE_VALUES}")
@@ -498,20 +506,20 @@ def print_summary(reg: dict) -> None:
     adj = load_adjudications()
 
     print(f"\nregistry: {len(preds)} predictions, {len(adj)} adjudicated\n")
-    print(f"{'claim':<12} {'total':>6} {'active':>7} {'dormant':>8} {'e-value':>8} "
-          f"{'needs-null':>11} {'measurement':>12} {'adjudicated':>12}")
-    print("-" * 80)
+    print(f"{'claim':<12} {'total':>6} {'active':>7} {'dormant':>8} {'withdrawn':>10} "
+          f"{'e-value':>8} {'needs-null':>11} {'measurement':>12} {'adjudicated':>12}")
+    print("-" * 91)
     for claim in sorted({p["claim"] for p in preds}):
         rows = [p for p in preds if p["claim"] == claim]
         c = Counter(p["evaluable"] for p in rows)
         st = Counter(p.get("status", "active") for p in rows)
         n_adj = sum(1 for p in rows if p["id"] in adj)
-        print(f"{claim:<12} {len(rows):>6} {st['active']:>7} {st['dormant']:>8} "
+        print(f"{claim:<12} {len(rows):>6} {st['active']:>7} {st['dormant']:>8} {st['withdrawn']:>10} "
               f"{c['e-value']:>8} {c['needs-null']:>11} {c['measurement']:>12} {n_adj:>12}")
-    print("-" * 80)
+    print("-" * 91)
     c = Counter(p["evaluable"] for p in preds)
     st = Counter(p.get("status", "active") for p in preds)
-    print(f"{'TOTAL':<12} {len(preds):>6} {st['active']:>7} {st['dormant']:>8} "
+    print(f"{'TOTAL':<12} {len(preds):>6} {st['active']:>7} {st['dormant']:>8} {st['withdrawn']:>10} "
           f"{c['e-value']:>8} {c['needs-null']:>11} {c['measurement']:>12} {len(adj):>12}")
 
     n_bf = sum(1 for p in preds if p.get("registered_provenance") == "backfilled")
@@ -529,6 +537,10 @@ def print_summary(reg: dict) -> None:
         print("nothing to any claim's E. Counted here rather than deleted, because dropping a")
         print("pre-registered prediction when its apparatus goes away is how a record becomes")
         print("the flattering subset of what was actually predicted.")
+    if st["withdrawn"]:
+        print(f"\n{st['withdrawn']} predictions are WITHDRAWN by the user (withdrawn_reason "
+              f"on each): {[p['id'] for p in preds if p.get('status') == 'withdrawn']}")
+    if st["dormant"] or st["withdrawn"]:
         print(f"\nAdjudicable right now (e-value AND active): "
               f"{len(adjudicable)} -- {[p['id'] for p in adjudicable]}")
 

@@ -1128,6 +1128,11 @@ def homogeneity_correction(n_prompts: int, homogeneity: Optional[float],
         "drop_lo": slab["drop_lo"], "drop_hi": slab["drop_hi"],
         "drop_bin_is_exact_zero": bool(slab.get("exact_zero")),
         "levels": curve["correction_levels"],
+        # The curve was simulated on the EXACT sign-flip null, so it says nothing
+        # about p below that null's floor; a sampled null with more draws than
+        # the exact one has distinct values can produce such a p (/challenge-pr
+        # on #296, finding 1). `apply_homogeneity_correction` clamps to it.
+        "exact_floor": float(row["best_attainable_p"]),
         "quantiles_greater": b["quantiles_greater"],
         "quantiles_less": b["quantiles_less"],
         "h0_family": curve.get("_h0_family"),
@@ -1150,7 +1155,10 @@ def apply_homogeneity_correction(corr: dict, p: float, direction: str) -> float:
     """
     q = corr["quantiles_greater" if direction == CLAIM_C_ALTERNATIVE
             else "quantiles_less"]
-    return max(float(p), rejection_rate_at(corr["levels"], q, p))
+    # Read the curve no lower than the exact null's floor, its support
+    # (`exact_floor`, added 2026-11-01; absent in older dicts, so 0).
+    p_lookup = max(float(p), float(corr.get("exact_floor", 0.0)))
+    return max(float(p), rejection_rate_at(corr["levels"], q, p_lookup))
 
 
 def _alpha() -> float:

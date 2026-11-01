@@ -867,6 +867,7 @@ class TestGateVerdict:
 # Ledger wiring
 # ---------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("claim_c_active")    # tests/conftest.py
 class TestAdjudicationWiring:
 
     def _args(self):
@@ -1003,7 +1004,9 @@ class TestRegistryIsInStep:
         e = self._entry()
         assert e.evaluable == "e-value"
         assert e.claim == "H-TRANSFER"
-        assert e.status == "active"
+        # Withdrawn 2026-11-01 (p1_mstate_tracking/status-1.md "CLAIM-C closed").
+        assert e.status == "withdrawn"
+        assert e.raw["withdrawn_date"] == "2026-11-01"
 
     def test_null_construction_names_every_fixed_choice(self):
         """

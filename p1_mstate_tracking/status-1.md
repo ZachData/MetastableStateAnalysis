@@ -11,7 +11,7 @@
   - Energy regime attractive at init, repulsive from step 256; reverses the GPT-2 run — `status-1.md` "Verdict table"
   - Claim (a) splits (energy and rank come apart in time); claim (b) holds for two of three markers, rank does not co-locate — `status-1.md` "PREDICTIONS.md adjudication"
   - Cluster carrying capacity invariant across training while turnover rises; `repeated_tokens` collapse is undone by training — `status-1.md` "Verdict table"
-  - `CLAIM-C` gate: INSUFFICIENT at chance concordance on the v1 prompts (§3.41); refused on the v2 prompts for want of a tabulated homogeneity correction (§3.46)
+  - `CLAIM-C` gate: INSUFFICIENT at chance concordance on the v1 prompts (§3.41); refused on the v2 prompts for want of a tabulated homogeneity correction (§3.46); with the correction tabulated to 20 (2026-11-01), refused again by design (at homogeneity 0.875 even a perfect result would not survive the correction), then withdrawn by the user — `status-1.md` "`CLAIM-C` closed"
   - HDBSCAN output depends on the install: the conda env reproduces the 2026-08-12 sweep exactly and `.venv` does not — `status-1.md` "The arms are all here and the gate still refuses"
 - **Superseded / wrong:**
   - Several verdict columns read the wrong quantity (raw-frame rank, per-head Fiedler, dead spectral k, rank gates on raw rank; D1–D10) — `status-1.md` "Measurement defects"
@@ -24,7 +24,7 @@
   - The carrying-capacity invariant has a formula now (Lemma C.1) — `p10_cluster_function/math-10.md` §5.4
   - The carrying-capacity invariant as a property of the dynamics: on Stage 0's v1 runs `max_alive` falls at layer 0 (the embedding) in 92 of 133 runs, mean 57–63 at every step against 59.7 repeated token types per prompt, which training cannot change. Whether the pilot's "50–55" does the same is open — `p10_cluster_function/status-10.md` §1.8
   - `ext_sem_frac`'s decline (D6) as "neighbour structure decouples from embedding geometry": the stored count is mostly repeat pairs at cosine 1, and the non-repeat remainder moves toward the trained embedding — `p10_cluster_function/status-10.md` §1.6
-- **Registry:** `CLAIM-C` e-value, active, real run recorded, INSUFFICIENT, not adjudicated; `CLAIM-A` needs-null, construction specified and not built (`claims/EXPERIMENTS.md`)
+- **Registry:** `CLAIM-C` e-value, **withdrawn 2026-11-01** (the user's; real run recorded, refused, never adjudicated; its arms deleted); `CLAIM-A` needs-null, construction specified and not built (`claims/EXPERIMENTS.md`)
 - **Depends on:** none
 - **Feeds:** 1b, 1c, 2, 2b, 2d, 3, 4, 5, 5b, 5c, 6, 6-frozen, 7, 10
 - **Open threads:**
@@ -38,9 +38,8 @@
   - Re-report D1, D3 and D10 on normed rank, with the rank thresholds re-derived on that scale (free)
   - Attribute the late severity decline to attention vs FFN through the parallel-residual decomposition (free where `sublayer_streams` exist)
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
-  - Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms (free, CPU calibration, cost in §3.46; order against the holdout is `docs/PHASE_REVIEW.md` "Open" 3)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
-- **Reviewed:** 2026-09-24 · body `3923681417`
+- **Reviewed:** 2026-11-01 · body `6d150c4951`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -440,6 +439,72 @@ about.)*
 The alternative that was **not** taken — amend `CLAIM-C` to a five-metric
 statistic — is a registry amendment, and it inherits the constant-metric
 problem above unless `cluster_membership` goes with it.
+
+### `CLAIM-C` closed: the deferred calibration, then retirement (2026-11-01)
+
+**Decided before the rescore (user, 2026-11-01): `CLAIM-C` is retired and its
+four arms deleted whatever the rescore returns.** Why: two of its six metrics
+are HDBSCAN cluster count and membership, which Phase 10 found carry a
+re-measurement floor set by float32 distances (`p10_cluster_function/status-10.md`
+§3) and mostly reflect copy count early on (§1.7); Phase 10 closed with "the
+cluster object is weak and late"; and the project's tracks no longer read
+cluster identity (`docs/ROADMAP.md` §1). Already seen when this was decided:
+the September record's uncorrected p for the full table, 0.949 (54 of 120
+cells concordant). The rescore is run for completeness ("just for fun", the
+user's words), so the 2026-09-19 refusal's prescribed fix is on the record.
+
+**What runs, fixed before the run:** `N_PROMPTS_TABULATED` gains 20 (appended,
+so rows 6–12 keep their seeds, `seed + 1000 * i`); `--write` regenerates the
+curve; rows 6–12 must come back byte-identical to `claims/calibration/claim_c_homogeneity.json`
+as committed (`34a6f14`), else that is drift in the gate and the rescore does
+not run; then `python -m tools.score_claim_c` on the four v2 run directories
+(table below), writing `claims/audits/claim_c_real_run.json`. Not run: the
+contiguous 13–19 rows (not needed at 20 prompts), the step-0 sensitivity arm
+(never on disk), and Phase 10's carried item "the two HDBSCAN metrics against
+the reproducibility floor" (dropped with the claim).
+
+**Order, in case the branch history goes:** this decision was committed at
+2026-11-01 13:46:30 −0600 (`bd1bf68`); the rescore's record was written at
+14:12:39 −0600 (`claim_c_real_run.json` `written_at`). The record's verdict
+depends on the curve `claims/calibration/claim_c_homogeneity.json`, sha256
+`2f0376d96d2b381a1df8b7fa754234ca8059d07d4302f6e229085efa4d873b1d` (the
+scorer does not record it; the dry run pins it).
+
+**What it returned.**
+
+| step | result |
+|---|---|
+| curve regenerated (conda py3.10, numpy 2.2.6; 25 min 29 s wall, 1.2 GB peak, CPU: numpy code whose seeds must reproduce) | rows 6–12 **identical** to `34a6f14`'s (JSON per row compared); row 20 added at 40 000 draws per config; `--check` in step |
+| n = 20 row at the observed homogeneity (bin 0.875–0.900, no drops) | H0 rejection rate at α 0.05 is 0.30; a true 5 % test needs p below 5 × 10⁻⁶ |
+| **rescore as frozen** (`DEFAULT_N_PERM` 5000) | **REFUSED, a fourth distinct reason:** at the design's best attainable p (0.0002, set by 5000 sampled patterns) the measured H0 rejection rate is 0.145 > α, so "a perfect result would not survive its own correction". `INSUFFICIENT`, `hard_stop: true`, `falsified: false`, no p. Uncorrected, as in September: p 0.949, reciprocal 0.121 (54 of 120 cells). Record: `claims/audits/claim_c_real_run.json` |
+| beside, not recorded (`--n-perm 1000000 --no-write`, the gate's own flag) | sampled floor 1.0 × 10⁻⁶; the correction emits p 0.99956, reciprocal 0.855, `INSUFFICIENT` (binding subset `drop:fiedler_mean`). **Not a valid reading:** the exact sign-flip null's floor at 20 prompts is 1.9 × 10⁻⁶, and the curve there reads 0.076 > α (the regenerated dry run: from bin 0.825 up every bin refuses at the floor); 10⁻⁶ is below anything the exact null can produce, so the curve was read outside its support (0.0002) |
+
+**The refusal is the design's, not the null's resolution:** at sign
+homogeneity 0.875 and 20 prompts no permutation count lets the gate decide.
+And the uncorrected numbers put both decisions out of reach anyway: TRANSFERS
+needs p ≤ α in every subset, FAILS-TO-TRANSFER the reciprocal; the six metrics
+disagree (`fiedler_mean` 20 of 20 concordant, `cka_prev` 0 of 20). Nothing
+about transfer is shown either way. `claims/adjudications/` untouched. A gate
+defect found on the way and **fixed** after `/challenge-pr` on #296 (finding 1):
+above 16 prompts the null is sampled, so a large `--n-perm` gave a floor below
+the exact null's, where the curve has no support, and a perfect table would
+have passed the floor check at a correction of 2 × 10⁻⁴ against a measured
+rate above 0.065. `apply_homogeneity_correction` now reads the curve no lower
+than the row's `best_attainable_p` (test `TestTheCurveIsReadOnlyOnItsSupport`);
+the frozen-null record above is unchanged by it.
+
+`claims/audits/claim_c_dry_run.json` regenerated (`python -m tools.dry_run_claim_c --write`)
+because it pins the curve's sha256; its verdicts at 6–12 are unchanged and it
+gains the n = 20 floor and first refusing bin (0.825–0.850, rate 0.076).
+
+**Withdrawn** (registry status `withdrawn`, new 2026-11-01; `tools/check_registry.py`,
+`core/adjudication.py` refuse it): see `withdrawn_reason` on `CLAIM-C`. Its hard
+stop had already been bypassed de facto (PROJECT.md §3.36, §3.41): the
+checkpoint sweeps it gated ran while it was unrun and then INSUFFICIENT.
+H-TRANSFER has no live prediction after it. The four v2 arms and the 1.4b
+weights were deleted after this record was written (re-run: the table below,
+4 h 51 min on CPU; HDBSCAN labels depend on the install, so they would not
+reproduce byte for byte).
 
 ### The v2 battery ran too, and the gate refused on its own calibration (2026-09-19)
 
