@@ -114,10 +114,39 @@ def _v(rise_at, plateau=10.0):
 def test_a_stretched_run_reads_its_schedule():
     ref = {"u": (256,), "c": (1000,)}
     for h, (du, dc) in {"step": (256, 1000), "cumulative": (1000, 4000), "instantaneous": (4000, 16000)}.items():
-        counts = {"u": w.count_reading({"x": _v(du)}, {"x": True}, "u", ref),
-                  "c": w.count_reading({"x": _v(dc)}, {"x": True}, "c", ref)}
-        assert counts["u"][h]["status"] == counts["c"][h]["status"] == "consistent"
-        assert w.joint(counts)["survivors"] == [h]
+        for nr in ((), w.NOT_READ):                         # the rule as frozen; Blocked 127 (a)
+            counts = {"u": w.count_reading({"x": _v(du)}, {"x": True}, "u", ref, nr),
+                      "c": w.count_reading({"x": _v(dc)}, {"x": True}, "c", ref, nr)}
+            assert counts["c"][h]["status"] == "consistent"
+            assert counts["u"][h]["status"] == ("not read" if ("u", h) in nr else "consistent")
+            assert w.joint(counts)["survivors"] == [h]
+
+
+def test_blocked_127a_v_is_not_read_under_instantaneous():
+    assert w.NOT_READ == frozenset({("u", "instantaneous")})
+    ref = {"u": (256,), "c": (1000,)}
+    u = w.count_reading({"x": _v(256)}, {"x": True}, "u", ref)
+    assert u["instantaneous"] == {"dates": [], "band": {}, "status": "not read", "per_arm": {}}
+    assert u["step"]["status"] == "consistent"
+    assert w.count_reading({"x": _v(16000)}, {"x": True}, "c", ref)["instantaneous"]["status"] == "consistent"
+    j = w.joint({"u": u, "c": w.count_reading({"x": _v(16000)}, {"x": True}, "c", ref)})
+    assert j["survivors"] == ["instantaneous"] and j["unreadable"] == []
+    cr = {h: {"status": "not read"} for h in w.HYPS}
+    assert w.joint({"u": cr, "c": cr})["label"] == "unreadable"
+
+
+def test_blocked_127a_calibration_does_not_depend_on_the_late_states():
+    def prof(rise):                                         # V low early, rises, falls by 143 000 (8 of 10 seeds)
+        v = np.maximum(_v(rise), 1.0)
+        v[STEPS.index(143000)] = 1.0
+        return v.tolist()
+    beside = {f"s{i}": {"V_u": prof(du), "V_c": {"x": _v(dc).tolist()}}
+              for i, (du, dc) in enumerate([(256, 1000), (512, 1000), (256, 512)])}
+    ref = w.ref70({n: w.seed_dates(b["V_u"], b["V_c"]) for n, b in beside.items()})
+    scored = [w.calibrate(beside, ref, late=lt, not_read=w.NOT_READ)["summary"] for lt in w.LATE]
+    assert scored[0] == scored[1] == scored[2] and scored[0]["instantaneous"]["truth_alone"] == 3
+    frozen = {lt: w.calibrate(beside, ref, late=lt)["summary"]["instantaneous"]["truth_survives"] for lt in w.LATE}
+    assert frozen["literal"] == 0 and frozen["same_step"] == 3     # as frozen, the late states decide it
 
 
 def test_ungated_arms_do_not_count_and_none_is_unreadable():

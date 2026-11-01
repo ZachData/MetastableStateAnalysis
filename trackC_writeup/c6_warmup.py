@@ -37,6 +37,7 @@ Tier 1, description (nothing here is registered).
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_warmup gate --out <dir>      # U1
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_warmup run --out <dir> --models run   # U1
     python -m trackC_writeup.c6_warmup read --out <dir>           # U1
+    python -m trackC_writeup.c6_warmup recalibrate --seeds <U0>/seeds.json --out <dir>   # Blocked 127 (a)
 """
 
 from __future__ import annotations
@@ -76,6 +77,11 @@ REF70: Optional[dict] = {"u": (256, 512),
                                "0.00478": (1000, 2000)}}
 U3B_70M = DATA / "trackC/c2u3b/2026-10-22-run/70m/records"    # seed 0's known answer
 U3B_PREFLIGHT = DATA / "trackC/c2u3b/2026-10-22-preflight/70m/preflight_plants.json"
+#: Blocked 127 (a), the user's, 2026-11-01, before any output on the run: V is not read under
+#: instantaneous (its window, the single step 16 000, holds a 70m state that depends on how 70m's
+#: states past its peak are reached; #295, finding 1). The scored rule; the rule as frozen on
+#: 2026-10-31 (``not_read=()``) is read beside it. A second in-sample revision (`design-C6.md`).
+NOT_READ: FrozenSet[Tuple[str, str]] = frozenset({("u", "instantaneous")})
 ENERGY_TOL = 1e-4                               # placed: |Δe1| / e1 against unit 3b's records (seed 0 gives 0.0)
 SEED = 20261031
 
@@ -249,7 +255,7 @@ def bands(ref: dict) -> dict:
 
 
 def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: str,
-                  ref: Dict[str, Sequence[int]]) -> dict:
+                  ref: Dict[str, Sequence[int]], not_read: Iterable[Tuple[str, str]] = NOT_READ) -> dict:
     """One count on the run: per schedule h and gated arm, the date on h's window. h maps 70m's
     readable reading onto the run (low through h's early set, a plateau on h's window, the
     half-rise in h's band), so an arm whose run count fails any of the three contradicts h: a
@@ -257,10 +263,15 @@ def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: 
     it for one model, but "inconsistent". An arm counts if it is gated and has a reference date
     (``ref[kind]`` is one set for every arm, or one per arm); h is consistent if every counted
     arm's date is in that arm's band, inconsistent otherwise; the count is unreadable only if no
-    arm counts. (Any one arm sufficing let the centred count fit every schedule: `calibrate`.)"""
-    out = {}
+    arm counts. (Any one arm sufficing let the centred count fit every schedule: `calibrate`.)
+    A (count, schedule) pair in ``not_read`` gives no verdict (status "not read", which `joint`
+    treats as unreadable): Blocked 127 (a) for V under instantaneous; ``()`` is the rule as frozen."""
+    out, skip = {}, set(not_read)
     for h in HYPS:
         per, ok, bnd = {}, [], {}
+        if (kind, h) in skip:
+            out[h] = {"dates": [], "band": {}, "status": "not read", "per_arm": {}}
+            continue
         for k, v in vs.items():
             r = _arm_ref(ref[kind], k)
             if not gated[k] or not r:
@@ -274,11 +285,13 @@ def count_reading(vs: Dict[str, Sequence[float]], gated: Dict[str, bool], kind: 
     return out
 
 
-def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str = "literal") -> dict:
+def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str = "literal",
+              not_read: Iterable[Tuple[str, str]] = ()) -> dict:
     """The planted effect: each 70m seed's own profiles planted under each schedule (`plant`),
     read with every arm gated against ``ref`` (or, with ``loo``, the other seeds' dates). The rule
-    was revised on these plants, so the table is in-sample to it (#295, finding 2)."""
-    rows = {}
+    was revised on these plants, so the table is in-sample to it (#295, finding 2). ``not_read``
+    as in `count_reading`; the default ``()`` is the rule U0 calibrated (its `seeds.json`)."""
+    rows, nr = {}, tuple(not_read)
     for name, b in beside.items():
         r = ref
         if loo:
@@ -286,8 +299,8 @@ def calibrate(beside: Dict[str, dict], ref: dict, loo: bool = False, late: str =
             r = ref70(others)
         for truth in HYPS:
             vu, vcs = plant(b["V_u"], truth, late), {k: plant(v, truth, late) for k, v in b["V_c"].items()}
-            counts = {"u": count_reading({"1e-3": vu}, {"1e-3": True}, "u", r),
-                      "c": count_reading(vcs, {k: True for k in vcs}, "c", r)}
+            counts = {"u": count_reading({"1e-3": vu}, {"1e-3": True}, "u", r, nr),
+                      "c": count_reading(vcs, {k: True for k in vcs}, "c", r, nr)}
             rows[f"{name}|{truth}"] = {"joint": joint(counts),
                                        "status": {k: {h: counts[k][h]["status"] for h in HYPS} for k in counts}}
     summary = {t: {"truth_survives": sum(t in rows[f"{n}|{t}"]["joint"]["survivors"] for n in beside),
@@ -302,7 +315,7 @@ def joint(counts: Dict[str, dict]) -> dict:
     surv, unread = [], []
     for h in HYPS:
         st = [counts[k][h]["status"] for k in counts]
-        if all(s == "unreadable" for s in st):
+        if all(s in ("unreadable", "not read") for s in st):
             unread.append(h)
         elif "inconsistent" not in st:
             surv.append(h)
@@ -437,6 +450,27 @@ def seeds(a) -> int:
     return 0
 
 
+def recalibrate(a) -> int:
+    """Blocked 127 (a)'s calibration, from U0's `seeds.json` (its seeds' profiles and REF70), under
+    every late-state version, the rule as frozen beside: no forward pass."""
+    src = json.loads(Path(a.seeds).read_text())
+    ref = {"u": tuple(src["ref70"]["u"]), "c": {k: tuple(v) for k, v in src["ref70"]["c"].items()}}
+    if _jsonable(ref) != _jsonable(_frozen()):
+        raise C6Refused(f"{a.seeds}: its REF70 {ref} is not the frozen one")
+    beside = src["beside"]
+    res = {"code": code_sha(), "seeds_json": str(a.seeds),
+           "seeds_json_sha256": hashlib.sha256(Path(a.seeds).read_bytes()).hexdigest(),
+           "not_read": sorted(NOT_READ), "ref70": ref}
+    for tag, nr in (("scored", NOT_READ), ("as_frozen", ())):
+        res[tag] = {lt: calibrate(beside, ref, late=lt, not_read=nr) for lt in LATE}
+        res[tag + "_loo"] = calibrate(beside, ref, loo=True, not_read=nr)
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "calibration_127a.json").write_text(json.dumps(res, indent=1) + "\n")
+    print(json.dumps({tag: {lt: res[tag][lt]["summary"] for lt in LATE} for tag in ("scored", "as_frozen")}, indent=1))
+    return 0
+
+
 def _jsonable(x):
     return json.loads(json.dumps(x))
 
@@ -530,29 +564,34 @@ def read(a) -> int:
     vcs = {f"{t:.3g}": c.series(recs, "e1c", t) for t in ARMS}
     counts = {"u": count_reading({"1e-3": vu}, {"1e-3": g["uncentred_read"]}, "u", ref),
               "c": count_reading(vcs, g["arms_gated"], "c", ref)}
+    frozen = {"u": count_reading({"1e-3": vu}, {"1e-3": g["uncentred_read"]}, "u", ref, ()),
+              "c": count_reading(vcs, g["arms_gated"], "c", ref, ())}
     res = {"code": code_sha(), "record_codes": sorted({r["code"] for r in recs.values()}), "ref70": ref,
            "early_first": {k: {h: {a_: r["early"] for a_, r in counts[k][h]["per_arm"].items()} for h in HYPS}
                            for k in counts},
-           "counts": counts, "joint": joint(counts),
-           "beside": {"V_u": vu.tolist(), "V_c": {k: v.tolist() for k, v in vcs.items()},
+           "not_read": sorted(NOT_READ), "counts": counts, "joint": joint(counts),
+           "beside": {"as_frozen": {"counts": frozen, "joint": joint(frozen)}, "V_u": vu.tolist(), "V_c": {k: v.tolist() for k, v in vcs.items()},
                       "c2_window_dates": {"u": date_on(vu, "step")["step"],
                                           "c": {k: date_on(v, "step")["step"] for k, v in vcs.items()}}}}
     (out / "reading.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({k: {h: (counts[k][h]["dates"], counts[k][h]["status"]) for h in HYPS} for k in counts}))
     print(json.dumps(res["joint"]))
+    print("as frozen (beside):", json.dumps(res["beside"]["as_frozen"]["joint"]))
     return 0
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for cmd in ("run", "seeds", "gate", "read"):
+    for cmd in ("run", "seeds", "gate", "read", "recalibrate"):
         sp = sub.add_parser(cmd)
         sp.add_argument("--out", required=True)
+        if cmd == "recalibrate":
+            sp.add_argument("--seeds", required=True, help="U0's seeds.json")
         if cmd == "run":
             sp.add_argument("--models", nargs="+", choices=sorted(MODELS), required=True)
     a = ap.parse_args(argv)
-    return {"run": run, "seeds": seeds, "gate": gate, "read": read}[a.cmd](a)
+    return {"run": run, "seeds": seeds, "gate": gate, "read": read, "recalibrate": recalibrate}[a.cmd](a)
 
 
 if __name__ == "__main__":
