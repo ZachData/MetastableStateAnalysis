@@ -217,6 +217,10 @@ because V no longer votes against it. With leave-one-seed-out bands, the truth s
 
 `run --models run` refuses until `REF70` is set and `gate.json` reads readable.
 
+**U1 (2026-11-01): refused.** Rule 100 (a) found no plant-B dose on the run at either step, and
+the centred arms take their dose from it, so no arm is gated. "V read" and "an arm gated" were
+not separable as this table implies (`status-C.md` "C6 unit 1"; Blocked 128).
+
 ## What each outcome changes (fixed now)
 
 | label | §7 and F1 for 70m |

@@ -467,10 +467,17 @@ def recalibrate(a) -> int:
     for tag, nr in (("scored", NOT_READ), ("as_frozen", ())):
         res[tag] = {lt: calibrate(beside, ref, late=lt, not_read=nr) for lt in LATE}
         res[tag + "_loo"] = calibrate(beside, ref, loo=True, not_read=nr)
+    # for Blocked 128 (U1, after the gate refused the uncentred count): the centred count alone, on
+    # the arms the run's steps pass at the top dose (all but 4.78e-3), and on all four beside
+    c3 = {n: {"V_u": b["V_u"], "V_c": {k: v for k, v in b["V_c"].items() if k != "0.00478"}} for n, b in beside.items()}
+    u_off = tuple(("u", h) for h in HYPS)
+    for tag, bs in (("centred_only_3arms", c3), ("centred_only_4arms", beside)):
+        res[tag] = {lt: calibrate(bs, ref, late=lt, not_read=u_off) for lt in LATE}
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "calibration_127a.json").write_text(json.dumps(res, indent=1) + "\n")
-    print(json.dumps({tag: {lt: res[tag][lt]["summary"] for lt in LATE} for tag in ("scored", "as_frozen")}, indent=1))
+    tags = ("scored", "as_frozen", "centred_only_3arms", "centred_only_4arms")
+    print(json.dumps({tag: {lt: res[tag][lt]["summary"] for lt in LATE} for tag in tags}, indent=1))
     return 0
 
 
