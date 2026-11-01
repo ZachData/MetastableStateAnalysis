@@ -559,3 +559,9 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   audit's ~60 targeted greps and reads put 159k of tool output into context, re-read by every
   later call. Splitting the audit (record) from the edits (PR) at the user's first answer
   would have halved it.
+| 2026-10-31 | C6 U0: the design (schedule from weights, 70m seeds 0–9, bands frozen, calibrated); after /challenge-pr (accept with changes; findings 1-5 answered: late-state plants measured, Blocked 127; gate known answer, read refusals fixed) · subagents: general-purpose opus-5-5 645k | 161 | 221k | 21.9M | 85k | #295 |
+  Over 2× the median (7.6M), ~2.9×: one unit, but across a context compaction, with ~30 seed
+  checkpoints downloaded mid-session (status checks while waiting; a waiter whose `pgrep -f`
+  matched itself never exited), and the reading revised after its calibration on the seeds'
+  real profiles failed, which re-opened the code, tests and design. Fetching the checkpoints in a
+  separate session before the design would have saved the waiting calls.
