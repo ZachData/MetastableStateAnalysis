@@ -948,6 +948,18 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-01, `CLAIM-C`'s n = 20 rescore (`p1_mstate_tracking/status-1.md` "`CLAIM-C` closed"):
+  the calibration deferred since 2026-09-19 took 25 minutes and the gate refused for a fourth
+  reason: at sign homogeneity 0.875 even a perfect result would not survive the correction, at the
+  frozen 5000-pattern null (rate 0.145) and at the exact null's floor (0.076 at 1.9 × 10⁻⁶). The
+  phase synthesis had already said `CLAIM-C` "cannot decide at its measured sign homogeneity";
+  the gate needed six weeks to say it itself, because the attainable-E arithmetic and the
+  correction table live in different files (§3.46's coupling, again). Then Claude ran the gate
+  beside at `--n-perm 1000000`, got a p (0.99956), and reported it as "the gate emits INSUFFICIENT
+  at a finer null"; the regenerated dry run showed the sampled floor (10⁻⁶) sits below the exact
+  null's (1.9 × 10⁻⁶), so the curve was read outside its support. Rule: **a sampled null's floor is
+  never finer than the exact null's; compute the exact floor before reading any p near it**, and a
+  gate's attainable-decision check belongs beside the design, before the data, not in the scorer.
 - 2026-10-25, B7 unit 2 (a planted gate homogeneous where the real input is not; found by
   `/challenge-pr` on #276 after the real grid was read): every planted arm put one partner map in
   every head of every prompt, at every row. On the real rows two prompts carry about 0.9 of

@@ -2990,6 +2990,29 @@ section only says why it is project-wide. Tier 1, `timaeus/dodecahedron-32m` and
 
 ---
 
+## 3.76 `CLAIM-C` withdrawn: the deferred calibration ran, the gate refused by design, and the cluster-identity data went with it (2026-11-01)
+
+**`p1_mstate_tracking/status-1.md` "`CLAIM-C` closed"** holds the numbers; this section says why it
+is project-wide. `CLAIM-C` was the registry's one hard stop and H-TRANSFER's only prediction.
+
+- The user decided to withdraw it before the rescore (`bd1bf68`), on the instrument: two of its
+  six metrics are HDBSCAN outputs Phase 10 undercut, and no track reads cluster identity now.
+  The September uncorrected p (0.949) had been seen, and the withdrawal reason says so.
+- The n = 20 correction (rows 6–12 regenerated identically) makes the gate refuse a fourth time,
+  by design: at sign homogeneity 0.875 a perfect result would not survive its own correction, at
+  any permutation count the exact null allows. Uncorrected, nothing is shown either way.
+- New registry status `withdrawn` (checked, refused by adjudication, listed in the generated
+  tables). H-TRANSFER has no live prediction: Track T's models and the Mistral seeds are the
+  cross-architecture evidence now, all tier 1.
+- The hard stop it carried had been bypassed de facto since §3.36; withdrawing it closes that
+  without making the bypass look decided in advance.
+- Data: `CLAIM-C`'s four arms, the 1.4b weights, Phase 10's 380 Stage 0 runs and the p2 OV
+  matrices deleted (with the morning's unread `plateau_attentions.npz` and duplicates, 47 GB free
+  became 315 GB). The 7 v1 prompts' 410m runs stay, so C7 (`docs/ROADMAP.md` §8: Isobe et al.'s
+  depth profile, 1e's one well against 2412.09080's count, SigClust) runs without a forward pass.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this

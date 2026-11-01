@@ -38,7 +38,6 @@
   - Re-report D1, D3 and D10 on normed rank, with the rank thresholds re-derived on that scale (free)
   - Attribute the late severity decline to attention vs FFN through the parallel-residual decomposition (free where `sublayer_streams` exist)
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
-  - ~~Extend `CLAIM-C`'s homogeneity calibration to the v2 prompt count and rescore the v2 arms~~ done 2026-11-01: refused, then withdrawn — `status-1.md` "`CLAIM-C` closed"
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
 - **Reviewed:** 2026-11-01 · body `f32d662330`
 <!-- /phase-card -->
