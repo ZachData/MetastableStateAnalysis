@@ -565,3 +565,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   outreach advice, then this close-out), and the SessionStart hook printed the main tree's 98 KB
   STATE.md, which was stale (the tree lagged `origin/main`), so the right one was read again.
   A fresh session after the cleanup would have cut it by about a third.
+| 2026-11-01 | CLAIM-C closed; after /challenge-pr (accept with changes; findings 1-5 taken: the correction clamped to the exact null's floor, the LESSONS rule restated, order and curve hash in the record, a withdrawn column, a shared fixture) · subagents: general-purpose opus-5-5 1.5M | 190 | 319k | 36.9M | 83k | #296 |
+  ~4.9× the median: the row above, plus the review round in the same session.
