@@ -107,9 +107,17 @@ The threshold is crossed (E ≥ 20). Falling back below it would take 7 further 
 
 ### H-TRANSFER
 
-1 registered · 1 adjudicable now · 0 dormant
+1 registered · 0 adjudicable now · 0 dormant
 
 *No adjudications.*
+
+<details><summary>Registered but not adjudicable (1)</summary>
+
+| prediction | why |
+|---|---|
+| `CLAIM-C` | withdrawn 2026-11-01 — retired by the user |
+
+</details>
 
 ## Ledger integrity
 

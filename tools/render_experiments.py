@@ -312,6 +312,10 @@ def render() -> str:
       f"relevance ≥ r0).")
     W(f"- **{n_dormant}** are dormant — pre-registered, falsifier intact, instrument "
       f"archived.")
+    withdrawn = [p["id"] for p in preds if p.get("status") == "withdrawn"]
+    if withdrawn:
+        W(f"- **{len(withdrawn)}** withdrawn by the user, kept and uncounted: "
+          + ", ".join(f"`{i}`" for i in withdrawn) + ".")
     if n_adjudicated == 0:
         W("- **0 have been adjudicated.** Every E below is 1 and every decision is "
           "\"not adjudicated\". The apparatus is built; no p-value against a real "

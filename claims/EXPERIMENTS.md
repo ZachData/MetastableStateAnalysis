@@ -15,15 +15,16 @@ gate → what that gate is worth. It is the file to read when the question is
 ## Where the evidence stands
 
 - **40** registered predictions across **7** phases and **5** claims.
-- **12** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
+- **11** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
 - **19** are dormant — pre-registered, falsifier intact, instrument archived.
+- **1** withdrawn by the user, kept and uncounted: `CLAIM-C`.
 - **1** has been adjudicated; see `claims/FALSIFICATION.md` for the running E.
 
 ## Per phase
 
 | phase | registered | e-value | adjudicable now | adjudicated | claims touched |
 |---|---|---|---|---|---|
-| `1` | 3 | 2 | 2 | 0 | `H-EMERGE`, `H-RESIST`, `H-TRANSFER` |
+| `1` | 3 | 2 | 1 | 0 | `H-EMERGE`, `H-RESIST`, `H-TRANSFER` |
 | `6` | 12 | 4 | 2 | 0 | `H-OPERATOR` |
 | `7` | 9 | 4 | 4 | 0 | `H-BRIDGE` |
 | `A` | 1 | 1 | 1 | 1 | `H-RESIST` |
@@ -50,7 +51,7 @@ null that was tried and found invalid, kept visible rather than dropped.
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
 |---|---|---|---|---|---|---|---|---|
 | item-6 replication gate | `CLAIM-A` | `H-RESIST` | needs-null | active | — | — | — | Needs a null over the three pass criteria jointly. |
-| item-6 replication gate | `CLAIM-C` | `H-TRANSFER` | e-value | active | `p1_mstate_tracking.replication_gate:p_value_claim_c` | `claims/audits/claim_c_dry_run.json` | `claims/audits/claim_c_real_run.json` | Sign-concordance of the trained-minus-random CONTRAST, built 2026-08-24 in p1_mstate_tracking/replication_gate.py and fixed BEFORE any gate data exis… |
+| item-6 replication gate | `CLAIM-C` | `H-TRANSFER` | e-value | withdrawn | `p1_mstate_tracking.replication_gate:p_value_claim_c` | `claims/audits/claim_c_dry_run.json` | `claims/audits/claim_c_real_run.json` | Sign-concordance of the trained-minus-random CONTRAST, built 2026-08-24 in p1_mstate_tracking/replication_gate.py and fixed BEFORE any gate data exis… |
 | item-8 checkpoint pilot | `CLAIM-B` | `H-EMERGE` | e-value | active | `core.changepoint_colocation:p_value_claim_b` | `claims/audits/claim_b_p_i1_dry_run.json` | — | Changepoint co-location on the log-step axis, built 2026-08-24 in core/changepoint_colocation.py and fixed BEFORE any sweep data exists. |
 
 ### Phase 6 — `p6_subspace/`
@@ -129,7 +130,6 @@ behaviour of the construction (`claims/calibration/`).
 | prediction | phase · experiment | claim | dry run | calibration | p | e | decision |
 |---|---|---|---|---|---|---|---|
 | `P-S1` | `1c` · 1c-F | `H-RESIST` | p_s1_dry_run.json | — | — | — | not adjudicated |
-| `CLAIM-C` | `1` · item-6 replication gate | `H-TRANSFER` | claim_c_dry_run.json | claim_c_homogeneity.json | — | — | not adjudicated |
 | `CLAIM-B` | `1` · item-8 checkpoint pilot | `H-EMERGE` | claim_b_p_i1_dry_run.json | changepoint_colocation.json, claim_b_grid_feasibility.json | — | — | not adjudicated |
 | `P-T1` | `2d` · 2d-D3 | `H-OPERATOR` | p_t1_p_m1_dry_run.json | — | — | — | not adjudicated |
 | `P-M1` | `2d` · 2d-D1 | `H-OPERATOR` | p_t1_p_m1_dry_run.json | — | — | — | not adjudicated |
@@ -150,7 +150,7 @@ behaviour of the construction (`claims/calibration/`).
 | `H-EMERGE` | `1` | 1 | 1 | 1 | not adjudicated |
 | `H-OPERATOR` | `6`, `2d` | 14 | 4 | 1 | not adjudicated |
 | `H-RESIST` | `1`, `A`, `1c` | 6 | 2 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
-| `H-TRANSFER` | `1` | 1 | 1 | 1 | not adjudicated |
+| `H-TRANSFER` | `1` | 1 | 0 | 1 | not adjudicated |
 
 ## Gaps
 

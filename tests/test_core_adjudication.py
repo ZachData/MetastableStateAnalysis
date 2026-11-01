@@ -356,6 +356,24 @@ class TestLedger:
         problems = verify_ledger(ledger, registry)
         assert any("dormant" in p for p in problems)
 
+    def test_withdrawn_refused_and_caught_by_verify(self, registry, ledger):
+        """`withdrawn` (2026-11-01, `CLAIM-C`) is refused like dormant, and a
+        hand-written record for one is caught. Its own entry, so the fixture's
+        per-claim counts are unchanged for the other tests."""
+        w = _entry("T-WITHDRAWN", status="withdrawn")
+        w["withdrawn_reason"], w["withdrawn_date"] = "retired (test fixture)", "2026-11-01"
+        registry["predictions"].append(w)
+        with pytest.raises(AdjudicationRefused, match="withdrawn"):
+            adjudicate("T-WITHDRAWN", 0.001, [], registry=registry, adjudications_dir=ledger)
+        assert not (ledger / "T-WITHDRAWN.json").exists()
+        (ledger / "T-WITHDRAWN.json").write_text(json.dumps({
+            "prediction_id": "T-WITHDRAWN", "claim": "H-TEST", "p_value": 0.001,
+            "e_value": calibrate(0.001), "kappa": 0.5,
+            "adjudicated_at": "2026-01-01T00:00:00+00:00",
+            "claim_log_E_after": 0.0, "claim_decision_after": "reject_null",
+        }))
+        assert any("withdrawn" in p for p in verify_ledger(ledger, registry))
+
     def test_verify_catches_a_record_that_should_not_exist(self, registry, ledger):
         """
         A record for a `measurement` prediction cannot be produced by

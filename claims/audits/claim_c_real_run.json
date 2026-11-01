@@ -1,6 +1,6 @@
 {
   "prediction": "CLAIM-C",
-  "written_at": "2026-09-19T18:33:22-0500",
+  "written_at": "2026-11-01T14:12:39-0600",
   "run_dirs": [
     "data/phase12/2026-09-19_13-40-48",
     "data/phase12/2026-09-19_15-47-26",
@@ -364,7 +364,7 @@
     "ffef36c7d11fdfd8f80e9830c3d9be4fe043bb873f2a65995e96e3c63d52f053"
   ],
   "adjudicate": false,
-  "refused": "no homogeneity correction is available, and the correction is what enters the e-value: no calibration curve is tabulated for 20 prompts (tabulated: [6, 7, 8, 9, 10, 11, 12]). The curve is generated offline; extend N_PROMPTS_TABULATED and regenerate rather than running uncorrected. Reporting the uncorrected p instead would assert a Type-I guarantee on a null this project has already measured to be anticonservative when the prompt sign-rows agree.",
+  "refused": "at sign_homogeneity 0.875 (curve bin 0.875-0.900) the measured H0 rejection rate at this design's BEST attainable p (0.0002) is 0.145, above alpha=0.05. A perfect result would not survive its own correction, so the gate cannot reject however clean the data is -- the same objection as the uncorrected attainable-floor refusal, one level up. The prompts are telling too nearly the same story; the remedy is prompts that are not, not a weaker correction.",
   "result": {
     "prompts_used": [
       "camus_letranger",
@@ -1261,12 +1261,28 @@
       "note": "a row whose label flip does not move the statistic contributes identically to the observed sum and to every null pattern, so the floor is set by the k rows that do move, not by the prompt count"
     },
     "homogeneity_correction": {
-      "available": false,
-      "refusal": "prompt-count-untabulated",
-      "reason": "no calibration curve is tabulated for 20 prompts (tabulated: [6, 7, 8, 9, 10, 11, 12]). The curve is generated offline; extend N_PROMPTS_TABULATED and regenerate rather than running uncorrected"
+      "available": true,
+      "homogeneity": 0.875,
+      "bin_lo": 0.875,
+      "bin_hi": 0.9,
+      "bin_index": 15,
+      "bin_measured": true,
+      "bin_filled_from_above": false,
+      "bin_n_emitted": 47121,
+      "bin_emission_rate": 0.9985801474951259,
+      "n_cells_dropped": 0,
+      "n_cells_total": 120,
+      "drop_fraction": 0.0,
+      "drop_bin_index": 0,
+      "drop_lo": 0.0,
+      "drop_hi": 0.0,
+      "drop_bin_is_exact_zero": true,
+      "h0_family": "per-metric shared sign propensity: metric j carries a candidate-wide bias q_j = 0.5 +/- b_j toward concordance with the reference sign and prompt rows are conditionally independent given q. b = 0 everywhere is the independent-rows end; b = 0.5 everywhere is the degenerate end the gate already refuses. Three bias shapes are swept (uniform, k-of-six, graded ramp) and each bin keeps the WORST configuration that reached it, because one scalar summary does not determine a distribution.",
+      "drop_family": "the second curve dimension, added 2026-08-25 (POPPER_PLAN.md 6l). The first version of this curve gave every simulated draw a COMPLETE n_prompts x n_metrics table, so a real run that dropped cells read its correction -- and therefore its refusal -- off a table measured on a design it does not have. Drops are now swept as a dimension: bin 0 is exactly zero dropped cells, and the remaining bins run to the last of drop_bin_upper_edges, above which the gate refuses rather than reading the nearest row. Three mechanisms reach each rate -- mcar (every cell independently), column (concentrated in as few metrics as the rate allows) and row (concentrated in as few prompts, which is the severe one, because a rate above 1/n_prompts empties a row and costs an informative unit outright) -- and each (homogeneity, drop) cell keeps the WORST configuration that reached it, over the bias shapes and the drop mechanisms together. WHAT IS ASSUMED: drops are independent of concordance GIVEN THE POSITION. A mechanism that preferentially removes discordant cells is not in this family. NOTHING IS FILLED ACROSS THIS DIMENSION: coarsening pushes p-values up while selection on the informative-row floor pushes the conditional rate down, the two point opposite ways, and drop_monotone_in_d per prompt count records what was measured rather than assuming a direction.",
+      "corrected_best_attainable_p": 0.145042
     },
     "p_value": null,
-    "reason": "no homogeneity correction is available, and the correction is what enters the e-value: no calibration curve is tabulated for 20 prompts (tabulated: [6, 7, 8, 9, 10, 11, 12]). The curve is generated offline; extend N_PROMPTS_TABULATED and regenerate rather than running uncorrected. Reporting the uncorrected p instead would assert a Type-I guarantee on a null this project has already measured to be anticonservative when the prompt sign-rows agree.",
+    "reason": "at sign_homogeneity 0.875 (curve bin 0.875-0.900) the measured H0 rejection rate at this design's BEST attainable p (0.0002) is 0.145, above alpha=0.05. A perfect result would not survive its own correction, so the gate cannot reject however clean the data is -- the same objection as the uncorrected attainable-floor refusal, one level up. The prompts are telling too nearly the same story; the remedy is prompts that are not, not a weaker correction.",
     "verdict": "INSUFFICIENT",
     "hard_stop": true,
     "falsified": false,

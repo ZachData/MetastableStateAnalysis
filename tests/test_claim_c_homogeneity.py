@@ -877,6 +877,23 @@ class TestRefusesRatherThanFallingBackToTheUncorrectedP:
 # What reaches the ledger
 # ---------------------------------------------------------------------------
 
+@pytest.fixture
+def claim_c_active(monkeypatch):
+    """`CLAIM-C` was withdrawn on 2026-11-01; the ledger path is tested on a
+    registry copy where it is active (as in `test_claim_c_null.py`)."""
+    import copy
+    import core.adjudication as adj
+    real = adj.load_registry()
+    def _active(*a, **k):
+        reg = copy.deepcopy(real)
+        for p in reg["predictions"]:
+            if p["id"] == "CLAIM-C":
+                p["status"] = "active"
+        return reg
+    monkeypatch.setattr(adj, "load_registry", _active)
+
+
+@pytest.mark.usefixtures("claim_c_active")
 class TestTheRecordSaysWhatWasCorrected:
 
     def test_the_note_carries_both_p_values_and_the_bin(self, tmp_path):

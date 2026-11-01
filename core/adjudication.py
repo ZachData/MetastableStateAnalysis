@@ -41,6 +41,11 @@ apparatus went away is precisely the selective-record problem the gate exists to
 prevent -- it would let the surviving record be the flattering subset. Dormant
 keeps it visible and uncounted, and reverses if the instrument is rebuilt.
 
+**`status == "withdrawn"` -> refuse.** Retired by the user on the record, with a
+`withdrawn_reason` that says what had been seen when it was withdrawn. Visible
+and uncounted like dormant, but not expected back (first case: `CLAIM-C`,
+2026-11-01).
+
 Separation of concerns
 ----------------------
 `core/evalues.py` owns the arithmetic and knows nothing about predictions.
@@ -360,6 +365,13 @@ def adjudicate(
             f"the instrument, not relaxing this check."
         )
 
+    if entry.status == "withdrawn":
+        raise AdjudicationRefused(
+            f"{prediction_id} is withdrawn: retired by the user on the record.\n"
+            f"  reason on record: {entry.raw.get('withdrawn_reason', '')}\n"
+            f"It stays in the registry and contributes nothing to {entry.claim}'s e-process."
+        )
+
     if entry.relevance < r0:
         raise AdjudicationRefused(
             f"{prediction_id} has relevance {entry.relevance} below the registry's "
@@ -490,9 +502,9 @@ def verify_ledger(
                 f"{pid}: adjudicated while classified {entry['evaluable']!r}; "
                 f"this record must not contribute to {entry['claim']}"
             )
-        if entry.get("status") == "dormant":
+        if entry.get("status") in ("dormant", "withdrawn"):
             problems.append(
-                f"{pid}: adjudicated while dormant (instrument archived); "
+                f"{pid}: adjudicated while {entry['status']}; "
                 f"this record must not contribute to {entry['claim']}"
             )
         expected_e = calibrate(float(rec["p_value"]), float(rec.get("kappa", DEFAULT_KAPPA)))

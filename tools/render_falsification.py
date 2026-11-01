@@ -149,7 +149,7 @@ def render() -> str:
             W("")
 
         blocked = [p for p in rows
-                   if p.get("status") == "dormant" or p["evaluable"] != "e-value"]
+                   if p.get("status") in ("dormant", "withdrawn") or p["evaluable"] != "e-value"]
         if blocked:
             W("<details><summary>Registered but not adjudicable "
               f"({len(blocked)})</summary>")
@@ -157,7 +157,9 @@ def render() -> str:
             W("| prediction | why |")
             W("|---|---|")
             for p in sorted(blocked, key=lambda x: x["id"]):
-                if p.get("status") == "dormant":
+                if p.get("status") == "withdrawn":
+                    why = f"withdrawn {p.get('withdrawn_date', '')} — retired by the user"
+                elif p.get("status") == "dormant":
                     why = "dormant — instrument archived"
                 elif p["evaluable"] == "measurement":
                     why = "measurement — no valid null exists"
