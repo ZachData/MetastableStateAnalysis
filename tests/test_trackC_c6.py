@@ -188,3 +188,15 @@ def test_schedule_hypotheses_and_verdict():
     assert sch.verdict(ro)["H0"] == "confirmed"
     ro = [{"measured": 0.2, "predicted": {h: sch.predicted(0, 64, h) for h in sch.HYPS}}]
     assert sch.verdict(ro)["H0"] == "not confirmed"
+
+
+def test_a_refused_b_dose_still_records_every_arm_null_rate():
+    # U1 (#297): when 100 (a) found no dose, the re-inits' known-answer check compared nothing
+    zeros = {"base": {"u": [0.0], "c": [0.0]}}
+    plants = {k: {f"{d:g}": [0.0] for d in (w.cs.DOSES_A if k[0] == "A" else w.cd.DOSES_B)}
+              for k in ("A_u", "A_c", "B_u", "B_c")}
+    pops = {n: {p: {"base": zeros["base"], "plants": plants} for p in w.V1} for n in ("r", "t")}
+    g = w.gate_one(pops, ["r"], "t")
+    assert g["b_dose"] is None and not g["pass"] and g["arms"] == {}
+    assert set(g["null_rates"]) == {f"{t:.3g}" for t in w.ARMS}
+    assert set(g["B_u_share"]) == {f"{d:g}" for d in w.cd.DOSES_B} and "arms_beside_top_dose" in g

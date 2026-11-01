@@ -70,6 +70,9 @@ HYPS = cd.HYPS                                  # step, cumulative, instantaneou
 WINDOW = (1000, 2000, 4000)                     # a3.d4a's plateau steps on 70m
 EARLY_TOP = 128                                 # 92 (i): the early set is the steps ≤ 128 on 70m
 GATE_STEPS = (7000, 20000)                      # the run's off-grid gate steps (U1)
+#: beside, not gating (added in U1 after the gate refused, #297): `pythia-70m` at 7000, unit 3b's
+#: gate step, under this gate's plant draw, so a refusal can be told from the draw's.
+BESIDE_STEPS = (("seed0", 7000),)
 #: the 70m dates over seeds 0–9 (union; the centred per arm), from `seeds`
 #: (`data/trackC/c6/2026-10-31-u0-seeds/seeds.json`); frozen 2026-10-31 before any output on the run.
 REF70: Optional[dict] = {"u": (256, 512),
@@ -496,12 +499,20 @@ def gate_one(pops: dict, reinits: Sequence[str], step: str) -> dict:
                                   for d in (cs.DOSES_A if k[0] == "A" else cd.DOSES_B)}
                               for k in ("A_u", "A_c", "B_u", "B_c")}}
              for pop, ns in (("reinit", reinits), ("trained", [step]))}
+    tr = units["trained"]
+    base_u = cs.rate(tr["base"]["u"], REL_TOL)
+    diag = {"uncentred_null_rate": cs.rate(units["reinit"]["base"]["u"], REL_TOL), "base_rate_u": base_u,
+            "B_u_share": {k: cs.share(cs.rate(v, REL_TOL), base_u) for k, v in tr["plants"]["B_u"].items()},
+            "null_rates": {f"{t:.3g}": cs.rate(units["reinit"]["base"]["c"], t) for t in ARMS}}
     try:
-        bd = cd.b_dose(units["trained"]["base"]["u"], units["trained"]["plants"]["B_u"])
+        bd = cd.b_dose(tr["base"]["u"], tr["plants"]["B_u"])
     except cd.DoseRefused as e:
-        return {"b_dose": None, "refused": str(e), "arms": {}, "pass": False}
+        # beside only (U1, #297): the arms read at the top dose, which 100 (a) did not pick
+        top = max(tr["plants"]["B_u"], key=float)
+        return {"b_dose": None, "refused": str(e), "arms": {}, "pass": False, **diag,
+                "arms_beside_top_dose": cd.gate_arms(units, ARMS, top)["arms"]}
     g = cd.gate_arms(units, ARMS, bd)
-    g["uncentred_null_rate"] = cs.rate(units["reinit"]["base"]["u"], REL_TOL)
+    g.update(diag)
     return g
 
 
@@ -526,26 +537,30 @@ def gate(a) -> int:
         model = reinit_model(cfg, int(name.split(":")[1])).to(device)
         pops[name] = _units(model, tok, device, rng, u)
         del model
-    for s in GATE_STEPS:
-        model = cs.load(MODELS["run"], s, device)
-        pops[f"step{s}"] = _units(model, tok, device, rng, u)
+    for name, s in [("run", s) for s in GATE_STEPS] + list(BESIDE_STEPS):   # beside last: the run's draws unchanged
+        model = cs.load(MODELS[name], s, device)
+        pops[f"step{s}" if name == "run" else f"{name}:step{s}"] = _units(model, tok, device, rng, u)
         del model
         torch.cuda.empty_cache()
     per_step = {f"step{s}": gate_one(pops, reinits, f"step{s}") for s in GATE_STEPS}
+    beside = {f"{n}:step{s}": gate_one(pops, reinits, f"{n}:step{s}") for n, s in BESIDE_STEPS}
     pf = json.loads(U3B_PREFLIGHT.read_text())
-    null_now = {k: v["null_rate"] for k, v in per_step[f"step{GATE_STEPS[0]}"]["arms"].items()}
+    null_now = per_step[f"step{GATE_STEPS[0]}"]["null_rates"]
     null_3b = {k: pf["gate"]["arms"][k]["null_rate"] for k in null_now}
+    if set(null_now) != {f"{t:.3g}" for t in ARMS}:     # was vacuous when 100 (a) refused (U1, #297)
+        raise C6Refused(f"the re-inits' rates cover {sorted(null_now)}, not every arm")
     if any(abs(null_now[k] - null_3b[k]) > 0.005 for k in null_now):
         raise C6Refused(f"the re-inits' rates {null_now} differ from unit 3b's {null_3b}")
     arms = {f"{t:.3g}": all(g["arms"].get(f"{t:.3g}", {}).get("pass", False) for g in per_step.values())
             for t in ARMS}
     u_ok = all(g["b_dose"] is not None for g in per_step.values())
     res = {"code": code_sha(), "meta": meta(torch), "seed0_known_answer_max_rel": ka,
-           "per_step": per_step, "arms_gated": arms,
+           "per_step": per_step, "beside_not_gating": beside, "arms_gated": arms,
            "uncentred_read": u_ok, "readable": u_ok or any(arms.values()), "null_vs_3b": [null_now, null_3b]}
     (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({"arms_gated": arms, "uncentred_read": u_ok,
-                      "b_dose": {k: g["b_dose"] for k, g in per_step.items()}}, indent=1))
+                      "b_dose": {k: g["b_dose"] for k, g in {**per_step, **beside}.items()},
+                      "B_u_share": {k: g["B_u_share"] for k, g in {**per_step, **beside}.items()}}, indent=1))
     return 0 if res["readable"] else 1
 
 
