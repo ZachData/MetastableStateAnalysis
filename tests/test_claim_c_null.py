@@ -867,24 +867,7 @@ class TestGateVerdict:
 # Ledger wiring
 # ---------------------------------------------------------------------------
 
-@pytest.fixture
-def claim_c_active(monkeypatch):
-    """`CLAIM-C` was withdrawn on 2026-11-01, so the real registry refuses it
-    (`core/adjudication.py`). The wiring is still tested, on a copy of the
-    registry where it is active."""
-    import copy
-    import core.adjudication as adj
-    real = adj.load_registry()
-    def _active(*a, **k):
-        reg = copy.deepcopy(real)
-        for p in reg["predictions"]:
-            if p["id"] == "CLAIM-C":
-                p["status"] = "active"
-        return reg
-    monkeypatch.setattr(adj, "load_registry", _active)
-
-
-@pytest.mark.usefixtures("claim_c_active")
+@pytest.mark.usefixtures("claim_c_active")    # tests/conftest.py
 class TestAdjudicationWiring:
 
     def _args(self):

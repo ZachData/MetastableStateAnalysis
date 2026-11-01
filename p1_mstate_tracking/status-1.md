@@ -39,7 +39,7 @@
   - Attribute the late severity decline to attention vs FFN through the parallel-residual decomposition (free where `sublayer_streams` exist)
   - Fill the checkpoint gaps listed in `status-1.md` "Checkpoint schedule" (forward pass, 410m, all prompts)
   - Build `CLAIM-A`'s null and run it on `pythia-1.4b` steps 0 and 8 (forward pass, two 1.4b checkpoints)
-- **Reviewed:** 2026-11-01 · body `f32d662330`
+- **Reviewed:** 2026-11-01 · body `6d150c4951`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -463,6 +463,13 @@ contiguous 13–19 rows (not needed at 20 prompts), the step-0 sensitivity arm
 (never on disk), and Phase 10's carried item "the two HDBSCAN metrics against
 the reproducibility floor" (dropped with the claim).
 
+**Order, in case the branch history goes:** this decision was committed at
+2026-11-01 13:46:30 −0600 (`bd1bf68`); the rescore's record was written at
+14:12:39 −0600 (`claim_c_real_run.json` `written_at`). The record's verdict
+depends on the curve `claims/calibration/claim_c_homogeneity.json`, sha256
+`2f0376d96d2b381a1df8b7fa754234ca8059d07d4302f6e229085efa4d873b1d` (the
+scorer does not record it; the dry run pins it).
+
 **What it returned.**
 
 | step | result |
@@ -478,9 +485,13 @@ And the uncorrected numbers put both decisions out of reach anyway: TRANSFERS
 needs p ≤ α in every subset, FAILS-TO-TRANSFER the reciprocal; the six metrics
 disagree (`fiedler_mean` 20 of 20 concordant, `cka_prev` 0 of 20). Nothing
 about transfer is shown either way. `claims/adjudications/` untouched. A gate
-defect found on the way, not fixed (the claim is withdrawn): with `--n-perm`
-above the exact null's distinct patterns, a sampled null's floor falls below
-the exact one and the correction is read outside its support.
+defect found on the way and **fixed** after `/challenge-pr` on #296 (finding 1):
+above 16 prompts the null is sampled, so a large `--n-perm` gave a floor below
+the exact null's, where the curve has no support, and a perfect table would
+have passed the floor check at a correction of 2 × 10⁻⁴ against a measured
+rate above 0.065. `apply_homogeneity_correction` now reads the curve no lower
+than the row's `best_attainable_p` (test `TestTheCurveIsReadOnlyOnItsSupport`);
+the frozen-null record above is unchanged by it.
 
 `claims/audits/claim_c_dry_run.json` regenerated (`python -m tools.dry_run_claim_c --write`)
 because it pins the curve's sha256; its verdicts at 6–12 are unchanged and it

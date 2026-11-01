@@ -957,8 +957,10 @@ needs the user to enable it on GitHub.
   correction table live in different files (§3.46's coupling, again). Then Claude ran the gate
   beside at `--n-perm 1000000`, got a p (0.99956), and reported it as "the gate emits INSUFFICIENT
   at a finer null"; the regenerated dry run showed the sampled floor (10⁻⁶) sits below the exact
-  null's (1.9 × 10⁻⁶), so the curve was read outside its support. Rule: **a sampled null's floor is
-  never finer than the exact null's; compute the exact floor before reading any p near it**, and a
+  null's (1.9 × 10⁻⁶), the floor of the null the correction curve was simulated on, so the curve
+  was read outside its support (`/challenge-pr` on #296, finding 1, which also showed a perfect
+  table would have passed; fixed: the lookup is clamped to the exact floor). Rule: **a correction
+  calibrated on one null is read only at p that null can produce; clamp to its floor**, and a
   gate's attainable-decision check belongs beside the design, before the data, not in the scorer.
 - 2026-10-25, B7 unit 2 (a planted gate homogeneous where the real input is not; found by
   `/challenge-pr` on #276 after the real grid was read): every planted arm put one partner map in

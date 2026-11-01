@@ -506,20 +506,20 @@ def print_summary(reg: dict) -> None:
     adj = load_adjudications()
 
     print(f"\nregistry: {len(preds)} predictions, {len(adj)} adjudicated\n")
-    print(f"{'claim':<12} {'total':>6} {'active':>7} {'dormant':>8} {'e-value':>8} "
-          f"{'needs-null':>11} {'measurement':>12} {'adjudicated':>12}")
-    print("-" * 80)
+    print(f"{'claim':<12} {'total':>6} {'active':>7} {'dormant':>8} {'withdrawn':>10} "
+          f"{'e-value':>8} {'needs-null':>11} {'measurement':>12} {'adjudicated':>12}")
+    print("-" * 91)
     for claim in sorted({p["claim"] for p in preds}):
         rows = [p for p in preds if p["claim"] == claim]
         c = Counter(p["evaluable"] for p in rows)
         st = Counter(p.get("status", "active") for p in rows)
         n_adj = sum(1 for p in rows if p["id"] in adj)
-        print(f"{claim:<12} {len(rows):>6} {st['active']:>7} {st['dormant']:>8} "
+        print(f"{claim:<12} {len(rows):>6} {st['active']:>7} {st['dormant']:>8} {st['withdrawn']:>10} "
               f"{c['e-value']:>8} {c['needs-null']:>11} {c['measurement']:>12} {n_adj:>12}")
-    print("-" * 80)
+    print("-" * 91)
     c = Counter(p["evaluable"] for p in preds)
     st = Counter(p.get("status", "active") for p in preds)
-    print(f"{'TOTAL':<12} {len(preds):>6} {st['active']:>7} {st['dormant']:>8} "
+    print(f"{'TOTAL':<12} {len(preds):>6} {st['active']:>7} {st['dormant']:>8} {st['withdrawn']:>10} "
           f"{c['e-value']:>8} {c['needs-null']:>11} {c['measurement']:>12} {len(adj):>12}")
 
     n_bf = sum(1 for p in preds if p.get("registered_provenance") == "backfilled")
