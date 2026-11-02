@@ -23,7 +23,7 @@ from trackC_writeup import c2_seeds as cs
 
 TROUGH = (491, 671, 917)
 SCALE_STEP = 9536
-KNOWN_TOL = 1e-12
+KNOWN_TOL = 1e-12          # placed: the known answer is the same code path, so exact up to float noise
 UNC_PYTHIA = 0.79      # the lowest uncentred plant-A share at 1e-3 of 70m, 160m, GPT-2 small (T2 unit 1)
 UNC_AS_9536 = 0.10
 

@@ -965,6 +965,14 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-01, T5 U2b (a gate that could not pass; caught while writing the rule, before any
+  output): Blocked 126 (a) proposed T2's planted gates at trough steps with "pass = T2's own bar",
+  and T2's bar needs every arm's re-init rate ≤ 5 %. The re-inits are the null population at
+  every trained step, and unit 1's record already had 3 of 4 arms at 6.2–8.9 %, so the proposed
+  test would have read "fails" whatever the trough showed. The rule was rewritten to label the
+  trained part (A, B) and report the full gate beside. Rule: **before proposing a re-gate on a new
+  population, list which terms of the gate read that population; a term that reads only a fixed
+  one decides the outcome in advance and must be reported, not counted.**
 - 2026-10-31, C6 U0 (a schedule that could not lose; caught by the design's own planted test,
   before any output on the run): the first rule read the run under each schedule's own plateau
   window and let a count that came out "unreadable" there (plateau 0, or already high in the
