@@ -547,13 +547,17 @@ def preflight(a) -> int:
     """As C2 3b's and 3c's, on one model: its step 1 (weight SDs, a populated record), 3 re-inits
     of its config (HF's Llama init) and step 9536 (the trained population, and the state
     convention and loss checks); plants A and B through both counts; the null-matched and B-matched
-    arms derived; each arm gated. Writes the design-preflight tool's inputs for both counts."""
+    arms derived; each arm gated. Writes the design-preflight tool's inputs for both counts.
+    ``--trained-step s`` (T5 U2b, `design-T5.md`) moves the trained population from 9536 to s and
+    writes to ``<out>/<model>-step<s>/``; the loss bar applies at 9536 only (recorded beside
+    elsewhere), and no frozen arms are checked."""
     os.environ["HF_HUB_OFFLINE"] = "1"
+    ts = int(getattr(a, "trained_step", None) or SCALE_STEP)
     torch, device = c._torch_setup()
     from transformers import AutoConfig
     m_ = a.model
     repo = MODELS[m_]
-    out = Path(a.out) / m_
+    out = Path(a.out) / (m_ if ts == SCALE_STEP else f"{m_}-step{ts}")
     out.mkdir(parents=True, exist_ok=True)
     tok = tokenizer(m_)
     tok_sha = hashlib.sha256(tokenizer_json(m_).read_bytes()).hexdigest()
@@ -570,7 +574,7 @@ def preflight(a) -> int:
     checks["step1"]["record"] = {"n": r1["n"], "states": len(r1["e1"]), "e1[0]": r1["e1"][0], "e1[-1]": r1["e1"][-1]}
     del step1
     pops: Dict[str, dict] = {}
-    names = [f"reinit:{s}" for s in range(N_REINIT)] + [f"step{SCALE_STEP}"]
+    names = [f"reinit:{s}" for s in range(N_REINIT)] + [f"step{ts}"]
     init_check = {}
     for name in names:
         if name.startswith("reinit"):
@@ -580,7 +584,7 @@ def preflight(a) -> int:
             init_check[name] = {"min_ratio": min(r.values()), "max_ratio": max(r.values()),
                                 "worst": max(r, key=lambda k: abs(math.log(r[k])))}
         else:
-            model = load(repo, f"step{SCALE_STEP}", device)
+            model = load(repo, f"step{ts}", device)
             checks[name] = convention(model, tok, device)
         if len(c.states(model, tok, V1[0], device)[0]) != N_STATES[m_]:
             raise T2Refused(f"{m_} {name}: not {N_STATES[m_]} states")
@@ -593,7 +597,8 @@ def preflight(a) -> int:
         torch.cuda.empty_cache()
         print(f"{m_} {name} done", flush=True)
     tr_name = names[-1]
-    conv_ok = checks["step1"]["pass"] and checks[tr_name]["pass"] and checks[tr_name]["loss_mean"] < TRAINED_LOSS_MAX
+    conv_ok = checks["step1"]["pass"] and checks[tr_name]["pass"] and (
+        ts != SCALE_STEP or checks[tr_name]["loss_mean"] < TRAINED_LOSS_MAX)
 
     reinits, trained = names[:-1], names[-1:]
 
@@ -618,7 +623,7 @@ def preflight(a) -> int:
         derived["null_matched"], derived["null_matched_refused"] = None, str(e)
     again = tuple(([float(f"{derived['null_matched']:.3g}")] if derived["null_matched"] is not None else [])
                   + list(FIXED_ARMS) + [float(f"{derived['b_matched']:.3g}")])
-    frozen = TAU_ARMS.get(m_)
+    frozen = TAU_ARMS.get(m_) if ts == SCALE_STEP else None
     if frozen and tuple(frozen) != again:
         raise T2Refused(f"{m_}: the preflight derives {again}, not the frozen {frozen}")
     arms = frozen or again
@@ -631,12 +636,13 @@ def preflight(a) -> int:
         tool_in = {"statistic": f"{'centred' if w == 'c' else 'uncentred'} E_1 relative drop per (prompt, "
                                 f"transition), (E_t − E_t+1) / |E_t|, dodecahedron-{m_} (t2)",
                    "direction": "greater", "nulls": {"reinit": nu["base"][w]}, "moved_marks": [],
-                   "trained": tr["base"][w], "trained_step": str(SCALE_STEP),
+                   "trained": tr["base"][w], "trained_step": str(ts),
                    "scored_steps": [str(s) for s in GRID],
                    "planted": {f"{x:g}": nu["plants"][key][f"{x:g}"] for x in DOSES_B},
                    "bounds": None, "decision_p": 0.05}
         (out / f"preflight_input_{w}.json").write_text(json.dumps(tool_in) + "\n")
     rec = {"code": code_sha(), "meta": meta(torch), "model": m_, "repo": repo, "tokenizer_sha256": tok_sha,
+           "trained_step": ts,
            "derived": derived, "b_target": b_target, "arms": list(arms), "frozen": frozen is not None, "gate": g,
            "uncentred_at_1e-3": gate_u, "units_per_population": {p: len(units[p]["base"]["c"]) for p in units},
            "scales": {pop: {"s_u": cs.scale(units[pop]["base"]["u"]), "s_c": cs.scale(units[pop]["base"]["c"])}
@@ -801,6 +807,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             sp.add_argument("--steps", nargs="+", type=int, default=list(GRID) + [SCALE_STEP])
         if cmd == "preflight":
             sp.add_argument("--model", choices=list(MODELS), required=True)
+            sp.add_argument("--trained-step", type=int, choices=list(GRID) + [SCALE_STEP], default=SCALE_STEP)
         if cmd == "read":
             sp.add_argument("--preflight", required=True)
     a = ap.parse_args(argv)

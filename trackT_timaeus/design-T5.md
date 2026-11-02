@@ -155,6 +155,25 @@ at the bottom, probability about 1 − 1/16 = 0.94 whatever s is. The gate's 90 
 trough's length, and a planted dip at 0.15 lasting one step would read "spreads" about half the
 time. The bar applies to descents that stay down.
 
+**U2b, T2's planted gates in the trough (added 2026-11-01 by Blocked 126 (a), decided by
+Claude on the user's delegation ("Blocked 115 or 126 are yours"), as recommended; a second
+extension of T5's budget, one unit; fixed before any U2b output).** The question as asked: do the
+counts fail where the cloud is concentrated? Producer: `t2.py preflight --trained-step <s>`, T2's
+preflight with its trained population moved from 9536 to step s and nothing else changed.
+
+| item | fixed as |
+|---|---|
+| input | `dodecahedron-32m` at s ∈ {491, 671, 917} (U2's ρ_mid 0.124, 0.116, 0.111; position 0's norm over the median 1.4–2.2), the same 3 re-inits, the 7 v1 prompts, plants and seed as T2 unit 1 |
+| known answer (gate) | `--trained-step 9536` reproduces unit 1's `preflight_plants.json` (`9b141c42cff7`): `derived`, `arms` and every `gate` number equal to 1e-12. Fails → refuse the reading |
+| arms | T2's family, derived as frozen at each s: null-matched (from the re-inits, so the same τ at every s), 1e-4, 3e-4, B-matched (re-derived at s, with B's dose) |
+| **stated before output** | the null part of the gate reads the re-inits only, so it does not move with s: on 32m the null-matched, 1e-4 and 3e-4 arms have re-init rates 6.2 %, 8.9 %, 8.3 % > 5 % (unit 1's record) and **fail T2's full gate at every s**. Only the B-matched arm can pass it in full. So the full gate is reported, and the label reads the part that depends on the trained cloud |
+| per s, per arm | T2's full gate as frozen (null ≤ 5 %, B ≥ 0.4, A ≤ 0.1), and **the trained part** P = (A share ≤ 0.1 and B share ≥ 0.4) |
+| **the label (centred)** | **passes in the trough** if at each of the 3 steps some arm has P; **fails in the trough** if no arm has P at any step; else **mixed**. Beside: whether the full gate passes at any s (the B-matched arm only) |
+| the uncentred count, beside | at D2's 1e-3: plant A share, against 70m, 160m and GPT-2 small's 0.79–0.98 and 9536's 0.04: "as on Pythia" if ≥ 0.79, "as at 9536" if ≤ 0.10, else "between". No label (T2 never gated it) |
+| what it changes | **passes**: the leak of a common vector into the centred count tracks the trained cloud's concentration, so the count fails where the cloud is concentrated (T5's question as asked); U3 and U4 are revised toward the late rise (1253 → 9536) as their own Blocked item, before U3 runs. **fails**: the leak is there at ρ ≈ 0.11 too, so concentration is not its cause on its own; U3 as frozen. **mixed**: described, U3 as frozen |
+| not done | no date, no V, no scored grid, `-67m` not read (its null-matched τ refused in unit 1) |
+| exit, budget | the label computed or the gate refuses; one unit, minutes of GPU |
+
 **U3, where the shared direction is written (H2).** At 8 checkpoints a model (Dodecahedron 1, ~10,
 ~100, ~300, ~1000, ~3000, ~6000, 9536 on its grid; 410m 0, 16, 128, 512, 1000, 4000, 32000,
 143000). u_ℓ = x̄_ℓ / ‖x̄_ℓ‖ at the block's output. For each block and token, the write's component
@@ -206,7 +225,8 @@ Any failure goes back to you before that unit's reading.
 **Exit** (ROADMAP): H1 and H2 each read supported, not supported or not told apart (H2 only from
 U4; "not told apart" if U4 does not run) under the rules above, and "does Dodecahedron's cloud spread at any
 checkpoint" answered on the 53. **Budget: U0 (this design and scan) + U1–U5 + close-out**, U4 ≤ 3
-GPU-days, **plus U1b** (extended on the record, Blocked 124 (a), 2026-10-30). **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
+GPU-days, **plus U1b** (extended on the record, Blocked 124 (a), 2026-10-30), **plus U2b** (Blocked 126 (a),
+2026-11-01, on the user's delegation). **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
 clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 
 ## Worth challenging (for the PR)
