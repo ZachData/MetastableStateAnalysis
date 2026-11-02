@@ -15,7 +15,7 @@ def _rec(step, arms, a_u=0.04):
     return {"trained_step": step, "code": "x", "derived": {"b_dose": "0.25"}, "arms": [1e-4],
             "gate": {"arms": arms, "b_dose": "0.25", "pass": all(v["pass"] for v in arms.values())},
             "uncentred_at_1e-3": {"A_share": a_u, "null_rate": 0.06, "base_rate": 0.7},
-            "checks": {f"step{step}": {"loss_mean": 5.0}}}
+            "checks": {f"step{step}": {"loss_mean": 5.0}}, "checks_pass": True}
 
 
 def test_constants_as_frozen():
@@ -74,3 +74,15 @@ def test_read_refuses_without_the_known_answer(tmp_path):
         (pre / f"32m-step{s}" / "preflight_plants.json").write_text(json.dumps(_rec(s, {"0.0001": _arm(0.089, 0.98, a)})))
     assert t5d.main(["read", "--pre", str(pre), "--ref", str(ref_dir)]) == 0
     assert json.loads((pre / "reading.json").read_text())["label"] == "mixed"
+
+
+def test_load_refuses_a_record_without_its_step_or_its_checks(tmp_path):
+    (tmp_path / "32m").mkdir()
+    rec = _rec(9536, {"a": _arm(0, 1, 0)})
+    f = tmp_path / "32m" / "preflight_plants.json"
+    for bad in ({k: v for k, v in rec.items() if k != "trained_step"}, {**rec, "checks_pass": False}):
+        f.write_text(json.dumps(bad))
+        with pytest.raises(t5d.U2bRefused):
+            t5d.load(tmp_path, 9536)
+    f.write_text(json.dumps(rec))
+    assert t5d.load(tmp_path, 9536)["trained_step"] == 9536

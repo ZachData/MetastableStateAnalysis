@@ -10,6 +10,7 @@ share at 1e-3 beside.
 
 Tier 1, description (nothing here is registered).
     METS_DATA=<main>/data python -m trackT_timaeus.t5d read --pre <dir> --ref <unit1 preflight dir>
+    METS_DATA=<main>/data python -m trackT_timaeus.t5d sweep --pre <dir>        # post hoc, beside
 """
 
 from __future__ import annotations
@@ -89,12 +90,44 @@ def label(per_step: Dict[int, dict]) -> str:
     return "mixed"
 
 
+def _dir(pre: Path, s: int) -> Path:
+    return pre / ("32m" if s == SCALE_STEP else f"32m-step{s}")
+
+
 def load(pre: Path, s: int) -> dict:
-    d = pre / ("32m" if s == SCALE_STEP else f"32m-step{s}")
+    """A U2b record: it must name its trained step (unit 1's own record does not, so a copy of
+    it cannot pass the known answer against itself) and its convention checks must pass
+    (`/challenge-pr` on #300, finding 3)."""
+    d = _dir(pre, s)
     rec = json.loads((d / "preflight_plants.json").read_text())
-    if int(rec.get("trained_step", SCALE_STEP)) != s:
-        raise U2bRefused(f"{d}: trained_step {rec.get('trained_step')} is not {s}")
+    if "trained_step" not in rec or int(rec["trained_step"]) != s:
+        raise U2bRefused(f"{d}: trained_step {rec.get('trained_step')!r} is not {s}")
+    if not rec.get("checks_pass"):
+        raise U2bRefused(f"{d}: its convention checks did not pass")
     return rec
+
+
+#: post hoc (`/challenge-pr` on #300, finding 1), chosen after the reading: fixed τ across steps
+SWEEP_TAUS = (1e-3, 2e-3, 3e-3, 5e-3, 8.82e-3, 1.2e-2)
+SWEEP_DOSES = ("0.25", "0.5")
+
+
+def sweep(a) -> int:
+    """Beside, not a label: T2's gate terms at fixed τ and fixed B dose on every step's units,
+    so the arm is the same arm at every step (the B-matched arm's B ≥ 0.4 holds by its
+    derivation, so its pass rests on plant A alone)."""
+    from trackC_writeup import c2_dose as d
+    pre = Path(a.pre)
+    res = {"post_hoc": True, "taus": list(SWEEP_TAUS), "per_step": {}}
+    for s in (*TROUGH, SCALE_STEP):
+        units = json.loads((_dir(pre, s) / "preflight_units.json").read_text())
+        res["per_step"][s] = {bd: d.gate_arms(units, SWEEP_TAUS, bd)["arms"] for bd in SWEEP_DOSES}
+    (pre / "posthoc_sweep.json").write_text(json.dumps(res, indent=1) + "\n")
+    for s, by in res["per_step"].items():
+        for bd, arms in by.items():
+            print(s, bd, " ".join(f"{k}: A {v['A_share']:.2f} B {v['B_share']:.2f} {'pass' if v['pass'] else '-'}"
+                                  for k, v in arms.items()))
+    return 0
 
 
 def read(a) -> int:
@@ -120,8 +153,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     sp = sub.add_parser("read")
     sp.add_argument("--pre", required=True)
     sp.add_argument("--ref", required=True)
+    sub.add_parser("sweep").add_argument("--pre", required=True)
     a = ap.parse_args(argv)
-    return {"read": read}[a.cmd](a)
+    return {"read": read, "sweep": sweep}[a.cmd](a)
 
 
 if __name__ == "__main__":

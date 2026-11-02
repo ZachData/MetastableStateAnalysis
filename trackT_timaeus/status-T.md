@@ -15,7 +15,7 @@
   - T5 U1 (gate passes): the init alone does not concentrate the cloud: `pythia-70m` step 0 (mean cosine over states 1–5, 0.28) and `gpt-2-small`'s flat init (0.23) both sit at or below the falsifying 0.30; on random weights the flat init raises the middle-state mean cosine in Llama by 0.18–0.37 at every shape (at matched depth 0.20–0.42, smallest at 70m's dose, as H1 predicts), and in GPT-NeoX not at all (−0.06 to 0.02, lower than Pythia's init at 3 of 4 shapes), and Pythia's init takes a Llama at 32m's shape 0.84 of the way to a GPT-NeoX's, so H1 at init reads "partly": an interaction of init and architecture, the architecture's part not identified (its factor carries the tokenizer) — `trackT_timaeus/status-T.md` "T5 U1"
   - T5 U1b (Blocked 124 (a), one unit beyond the budget; gate passes): no single part of the Llama carries the init's effect at 32m's shape: swapping its SwiGLU MLP for GeLU at 4d removes 0.16 of the 0.36 (about half on logit or atanh scales), and LayerNorm, the parallel residual, 0.25 rotary, 6 KV heads and GPT-NeoX's tokenizer each remove under 0.01 (the tokenizer is not R2's architecture factor); all six at once remove 0.43, so much of the effect appears only with parts together (its size depends on the scale of ρ), which set not tested — `trackT_timaeus/status-T.md` "T5 U1b"
   - T5 U2 (Blocked 125 (a); gate passes): Dodecahedron's cloud is not concentrated throughout training: on both models the middle-state mean cosine rises to 1.00 by step 30–47, falls to 0.10–0.11 at 671–917 (lower than any Pythia minimum read, 0.17–0.21) and rises again to 0.90 by 9536, so T2 read it only at its two peaks; Pythia has the same rise, fall and rise, with lower ends; `gpt-2-small` spreads (0.34 → 0.17) and stays spread; position 0 decides none of it; so the trained cloud's 0.90 is not the init's concentration persisting, and arises after step ~1253 — `trackT_timaeus/status-T.md` "T5 U2"
-  - T5 U2b (Blocked 126 (a), a second extension; known answer exact): in the trough (steps 491–917, ρ_mid 0.11–0.12) T2's B-matched centred arm passes T2's full gate at every step (plant A 0.00, B 0.77–0.81, re-init 1.5 %) and the uncentred count sees plant A as on Pythia (0.93–1.00, against 0.04 at 9536), so the counts fail where the cloud is concentrated; the other three centred arms still fail, on the re-inits (fixed by the init) and on plant A (0.12–0.45) — `trackT_timaeus/status-T.md` "T5 U2b"
+  - T5 U2b (Blocked 126 (a), a second extension; known answer exact): in the trough (steps 491–917, ρ_mid 0.11–0.12) T2's B-matched centred arm passes T2's full gate at every step (plant A 0.00, re-init 1.5 %; its B ≥ 0.4 holds by its derivation) and the uncentred count sees plant A as on Pythia (0.93–1.00, against 0.04 at 9536), so the counts fail where the cloud is concentrated (co-occurrence: the trough is also in the LR warmup, at higher loss and a small position-0 norm); post hoc, at fixed τ 1e-3–1.2e-2 plant A is ≤ 0.10 in the trough and 0.32–0.58 at 9536; the other three centred arms still fail, on the re-inits (fixed by the init) and on plant A (0.12–0.45) — `trackT_timaeus/status-T.md` "T5 U2b"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-01 · body `a6bbb6d4c1`
+- **Reviewed:** 2026-11-01 · body `74144b11e6`
 <!-- /phase-card -->
 
 ## Units
@@ -83,17 +83,29 @@ every trough step, on the B-matched arm only. **Uncentred at 1e-3, beside:** pla
 **What it says.** Where Dodecahedron's cloud is spread (ρ_mid 0.11–0.12), both counts behave as
 on Pythia on the trained side: the uncentred count sees a common vector as it does on 70m, 160m and
 GPT-2 small, and one centred arm (B-matched) keeps plant A out entirely while seeing B. At 9536
-(ρ 0.90) neither does. So the counts fail where the cloud is concentrated, which answers T5's
-question as asked. By the design's outcome table, U3 and U4 are revised toward the late rise before
-U3 runs (Blocked 130).
+(ρ 0.90) neither does. So the counts' failure **co-occurs with** the concentrated cloud, which
+answers T5's question as asked (`/challenge-pr` on #300, finding 2: not "tracks", a causal word;
+the design's outcome table used it). By that table, U3 and U4 are revised toward the late rise
+before U3 runs (Blocked 130).
+
+**The B-matched arm's B share is not an observation** (`/challenge-pr` on #300, finding 1): its τ
+is set so the centred count sees plant B as often as the uncentred one does, at a B dose chosen
+so that rate is ≥ 0.4 (`t2.py` preflight), so "B ≥ 0.4" holds by construction and its pass rests
+on plant A alone. **Post hoc, beside, chosen after the reading** (`t5d.py sweep`,
+`posthoc_sweep.json` `6544e4d489c4`): with τ fixed across steps (1e-3, 2e-3, 3e-3, 5e-3, 8.82e-3,
+1.2e-2) and B's dose fixed (0.25 or 0.5), plant A's share is ≤ 0.10 at every τ in the trough and
+0.32–0.58 at 9536. At B dose 0.5, τ 2e-3–5e-3 passes T2's full gate at all three trough steps and
+9536 fails at every τ, on plant A. So the leak's size depends on the step at the same arm, not
+only on the arm's re-derivation.
 
 **What it does not say.** T2's design gate needs *every* arm to pass; in the trough three of four
 still fail: on the re-inits (fixed by Dodecahedron's init cloud, U1) and also on plant A (0.12–0.45
-at the small fixed τ). So the centred count's leak is not gone in the trough, only below the
-B-matched arm's τ, which holds 12–14 % of the trained units free. The B-matched arm passing at a
-lower B share (0.77–0.81) and larger dose (0.5 against 9536's 0.25) is the derivation's own choice,
-re-derived per step as frozen. Nothing here dates anything: the trough is 308–1253 and T2's early
-plateau (1253–3738) spans ρ_mid 0.13 → 0.76, so a date there would be read while the cloud
+at the small τ 1e-4 to 5.6e-4, which hold 32–77 % of the trained units free). Above τ ≈ 1e-3 the
+leak is ≤ 0.10 (the sweep). **The trough differs from 9536 in more than ρ** (finding 2): it is
+inside Dodecahedron's 1000-step LR warmup, its loss is 4.2–4.6 nats against 3.66, and position 0's
+norm over the median is 1.4–2.2 against 23.8; none of these is told apart from the cloud's
+concentration here. Nothing here dates anything: the trough is 308–1253 and T2's early plateau
+(1253–3738) spans ρ_mid 0.13 → 0.76, so a date there would be read while the cloud
 re-concentrates. `-67m` not read.
 
 **Parked** (why / cost / which decision it could change): (1) The gate at U3's checkpoints along
@@ -105,7 +117,10 @@ the re-concentration / — / carried to Blocked 130 (c) and T5's close-out.
 Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m trackT_timaeus.t2
 preflight --model 32m --trained-step <s> --out <dir>` for s in 9536 491 671 917, then
 `python -m trackT_timaeus.t5d read --pre <dir> --ref <main>/data/trackT/t2u1/2026-10-29-preflight`
-(refuses the reading unless 9536 reproduces unit 1). Tests: `tests/test_trackT_t5d.py`.
+(refuses the reading unless 9536 reproduces unit 1, and any record without its step or with
+failed checks), then `… t5d sweep --pre <dir>` (post hoc). Tests: `tests/test_trackT_t5d.py`.
+The `--trained-step` branch of `t2.py` has no unit test of its own (adding one now would move
+`t2.code_sha` past the records'); the known answer at 9536 and each record's `trained_step` cover it.
 
 ## T5 U2: the cloud's trajectories through training (2026-10-30)
 
