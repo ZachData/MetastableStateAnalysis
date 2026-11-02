@@ -95,3 +95,66 @@ def test_plant_lands_in_bias_path():
     g = t5f.plant_share(pl, base)
     assert g["planted_component"] == pytest.approx(pl["write_total"] - base["write_total"])
     assert g["bias_path"] == pytest.approx(sum(pl["per_block"]["component"]["attn_bias"]))
+
+
+# ---------------------------------------------------------------- the gate (pure, no torch)
+
+
+def _rec(err=1e-6, rho=(0.5, 0.6), wt=10.0, ab=0.0):
+    return {"err_sum": err, "rho": list(rho), "write_total": wt,
+            "per_block": {"component": {"attn_bias": [ab]}}, "share": {"attn_bias": ab / wt}}
+
+
+def test_gate_planted_bias_beside_not_gating(tmp_path):
+    """Blocked 131 (a): the planted bias is retired as a gate; it is reported beside, and a failed
+    plant (or a missing one) does not refuse. The sum gate and the known answer still gate."""
+    import json
+    out, known = tmp_path / "out", tmp_path / "known"
+    known.mkdir()
+    for mk, (_, steps, _) in t5f.MODELS.items():
+        (out / mk).mkdir(parents=True)
+        for s in steps:
+            (out / mk / f"step{s}.json").write_text(json.dumps(_rec()))
+        pops = {f"step{s}": {"mean_cos": [0.5, 0.6]} for s in t5f.KNOWN[mk]}
+        (known / f"diag_{mk}.json").write_text(json.dumps({"populations": pops}))
+    g = t5f.gate(out, known)
+    assert g["pass"] and g["planted_bias_beside"].get("missing")
+    (out / "32m" / f"step{t5f.PLANT_STEP}_planted.json").write_text(json.dumps(_rec(wt=20.0, ab=1.0)))
+    g = t5f.gate(out, known)
+    assert g["pass"] and g["planted_bias_beside"]["share"] == pytest.approx(0.1)
+    assert "retired" in g["planted_bias_beside"] and "planted_bias" not in g
+    # the remaining gates still refuse
+    (out / "410m" / "step0.json").write_text(json.dumps(_rec(rho=(0.5, 0.7))))
+    assert not t5f.gate(out, known)["pass"]
+    (out / "410m" / "step0.json").write_text(json.dumps(_rec()))
+    (out / "32m" / "step917.json").write_text(json.dumps(_rec(err=2e-4)))
+    assert not t5f.gate(out, known)["pass"]
+
+
+def test_reproduce_compares_every_number():
+    r = {"write_total": 5.0, "write_total_no0": 4.0, "size_write": 0.1, "rho": [0.9, 0.8], "code": "x",
+         **{k: {p: 0.1 for p in t5f.PATHS} for k in ("share", "share_no0", "size")}}
+    assert t5f.reproduce(r, r)["equal"]
+    q = {**r, "share": {**r["share"], "mlp_rest": 0.1 + 1e-9}}
+    assert not t5f.reproduce(r, q)["equal"]
+
+
+def test_token_constancy_is_one_for_a_constant_write():
+    """Post hoc (/challenge-pr on #305, finding 1): N||m||^2 / sum ||w_i||^2 is 1 iff every token's
+    write is the same vector, and the const/rest split cannot tell that apart from a varying write
+    with the same mean."""
+    np = pytest.importorskip("numpy")
+    u = np.array([1.0, 0.0])
+    def row(ws):
+        ws = np.asarray(ws, float)
+        z = {k: 0.0 for k in ("attn_sink", "attn_bias", "attn_rest", "mlp_bias")}
+        return {"n": len(ws), "u": u, "mfree_sum": ws.sum(0), "mfree_sq": float((ws * ws).sum()),
+                "attn_sum": np.zeros(2), "attn_sq": 1.0, "sq": 1.0,
+                "sum": {**z, "mlp_free": float(ws.sum(0) @ u), "write": float(ws.sum(0) @ u)},
+                "sum_no0": {**z, "mlp_free": float(ws[1:].sum(0) @ u), "write": float(ws[1:].sum(0) @ u)},
+                "err_sum": 0.0, "err_attn": 0.0, "err_modules": 0.0, "bias_norm": {"attn": 0.0, "mlp": 0.0}}
+    const = t5f.aggregate([[row([[1.0, 0.5]] * 4)]])
+    vary = t5f.aggregate([[row([[1.0, 3.0], [1.0, -3.0], [1.0, 3.0], [1.0, -3.0]])]])
+    assert const["token_constancy"]["mlp"]["mean"] == pytest.approx(1.0)
+    assert vary["token_constancy"]["mlp"]["mean"] == pytest.approx(1.0 / 10.0)
+    assert const["share"]["mlp_const"] == pytest.approx(vary["share"]["mlp_const"]) == pytest.approx(1.0)

@@ -22,10 +22,12 @@ Per path: **share** = Σ over blocks, prompts, tokens of its component / the sam
 output (dimensionless), and its mean over blocks. Beside: the same sums without position 0.
 
 Gates (`design-T5.md` "Calibration gate", U3, and "all"): the parts sum to the block's write (max
-per-token relative error ≤ 1e-4); a planted o_proj bias at `-32m` 9536 (one vector, 0.5 × the median
-token norm over the middle states, a fixed random direction, in every block) has its bias path ≥ 0.9
-of the planted component (the planted model's summed write component less the unplanted one's); ρ_ℓ
-from the same forward equals T2's `diag` at 32m 1, 9536 and 410m 0, 4000 to 1e-6.
+per-token relative error ≤ 1e-4); ρ_ℓ from the same forward equals T2's `diag` at 32m 1, 9536 and
+410m 0, 4000 to 1e-6; and (tests) on tiny models the bias path is n · b·u exactly. The planted-bias
+gate (an o_proj bias at `-32m` 9536, 0.5 × the median middle-state norm, its bias path ≥ 0.9 of the
+model-level planted component) is **retired on the record** (Blocked 131 (a), 2026-11-02, before any
+batch output): that component includes the model's response to the plant, for which no bar was
+derived. The plant still runs and is reported beside, not gating. The paths are direct writes.
 
 Tier 1, description (nothing here is registered; no H2 label: H2 is read only by U4).
     METS_DATA=<main>/data python -m trackT_timaeus.t5f run --out <dir>
@@ -54,9 +56,11 @@ MODELS = {
 }
 #: the rise steps whose first-read row is reported beside (design-T5.md "then the split")
 RISE = (917, 1253, 1713, 2340, 3198, 4369, 6979, 9536)
-# the gates (design-T5.md "Calibration gate"; fixed before output)
+# the gates (design-T5.md "Calibration gate"; fixed before output). The plant's bar PLANT_MIN is
+# retired (Blocked 131 (a)): the plant is run and reported beside, not gating
 SUM_TOL = 1e-4
 PLANT_STEP, PLANT_SCALE, PLANT_MIN, PLANT_SEED = 9536, 0.5, 0.9, 20261102
+PLANT_RETIRED = "Blocked 131 (a), 2026-11-02: the model-level planted component includes the model's response, no bar derived for it"
 KNOWN_DIR = "trackT/t2u1/2026-10-29-diag"
 KNOWN = {"32m": (1, 9536), "410m": (0, 4000)}
 KNOWN_TOL = 1e-6
@@ -167,8 +171,11 @@ def split_block(x_in, x_out, ax, att, ao, mo, maps) -> dict:
     u = mu / torch.linalg.norm(mu)
     comps = {"attn_sink": sink @ u, "attn_bias": (abias @ u).expand(n), "attn_rest": rest @ u,
              "mlp_bias": (mbias @ u).expand(n), "mlp_free": mfree @ u, "write": write @ u}
+    aw = attn                                                  # beside: the attention write
     return {
         "n": n, "u": u, "mfree_sum": mfree.sum(0),
+        # beside (post hoc, /challenge-pr on #305 finding 1): token-constancy's ingredients
+        "mfree_sq": float((mfree * mfree).sum()), "attn_sum": aw.sum(0), "attn_sq": float((aw * aw).sum()),
         "sum": {k: float(v.sum()) for k, v in comps.items()},
         "sum_no0": {k: float(v[1:].sum()) for k, v in comps.items()},
         "sq": float((x_out * x_out).sum()),
@@ -227,7 +234,20 @@ def aggregate(prompts: List[dict]) -> dict:
         size_write.append(write[-1] / N / R)
         rms.append(R)
     T, T0 = sum(write), sum(write_no0)
+    # beside (post hoc, /challenge-pr on #305 finding 1): per block, the fraction of a module's
+    # write's squared norm in its mean over every token of the 7 prompts, N ||m||^2 / sum_i ||w_i||^2;
+    # 1 iff every token gets the same vector. The const/rest split above sees only token averages
+    tc = {"mlp": [], "attn": []}
+    for l in range(nb):
+        rows = [p[l] for p in prompts]
+        N = sum(r["n"] for r in rows)
+        for key, vs, sq in (("mlp", "mfree_sum", "mfree_sq"), ("attn", "attn_sum", "attn_sq")):
+            if all(vs in r for r in rows):
+                m = np.sum([r[vs] for r in rows], 0) / N
+                tc[key].append(float(N * (m @ m) / sum(r[sq] for r in rows)))
+    rec_tc = {k: {"per_block": v, "mean": float(np.mean(v))} for k, v in tc.items() if v}
     rec = {
+        "token_constancy": rec_tc,
         "paths": list(PATHS),
         "per_block": {"component": out, "component_no0": out_no0, "write": write, "write_no0": write_no0,
                       "size": size, "size_write": size_write, "rms_norm": rms,
@@ -262,7 +282,8 @@ def plant_share(planted: dict, base: dict) -> dict:
 # ---------------------------------------------------------------- commands
 
 def _np(blocks_: List[dict]) -> List[dict]:
-    return [{**b, "u": b["u"].cpu().numpy(), "mfree_sum": b["mfree_sum"].cpu().numpy()} for b in blocks_]
+    return [{**b, "u": b["u"].cpu().numpy(), "mfree_sum": b["mfree_sum"].cpu().numpy(),
+             "attn_sum": b["attn_sum"].cpu().numpy()} for b in blocks_]
 
 
 def read_model(model, tok, device) -> dict:
@@ -345,7 +366,7 @@ def run(a) -> int:
                 pr.update({"model": repo, "step": s, "planted_norm": float(np.linalg.norm(b)), "code": meta["code"],
                            "wall_s": round(time.time() - t0, 1)})
                 _write(out / mk / f"step{s}_planted.json", pr)
-                print(json.dumps({"wrote": f"{mk}/step{s}_planted.json", "gate": plant_share(pr, rec)}), flush=True)
+                print(json.dumps({"wrote": f"{mk}/step{s}_planted.json", "planted_beside": plant_share(pr, rec)}), flush=True)
             del m
             torch.cuda.empty_cache()
     print(json.dumps({"done": True, "wall_s": round(time.time() - t0, 1)}))
@@ -360,11 +381,6 @@ def gate(out: Path, known_dir: Path) -> dict:
     g = {}
     errs = {f"{mk}@{s}": _load(out / mk / f"step{s}.json")["err_sum"] for mk, (_, st, _) in MODELS.items() for s in st}
     g["parts_sum"] = {"max_rel_err": max(errs.values()), "bar": SUM_TOL, "pass": max(errs.values()) <= SUM_TOL}
-    base = _load(out / "32m" / f"step{PLANT_STEP}.json")
-    pp = out / "32m" / f"step{PLANT_STEP}_planted.json"
-    if not pp.exists():
-        raise T5fRefused(f"{pp} missing: re-run `t5f run --models 32m --steps {PLANT_STEP}` (it writes the plant alone)")
-    g["planted_bias"] = plant_share(_load(pp), base)
     diffs = {}
     for mk, steps in KNOWN.items():
         ref = _load(known_dir / f"diag_{mk}.json")["populations"]
@@ -373,6 +389,10 @@ def gate(out: Path, known_dir: Path) -> dict:
             diffs[f"{mk}@{s}"] = float(np.max(np.abs(np.asarray(got) - np.asarray(ref[f"step{s}"]["mean_cos"]))))
     g["known_answer"] = {"max_diff": diffs, "bar": KNOWN_TOL, "pass": max(diffs.values()) <= KNOWN_TOL}
     g["pass"] = all(v["pass"] for v in g.values())
+    # beside, not gating (retired on the record, Blocked 131 (a))
+    pp = out / "32m" / f"step{PLANT_STEP}_planted.json"
+    g["planted_bias_beside"] = ({**plant_share(_load(pp), _load(out / "32m" / f"step{PLANT_STEP}.json")),
+                                 "retired": PLANT_RETIRED} if pp.exists() else {"retired": PLANT_RETIRED, "missing": True})
     return g
 
 
@@ -388,10 +408,26 @@ def first_read_beside(first: dict) -> Dict[int, dict]:
     return rows
 
 
+REPRO_TOL = 1e-12
+
+
+def reproduce(ref: dict, got: dict) -> dict:
+    """Beside the gates (design-T5.md "The batch, fixed before output"): the batch's 9536 against
+    the first output's record, every share, size, the write and ρ_ℓ."""
+    a, b = [], []
+    for r, x in ((ref, a), (got, b)):
+        x += [r["write_total"], r["write_total_no0"], r["size_write"], *r["rho"]]
+        x += [r[k][p] for k in ("share", "share_no0", "size") for p in PATHS]
+    d = float(np.max(np.abs(np.asarray(a) - np.asarray(b)) / np.maximum(1.0, np.abs(np.asarray(a)))))
+    return {"max_diff": d, "bar": REPRO_TOL, "equal": d <= REPRO_TOL, "ref_code": ref.get("code"), "code": got.get("code")}
+
+
 def read(a) -> int:
     out = Path(a.out)
     g = gate(out, DATA / KNOWN_DIR)
     res: Dict[str, object] = {"design": "trackT_timaeus/design-T5.md U3's split", "gate": g}
+    if a.reproduce:
+        res["reproduce"] = reproduce(_load(Path(a.reproduce)), _load(out / "32m" / f"step{PLANT_STEP}.json"))
     if not g["pass"]:
         res["refused"] = "a calibration gate failed; back to the user before any reading"
     else:
@@ -402,15 +438,21 @@ def read(a) -> int:
             for s in steps:
                 r = _load(out / mk / f"step{s}.json")
                 tab[f"{mk}@{s}"] = {"share": r["share"], "share_no0": r["share_no0"], "size": r["size"],
+                                    "token_constancy": {k: v["mean"] for k, v in r.get("token_constancy", {}).items()},
                                     "size_write": r["size_write"], "code": r["code"],
                                     "first_read": beside.get(s) if mk == "32m" else None}
         res.update({"per_step": tab, "where_each_count_stops": first["where_each_count_stops"]})
     _write(out / "reading.json", res)
-    print(json.dumps(res["gate"], indent=1))
+    print(json.dumps({"gate": res["gate"], "reproduce": res.get("reproduce")}, indent=1))
     if "per_step" in res:
         print(f"{'step':>14} " + " ".join(f"{k:>10}" for k in PATHS) + "   size_write")
         for key, r in res["per_step"].items():
             print(f"{key:>14} " + " ".join(f"{r['share'][k]:10.3f}" for k in PATHS) + f"   {r['size_write']:.4f}")
+        print("sizes (mean over blocks; beside, token constancy of the MLP and attention writes, post hoc)")
+        for key, r in res["per_step"].items():
+            tc = r["token_constancy"]
+            print(f"{key:>14} " + " ".join(f"{r['size'][k]:10.4f}" for k in PATHS)
+                  + f"   tc mlp {tc.get('mlp', float('nan')):.3f} attn {tc.get('attn', float('nan')):.3f}")
     return 0 if "refused" not in res else 1
 
 
@@ -426,6 +468,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     q = sub.add_parser("read")
     q.add_argument("--out", required=True)
     q.add_argument("--first", default=str(DATA / "trackT/t5u3/2026-11-02"))
+    q.add_argument("--reproduce", default=None, help="the first output's 32m step9536.json (beside)")
     a = ap.parse_args(argv)
     return run(a) if a.cmd == "run" else read(a)
 

@@ -406,6 +406,9 @@ file that said "next: Blocked 130, yours" while the prompt said U3 runs. Caught 
 Again 2026-11-02 (U3's split): the main tree two merges behind (#301, #302); the hook printed the
 file that said "next: Blocked 130, yours" while the prompt said U3's split runs. Caught by the age
 check; the main tree not moved (another session may use it); the hook not yet changed.
+Again 2026-11-02 (U3's split, the batch): the main tree four merges behind (#301–#304); the hook
+printed a file with no Blocked 131 while the prompt decided it. Caught by the age check; read from
+`origin/main`; the hook not yet changed (a settings change, the user's).
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
@@ -1830,6 +1833,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 ## 8. Git and PR mechanics
 
 **Instances.**
+- 2026-11-02 (#305): `./scripts/check.sh | tail -2 && git commit … && git push` committed and
+  pushed `aaac0f8` with 2 tests red, because the chain took `tail`'s exit status, not check's.
+  Fixed in the next commit (`16e400e`). Rule: run check.sh on its own, or redirect it to a file,
+  and test its exit status before any commit.
 - #59 targeted another PR's branch; after that base merged, #59 merged into a
   dead branch and its work never reached `main` (cost twice).
 - PR sizes: #24 +618k lines, #17 +146k, 2026-09-12's merge 51 commits /
@@ -1988,6 +1995,15 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-11-02, T5 U3's split, the batch (#305, `/challenge-pr` findings 1, 2): the write-up called
+  the MLP write's pooled mean "the MLPs' token-constant write" and read "the constant writes are
+  equal in size at the end states" from it. On summed components every path counts only through
+  token averages, so the label claimed what the statistic cannot see. A post hoc token-constancy
+  measure showed only 0.06–0.15 of `-32m`'s MLP write lies in its mean. "No path changes abruptly
+  at a count's stop" was also read on shares while the frozen "reported" row asked for sizes, which
+  show the MLP mean growing fastest into the uncentred stop. Rule: a path's name says what its
+  statistic measures (here "pooled mean"); every number the design's "reported" row lists is in
+  the write-up before a reading is stated.
 - 2026-10-14, Track A A1a re-gate (#203, `/challenge-pr` finding 1): the write-up read "G4 fails at
   blocks 20–22" as the reading's error there and recommended re-planting the start cosine. The
   sweep runs all 23 planted steps through one frame; the reading takes one step per block's frame

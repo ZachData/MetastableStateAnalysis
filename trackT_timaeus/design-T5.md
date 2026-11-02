@@ -240,6 +240,42 @@ The rows above leave these open; each is a choice, not derived.
 | the known answer ("all") | ρ_ℓ from the split's own forward (`output_attentions` on) at 32m 1, 9536 and 410m 0, 4000 equal T2's `diag` to 1e-6 |
 | reported | per model and step, the six shares and sizes and the write's size; each rise step beside its first-read row (any centred arm with P, fixed-τ 3e-3 / 0.5 plant A, uncentred plant A, ρ_mid, position 0's norm) and the first read's stops. A description: no rule, no label |
 
+**The planted-bias gate retired on the record (2026-11-02, Blocked 131 (a), the user's, as
+recommended; fixed before any batch output, code `t5f.py` `gate`).** At `-32m` 9536 the plant sent
+ρ to 1.00 at state 1 and the MLPs wrote a new constant that took 0.95 of the planted component, so
+the bias path held 0.125 (`status-T.md` "T5 U3's split"). The gate was mis-specified: on a trained
+model, the model-level planted component includes the model's response to the plant, and no bar was
+derived for that response. What the split claims is **direct attribution**: each path's own write
+on u, the paths summing to the block's write. Three checks test that and stay as gates:
+
+| check | bar |
+|---|---|
+| the parts sum to the block's write, every record | ≤ 1e-4 |
+| known answer: ρ_ℓ from the split's forward, 32m 1, 9536 and 410m 0, 4000, against T2's `diag` | ≤ 1e-6 |
+| tiny Llama and GPT-NeoX (tests): the bias path is n · b·u per block exactly, the MLP bias path 0 | exact (rel 1e-6) |
+
+The plant is still run at 9536 and reported beside, not gating. **The paths are read as direct
+writes**: a path's share says which parameters write the component, not what the component would
+be without them (a path's removal can move every other path, as the plant showed). Not taken:
+(b) a small plant along the unplanted u (still a test of the model's response, so it may fail the
+same way); (c) reading past a failed gate; (d) the bias's own component as the denominator (1.0 by
+construction); (e) closing U3 at its first read. Parked: the model's response to a constant
+(`status-T.md` "T5 U3's split, the batch").
+
+**The batch, fixed before output:** all 17 records (`-32m` 9 steps, 410m 8) and the plant re-run
+under one code hash into a fresh directory, `data/trackT/t5u3s/2026-11-02-batch/`; 9536 re-run there
+must equal the first output's record (`c8c966ac571c`) in every share, size and the write to 1e-12, a
+reproduction check beside the gates (the first output is kept as it was).
+
+**Token constancy, beside (post hoc, after `/challenge-pr` on #305, finding 1; fixed before its
+re-run).** On summed components every path counts only through its average over tokens, so
+"mlp_const" against "mlp_rest" is the MLP write's pooled mean against each prompt's deviation from
+it; it does not say the MLP writes one vector to every token. Beside, per block and module (the
+bias-free MLP write, the attention write), the fraction of its squared norm in its pooled mean,
+N ‖m‖² / Σ_i ‖w_i‖² (1 iff every token gets the same vector), mean over blocks. The batch is re-run
+with `--force` into the same directory (the paths' numbers must not move: the 9536 reproduction
+check again); no rule, no label.
+
 **U4, the causal arm.** Its design is written after U2 and the `gpt-2-small` read, as a section
 of this file and its own Blocked item, before any training (D3). Cap: 3 GPU-days. **Aimed at the
 rise** (Blocked 130 (a)): its arms are read on whether they re-concentrate after their trough, not
@@ -265,7 +301,7 @@ U4's design states which of the three it matches, with U3's crossings in hand.
 | U2 | **the rule:** synthetic ρ_mid series on the 53-step grid with the 7 prompts' measured prompt spread (from step 9536): a planted descent of 0.15 reads "spreads", a flat series "does not spread" | planted descent "spreads" in ≥ 90 % of 1,000 draws; flat "spreads" in ≤ 5 % |
 | U3 | **the first read's known answers** (added 2026-11-01, Blocked 130 (a)): `--trained-step` 9536 and 917 reproduce T2 unit 1's and U2b's records | `derived`, `arms`, `gate` equal to 1e-12 |
 | U3 | **the split:** the parts sum to the block's write | max relative error ≤ 1e-4 |
-| U3 | **planted bias:** a vector at 0.5 × the median token norm added as an o_proj bias in every block of `-32m` at 9536 | the bias path's share of the planted component ≥ 0.9 |
+| U3 | ~~**planted bias:** a vector at 0.5 × the median token norm added as an o_proj bias in every block of `-32m` at 9536~~ **retired on the record 2026-11-02 (Blocked 131 (a))**: it refused at 0.125 by testing the model's response, not the split; reported beside. The split's gates are the sum, the known answer and the tiny-model test ("The planted-bias gate retired on the record") | ~~the bias path's share of the planted component ≥ 0.9~~ |
 
 Any failure goes back to you before that unit's reading.
 

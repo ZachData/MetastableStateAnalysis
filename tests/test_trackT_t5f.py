@@ -11,7 +11,10 @@ from trackT_timaeus import t5f
 def _blk(n, u, sums, sums0, mfree_sum, sq=1.0):
     return {"n": n, "u": np.asarray(u, float), "mfree_sum": np.asarray(mfree_sum, float), "sum": sums,
             "sum_no0": sums0, "sq": sq, "err_sum": 0.0, "err_attn": 0.0, "err_modules": 0.0,
-            "bias_norm": {"attn": 0.0, "mlp": 0.0}}
+            "bias_norm": {"attn": 0.0, "mlp": 0.0},
+            # token constancy's ingredients (#305): any norms with sum ||w||^2 >= N ||m||^2
+            "mfree_sq": float(np.dot(np.asarray(mfree_sum, float), np.asarray(mfree_sum, float))) + 1.0,
+            "attn_sum": np.zeros_like(np.asarray(u, float)), "attn_sq": 1.0}
 
 
 def _sums(sink, bias, rest, mb, mfree):

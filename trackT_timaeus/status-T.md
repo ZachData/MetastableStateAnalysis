@@ -5,7 +5,7 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"; T5 U2 ran `dodecahedron-32m`, `-67m` at their 53 steps, `pythia-70m`, `-160m`, `-410m` at C2's 18 and `timaeus/gpt-2-small` at its init and 19 checkpoints, the 7 v1 prompts (`976b62d677bc`), code `3d425b32db90`, listed in `trackT_timaeus/status-T.md` "T5 U2"; T5 U2b ran `dodecahedron-32m` at steps 491, 671, 917 and 9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, listed in `trackT_timaeus/status-T.md` "T5 U2b"; T5 U3's first read ran `dodecahedron-32m` at the 16 grid steps 917–9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, reader `t5e.py`, listed in `trackT_timaeus/status-T.md` "T5 U3, first read"
+- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"; T5 U2 ran `dodecahedron-32m`, `-67m` at their 53 steps, `pythia-70m`, `-160m`, `-410m` at C2's 18 and `timaeus/gpt-2-small` at its init and 19 checkpoints, the 7 v1 prompts (`976b62d677bc`), code `3d425b32db90`, listed in `trackT_timaeus/status-T.md` "T5 U2"; T5 U2b ran `dodecahedron-32m` at steps 491, 671, 917 and 9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, listed in `trackT_timaeus/status-T.md` "T5 U2b"; T5 U3's first read ran `dodecahedron-32m` at the 16 grid steps 917–9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, reader `t5e.py`, listed in `trackT_timaeus/status-T.md` "T5 U3, first read"; T5 U3's split ran `dodecahedron-32m` at 9 steps (1, 917–9536) with a planted o_proj bias at 9536 and `pythia-410m` at C2's 8 split steps (0–143000), the 7 v1 prompts (`976b62d677bc`), code `ef81a441e7dc`, listed in `trackT_timaeus/status-T.md` "T5 U3's split, the batch"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
@@ -18,6 +18,7 @@
   - T5 U2b (Blocked 126 (a), a second extension; known answer exact): in the trough (steps 491–917, ρ_mid 0.11–0.12) T2's B-matched centred arm passes T2's full gate at every step (plant A 0.00, re-init 1.5 %; its B ≥ 0.4 holds by its derivation) and the uncentred count sees plant A as on Pythia (0.93–1.00, against 0.04 at 9536), so the counts fail where the cloud is concentrated (co-occurrence: the trough is also in the LR warmup, at higher loss and a small position-0 norm); post hoc, at fixed τ 1e-3–1.2e-2 plant A is ≤ 0.10 in the trough and 0.32–0.58 at 9536; the other three centred arms still fail, on the re-inits (fixed by the init) and on plant A (0.12–0.45) — `trackT_timaeus/status-T.md` "T5 U2b"
   - T5 U3's first read (Blocked 130 (a); both known answers exact): along the late rise every count stops passing with the rise, none before it: the uncentred count leaves its Pythia behaviour at 1713 (plant A 0.89 → 0.72; ρ_mid 0.32), the fixed-τ centred arm (τ 3e-3) leaks plant A from 2002 (0.12; ρ 0.43), and T2's B-matched arm passes T2's full gate to 3738 (ρ 0.76; at 3198 and 3738 only with its τ search widened past the code's 1e-2, post hoc) and every arm fails from 4369 (ρ 0.81); at 2340 and 2735 the uncentred count sees plant B at no dose, so no arm is defined; ρ, position 0's norm, the loss, steps since warmup and each count's operating point (base rate, matched τ) move together there, so which makes a count stop is not told apart — `trackT_timaeus/status-T.md` "T5 U3, first read"
   - T5 U3's split refused by its planted-bias gate (2026-11-02; the sum and known-answer gates pass at `-32m` 9536): a constant o_proj bias at half the median middle-state norm in every block (as large as block 1's whole stream) collapses the cloud at state 1 (mean cosine 1.00), and the MLPs then write a new constant, near-orthogonal to the bias and much larger, which takes 95 % of the planted component, so the bias path holds 0.125 against the bar 0.9; the split is exact, the gate's plant moves the model; no other step run; Blocked 131 — `trackT_timaeus/status-T.md` "T5 U3's split"
+  - T5 U3's split, the batch (Blocked 131 (a), the user's: the planted gate retired on the record before output; sum and known-answer gates pass, 9536 reproduced exactly): read as direct writes, through `-32m`'s rise attention's ordinary keys (share 0.43–0.60) and the MLP write's pooled mean (0.25–0.44) carry the shared component about equally, the sink grows 0.006 → 0.13 with position 0's norm; on shares no path changes abruptly where a count stops, while on sizes the MLP mean carries most of the write's growth to 4369, fastest over 1253 → 1713; Dodecahedron's step 1 is written by attention (0.87), 410m's step 0 by the MLP mean (0.58); 410m's biases write 0.31 at 143000; post hoc, neither MLP writes one vector to every token (0.06–0.15 of `-32m`'s MLP write in its mean), while `-32m`'s attention write grows more uniform (0.14 → 0.42); what raises ρ is not measured; no H2 reading — `trackT_timaeus/status-T.md` "T5 U3's split, the batch"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -25,11 +26,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); the split not run — `trackT_timaeus/status-T.md` "T5 U3, first read"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); next U4's design (its own Blocked item) — `trackT_timaeus/status-T.md` "T5 U3's split, the batch"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-02 · body `2486209b0c`
+- **Reviewed:** 2026-11-02 · body `2bbea46000`
 <!-- /phase-card -->
 
 ## Units
@@ -45,7 +46,140 @@
 | T5 U1b. the Llama's parts at init (added, Blocked 124 (a)) | **done 2026-10-30**: gate passes; no single part (`gelu` partly, 0.16 of 0.36; the rest none) | "T5 U1b" below |
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
-| T5 U3. where the shared direction is written | revised 2026-11-01 (Blocked 130 (a), docs only); **first read done 2026-11-02**: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; **the split: its planted-bias gate refuses (2026-11-02), Blocked 131, yours**; the batch not run | "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details" |
+| T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
+
+## T5 U3's split, the batch: which paths write the shared direction (2026-11-02)
+
+Rule: Blocked 131 (a), the user's, as recommended: the planted-bias gate retired on the record
+before any batch output (`design-T5.md` "The planted-bias gate retired on the record", pushed in
+`3e9550c`; re-run with token constancy beside in `88e9ca4`, code `ef81a441e7dc`, after `/challenge-pr` on #305); the sum gate, the known answer and the tiny-model n · b·u test
+stay. **Input:** `dodecahedron-32m` at 1, 917, 1253, 1713, 2340, 3198, 4369, 6979, 9536 and
+`pythia-410m` at 0, 16, 128, 512, 1000, 4000, 32000, 143000, the 7 v1 prompts (`976b62d677bc`),
+≤ 512 tokens, float32 forward (eager, TF32 off), float64 split, RTX 3080, 44 s (`runner`, no
+edits). Records `data/trackT/t5u3s/2026-11-02-batch/` (main tree; `reading.json` `e46f387c85c4`,
+32m 9536 `c0b998628088`, 410m 143000 `8e43364bb224`; the first run, code `55a6714b242c`, gave
+every share and size the same). Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf
+METS_DATA=<main>/data python -m trackT_timaeus.t5f run --out <dir>`, then `t5f read --out <dir>
+--reproduce <first output's 32m/step9536.json>`.
+
+| check | bar | result |
+|---|---|---|
+| the parts sum to the block's write (max over tokens, blocks, prompts, 17 records) | ≤ 1e-4 | **passes**, 1.2e-5 |
+| known answer: ρ_ℓ against T2's `diag` at 32m 1, 9536 and 410m 0, 4000 | ≤ 1e-6 | **passes**, 0.0 at all four |
+| tiny models: bias path n · b·u exactly (tests) | rel 1e-6 | passes (`tests/test_trackT_t5f_smoke.py`) |
+| beside: 9536 against the first output (`c8c966ac571c`, code `ffab0d6aff56`) | 1e-12 | **equal**, 0.0 |
+| beside, retired: the plant at 9536, its bias path's share of the model-level planted component | (0.9, retired) | 0.125, as the first output |
+
+**Shares** of the summed component on u (over blocks, prompts, tokens; they sum to 1) and **the
+write's size** (mean over blocks of the mean per-token component over the block's RMS token norm).
+Each rise step beside its first-read row (`status-T.md` "T5 U3, first read"). The biases are zero on
+Dodecahedron by architecture, so its attn_bias and mlp_bias are 0.000 throughout. **"MLP const" is
+the MLP write's pooled mean** (over every token of the 7 prompts), and "MLP rest" each prompt's
+deviation from it: on summed components every path counts only through token averages, so the
+split does not say the MLP writes one vector to every token (`/challenge-pr` on #305, finding 1;
+the token constancy below says it does not).
+
+| `-32m` step | ρ_mid | n0 | sink | attn rest | MLP mean (const) | MLP rest | write size | centred P | fixed τ A | uncentred A |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | (0.85) | | 0.006 | **0.872** | 0.023 | 0.099 | 0.234 | | | |
+| 917 | 0.111 | 2.2 | 0.006 | 0.450 | 0.342 | 0.201 | 0.093 | yes | −0.01 | 0.93 |
+| 1253 | 0.129 | 4.1 | 0.011 | 0.444 | 0.400 | 0.145 | 0.099 | yes | 0.01 | 0.91 |
+| 1713 | 0.315 | 4.8 | 0.022 | 0.433 | 0.442 | 0.103 | 0.117 | yes | 0.06 | **0.72** |
+| 2340 | 0.546 | 9.0 | 0.039 | 0.448 | 0.439 | 0.074 | 0.129 | refused | **0.22** | 0.19 |
+| 3198 | 0.706 | 11.3 | 0.054 | 0.459 | 0.431 | 0.056 | 0.137 | refused | 0.43 | 0.13 |
+| 4369 | 0.812 | 15.1 | 0.078 | 0.479 | 0.401 | 0.042 | 0.144 | **no** | 0.46 | 0.16 |
+| 6979 | 0.888 | 18.4 | 0.088 | 0.508 | 0.375 | 0.029 | 0.149 | no | 0.55 | 0.21 |
+| 9536 | 0.903 | 23.8 | 0.128 | 0.596 | 0.245 | 0.032 | 0.147 | no | 0.56 | 0.04 |
+
+(Step 1's ρ_mid is U2's, 0.85; the first read did not cover it. In **bold**, each count's first
+step past its stop: uncentred 1713, fixed τ 2002 (not a split step; 2340 shown), centred 4369.)
+
+**Sizes per path** (mean over blocks, as above) and, beside, post hoc (finding 1 on #305; fixed in
+`88e9ca4` before its re-run), **token constancy**: per block the fraction of a module's write's
+squared norm in its pooled mean, N ‖m‖² / Σ‖w_i‖² (1 iff every token gets the same vector), mean
+over blocks. Bias paths 0 on `-32m`.
+
+| `-32m` step | sink | attn rest | MLP mean | MLP rest | write | const. MLP | const. attn |
+|---|---|---|---|---|---|---|---|
+| 1 | 0.0014 | 0.1918 | 0.0083 | 0.0321 | 0.234 | 0.122 | 0.173 |
+| 917 | 0.0005 | 0.0397 | 0.0280 | 0.0242 | 0.093 | 0.056 | 0.138 |
+| 1253 | 0.0010 | 0.0420 | 0.0359 | 0.0205 | 0.099 | 0.056 | 0.140 |
+| 1713 | 0.0018 | 0.0472 | 0.0547 | 0.0137 | 0.117 | 0.073 | 0.208 |
+| 2340 | 0.0027 | 0.0524 | 0.0645 | 0.0092 | 0.129 | 0.086 | 0.222 |
+| 3198 | 0.0039 | 0.0564 | 0.0693 | 0.0070 | 0.137 | 0.097 | 0.248 |
+| 4369 | 0.0056 | 0.0586 | 0.0750 | 0.0051 | 0.144 | 0.109 | 0.300 |
+| 6979 | 0.0068 | 0.0616 | 0.0774 | 0.0035 | 0.149 | 0.135 | 0.362 |
+| 9536 | 0.0100 | 0.0672 | 0.0668 | 0.0033 | 0.147 | 0.146 | 0.417 |
+
+| 410m step | sink | attn bias | attn rest | MLP bias | MLP mean | MLP rest | const. MLP | const. attn |
+|---|---|---|---|---|---|---|---|---|
+| 0 | 0.0005 | 0 | 0.0368 | 0 | 0.0689 | 0.0055 | 0.405 | 0.781 |
+| 16 | 0.0006 | 0 | 0.0446 | 0 | 0.0846 | 0.0024 | 0.707 | 0.916 |
+| 128 | 0.0005 | 0.0001 | 0.0291 | 0.0001 | 0.0563 | 0.0277 | 0.281 | 0.413 |
+| 512 | 0.0001 | 0.0001 | 0.0222 | 0.0002 | 0.0579 | 0.0329 | 0.307 | 0.233 |
+| 1000 | 0.0006 | 0.0008 | 0.0344 | 0.0008 | 0.0318 | 0.0162 | 0.100 | 0.184 |
+| 4000 | 0.0009 | 0.0047 | 0.0477 | 0.0045 | 0.0099 | 0.0032 | 0.073 | 0.112 |
+| 32000 | 0.0014 | 0.0074 | 0.0333 | 0.0051 | 0.0279 | 0.0028 | 0.132 | 0.111 |
+| 143000 | −0.0013 | 0.0184 | 0.0113 | 0.0140 | 0.0337 | 0.0062 | 0.204 | 0.157 |
+
+| `pythia-410m` step | sink | attn bias | attn rest | MLP bias | MLP mean (const) | MLP rest | write size |
+|---|---|---|---|---|---|---|---|
+| 0 | 0.005 | 0.000 | 0.364 | 0.000 | **0.580** | 0.051 | 0.112 |
+| 16 | 0.005 | 0.000 | 0.363 | 0.000 | 0.620 | 0.011 | 0.132 |
+| 128 | 0.004 | 0.001 | 0.260 | 0.001 | 0.552 | 0.182 | 0.114 |
+| 512 | 0.000 | 0.002 | 0.157 | 0.002 | 0.502 | 0.338 | 0.114 |
+| 1000 | 0.008 | 0.010 | 0.440 | 0.010 | 0.310 | 0.221 | 0.085 |
+| 4000 | 0.014 | 0.061 | 0.677 | 0.058 | 0.119 | 0.071 | 0.071 |
+| 32000 | 0.026 | 0.076 | 0.383 | 0.061 | 0.385 | 0.068 | 0.078 |
+| 143000 | −0.027 | 0.165 | 0.197 | 0.143 | 0.414 | 0.109 | 0.082 |
+
+**At the end states** (`-32m` 9536, 410m 143000; the write 0.147 against 0.082): attention's
+ordinary keys 0.067 against 0.011; the MLP write's pooled mean 0.067 against 0.034; 410m's biases
+(token-constant by construction) 0.018 + 0.014; the sink 0.010 against −0.001.
+
+What the batch shows (a description, read as direct writes; no rule, no label, no H2 reading):
+
+1. **Through the rise, attention's ordinary keys and the MLP write's pooled mean carry the shared
+   component about equally** (shares 0.43–0.60 and 0.25–0.44 at 917–9536; at 9536 equal in size,
+   0.067 each, but 0.60 against 0.25 in share, since the share sums signed components over every
+   token and the size averages per block). The write's size rises 0.093 → 0.149 as ρ_mid rises
+   0.11 → 0.90. The MLP mean's share peaks at 1713–2340 (0.44) and falls to 0.25 at 9536.
+2. **The sink path grows steadily, 0.006 → 0.128 in share**, with position 0's norm (2.2 → 23.8);
+   it stays the smallest attention path. Dropping position 0 from the sums moves no share by more
+   than 0.001 (410m 0.008), so position 0's own tokens do not carry the shares.
+3. **On shares, no path changes abruptly at a count's stop** (1713, 2002, 4369): between
+   neighbouring split steps every share moves by ≤ 0.13, the largest step MLP mean 0.375 → 0.245 at
+   6979 → 9536, after every count has stopped. **On sizes**, the MLP mean carries most of the write's
+   growth to 4369 (0.028 → 0.075 while the write goes 0.093 → 0.144), its fastest relative growth
+   (+52 %) over 1253 → 1713, the interval ending at the uncentred count's stop; attention's token
+   constancy rises 0.14 → 0.21 over the same interval. Side by side only; "abruptly" had no
+   threshold fixed before output (corrected after `/challenge-pr` on #305, finding 2: this
+   section first read statement 3 on shares alone).
+4. **Dodecahedron's first checkpoint (step 1) is written by attention**: attention's ordinary keys
+   0.87, the MLP mean 0.02. 410m's step 0 is the other way round: the MLP mean 0.58, attention 0.36
+   (wording after finding 4: step 1 is not an init).
+5. **410m's biases write a growing part late** (both together 0.00 at step 0, 0.12 at 4000, 0.31 at
+   143000). The first version of this section read "the constant writes are equal in size at the
+   end states" (the MLP mean 0.067 against MLP mean plus biases 0.066): withdrawn, since it grouped
+   a pooled mean with token-constant biases by label (finding 1).
+6. **Neither model's MLP writes one vector to every token** (post hoc): on `-32m` 0.06–0.15 of the
+   MLP write's squared norm lies in its pooled mean through the rise, rising with ρ; the attention
+   write's fraction rises more, 0.14 → 0.42. On 410m both are high at steps 0–16 (MLP 0.41–0.71,
+   attention 0.78–0.92) and 0.07–0.31 after.
+
+**Not established:** **what raises ρ**: the split measures the growth of the component along the
+shared direction, not the shrinking of each token's own part, and ρ_mid goes 0.11 → 0.90 while the
+write's size goes only 0.093 → 0.149 (finding 3 on #305; U4 is aimed at the rise); what a path's
+removal would do (direct writes only; the plant showed that a model answers a constant with
+another); whether a module writes near-constant vectors to subsets of tokens (token constancy pools
+every token); `-67m`; any split step between 1713 and 2340 (where the
+fixed-τ count stops at 2002); step 1's first-read row (not read there).
+
+**Parked** (why / cost / which decision it could change): (1) the model's response to a constant
+(Blocked 131 (a)): whether a large MLP const can answer an upstream constant, as at the plant;
+minutes on the GPU (a dose series of the plant); it could change how the MLP's write is worded in
+T5's close-out. Carried to T5's close-out. (2) The end states' equal constant sizes: **dropped**
+(why: finding 5's grouping withdrawn, the MLP write is not token-constant, 0.15 / 0.20).
 
 ## T5 U3's split: the planted-bias gate refuses (2026-11-02)
 
@@ -88,7 +222,8 @@ runs measured on it, avoids both.
 mlp_const 0.24, mlp_rest 0.03; biases 0 by architecture), printed by the run. No other step run.
 
 **Not established:** any path's share or size at any other step or on 410m; whether a smaller plant
-stays in the linear regime. **Decision: Blocked 131** (`STATE.md`). LESSONS 6.
+stays in the linear regime. **Decision: Blocked 131** (`STATE.md`), decided (a) 2026-11-02: the gate
+retired on the record, the batch run ("T5 U3's split, the batch" above). LESSONS 6.
 
 ## T5 U3, first read: T2's gates along the late rise (2026-11-02)
 
