@@ -390,7 +390,10 @@ proposed, not decided.
     123, D1–D3 all (a), the user's: `gpt-2-small` read in U2 and sizing U4, fixed bands, U4
     designed after U2). U1 done; budget extended by one unit, U1b, the Llama's parts at init
     (Blocked 124 (a), the user's, as recommended, 2026-10-30); done: no single part
-    (`trackT_timaeus/status-T.md` "T5 U1b"). Next is Blocked 125.*
+    (`trackT_timaeus/status-T.md` "T5 U1b"). U2 done (Blocked 125 (a)); budget extended again
+    by U2b, T2's gates in the trough (Blocked 126 (a), 2026-11-01, decided by Claude on the
+    user's delegation); done: passes on the trained side (`status-T.md` "T5 U2b"). Next is
+    Blocked 130.*
 
 ## 11. What each phase gives the plan
 
