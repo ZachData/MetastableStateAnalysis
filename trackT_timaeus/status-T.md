@@ -30,7 +30,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-02 · body `101e1989c5`
+- **Reviewed:** 2026-11-02 · body `b9fae0d6c1`
 <!-- /phase-card -->
 
 ## Units
@@ -55,16 +55,21 @@ Docs only; nothing trained or run except `tools/math_checks/t5_u4_budget.py` (ar
 design is `design-T5.md` "U4, the causal arm, designed", **proposed, not frozen: Blocked 132**
 (D4–D7). In short: Dodecahedron's recipe trained from scratch at the card's 524,288 tokens a step
 under its steps and LR schedule, stopped at 4369, where every count has stopped (U3's first read).
-Five arms: A0 the recipe, A0′ a second seed, A1 biases on (H2), A2 Pythia's init (H1 through
-training), A3 both (D5). Rule: per arm the late level L (mean ρ_mid at 3738, 4369); a change
-**removes the rise** if it lowers L by at least half of A0's rise L − T, **partly** from the bar
-max(0.1, 2τ), where τ comes from A0′. Gate: A0 runs first and alone, and must reproduce the fall
+Four arms: A0 the recipe, A0′ a second seed, A1 biases on (H2), A2 Pythia's init (H1 through
+training); no fifth (D5 (a)). Rule: per arm the late level L (mean ρ_mid at 3738, 4369); a change
+**lowers the late level** if it lowers L by at least half of A0's rise L − T, **partly** from the
+bar max(0.1, 2τ), where τ comes from A0′; then **the delay check**: A0 and every arm that lowers L
+continue to 5970, and the label holds only if the gap stays (≥ bar and ≥ half of it); else
+"delays", read "not told apart". The floor 0.1 is checked first against `pythia-410m`'s ten seeds. Gate: A0 runs first and alone, and must reproduce the fall
 (T ≤ 0.25 by 1253) and the rise (L ≥ 0.60); otherwise U4 refuses with A0's series as the reading
-on steps against tokens. The arms that fit follow a measured throughput (B2: 5 arms need ≥ 44.2k
-tokens/s; ROADMAP's 60k never measured). Not matched: Dodecahedron's FineWeb subset and order,
+on steps against tokens. The arms that fit follow a measured throughput (B7: the four arms and
+every continuation need ≥ 45.1k tokens/s; below 35.4k only A0 runs and the rest returns to the
+user; ROADMAP's 60k is never measured and about 34 % of the GPU's dense rate, B8). Not matched: Dodecahedron's FineWeb subset and order,
 packing and BOS, LR floor (0.662 against 0.696 of the peak at 4369, B3), weight-decay exclusions.
 Proposed dropped: Blocked 125 (a)'s pair screen and reverse ablation (D6). U3's Parked 3 (the τ
-search bound) is not hit by U4, which derives no T2 arm; carried to T5's close-out.
+search bound) is not hit by U4, which derives no T2 arm; carried to T5's close-out. `/challenge-pr` on #306: accept with changes; findings 1–5 taken (the
+delay check and the renamed label; no fifth arm, LR's case and why it is not readable here (B6);
+the throughput rows; the 410m noise floor; the step-0 bands written out, A2's added).
 
 ## T5 U3's split, the batch: which paths write the shared direction (2026-11-02)
 

@@ -15,8 +15,19 @@ B4  Dodecahedron's reference numbers for the rule: L = mean ρ_mid at 3738 and 4
     T = 0.111 (917, the minimum over 100 … 4369); R = L − T = 0.6765; R / 2 = 0.338.
 B5  Parameters of the 32m arm (tied unembedding): 31,469,952 (125.9 MB in float32); biases on
     every linear add 3456 a block (55,296).
+B6  (after `/challenge-pr` on #306, finding 2) An LR arm cannot be read at matched cumulative LR
+    inside Dodecahedron's schedule: A0's cumulative LR to 4369 is 3469.7 peak-steps, while an arm
+    at half the peak has 2384.0 over the whole schedule to 9536 (at 1e-3, 0.286 of the peak,
+    1362.3). Its whole run never reaches A0's dose at the read.
+B7  (finding 1) The delay check continues A0 and up to two arms from 4369 to 5970: 1601 steps,
+    0.839e9 tokens an arm. Four arms plus three continuations fit in 72 h at θ ≥ 45.1k tokens/s;
+    four arms alone at θ ≥ 35.4k (B2).
+B8  (finding 3) A rough throughput ceiling: about 6 N + 12 L d n_ctx = 339.8 MFLOP a token
+    (N 31.47M, attention at 2048), so 60k tokens/s is 20.4 TFLOP/s, 34 % of the RTX 3080's
+    59.5 TFLOP/s dense bf16 with float32 accumulate (NVIDIA's sheet, not measured). With d 384 the
+    matmuls are small, so θ of 25–45k is as likely as 60k: the rows of B2 below 44.2k are live.
 
-NOT proved: the throughput. 60k tokens/s is the ROADMAP's rough guess, never measured on this
+NOT proved: the throughput (B8 is a ceiling argument, not a measurement). 60k tokens/s is the ROADMAP's rough guess, never measured on this
 GPU; U4a measures it and the arm count follows B2's thresholds. Nothing here says the rise will
 appear at 524k a step: that is A0's positive control.
 """
@@ -76,3 +87,36 @@ assert n == 31_469_952
 bias_block = d + kv + kv + d + ff + ff + d
 assert bias_block == 3456
 print(f"B5 params {n} ({n * 4 / 1e6:.1f} MB fp32); biases {bias_block} a block, {Lyr * bias_block} in all")
+
+# B6
+def cum(step, peak_frac=1):
+    """Cumulative LR in units of the peak, summed over steps 1 … step (float: a 9536-term sum)."""
+    import math
+    tot = 0.0
+    for t in range(1, step + 1):
+        if t <= WARM:
+            tot += t / WARM
+        else:
+            tot += (1 + math.cos(math.pi * (t - WARM) / (TOTAL - WARM))) / 2
+    return tot * float(peak_frac)
+
+
+cA0 = float(cum(READ))
+c_half = float(cum(TOTAL, sp.Rational(1, 2)))
+c_1e3 = float(cum(TOTAL, sp.Rational(1, 1) * sp.Rational(1000, 3500)))
+assert abs(cA0 - 3469.7) < 0.1 and abs(c_half - 2384.0) < 0.1 and c_half < cA0 and c_1e3 < cA0
+print(f"B6 cumulative LR / peak: A0 to {READ} {cA0:.1f}; half peak to {TOTAL} {c_half:.1f}; 1e-3 to {TOTAL} {c_1e3:.1f}")
+
+# B7
+CONT_TO = 5970
+cont = (CONT_TO - READ) * B_CARD
+need = sp.Rational(4 * tok_card + 3 * cont, CAP_S)
+assert CONT_TO - READ == 1601 and round(float(need)) == 45_064
+print(f"B7 continuation {READ}->{CONT_TO}: {cont:.4g} tokens an arm; 4 arms + 3 continuations need θ ≥ {float(need):.0f}")
+
+# B8
+n_ctx = 2048
+flop_tok = 6 * n + 12 * Lyr * d * n_ctx
+tflops = flop_tok * 60_000 / 1e12
+assert abs(flop_tok / 1e6 - 339.8) < 0.1 and abs(tflops / 59.5 - 0.343) < 0.01
+print(f"B8 {flop_tok / 1e6:.1f} MFLOP a token; 60k tokens/s = {tflops:.1f} TFLOP/s = {tflops / 59.5:.0%} of 59.5")
