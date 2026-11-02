@@ -403,6 +403,9 @@ main tree fast-forwarded; the hook not yet changed.
 Again 2026-11-02 (U3's first read): the main tree one merge behind (#301); the hook printed the
 file that said "next: Blocked 130, yours" while the prompt said U3 runs. Caught by reading
 `git show origin/main:STATE.md`; the hook not yet changed.
+Again 2026-11-02 (U3's split): the main tree two merges behind (#301, #302); the hook printed the
+file that said "next: Blocked 130, yours" while the prompt said U3's split runs. Caught by the age
+check; the main tree not moved (another session may use it); the hook not yet changed.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
@@ -971,6 +974,17 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-02, T5 U3's split (a positive control whose plant moved the model; caught by the
+  gate itself, on the first output, before the batch): the planted o_proj bias was frozen at 0.5 ×
+  the median token norm in every block of `-32m`, and the gate asked the bias path to hold ≥ 0.9
+  of "the planted component". The author fixed that as the model-level difference (planted less
+  unplanted write component), without computing what the plant does to the model: it sends the
+  cloud to mean cosine 1.00, every block's normed input becomes one direction, and the MLPs
+  re-write it, so 0.95 of the difference is mlp_const and the bias path 0.125. The split was exact;
+  the gate could not tell a misplaced bias from a model that relays it. Cost: one refused gate and
+  a decision (Blocked 131), seconds of GPU. Rule: **a planted effect on a trained model is sized so
+  the model's own response to it is measured first (ρ, or the statistic, with the plant beside
+  without it); a plant that changes the regime tests the model, not the instrument.**
 - 2026-11-02, T5 U3's first read (a rule that assumed its derivation exists everywhere; caught
   by the producer's own refusal, before the reading): the rule moved T2's preflight along 14
   steps and "stated before output" only that the two ends pass and fail. T2's arms are derived per
