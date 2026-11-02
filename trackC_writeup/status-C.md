@@ -30,7 +30,7 @@
   - C2p readings audit (2026-10-30, the user's; writing only): every claim `paper/` attributes to a paper checked against its source in `docs/readings/`; 6 corrected (Pendharkar's section 10 is about orthogonal subspaces, its Theorem 17 conditional; 2604.01978 proves ‖m‖² rises in depth under per-layer random attention weights, so the draft's "no result" is narrowed; Razzhigaev's anisotropy is centred; Ethayarajh's non-input layers; Gao's circle), 9 missed items, 8 added to the text; a released `pythia-70m` with a ten-times warmup (M1), on which the n-gram KL minima come 1–2 octaves later (M2), opens C6 — `trackC_writeup/status-C.md` "C2p readings audit (2026-10-30)"
   - C6 unit 0, the design (2026-10-31; tier 1, description; no energy on the run): `pythia-70m-warmup01` read off its weights is Pythia-70m's init and first batch (76 of 76 tensors bit-equal at step 0), its in-warmup rate a tenth of Pythia's (W 14 300 at peak 1e-3, H0 confirmed), its peak Pythia's within ~10 %; 70m's dates over `pythia-70m` and PolyPythias seeds 1–9: V 256 or 512 (5 and 5), the centred date 512–1000 (1000–2000 at 4.78e-3); bands per schedule and arm frozen into `c6_warmup.REF70`, with the reading revised after it was calibrated on the seeds' own profiles (planted truth survives 10, 9, 9 of 10; alone 7, 4, 9; the instantaneous truth only 2–4 of 10 if 70m's late states are planted less literally, all on V's count: Blocked 127); the gate fixed for U1 — `trackC_writeup/status-C.md` "C6 unit 0, the design (2026-10-31)"
   - C6 unit 1 (2026-11-01; Blocked 127 (a), the user's: V not read under instantaneous, frozen before output): seed 0's known answer exact, but **the run's gate refuses**. On the run, V sees plant B at 0.38 (7000; 13 of 34 units, 14 needed) and 0.33 (20 000) against the bar of 0.4 (`pythia-70m` at 7000, its own plant draws: 0.45, 13 of 29). The frozen gate takes the centred arms' dose from V's rule, so no arm is gated, though three would pass at the top dose (beside). Nothing on the run's grid was computed; the exit is met as "refused by its gate"; whether to read the centred count alone is Blocked 128 — `trackC_writeup/status-C.md` "C6 unit 1, Blocked 127 (a) and the run's gate (2026-11-01)"
-  - C6 unit 1b (2026-11-01; Blocked 128 (a), the user's, one unit beyond the budget; frozen after U1's gate output, before any output on the run's grid): the centred count alone, plant B at 3b's 0.5, V not read. Gate: 9.61e-5, 1e-4, 3e-4 gated (4.78e-3 not, B 0.39 at 20 000), equal to U1's top-dose arms. **The centred count reads "consistent with cumulative"**: dated 2000 on all three arms against 70m's 512–1000 over ten seeds; step excluded (its band 512–1000), instantaneous excluded (the run is already at 16–18 at 2000, a step its early set holds); in the in-sample calibration that label came only from cumulative plants (2 of 10, none from the 20 others). So on 70m the centred date moves with a ten-fold warmup. V not read; one count's three near-equal arms — `trackC_writeup/status-C.md` "C6 unit 1b"
+  - C6 unit 1b (2026-11-01; Blocked 128 (a), the user's, one unit beyond the budget; frozen after U1's gate output, before any output on the run's grid): the centred count alone, plant B at 3b's 0.5, V not read. Gate: 9.61e-5, 1e-4, 3e-4 gated (4.78e-3 not, B 0.39 at 20 000), equal to U1's top-dose arms. **The centred count reads "consistent with cumulative"**: dated 2000 on all three arms against 70m's 512–1000 over ten seeds; step excluded (its band 512–1000), instantaneous excluded (the run is already at 16–18 at 2000, a step its early set holds); in the in-sample calibration that label came only from cumulative plants (2 of 10, none from the 20 others). So on 70m the centred date comes later than a fixed step allows, compatible with the summed rate; the grid places the shift at a factor of about 1 to 3.9 against seed 0 (`/challenge-pr` on #298, finding 1). V not read (its profile on disk and seen: a lean, finding 2); one count's three near-equal arms — `trackC_writeup/status-C.md` "C6 unit 1b"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -42,7 +42,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-01 · body `c5de5861ec`
+- **Reviewed:** 2026-11-01 · body `810be5baa4`
 <!-- /phase-card -->
 
 ## Units
@@ -98,16 +98,26 @@ as frozen.
 | as frozen (`not_read=()`), beside | the same label (127 (a) concerns V only) | `beside.as_frozen` |
 | the run's counts, 0 → 143 000 (3e-4 arm) | 0 through 256, 1 at 512, 2 at 1000, 16 at 2000, 17, 15, 14, 15, 14, 22 at 143 000; 4.78e-3 (not gated) 1 at 2000, 11 from 16 000 | `beside.V_c` |
 
-What the label means, from the frozen outcome table: **on 70m the centred count's date moves
-with a ten-fold warmup**, as the summed learning rate does. It is a dose, not a fixed step (or
-token count). On 70m's own ten seeds the date is 512–1000; on the run it is 2000. In the
+What the label means. The frozen outcome table words it "a dose, not a fixed step". Narrowed
+after `/challenge-pr` on #298 (finding 1): **on 70m the centred count's date comes later than a
+fixed step allows, compatible with the summed learning rate.** The grid does not pin the shift
+finely. The run rises in (1000, 2000] and seed 0 in (512, 1000], a factor of about 1 to 3.9;
+the ten seeds rise in (256, 1000], a factor of 1 to 7.8. The summed rate's √10 lies inside both
+ranges, but so does any partial shift, and the calibration planted only the three schedules,
+none in between. On 70m's own ten seeds the date is 512–1000; on the run it is 2000. In the
 calibration on the seeds' plants (in-sample, 3 arms, the same under every late-state version),
 that label came only from cumulative plants: 2 of 10 cumulative plants read it, and none of the
 10 step or 10 instantaneous plants did.
 
 **Caveats.**
 - **V was not read.** The label is the centred count's alone, so it does not say whether V's
-  date moves with the warmup too.
+  date moves with the warmup too. But V's profile on the run, and the ungated 4.78e-3 arm's, are
+  on disk (`reading.json` `beside`, written by `read`). Both were seen before Blocked 129 was
+  written (`/challenge-pr` on #298, finding 2). Both missed their gates, so anything said from
+  them is a lean, not a reading.
+- **Which plants read the label.** The two cumulative plants that read "cumulative" alone are
+  seeds 3 and 6, the early risers. Seed 0's own cumulative plant dates at 4000 and reads
+  "cumulative and instantaneous" (`/challenge-pr` on #298, finding 1).
 - **The revision came after a gate output.** U1's refusal and its top-dose arms had been seen
   before the dose was fixed, though no output on the run's grid had been.
 - **The arms are not independent.** The three gated arms (9.61e-5, 1e-4, 3e-4) give the same
@@ -125,7 +135,10 @@ that label came only from cumulative plants: 2 of 10 cumulative plants read it, 
 trackC_writeup.c6_warmup run --out <dir> --models seed0`, `… gate --out <dir> --centred-only`,
 `… run --out <dir> --models run`, `… read --out <dir>` (GPU, about 3 min together; seed 0 43 s,
 the run 68 s). Records: `data/trackC/c6/2026-11-01-u1b/` (main tree), one code hash
-`c83c50f4faa6`. `pytest tests/test_trackC_c6.py` (27).
+`c83c50f4faa6`. `pytest tests/test_trackC_c6.py` (28; one skips without `data/`). Untested: the
+gate's refusal on arms that differ from U1's (it needs the forward passes). Moving it into a
+pure function would change the code hash the U1b records carry (`/challenge-pr` on #298,
+finding 3).
 
 **Parked.** None new. Whether and how the label enters `paper/` §7 and F1 is the close-out's
 call (Blocked 129).

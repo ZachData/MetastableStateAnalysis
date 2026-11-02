@@ -223,6 +223,17 @@ def test_blocked_128a_fixed_dose_gates_the_centred_arms_with_v_refused():
     assert w.gate_one(_pops(1.0), ["r"], "t")["b_dose"] is None  # as frozen, the same input refuses
 
 
+def test_blocked_128a_gate_refuses_a_dose_other_than_3bs(tmp_path, monkeypatch):
+    # #298, finding 3: the refusal fires before any model is loaded
+    import json
+    from types import SimpleNamespace
+    pf = tmp_path / "preflight_plants.json"
+    pf.write_text(json.dumps({"gate": {"b_dose": "0.25"}}))
+    monkeypatch.setattr(w, "U3B_PREFLIGHT", pf)
+    with pytest.raises(w.C6Refused, match="not unit 3b's 70m dose"):
+        w.gate(SimpleNamespace(out=str(tmp_path), centred_only=True))
+
+
 def test_blocked_128a_dose_is_unit_3bs():
     import json
     if not w.U3B_PREFLIGHT.exists():
