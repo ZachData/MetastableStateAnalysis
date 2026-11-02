@@ -1,5 +1,5 @@
 <!-- trackT_timaeus/design-T5.md -->
-# Track T — design: T5, why the Pythia counts fail on Dodecahedron (proposed 2026-10-30; frozen 2026-10-30; U3 revised 2026-11-01)
+# Track T — design: T5, why the Pythia counts fail on Dodecahedron (proposed 2026-10-30; frozen 2026-10-30; U3 revised 2026-11-01; U4 proposed 2026-11-02)
 
 Opened 2026-10-30 by `STATE.md` Blocked 122 (a), the user's, as recommended: all units, U4 after
 U3. Row: `docs/ROADMAP.md` §7b T5, which states H1 and H2 and the recorded 70m prediction; this
@@ -286,6 +286,130 @@ Whether the rise is fixed in steps, in tokens or by the LR schedule is not known
 another batch or schedule may not rise where Dodecahedron did (`/challenge-pr` on #301, finding 3).
 U4's design states which of the three it matches, with U3's crossings in hand.
 
+### U4, the causal arm, designed (proposed 2026-11-02; Blocked 132; nothing trained)
+
+Written with U3's crossings and split in hand (`status-T.md` "T5 U3, first read", "T5 U3's
+split, the batch"). Arithmetic: `tools/math_checks/t5_u4_budget.py` (B1–B5). **The question:**
+in Dodecahedron's own recipe, do biases (H2), or Pythia's init (H1 through training), remove the
+cloud's late rise? The rise is read where every count has already stopped.
+
+| from U3 | so U4 |
+|---|---|
+| every count stops by 4369 (uncentred 1713, fixed τ 2002, T2's B-matched arm 4369; ρ_mid 0.32–0.81), none before ρ rises | reads its late level at 3738 and 4369 and trains no further |
+| the shared component is written by attention's ordinary keys and the MLP write's pooled mean, about equally; the sink grows with position 0's norm; Dodecahedron has no bias path | H2 asks whether a model given biases rises less; the split on each arm at 4369, beside, shows whether its biases take the write |
+| 410m's biases write 0.12 of the component at 4000, 0.31 at 143000 | a model that has biases uses them, late |
+| what raises ρ is not measured (the write's size 0.093 → 0.149 while ρ_mid 0.11 → 0.90) | the labels read ρ itself, not a path |
+
+**The schedule it matches: Dodecahedron's steps and LR schedule, at the card's 524,288 tokens a
+step.** Matching tokens is out of reach: at T1 Q3's leaning 4.19M a step, a single arm gets to
+step 3707 in the whole cap at the ROADMAP's guessed 60k tokens/s (B2), short of 4369, so no
+comparison of arms is possible. At 524k each arm reaches 4369 in 2.29B tokens (B1; 10.6 h at
+60k). The cost: if the batch was 4.19M, the arms see an eighth of Dodecahedron's tokens at every
+step. A0 then tests whether the rise appears at Dodecahedron's steps and LR with an eighth of the
+tokens. Either outcome is a reading (below).
+
+| item | fixed as |
+|---|---|
+| architecture | `dodecahedron-32m`'s `config.json`: Llama, 16 × 384, 6 heads / 2 KV of 64, SwiGLU 1024, RMSNorm eps 1e-5, rotary θ 1e4, tied, vocab 16,384; 31,469,952 parameters (B5); built by `t5.build` (U1's code, which its init gate checked) |
+| tokenizer | Dodecahedron's (`step9536`), as U1 |
+| data | FineWeb `sample-10BT` (`HuggingFaceFW/fineweb`), tokenized with Dodecahedron's tokenizer and packed into 2048-token sequences, its files read in order until 4369 × 256 sequences (2.29B tokens); shuffled once (`default_rng(20261102)`), one stream in the same order for every arm; uint16, outside git |
+| batch | 2048 tokens × 256 sequences = 524,288 a step (the card's 64 × 4 × 2048); micro-batch and accumulation set by memory in U4a |
+| optimizer | AdamW β 0.9 / 0.95, weight decay 0.01 on matrices (not on norm gains or biases), gradient clip 1.0 (card) |
+| LR | linear from 0 to 3.5e-3 over 1000 steps, then cosine toward 9536 with floor 0 (the card gives none: 0.662 of the peak at 4369, 0.696 with floor 0.1, B3); stopped at 4369 |
+| precision | bf16 autocast, float32 master weights |
+| checkpoints | step 0 and every `t2.GRID` step ≤ 4369 (48), float32 (~126 MB each, ~6.2 GB an arm), the optimizer state at 4369 (so an arm can be continued); `$METS_DATA/trackT/t5u4/<arm>/`, on the HDD |
+| read | U2's statistics per checkpoint through `t5c`'s per-state code (the 7 v1 prompts, float32, eager), so U2's known answer covers the reader |
+
+Not matched, and so checked together by A0: Dodecahedron's FineWeb subset and order, its
+packing and BOS convention, its LR floor, its weight-decay exclusions, eight GPUs' numerics.
+U4a fixes the packing and BOS details before any arm runs, as U3's split did.
+
+**The arms** (each read against A0; the data stream is the same for all):
+
+| arm | change | init | reads |
+|---|---|---|---|
+| A0 | none: Dodecahedron's recipe | F (0.02 everywhere), seed 0 | positive control: the rise reproduced |
+| A0′ | none | F, seed 1 | seed noise τ |
+| A1 | biases on every linear (q, k, v, o, gate, up, down), zero at init | A0's weights plus zero biases, so A1 is A0 at step 0 exactly | **H2** |
+| A2 | Pythia's init P (U1's: small_init on the embedding and input maps, wang_init(384, 16) on `o_proj`, `down_proj`) | P, seed 0 | **H1 through training** |
+| A3 | D5: recommended both changes (the ROADMAP's 2 × 2) | A2's weights plus zero biases | beside: the interaction |
+
+**The statistic and the rule (fixed before any arm runs).** For arm k, from its ρ_mid series on the grid:
+
+| symbol | definition | Dodecahedron `-32m` (B4) |
+|---|---|---|
+| L_k | the late level: mean ρ_mid at 3738 and 4369 (two steps against step-to-step jitter) | 0.788 |
+| T_k | the trough: min ρ_mid over grid steps 100 … 4369, with its step | 0.111 (917) |
+| R_k | the re-concentration, L_k − T_k | 0.677 |
+| ΔL_k | L_A0 − L_k: how much of A0's late level the change removes | |
+| τ, bar | τ = max(0.02, \|L_A0 − L_A0′\|); bar = max(0.1, 2τ) (U1b's form) | |
+
+- The change **removes the rise** if ΔL_k ≥ R_A0 / 2; **partly** if bar ≤ ΔL_k < R_A0 / 2;
+  **does not** if |ΔL_k| < bar; **raises it** if ΔL_k ≤ −bar.
+- **H2** from A1, **H1 through training** from A2: removes → supported; partly → partly; does not
+  or raises → not supported.
+- A3 under the same rule, beside: ΔL_A3 against ΔL_A1 + ΔL_A2 (additivity); not in the exit.
+
+Beside, with no label: each arm's full series (ρ_mid, ρ_mid⁻⁰, ρ_1:5, m, n0), T_k and its step,
+R_k; the 7-prompt bootstrap of each ΔL_k (U2's: one resample shared across arms and steps, 1,000,
+`default_rng(20261030)`); the training loss and the v1 prompts' loss at each checkpoint
+(Dodecahedron's: 4.16 at 917, 3.77 at 4369). At 4369 also U3's split (`t5f`: shares and sizes,
+and on A1 and A3 the bias paths), plus the two counts that need no derivation: (ii) the fixed-τ arm
+at 3e-3 / dose 0.5 and (iii) the uncentred count at 1e-3 (plant A share), provided T2's preflight
+accepts a local checkpoint. No T2 arm is derived, so the τ search bound (U3 first read, Parked 3)
+is not hit; it is carried to T5's close-out.
+
+**Gate (before the reading; any failure goes back to the user).** A0 runs first and alone; the
+other arms start only after A0 passes, so a recipe that does not rise costs one arm.
+
+| check | when | pass |
+|---|---|---|
+| known answer: the reader on released `-32m` steps 1 and 9536 against U2's record | before any arm | max \|Δρ_ℓ\| ≤ 1e-6 |
+| the loop: on a tiny Llama, 2 steps on fixed tokens equal a hand-written float32 AdamW with the schedule | before any arm (a test) | rel 1e-5 |
+| the init: per-role SDs at step 0 against F (A0, A0′) and P (A2) | each arm's step 0 | within 2 % |
+| A0's step-0 ρ_mid inside U1's 20-seed range for Llama-32m F, ± 0.03 ([0.817, 0.851]) | A0 step 0 | inside |
+| A1 is A0 at step 0 (and A3 is A2): ρ_ℓ equal | step 0 | ≤ 1e-6 |
+| first output populated: A0's step-1 and step-10 checkpoints load and give finite ρ_ℓ; the training loss falls over steps 1–100 | A0, before it continues | yes |
+| **positive control: A0 reproduces the rise** | A0 at 1253, then at 4369 | T_A0 ≤ 0.25 by 1253 (every trough read is 0.10–0.21), else A0 stops there; L_A0 ≥ 0.60 (every Pythia end level read is 0.37–0.44; Dodecahedron 0.79) |
+| the seed noise leaves the rule readable | A0′ at 4369 | bar < R_A0 / 2; else "removes" and "partly" merge, and U4 reads only removes against does not, saying so |
+
+There is no trained positive control at the rule's size: no recipe is known to remove the rise.
+The rule's arithmetic is tested on planted series instead (A0's series with L lowered by R/2 reads
+"removes"; A0′'s reads "does not"; as a unit test).
+
+**Throughput, and the arms that fit (fixed now).** U4a measures θ on A0's configuration over 50
+timed steps after 10 warm-up steps (discarded):
+
+| θ (tokens/s) | arms (B2) |
+|---|---|
+| ≥ 44.2k | all five |
+| 35.4k – 44.2k | A3 dropped |
+| 26.5k – 35.4k | A3 and A0′ dropped (τ 0.02, bar 0.1, stated as unmeasured noise) |
+| < 26.5k | no arm; back to the user |
+
+**Outcomes, stated before output.**
+
+| A0 | then |
+|---|---|
+| no trough ≤ 0.25 by 1253 | refused: the recipe at 524k a step does not reproduce the fall; nothing read; A0's series reported |
+| spreads, L_A0 < 0.60 | refused: the rise is not reproduced at 524k by 4369 (it may need the tokens, if the batch was 4.19M, or something else in the recipe). H1 and H2 "not told apart". Continuing A0 to 9536 or a larger batch would be a new Blocked item |
+| passes | the arms are read under the rule. The rise appears at Dodecahedron's steps and LR schedule at 524k a step, so it is not set by tokens alone if the batch was 4.19M |
+
+**What it cannot show.** Each arm is Dodecahedron's recipe with one change. So a label says what
+biases or Pythia's init do to a Llama trained on FineWeb at LR 3.5e-3, not why Pythia's cloud stays
+lower: the data, tokenizer, LR, norm and MLP differ there too (ROADMAP row, "Not told apart"). A
+read at a fixed step cannot tell "removes" from "delays past 4369", and A2's smaller output init
+may move the trough's timing. There is one run per arm and one replicate seed for the noise.
+
+**Budget.** Two units: U4a (the loop, the data shard, the tests, θ, and A0 through its positive
+control) and U4b (the other arms and the reading). That is one unit beyond T5's budget (D7); the
+3 GPU-day cap is unchanged.
+
+**From Blocked 125 (a), proposed dropped (D6).** The pair screen and the reverse ablation were
+made U4's first step while U4 was aimed at the init. U2 then found the init's concentration gone
+by 671–917, and U4 was re-aimed at the rise (Blocked 130 (a)). A ranking of the parts at init can
+no longer pick what U4 trains.
+
 **U5, the controls.** U2's statistics on Mistral GPT-2 small from checkpoint 0 (on disk), on
 410m's seeds 1–9 at the 18 steps (on disk), and on `gpt-2-small` if D1 (b). They describe, with no rule.
 
@@ -302,6 +426,7 @@ U4's design states which of the three it matches, with U3's crossings in hand.
 | U3 | **the first read's known answers** (added 2026-11-01, Blocked 130 (a)): `--trained-step` 9536 and 917 reproduce T2 unit 1's and U2b's records | `derived`, `arms`, `gate` equal to 1e-12 |
 | U3 | **the split:** the parts sum to the block's write | max relative error ≤ 1e-4 |
 | U3 | ~~**planted bias:** a vector at 0.5 × the median token norm added as an o_proj bias in every block of `-32m` at 9536~~ **retired on the record 2026-11-02 (Blocked 131 (a))**: it refused at 0.125 by testing the model's response, not the split; reported beside. The split's gates are the sum, the known answer and the tiny-model test ("The planted-bias gate retired on the record") | ~~the bias path's share of the planted component ≥ 0.9~~ |
+| U4 | the gate in "U4, the causal arm, designed" (proposed, Blocked 132): the reader's known answer, the loop's test, the init, A1 = A0 at step 0, A0's first output, **A0 reproduces the rise**, the seed noise | as there |
 
 Any failure goes back to you before that unit's reading.
 
@@ -312,6 +437,10 @@ Any failure goes back to you before that unit's reading.
 | D1 | where `timaeus/gpt-2-small`'s trajectory goes | (a) in U2: its init and about 20 log-spaced checkpoints of its 650 (100 … 65,000; about 6.5 GB at 325 MB each), read under U2's "spreads" rule, and its result sizes U4; (b) in U5 as the ROADMAP row has it, described with no rule | **(a).** It is the only released run with a passing model's architecture (Pythia-160m) under the flat init (its data and LR differ, unknown), so it answers "does a flat init keep the cloud concentrated through training" before any GPU-day is spent. It cannot separate H2, since it has biases. (b) keeps the plan as proposed but reads the strongest control without a rule |
 | D2 | U1's bands | (a) as above: ρ_1:5 ≥ 0.60 / ≤ 0.30 for R1a, R1b; E_init ≥ max(0.1, 2τ) where the dose is ≥ 3, 70m's E_init the smallest; Llama-32m under P at least halfway to NeoX-P; (b) bands from the 20-seed spread alone (E_init beyond the 95 % seed interval), no fixed size | **(a).** A fixed size says the init matters by an amount that bears on the counts. (b) would call a 0.03 shift "supported" with 20 seeds. The R1 bands come from T2's records (Dodecahedron's four init values less their spread; 410m's plus 0.05); 0.1 is a judgement. Revised after `/challenge-pr` on #290 (findings 1, 2): the first proposal's 0.75 on ρ_mid sat where a Dodecahedron-like 70m would land, and its reason (the 32m–67m spread) was wrong (0.016, not 0.09) |
 | D3 | U4 | (a) designed after U2 and D1's read, own Blocked item, 3 GPU-day cap; (b) committed now to the ROADMAP's 4 arms ({biases on, off} × {0.02, depth-scaled}) at 32m's shape | **(a).** If `gpt-2-small` does not spread, the flat-init arm is half answered and U4 can drop to the biases contrast; if it spreads, U4's flat arms carry the question. (b) spends up to 3 GPU-days before that is known |
+| D4 | U4's schedule (Blocked 132) | (a) Dodecahedron's steps and LR schedule at the card's 524,288 tokens a step, read to 4369 (2.29B tokens an arm); (b) tokens matched at T1's leaning 4.19M a step; (c) a compressed schedule (warmup and cosine shortened so 4.19M-token steps fit the cap) | **(a).** Every count stops by 4369, and (a) reaches it in every arm within the cap if θ ≥ 26.5k (B2). (b) gets one arm to step 3707 in the whole cap at the guessed 60k, so no arm is compared. (c) matches neither steps, tokens nor the schedule, so a rise there or its absence says nothing about Dodecahedron's. (a)'s cost: an eighth of the tokens if the batch was 4.19M, which A0's positive control reads |
+| D5 | U4's fifth arm, A3 (Blocked 132) | (a) biases and Pythia's init together (the ROADMAP's 2 × 2), beside, for the interaction; (b) peak LR 1e-3 (`pythia-70m`'s) in Dodecahedron's recipe; (c) none (about 10 h saved) | **(a).** It completes the arm set the ROADMAP row proposed, and U1 found the init's effect at step 0 to be an interaction. (b) tests the largest recipe difference left untested, but U3 could not tell steps from LR dose at the rise: at a third of the LR the rise may come later, and a read at 4369 cannot tell "removes" from "delays", so the arm cannot get a clean label. It is better as its own arm with a cumulative-LR read, if U4 shows H1 and H2 do not carry |
+| D6 | the pair screen and the reverse ablation (Blocked 125 (a) made them U4's first step) | (a) dropped, recorded in T5's close-out with why; (b) run first anyway (about 10 GPU-minutes and a unit of writing), as context at init | **(a).** They rank the Llama's parts at init, and U2 found the init's concentration gone by 671–917. U4 is aimed at the rise (Blocked 130 (a)), so a ranking at init cannot choose what it trains |
+| D7 | U4's budget | (a) two units, U4a (loop, data, tests, θ, A0 through its positive control) and U4b (the other arms and the reading), one beyond T5's budget, on the record; the 3 GPU-day cap unchanged; (b) one unit, A0 and the arms back to back | **(a).** It puts a stop after A0, so a recipe that does not rise costs one arm (about 11 h) and not five. (b) keeps the budget but launches four arms before the positive control is known |
 
 ## Exit and budget
 
@@ -320,7 +449,7 @@ U4; "not told apart" if U4 does not run) under the rules above, and "does Dodeca
 checkpoint" answered on the 53. **Budget: U0 (this design and scan) + U1–U5 + close-out**, U4 ≤ 3
 GPU-days, **plus U1b** (extended on the record, Blocked 124 (a), 2026-10-30), **plus U2b** (Blocked 126 (a),
 2026-11-01, on the user's delegation), **plus U3's revision** (Blocked 130 (a), 2026-11-01, the
-user's: one docs unit; U3 then runs in budget, its first read minutes of GPU). **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
+user's: one docs unit; U3 then runs in budget, its first read minutes of GPU). **U4 proposed as two units** (U4a, U4b; Blocked 132, D7: one beyond the budget if taken), the cap unchanged. **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
 clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 
 ## Worth challenging (for the PR)
@@ -351,3 +480,16 @@ clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 - The fixed-τ arms (ii) were chosen after U2b's reading (its post hoc sweep). They are fixed here
   before any rise output, but the choice of 3e-3 at dose 0.5 as the crossing's arm is informed by
   where U2b's trough passed.
+- U4's late level L is read at a fixed step (mean of 3738, 4369) and not at an arm's own
+  plateau, so an arm that rises later reads as "removes". Rejected: reading each arm to its own
+  plateau (it needs a training horizon fixed in advance that the cap cannot pay for), and reading
+  at matched cumulative LR (the same as matched steps for every arm except D5 (b)).
+- U4's bands are judgement: the positive control's T ≤ 0.25 and L ≥ 0.60 sit between the
+  troughs and end levels read so far (0.10–0.21; Pythia 0.37–0.44, Dodecahedron 0.79), and
+  "removes" at half of A0's rise copies U1b's "carries". The noise comes from one replicate seed,
+  so τ could be underestimated; the floor 0.1 guards only partly.
+- U4 matches steps at 524k (D4) because tokens cannot be matched within the cap. If T1 Q3's 4.19M
+  is right, every arm sees an eighth of Dodecahedron's tokens, and A0's control may refuse for
+  that reason alone; that refusal is itself the reading on steps against tokens.
+- A1's biases are zero at init and trained with no weight decay. A reviewer may prefer them decayed
+  like the matrices (Pythia's own setting is not read here).
