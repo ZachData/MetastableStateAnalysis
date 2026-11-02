@@ -397,6 +397,9 @@ change, so the user's), and until then the age check is not optional.**
 Again the same day, the next session (T5's proposal): the hook printed the 2026-10-20 file, and
 the newest work was on an unmerged branch (`claude/t2-close`), so even `origin/main`'s STATE was a
 PR behind; caught by the age check, the hook not yet changed.
+Again 2026-11-01 (U3's revision): the main tree 58 commits behind (#290–#300); the hook printed
+the 2026-10-30 file (Blocked 122) while the prompt named Blocked 130. Caught by the age check; the
+main tree fast-forwarded; the hook not yet changed.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files

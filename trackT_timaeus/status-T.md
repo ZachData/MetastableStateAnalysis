@@ -23,11 +23,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 and U4 revised toward the late rise first, Blocked 130 — `trackT_timaeus/status-T.md` "T5 U2b"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)), not run — `trackT_timaeus/status-T.md` "T5 U3's revision"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-01 · body `74144b11e6`
+- **Reviewed:** 2026-11-01 · body `ff05e0ae0e`
 <!-- /phase-card -->
 
 ## Units
@@ -42,7 +42,22 @@
 | T5 U1. step 0 and random weights (H1 at init) | **done 2026-10-30**: gate passes; R1a, R1b falsified; R2 partly (the init matters in Llama only) | "T5 U1" below |
 | T5 U1b. the Llama's parts at init (added, Blocked 124 (a)) | **done 2026-10-30**: gate passes; no single part (`gelu` partly, 0.16 of 0.36; the rest none) | "T5 U1b" below |
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
-| T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00); U3 waits on Blocked 130 | "T5 U2b" below |
+| T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
+| T5 U3. where the shared direction is written | **revised 2026-11-01** (Blocked 130 (a), docs only): `-32m`'s 8 steps moved onto the late rise (917 … 9536), the gates read there first; **next, not run** | "T5 U3's revision" below; `design-T5.md` "U3 revised" |
+
+## T5 U3's revision: toward the late rise (2026-11-01)
+
+Blocked 130 (a), the user's, as recommended; docs only, nothing run. `design-T5.md` "U3 revised
+toward the late rise" fixes, before any U3 output: `-32m` at 917, 1253, 1713, 2340, 3198, 4369,
+6979, 9536 (ρ_mid 0.11 → 0.90, spread over the rise; 410m's 8 kept); as U3's first read, T2's
+preflight at the six new steps (917 and 9536 from their records, which also gate it), read as T2's
+arms, the fixed-τ arms (U2b's post hoc sweep, now fixed) and the uncentred count, with ρ, position
+0's norm, the loss and the LR phase beside, and "where each count stops" as a description; the
+split's paths then sit beside it. Stated before output: every crossing lies in (917, 9536] unless
+not monotone, and since ρ, the norm, the loss and the LR all move together on the rise, the read
+cannot say which makes a count stop. U4 is aimed at the rise; at its cap an arm reaches about 800
+steps at Dodecahedron's batch (ROADMAP row), before the rise, so its design must take a smaller
+batch or fewer arms. U2b's Parked 1 is taken into U3's first read; Parked 2 stays with T5's close-out.
 
 ## T5 U2b: T2's planted gates in the trough (2026-11-01)
 
@@ -110,7 +125,8 @@ re-concentrates. `-67m` not read.
 
 **Parked** (why / cost / which decision it could change): (1) The gate at U3's checkpoints along
 the late rise (1253, 1713, 2340, 3198, 4369, 9536), pairing where each count stops passing with
-ρ_mid / minutes / whether U3's revision aims at a ρ threshold. Carried to Blocked 130. (2) Whether
+ρ_mid / minutes / whether U3's revision aims at a ρ threshold. Carried to Blocked 130; **taken
+into U3's first read** (Blocked 130 (a), `design-T5.md` "U3 revised"). (2) Whether
 T2 reopens on the trough / its plateau sits on the rise (above), so a date there is confounded by
 the re-concentration / — / carried to Blocked 130 (c) and T5's close-out.
 
