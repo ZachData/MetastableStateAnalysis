@@ -406,6 +406,9 @@ file that said "next: Blocked 130, yours" while the prompt said U3 runs. Caught 
 Again 2026-11-02 (U3's split): the main tree two merges behind (#301, #302); the hook printed the
 file that said "next: Blocked 130, yours" while the prompt said U3's split runs. Caught by the age
 check; the main tree not moved (another session may use it); the hook not yet changed.
+Again 2026-11-02 (U3's split, the batch): the main tree four merges behind (#301–#304); the hook
+printed a file with no Blocked 131 while the prompt decided it. Caught by the age check; read from
+`origin/main`; the hook not yet changed (a settings change, the user's).
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
