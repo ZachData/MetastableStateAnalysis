@@ -225,6 +225,21 @@ that stops before ρ rises from one that stops with it. The extra steps (U2's ρ
 | then the split | as above, at its 9 Dodecahedron steps, each rise step's paths reported beside its row of the first read, so where the shared write grows sits beside where each count stops |
 | not done | no date, no V, no H2 label, `-67m` not read |
 
+**U3's split, the details (fixed 2026-11-02 before any split output; code `trackT_timaeus/t5f.py`).**
+The rows above leave these open; each is a choice, not derived.
+
+| item | fixed as |
+|---|---|
+| u_ℓ | per prompt: the mean over its tokens, position 0 included, of block ℓ's raw output (the residual; at the last block before the final norm, so not T2's last state), normalised |
+| the paths | attn_sink Σ_h a^h_i0 W_O^h W_V^h x̃_0 (bias-free value); attn_bias b_O + W_O b_V; attn_rest the keys j ≥ 1; mlp_bias the output bias; mlp_const the bias-free MLP write's mean over every token of the 7 prompts, per block; mlp_rest the bias-free write less it. Six paths, summing to the block's write |
+| share | Σ over blocks, prompts and tokens of the path's component on u / the same sum of the write's; per block beside; position 0 dropped beside |
+| size | per block, the path's mean component per token over the **root** mean square token norm at the block's output, then the mean over blocks. The rows above say "over the mean squared token norm", which has units 1 / norm and would not compare the two models; read as RMS (dimensionless) |
+| the sum's gate | per token ‖Σ paths − (x_out − x_in)‖ / ‖x_out − x_in‖, max over tokens, blocks, prompts, every model and step ≤ 1e-4 (float32 forward, float64 split) |
+| the plant | one vector, norm 0.5 × the median token norm over the middle states (1 … L−1) of the unplanted 9536, pooled over the prompts; direction N(0, I) normalised, seed 20261102; the same vector as the o_proj bias of all 16 blocks |
+| "the planted component" | the planted model's Σ write component less the unplanted one's (each on its own u); the bias path's share of it ≥ 0.9. One-sided as frozen: a share above 1 passes |
+| the known answer ("all") | ρ_ℓ from the split's own forward (`output_attentions` on) at 32m 1, 9536 and 410m 0, 4000 equal T2's `diag` to 1e-6 |
+| reported | per model and step, the six shares and sizes and the write's size; each rise step beside its first-read row (any centred arm with P, fixed-τ 3e-3 / 0.5 plant A, uncentred plant A, ρ_mid, position 0's norm) and the first read's stops. A description: no rule, no label |
+
 **U4, the causal arm.** Its design is written after U2 and the `gpt-2-small` read, as a section
 of this file and its own Blocked item, before any training (D3). Cap: 3 GPU-days. **Aimed at the
 rise** (Blocked 130 (a)): its arms are read on whether they re-concentrate after their trough, not
