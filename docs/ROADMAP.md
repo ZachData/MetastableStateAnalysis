@@ -317,6 +317,32 @@ Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 
 after T2's close, independent of T3–T4. Whether T opens, and where it sits against the other
 open rows, is §10 item 11; whether T5 opens is §10 item 12.
 
+## 7c. Track N: what the MLP's neurons do across training (added 2026-11-02, the user's; after Track T)
+
+From the user (2026-11-02), after reading Cammarata, "Neural Networks Are Already Clean"
+(Goodfire, 2026-10-15; local copy `docs/readings/goodfire_already_clean_2026-10-15.txt`, never
+committed). The essay: most MLP neuron poles (each sign of a neuron read on its own) do one
+readable job (about 90 % in preliminary Qwen3-32B audits); apparent polysemanticity is a job
+growing like a branch ("recursive generalization"), not packing. A working hypothesis by its own
+label, unreplicated, its technical paper pending: quote nothing from it as established.
+
+**Why here.** The particle picture models attention as the force; the MLP is the part least
+read, and it keeps turning up: T5 U1b (the GeLU MLP removes 0.164 of E0 0.363), T5 U3's split
+(`mlp_const` 0.24 of the shared direction at `-32m` 9536), 1e's U2 (the MLP supplies the shared
+ascent at 8–1000), 7d (MLP 6 an OR-gate with `L5H2`). The essay says of language models "We
+haven't looked over training"; Pythia's checkpoints with C2's dated events are that timeline.
+Read as what the forces write, not as particles (features are directions: the user's view,
+2026-10-18).
+
+| # | item | why | cost (estimate, not measured) |
+|---|---|---|---|
+| N1 | **scan and inventory**: the essay's method (poles, the blind-maximum test, thresholds), its companion paper if out, published work on MLP neurons across Pythia's checkpoints | §3's scan before a design; whether the question is already answered | free |
+| N2 | **positive control**: the audit must read a planted neuron of known job, and a known one (MLP 6's OR-gate with `L5H2` on 410m), before any rate is trusted | the essay's rates are LLM-graded with no planted control (`CLAUDE.md` calibration gate) | small |
+| N3 | **poles on `pythia-410m` at C2's 18 steps**: when each pole's job appears against the break (512) and the centred break and induction (1000); growth local (recursive generalization) or non-local (packing), the essay's own discriminating prediction | ties the essay's claim to the project's dated timeline | forward passes on cached checkpoints, plus LLM calls for explanations (unmeasured) |
+
+Not designed, downloaded or run. Opens after Track T closes, under §3 (exit condition and unit
+budget in its design).
+
 ## 8. Track C: write-ups
 
 | # | paper | inputs | when |
