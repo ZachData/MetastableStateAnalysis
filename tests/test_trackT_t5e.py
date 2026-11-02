@@ -65,3 +65,64 @@ def test_refused_read_both_ways():
     i = t5e.stops(per)["i_centred_any_P"]
     assert i["refused"] == [2340] and i["stop"] == 9536 and i["fails_before_stop"] == [1253, 2340]
     assert i["refused_left_out"]["fails_before_stop"] == [1253] and i["refused_agree"]
+
+
+# read() end to end on record files (`/challenge-pr` on #302, finding 4): the refusal path, the
+# units-vs-records check and the log's step check; the numeric parts are stubbed from the units.
+import json as _json
+
+
+def _plants(step, a_u, bm=3e-3):
+    arm = {"null_rate": 0.01, "B_share": 0.8, "A_share": 0.0, "pass": True}
+    return {"trained_step": step, "code": "c", "checks_pass": True, "derived": {"b_dose": "0.5", "b_matched": bm},
+            "arms": [bm], "gate": {"arms": {f"{bm:g}": arm}, "b_dose": "0.5", "pass": True},
+            "uncentred_at_1e-3": {"A_share": a_u, "null_rate": 0.06, "base_rate": 0.2},
+            "checks": {f"step{step}": {"loss_mean": 4.0}}}
+
+
+def _tree(tmp_path, log_2340="32m step2340 done\nDoseRefused: no plant-B dose\n", unc_917=0.9):
+    pre, ref, ref917 = tmp_path / "pre", tmp_path / "ref", tmp_path / "u2b"
+    for d, s, a_u, dname in ((pre, 9536, 0.04, "32m"), (pre, 917, 0.9, "32m-step917"),
+                             (ref, 9536, 0.04, "32m"), (ref917, 917, 0.9, "32m-step917")):
+        (d / dname).mkdir(parents=True, exist_ok=True)
+        (d / dname / "preflight_plants.json").write_text(_json.dumps(_plants(s, a_u)))
+    for s, unc in ((9536, 0.04), (917, unc_917), (2340, 0.5)):
+        dname = "32m" if s == 9536 else f"32m-step{s}"
+        (pre / dname).mkdir(parents=True, exist_ok=True)
+        (pre / dname / "preflight_units.json").write_text(_json.dumps({"unc": unc, "a": 0.5 if s == 9536 else 0.0}))
+    (pre / "log_2340.txt").write_text(log_2340)
+    u2 = tmp_path / "u2.json"
+    ser = {"step": [917, 2340, 9536], "rho_mid": [0.1, 0.5, 0.9], "rho_mid_no0": [0.1, 0.5, 0.9], "n0_mid": [2, 9, 24]}
+    u2.write_text(_json.dumps({"reading": {"dodecahedron-32m": {"series": ser}}}))
+    return ["read", "--pre", str(pre), "--ref", str(ref), "--ref-917", str(ref917), "--u2", str(u2)], pre
+
+
+@pytest.fixture
+def stubbed(monkeypatch):
+    monkeypatch.setattr(t5e, "RISE", (917, 2340, 9536))
+    monkeypatch.setattr(t5e, "fixed_tau", lambda u: {"0.5": {"0.003": {"A_share": u["a"]}}})
+    monkeypatch.setattr(t5e, "uncentred_a", lambda u: u["unc"])
+    monkeypatch.setattr(t5e, "wide_b_matched", lambda u: {"refused": "DoseRefused"} if u["unc"] == 0.5
+                        else {"tau": 3e-3, "trained_part": True})
+
+
+def test_read_refused_step(tmp_path, stubbed):
+    argv, pre = _tree(tmp_path)
+    assert t5e.main(argv) == 0
+    r = _json.loads((pre / "reading.json").read_text())
+    assert r["per_step"]["2340"]["centred"]["refused"].startswith("DoseRefused")
+    assert r["where_each_count_stops"]["i_centred_any_P"]["refused"] == [2340]
+    assert r["where_each_count_stops"]["iii_uncentred"]["stop"] == 2340
+    assert r["gate"]["uncentred_from_units"]["pass"] and r["gate"]["wide_b_matched_reproduces"]["pass"]
+
+
+def test_read_refuses_a_log_without_its_step(tmp_path, stubbed):
+    argv, _ = _tree(tmp_path, log_2340="32m step2002 done\nDoseRefused: x\n")
+    with pytest.raises(t5e.U3Refused, match="does not show step 2340"):
+        t5e.main(argv)
+
+
+def test_read_refuses_units_unlike_the_records(tmp_path, stubbed):
+    argv, _ = _tree(tmp_path, unc_917=0.8)
+    with pytest.raises(t5e.U3Refused, match=r"\(iii\) from the units"):
+        t5e.main(argv)

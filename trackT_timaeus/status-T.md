@@ -16,7 +16,7 @@
   - T5 U1b (Blocked 124 (a), one unit beyond the budget; gate passes): no single part of the Llama carries the init's effect at 32m's shape: swapping its SwiGLU MLP for GeLU at 4d removes 0.16 of the 0.36 (about half on logit or atanh scales), and LayerNorm, the parallel residual, 0.25 rotary, 6 KV heads and GPT-NeoX's tokenizer each remove under 0.01 (the tokenizer is not R2's architecture factor); all six at once remove 0.43, so much of the effect appears only with parts together (its size depends on the scale of ρ), which set not tested — `trackT_timaeus/status-T.md` "T5 U1b"
   - T5 U2 (Blocked 125 (a); gate passes): Dodecahedron's cloud is not concentrated throughout training: on both models the middle-state mean cosine rises to 1.00 by step 30–47, falls to 0.10–0.11 at 671–917 (lower than any Pythia minimum read, 0.17–0.21) and rises again to 0.90 by 9536, so T2 read it only at its two peaks; Pythia has the same rise, fall and rise, with lower ends; `gpt-2-small` spreads (0.34 → 0.17) and stays spread; position 0 decides none of it; so the trained cloud's 0.90 is not the init's concentration persisting, and arises after step ~1253 — `trackT_timaeus/status-T.md` "T5 U2"
   - T5 U2b (Blocked 126 (a), a second extension; known answer exact): in the trough (steps 491–917, ρ_mid 0.11–0.12) T2's B-matched centred arm passes T2's full gate at every step (plant A 0.00, re-init 1.5 %; its B ≥ 0.4 holds by its derivation) and the uncentred count sees plant A as on Pythia (0.93–1.00, against 0.04 at 9536), so the counts fail where the cloud is concentrated (co-occurrence: the trough is also in the LR warmup, at higher loss and a small position-0 norm); post hoc, at fixed τ 1e-3–1.2e-2 plant A is ≤ 0.10 in the trough and 0.32–0.58 at 9536; the other three centred arms still fail, on the re-inits (fixed by the init) and on plant A (0.12–0.45) — `trackT_timaeus/status-T.md` "T5 U2b"
-  - T5 U3's first read (Blocked 130 (a); both known answers exact): along the late rise every count stops passing with the rise, none before it: the uncentred count leaves its Pythia behaviour at 1713 (plant A 0.89 → 0.72; ρ_mid 0.32), the fixed-τ centred arm (τ 3e-3) leaks plant A from 2002 (0.12; ρ 0.43), and T2's B-matched arm passes T2's full gate through 2002, its derivation refuses at 2340–3738 and every arm fails from 4369 (ρ 0.81); each series monotone; ρ, position 0's norm, the loss and steps since warmup rise together there, so which makes a count stop is not told apart — `trackT_timaeus/status-T.md` "T5 U3, first read"
+  - T5 U3's first read (Blocked 130 (a); both known answers exact): along the late rise every count stops passing with the rise, none before it: the uncentred count leaves its Pythia behaviour at 1713 (plant A 0.89 → 0.72; ρ_mid 0.32), the fixed-τ centred arm (τ 3e-3) leaks plant A from 2002 (0.12; ρ 0.43), and T2's B-matched arm passes T2's full gate to 3738 (ρ 0.76; at 3198 and 3738 only with its τ search widened past the code's 1e-2, post hoc) and every arm fails from 4369 (ρ 0.81); at 2340 and 2735 the uncentred count sees plant B at no dose, so no arm is defined; ρ, position 0's norm, the loss, steps since warmup and each count's operating point (base rate, matched τ) move together there, so which makes a count stop is not told apart — `trackT_timaeus/status-T.md` "T5 U3, first read"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -24,11 +24,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369); the split not run — `trackT_timaeus/status-T.md` "T5 U3, first read"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); the split not run — `trackT_timaeus/status-T.md` "T5 U3, first read"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-02 · body `e89566527e`
+- **Reviewed:** 2026-11-02 · body `cd8ba1e689`
 <!-- /phase-card -->
 
 ## Units
@@ -44,14 +44,14 @@
 | T5 U1b. the Llama's parts at init (added, Blocked 124 (a)) | **done 2026-10-30**: gate passes; no single part (`gelu` partly, 0.16 of 0.36; the rest none) | "T5 U1b" below |
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
-| T5 U3. where the shared direction is written | revised 2026-11-01 (Blocked 130 (a), docs only); **first read done 2026-11-02**: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's arms 2340 or 4369), none before it; **the split next, not run** | "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised" |
+| T5 U3. where the shared direction is written | revised 2026-11-01 (Blocked 130 (a), docs only); **first read done 2026-11-02**: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; **the split next, not run** | "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised" |
 
 ## T5 U3, first read: T2's gates along the late rise (2026-11-02)
 
 Blocked 130 (a), the user's. Rule: `design-T5.md` "U3 revised toward the late rise" (#301, before
 any output). Producer `t2.py preflight --model 32m --trained-step <s>` (code `b01ad9e3e4d8`, as
 U2b), reader `trackT_timaeus/t5e.py`, pushed before the records were read (`c7189da`). Records
-`data/trackT/t5u3/2026-11-02/` (main tree): `reading.json` `22f1f46a916b`; per step
+`data/trackT/t5u3/2026-11-02/` (main tree): `reading.json` `e12c7679fddf` (after `/challenge-pr` on #302; first `22f1f46a916b`); per step
 `32m-step<s>/preflight_plants.json` (9536 in `32m/`, `75af52727e6e`; 917 `c96699cfde27`).
 **Input:** `dodecahedron-32m` at the 16 grid steps 917, 1072, …, 8158, 9536, its 3 re-inits, the
 7 v1 prompts (`976b62d677bc`), ≤ 512 tokens, float32, eager, TF32 off; 112 trained and 336 re-init
@@ -63,11 +63,17 @@ U2b's: `derived`, `arms`, `gate` max |Δ| 0.0, no mismatch (the same file hashes
 **A refusal the rule did not foresee** (a gap in the design, filled post hoc after the batch and
 before the reading, `34b0b7c`): at 4 of the 14 steps T2's preflight refuses to derive its arms.
 At 2340 and 2735 the uncentred count sees plant B at no dose up to 0.5 (`DoseRefused`), so B's dose
-is undefined. At 3198 and 3738 a dose is found, but no τ in [1e-7, 1e-2] gives the centred count
-B's target share (`SeedsRefused`), so there is no B-matched arm. (ii) and (iii) do not need the
-derivation and are read at all 16 steps; (iii) is computed from the units and equals the records
-at the other 12 steps exactly (max |Δ| 0.0). (i) is read both ways at the 4 steps: refused counted
-as no arm with P, and left out.
+is undefined: the count's own refusal. At 3198 and 3738 a dose is found, but `c2_seeds.b_matched_tol`
+searches τ only up to 1e-2 (a code default, in no frozen design) and the B-matched τ lies just
+above it (`SeedsRefused`): **a limit of the search, not of the count** (`/challenge-pr` on #302,
+finding 1; this PR first wrote "no τ exists"). Searched to 1e-1 (post hoc, beside, `t5e.WIDE_HI`;
+the same search reproduces the recorded B-matched τ at the other 12 steps to 3 figures) the arm is
+1.12e-2 at 3198 and 1.06e-2 at 3738 and **passes T2's full gate at both** (plant A 0.04, 0.08; B
+0.42, 0.45; re-init 0.3 %). (ii) and (iii) do not need the derivation and are read at all 16
+steps; (iii) is computed from the units and equals the records at the other 12 steps exactly (max
+|Δ| 0.0). A refused step's units file names no step and carries no checks (`t2.py` writes both
+only with the plants record), so the reader requires its log to show that step loaded (finding 2).
+(i) is read both ways at the refused steps: counted as no arm with P, and left out.
 
 | step | ρ_mid | n0 / median | loss | (i) B dose, B-matched τ: A, B share | (i) any P (full gate) | (ii) τ 3e-3, dose 0.5: A | (iii) uncentred A (base rate) |
 |---|---|---|---|---|---|---|---|
@@ -79,8 +85,8 @@ as no arm with P, and left out.
 | 2002 | 0.431 | 7.7 | 3.86 | 0.25, 5.73e-3: 0.01, 0.41 | yes (yes) | **0.12** | 0.50 (0.62) |
 | 2340 | 0.546 | 9.0 | | refused (no B dose) | — | 0.22 | 0.19 |
 | 2735 | 0.639 | 9.2 | | refused (no B dose) | — | 0.36 | 0.13 |
-| 3198 | 0.706 | 11.3 | | refused (no B-matched τ) | — | 0.43 | 0.13 |
-| 3738 | 0.763 | 13.2 | | refused (no B-matched τ) | — | 0.46 | 0.16 |
+| 3198 | 0.706 | 11.3 | | refused (τ > 1e-2); searched to 1e-1, post hoc: 0.5, 1.12e-2: 0.04, 0.42 | — (post hoc: yes (yes)) | 0.43 | 0.13 |
+| 3738 | 0.763 | 13.2 | | refused (τ > 1e-2); searched to 1e-1, post hoc: 0.5, 1.06e-2: 0.08, 0.45 | — (post hoc: yes (yes)) | 0.46 | 0.16 |
 | 4369 | 0.812 | 15.1 | 3.77 | 0.5, 9.88e-3: 0.14, 0.45 | **no** (no) | 0.46 | 0.16 (0.78) |
 | 5108 – 8158 | 0.847 – 0.900 | 16.1 – 19.8 | 3.75 – 3.68 | 0.25–0.5, 7.9–9.2e-3: 0.27–0.42, 0.46–0.53 | no (no) | 0.49 – 0.56 | 0.14 – 0.25 (0.74–0.75) |
 | 9536 | 0.903 | 23.8 | 3.66 | 0.25, 8.82e-3: 0.42, 0.47 | no (no) | 0.56 | 0.04 (0.75) |
@@ -89,20 +95,27 @@ as no arm with P, and left out.
 LR in decay from 1072 on (warmup ends at 1000). The other three centred arms (null-matched 5.6e-4,
 1e-4, 3e-4) never have P (plant A 0.11–0.46 at every populated step), as in U2b.
 
-**Where each count stops** (the rule's description; each series monotone):
+**Where each count stops** (the rule's description):
 
 | count | last pass | stops at | ρ_mid there | the one-sided reading |
 |---|---|---|---|---|
-| (iii) uncentred, A ≥ 0.79 | 1465 | **1713** | 0.315 | with the rise |
-| (ii) fixed τ 3e-3, A ≤ 0.10 | 1713 | **2002** | 0.431 | with the rise |
-| (i) T2's arms, some arm with P | 2002 | **2340** (refused = no P) or **4369** (refused left out); the two disagree | 0.546 / 0.812 | with the rise, either way |
+| (iii) uncentred, A ≥ 0.79 | 1465 | **1713**, monotone | 0.315 | with the rise |
+| (ii) fixed τ 3e-3, A ≤ 0.10 | 1713 | **2002**, monotone | 0.431 | with the rise |
+| (i) T2's arms as run (τ ≤ 1e-2), some arm with P | 2002 | 2340 (4 refusals = no P) or 4369 (left out) | 0.546 / 0.812 | with the rise, either way |
+| **(i) with τ searched to 1e-1** (post hoc, beside) | **3738** (ρ 0.763) | **4369** (2340, 2735 left out: monotone; counted as no P: not monotone, fails at 2340, 2735 and passes at 3198, 3738) | 0.812 | with the rise |
 
-Stated before output, and held: 917 passes and 9536 fails on (i)–(iii), so each stop lies in
-(917, 9536]. None stops at 1072 or 1253, so no count stops before ρ rises; each stops after it has
-started to rise (ρ_mid 0.20 at 1465). From 1465 on ρ, position 0's norm (4.4 → 23.8), the steps
-since warmup and the loss (3.99 → 3.66) move together, so **the read cannot say which of them
-makes a count stop**. The order (uncentred first, T2's arms last) describes three series at the
-bars fixed for them; it does not rank the counts, since each stop sits at its own bar.
+The as-run row's 2340 comes from the search's limit at 3198 and 3738, so **the B-matched arm's
+stop is read as 4369, last pass 3738**, with the post hoc label on it (the bound was raised after
+seeing the refusal). Stated before output, and held: 917 passes and 9536 fails on (i)–(iii), so
+each stop lies in (917, 9536]. None stops at 1072 or 1253, so no count stops before ρ rises; each
+stops after it has started to rise (ρ_mid 0.20 at 1465). From 1465 on ρ, position 0's norm (4.4 →
+23.8), the steps since warmup, the loss (3.99 → 3.66) **and each count's own operating point**
+move together: the uncentred base rate 0.19 → 0.78, the B-matched τ 3.4e-3 → 1.1e-2, the
+fixed-τ passing band moving up (below). So **the read cannot say which of them makes a count
+stop**, and a fixed tolerance falling out of scale along training is one of the candidates
+(`/challenge-pr` on #302, finding 3); the split's paths would not show that one. The order
+(uncentred first, T2's B-matched arm last) describes series at the bars fixed for them; it does
+not rank the counts, since each stop sits at its own bar.
 
 **Beside, the fixed-τ grid** (τ 1e-3 … 1.2e-2 at dose 0.5, T2's full gate per cell): τ 2e-3–5e-3
 pass at 917–1253; the passing band moves up and narrows along the rise (3e-3–5e-3 at 1465,
@@ -110,21 +123,27 @@ pass at 917–1253; the passing band moves up and narrows along the rise (3e-3�
 from 3738 on (plant A ≥ 0.14 wherever B ≥ 0.4). Plant A's share is the same at both B doses in
 every cell. The uncentred base rate rises from 0.19 to 0.78 across the rise.
 
-**What it says.** Both Pythia counts behave as on Pythia into the rise (the uncentred count to
-ρ_mid 0.20 at 1465, the centred arms to 0.43 at 2002) and stop between 1713 and 4369, as ρ_mid
-goes 0.32 → 0.81. The trough's pass (U2b) does not end with the warmup: the counts keep passing
-465–1002 steps into the decay.
+**What it says.** Both Pythia counts behave as on Pythia into the rise and stop with it: the
+uncentred count to ρ_mid 0.20 (1465), the fixed-τ centred arm to 0.32 (1713), T2's B-matched arm
+to 0.76 (3738, post hoc on the search's bound; 0.43 at 2002 as run). They stop between 1713 and
+4369, as ρ_mid goes 0.32 → 0.81. The trough's pass (U2b) does not end with the warmup: the counts
+keep passing 465–2738 steps into the decay.
 
-**What it does not say.** No cause: ρ, the norm, the loss and the LR schedule are not told apart
-(the design's one-sided reading). Whether (i) stops at 2340 or 4369 depends on how a refused
-derivation counts, which the rule did not fix; both read "with the rise". No date, no V, no H2
-label, `-67m` not read. The split (paths) is not run.
+**What it does not say.** No cause: ρ, the norm, the loss, the LR schedule and each count's
+operating point are not told apart (the design's one-sided reading). (i)'s stop as run depends on
+how a refused derivation counts (2340 or 4369), which the rule did not fix; with the search
+widened it is 4369 either way; all read "with the rise". No date, no V, no H2 label, `-67m` not
+read. The split (paths) is not run.
 
 **Parked** (why / cost / which decision it could change): (1) T2's early plateau (1253–3738, "T5
-U2b") starts where T2's centred arms still pass (through 2002), so part of the window T2 would
-have dated on is readable / a T2 reopen (a design and a batch) / whether T2 reopens on 1253–2002,
-decided at T5's close-out. (2) The uncentred count's sight of plant B lapses at 2340–2735 and is
-back from 3198 / a re-read of the units, minutes / none in T5; for the split to look at.
+U2b") lies where T2's B-matched arm still passes (through 3738 with the search widened; 2340 and
+2735 refused for want of a B dose), so much of the window T2 would have dated on is readable / a
+T2 reopen (a design and a batch) / whether T2 reopens on 1253–3738, decided at T5's close-out.
+(2) The uncentred count's sight of plant B lapses at 2340–2735 and is back from 3198 / a re-read of
+the units, minutes / none in T5; for the split to look at. (3) `c2_seeds.b_matched_tol`'s τ ≤ 1e-2
+bound is shared with C2 and T2; a miss outside it reads as "no τ" / widening it moves no recorded
+number (every recorded τ is inside), but a re-derivation in the split or U4 could hit it again /
+whether the bound widens or the refusal names the bound, before U4 derives arms (finding 1).
 
 Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m trackT_timaeus.t2 preflight
 --model 32m --trained-step <s> --out <dir>` for the 16 steps (4 exit on their refusals), then

@@ -100,15 +100,47 @@ def uncentred_a(units: dict) -> float:
                         t5d.cs.rate(tr["base"]["u"], t5d.cs.REL_TOL))
 
 
+#: post hoc (`/challenge-pr` on #302, finding 1), chosen after the reading: `c2_seeds.b_matched_tol`
+#: searches τ ≤ 1e-2 (a code default, in no frozen design), and at 3198 and 3738 the B-matched τ is
+#: just above it; beside only, with the search's top raised to this
+WIDE_HI = 1e-1
+
+
+def wide_b_matched(units: dict) -> dict:
+    """T2's B-matched arm at a step, derived as `t2.py preflight` does but with τ searched up to
+    WIDE_HI. A step where the uncentred count sees plant B at no dose stays refused."""
+    from trackC_writeup import c2_dose as d
+    tr = units["trained"]
+    try:
+        bd = d.b_dose(tr["base"]["u"], tr["plants"]["B_u"])
+        tgt = t5d.cs.share(t5d.cs.rate(tr["plants"]["B_u"][bd], t5d.cs.REL_TOL),
+                           t5d.cs.rate(tr["base"]["u"], t5d.cs.REL_TOL))
+        tau = t5d.cs.b_matched_tol(tr["base"]["c"], tr["plants"]["B_c"][bd], tgt, hi=WIDE_HI)
+    except (d.DoseRefused, t5d.cs.SeedsRefused) as e:
+        return {"refused": f"{type(e).__name__}: {e}"}
+    (k, v), = d.gate_arms(units, [float(f"{tau:.3g}")], bd)["arms"].items()
+    return {"b_dose": bd, "tau": tau, "arm": k, "null_rate": v["null_rate"], "A_share": v["A_share"],
+            "B_share": v["B_share"], "full_gate": bool(v["pass"]), "trained_part": t5d.trained_part(v)}
+
+
 def pass_series(per: Dict[int, dict]) -> Dict[str, List[Tuple[int, Optional[bool]]]]:
     """(i) some centred arm has P (None where T2's derivation refused at s); (ii) plant A ≤ 0.10 at
-    τ 3e-3, B dose 0.5; (iii) the uncentred plant-A share ≥ 0.79 ("as on Pythia")."""
+    τ 3e-3, B dose 0.5; (iii) the uncentred plant-A share ≥ 0.79 ("as on Pythia"). Beside, post
+    hoc: (i) with the B-matched τ searched to WIDE_HI where the search refused."""
     s = sorted(per)
+
+    def wide(c: dict) -> Optional[bool]:
+        if "refused" not in c:
+            return c["any_trained_part"]
+        w = c.get("wide_post_hoc", {})
+        return None if "refused" in w or not w else w["trained_part"]
+
     return {
         "i_centred_any_P": [(k, None if "refused" in per[k]["centred"] else per[k]["centred"]["any_trained_part"])
                             for k in s],
         "ii_fixed_tau": [(k, per[k]["fixed_tau"][STOP_DOSE][STOP_TAU]["A_share"] <= t5d.cs.A_LEAK) for k in s],
         "iii_uncentred": [(k, per[k]["uncentred_A_share"] >= t5d.UNC_PYTHIA) for k in s],
+        "i_wide_post_hoc": [(k, wide(per[k]["centred"])) for k in s],
     }
 
 
@@ -133,13 +165,19 @@ def stops(per: Dict[int, dict]) -> dict:
 def stated_before_output(per: Dict[int, dict]) -> Dict[str, bool]:
     """917 passes and 9536 fails on each of (i)–(iii) (the records), so each crossing lies in
     (917, 9536] unless a series is not monotone."""
-    return {k: bool(ser[0][1]) and not ser[-1][1] for k, ser in pass_series(per).items()}
+    return {k: bool(ser[0][1]) and not ser[-1][1] for k, ser in pass_series(per).items()
+            if k != "i_wide_post_hoc"}
 
 
 def refusal(pre: Path, s: int) -> str:
     """The refusal a step's preflight raised (its log's last ``Refused`` line); a step with no
-    plants record and no refusal is not a reading but a failed run."""
-    lines = [ln for ln in (pre / f"log_{s}.txt").read_text().splitlines() if "Refused:" in ln]
+    plants record and no refusal is not a reading but a failed run. Its units file names no step
+    and carries no checks (`t2.py` writes both only with the plants record), so the log must show
+    the trained population at s loaded (`/challenge-pr` on #302, finding 2)."""
+    text = (pre / f"log_{s}.txt").read_text()
+    if f"32m step{s} done" not in text:
+        raise U3Refused(f"step {s}: its log does not show step {s} loaded")
+    lines = [ln for ln in text.splitlines() if "Refused:" in ln]
     if not lines:
         raise U3Refused(f"step {s}: no preflight_plants.json and no refusal in its log")
     return lines[-1].strip()
@@ -158,7 +196,7 @@ def read(a) -> int:
     else:
         beside = series_beside(json.loads(Path(a.u2).read_text()))
         per: Dict[int, dict] = {}
-        codes, unc_check = {}, {}
+        codes, unc_check, wide_check = {}, {}, {}
         for s in RISE:
             units = json.loads((t5d._dir(pre, s) / "preflight_units.json").read_text())
             if (t5d._dir(pre, s) / "preflight_plants.json").exists():
@@ -166,10 +204,12 @@ def read(a) -> int:
                 codes[s] = rec["code"]
                 centred = t5d.step_reading(rec)
                 unc_check[s] = abs(uncentred_a(units) - rec["uncentred_at_1e-3"]["A_share"])
+                w = wide_b_matched(units)
+                wide_check[s] = "refused" not in w and f"{w['tau']:.3g}" == f"{rec['derived']['b_matched']:.3g}"
             elif s in (917, t5d.SCALE_STEP):
                 raise U3Refused(f"step {s}: no preflight_plants.json")
             else:
-                centred = {"refused": refusal(pre, s)}
+                centred = {"refused": refusal(pre, s), "wide_post_hoc": wide_b_matched(units)}
             per[s] = {"centred": centred, "fixed_tau": fixed_tau(units), "uncentred_A_share": uncentred_a(units),
                       "beside": beside[s]}
         worst = max(unc_check.values())
@@ -177,6 +217,10 @@ def read(a) -> int:
                                                "pass": worst <= t5d.KNOWN_TOL}
         if worst > t5d.KNOWN_TOL:
             raise U3Refused(f"(iii) from the units differs from the records by {worst}")
+        res["gate"]["wide_b_matched_reproduces"] = {"steps": sorted(wide_check), "pass": all(wide_check.values())}
+        if not all(wide_check.values()):
+            raise U3Refused(f"the wide B-matched τ differs from the records at "
+                            f"{[s for s, ok in wide_check.items() if not ok]}")
         st = stops(per)
         res.update({"record_codes": codes, "per_step": per, "where_each_count_stops": st,
                     "stated_before_output_held": stated_before_output(per)})
@@ -194,7 +238,11 @@ def _print(res: dict) -> None:
         c, b = p["centred"], p["beside"]
         ft = p["fixed_tau"][STOP_DOSE][STOP_TAU]
         if "refused" in c:
-            print(f"{s:>5} rho {b['rho_mid']:.3f} n0 {b['n0_mid']:5.1f} | (i) REFUSED: {c['refused']} "
+            w = c["wide_post_hoc"]
+            wide = (f"wide: {w['refused']}" if "refused" in w else
+                    f"wide {w['tau']:.3g}: {'P' if w['trained_part'] else '-'}{'G' if w['full_gate'] else ''}"
+                    f"(A{w['A_share']:.2f},B{w['B_share']:.2f},null{w['null_rate']:.3f})")
+            print(f"{s:>5} rho {b['rho_mid']:.3f} n0 {b['n0_mid']:5.1f} | (i) REFUSED: {c['refused']} | {wide} "
                   f"| tau3e-3: A {ft['A_share']:.2f} | unc A {p['uncentred_A_share']:.2f}")
             continue
         arms = " ".join(f"{k}:{'P' if v['trained_part'] else '-'}{'G' if v['full_gate'] else ''}"

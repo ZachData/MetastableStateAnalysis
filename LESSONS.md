@@ -975,11 +975,16 @@ needs the user to enable it on GitHub.
   by the producer's own refusal, before the reading): the rule moved T2's preflight along 14
   steps and "stated before output" only that the two ends pass and fail. T2's arms are derived per
   step (B's dose from the uncentred count, the B-matched τ from the centred one), and at 4 of the
-  14 steps no dose or no τ exists, so (i) had no value there and the rule said nothing about it.
+  14 steps the derivation refused, so (i) had no value there and the rule said nothing about it.
   The reader was amended after the batch and before the reading (both ways reported; they disagree,
-  2340 vs 4369, both "with the rise"). Cost: one amendment flagged post hoc. Rule: **a rule that
-  re-derives a quantity at each point of a new axis says, before output, what a refused
-  derivation reads as; if the cost is minutes, run the derivation alone across the axis first.**
+  2340 vs 4369, both "with the rise"). **And the author read two of the refusals wrong**: at 3198
+  and 3738 "no τ" was `c2_seeds.b_matched_tol`'s search bound (τ ≤ 1e-2, a code default), not the
+  count; the τ was 1.1e-2 and the arm passes there. Written up as "no τ exists" and "passes through
+  2002"; caught by `/challenge-pr` on #302 (finding 1; it is also LESSONS 11). Cost: two post hoc
+  amendments and a re-read. Rule: **a rule that re-derives a quantity at each point of a new axis
+  says, before output, what a refused derivation reads as; if the cost is minutes, run the
+  derivation alone across the axis first; and a refusal is read for what refused (the count, or a
+  bound in the code) before it is written as a property of the data.**
 - 2026-11-01, T5 U2b (a gate that could not pass; caught while writing the rule, before any
   output): Blocked 126 (a) proposed T2's planted gates at trough steps with "pass = T2's own bar",
   and T2's bar needs every arm's re-init rate ≤ 5 %. The re-inits are the null population at
