@@ -221,6 +221,29 @@ because V no longer votes against it. With leave-one-seed-out bands, the truth s
 the centred arms take their dose from it, so no arm is gated. "V read" and "an arm gated" were
 not separable as this table implies (`status-C.md` "C6 unit 1"; Blocked 128).
 
+### U1b: the centred count alone (Blocked 128 (a), the user's, 2026-11-01; frozen before `run --models run`)
+
+One unit beyond the budget, extended by the user on the record. A revision made **after seeing
+a gate output** (U1's refusal and its top-dose arms, beside), **before any output on the run's
+grid**. Nothing else in this design changes.
+
+| item | U1b |
+|---|---|
+| plant B's dose for the centred arms | **0.5, fixed**: unit 3b's 70m dose (`preflight_plants.json` `gate.b_dose`; `gate` refuses if they differ), not re-derived on the run; rule 100 (a)'s outcome recorded beside (`rule_100a_beside`) |
+| V | **not read** (`uncentred_read` false), so the joint is the centred count's statuses alone |
+| an arm is gated | as frozen: passes at both 7000 and 20 000 (null ≤ 5 %, B ≥ 0.4, A at 0.5 ≤ 0.1) |
+| known answers | as frozen (seed 0's e1, the re-inits' null rates), **plus**: the arms' B, A and null shares equal U1's `arms_beside_top_dose` (≤ 1e-12; the same draws), else refuse |
+| expected from U1's beside | 9.61e-5, 1e-4, 3e-4 gated; 4.78e-3 not (B 0.39 at 20 000) |
+| the reading | `count_reading` and `joint` as frozen, on the gated arms; Blocked 127 (a) moot (it concerns V) |
+| calibration (in-sample, computed after U1's gate output) | the 3 arms on the seeds' plants: truth survives 10 / 10 / 10, alone 1 / 2 / 10 (step / cumulative / instantaneous), the same under every late version (`calibration_127a.json` `centred_only_3arms`) |
+| what it can separate | **step from the other two** (step survives on 10 of 10 step plants and 0 of 20 others); not cumulative from instantaneous (8 of 10 cumulative plants read both), nor step alone from step with cumulative (9 of 10 step plants read both) |
+
+Labels as in "What each outcome changes", with one reading fixed now: "consistent with step"
+(alone) here means the centred dates do not move with a ten-fold warmup on 70m; "consistent
+with cumulative and instantaneous" means they move, the two not told apart; any label holding
+step and another reads as not separating step. Run: `run --models seed0`, `gate --centred-only`,
+`run --models run`, `read`, all into `data/trackC/c6/2026-11-01-u1b/`, one code hash.
+
 ## What each outcome changes (fixed now)
 
 | label | §7 and F1 for 70m |
@@ -248,6 +271,7 @@ it closes at what it knows unless the user extends it on the record.
 |---|---|---|
 | 0 (this) | the run's schedule, init and first batch from the weights; 70m's date range from seeds 0–9; the bands, the reading and the gate frozen | this file frozen, `REF70` set and pushed |
 | 1 | Blocked 127 decided; `run --models seed0`, then `gate` on the run's steps 7000 and 20 000; `run --models run` (18 steps, offline); `read` | the label, or the gate's refusal |
+| 1b (Blocked 128 (a), beyond the budget) | the centred count alone, plant B at 0.5 ("U1b" above): `gate --centred-only`, `run --models run`, `read` | the centred label, or the gate's refusal |
 | close-out | writing only: what C6 established, §7 and F1 for 70m in `paper/` if the label is clean, Parked items homed, the card current | the card current |
 
 ## Worth challenging (for the PR)
