@@ -17,7 +17,7 @@
   - T5 U2 (Blocked 125 (a); gate passes): Dodecahedron's cloud is not concentrated throughout training: on both models the middle-state mean cosine rises to 1.00 by step 30–47, falls to 0.10–0.11 at 671–917 (lower than any Pythia minimum read, 0.17–0.21) and rises again to 0.90 by 9536, so T2 read it only at its two peaks; Pythia has the same rise, fall and rise, with lower ends; `gpt-2-small` spreads (0.34 → 0.17) and stays spread; position 0 decides none of it; so the trained cloud's 0.90 is not the init's concentration persisting, and arises after step ~1253 — `trackT_timaeus/status-T.md` "T5 U2"
   - T5 U2b (Blocked 126 (a), a second extension; known answer exact): in the trough (steps 491–917, ρ_mid 0.11–0.12) T2's B-matched centred arm passes T2's full gate at every step (plant A 0.00, re-init 1.5 %; its B ≥ 0.4 holds by its derivation) and the uncentred count sees plant A as on Pythia (0.93–1.00, against 0.04 at 9536), so the counts fail where the cloud is concentrated (co-occurrence: the trough is also in the LR warmup, at higher loss and a small position-0 norm); post hoc, at fixed τ 1e-3–1.2e-2 plant A is ≤ 0.10 in the trough and 0.32–0.58 at 9536; the other three centred arms still fail, on the re-inits (fixed by the init) and on plant A (0.12–0.45) — `trackT_timaeus/status-T.md` "T5 U2b"
   - T5 U3's first read (Blocked 130 (a); both known answers exact): along the late rise every count stops passing with the rise, none before it: the uncentred count leaves its Pythia behaviour at 1713 (plant A 0.89 → 0.72; ρ_mid 0.32), the fixed-τ centred arm (τ 3e-3) leaks plant A from 2002 (0.12; ρ 0.43), and T2's B-matched arm passes T2's full gate to 3738 (ρ 0.76; at 3198 and 3738 only with its τ search widened past the code's 1e-2, post hoc) and every arm fails from 4369 (ρ 0.81); at 2340 and 2735 the uncentred count sees plant B at no dose, so no arm is defined; ρ, position 0's norm, the loss, steps since warmup and each count's operating point (base rate, matched τ) move together there, so which makes a count stop is not told apart — `trackT_timaeus/status-T.md` "T5 U3, first read"
-  - T5 U3's split refused by its planted-bias gate (2026-11-02; the sum and known-answer gates pass at `-32m` 9536): a constant o_proj bias at half the median token norm in every block collapses the cloud (mean cosine 1.00) and comes back 95 % through the MLPs' token-constant write, so the bias path holds 0.125 of the planted component against the bar 0.9; the split is exact, the gate's plant moves the model; no other step run; Blocked 131 — `trackT_timaeus/status-T.md` "T5 U3's split"
+  - T5 U3's split refused by its planted-bias gate (2026-11-02; the sum and known-answer gates pass at `-32m` 9536): a constant o_proj bias at half the median middle-state norm in every block (as large as block 1's whole stream) collapses the cloud at state 1 (mean cosine 1.00), and the MLPs then write a new constant, near-orthogonal to the bias and much larger, which takes 95 % of the planted component, so the bias path holds 0.125 against the bar 0.9; the split is exact, the gate's plant moves the model; no other step run; Blocked 131 — `trackT_timaeus/status-T.md` "T5 U3's split"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -29,7 +29,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-02 · body `d53a3f80ed`
+- **Reviewed:** 2026-11-02 · body `2486209b0c`
 <!-- /phase-card -->
 
 ## Units
@@ -65,17 +65,24 @@ METS_DATA=<main>/data python -m trackT_timaeus.t5f run --out <dir> --models 32m 
 
 **Where the planted component went** (planted less unplanted, per path's summed component; their
 sum is the planted component): attn_bias 0.125, **mlp_const 0.950**, attn_rest −0.044, attn_sink
-−0.024, mlp_rest −0.006. The plant sends ρ_ℓ to 1.00 at every state from 1 on (unplanted: 0.90's
-cloud), so each block's normed input is one direction for every token and the bias-free MLPs write
-a near-constant vector along it (blocks 1, 7, 8 and 16 the most). **The split is exact** (the sum
-gate; the bias path is the bias's own component, tested on tiny models, `tests/test_trackT_t5f_smoke.py`);
-**the gate's plant moves the model**, and the frozen "planted component" (fixed as the model-level
-difference in `design-T5.md` "U3's split, the details", before output) counts the model's re-write.
-Neither the design (2026-10-30) nor the details foresaw that a 0.5 × norm constant in every block
-would collapse the cloud. So the gate cannot tell a split that misplaces the bias from a model that
-relays it. What it does show, as a description: on `-32m` at 9536, a constant written into the
-residual comes back mostly through the MLPs' token-constant part, so mlp_const is "written by the
-MLP", not "originated by the MLP".
+−0.024, mlp_rest −0.006. The plant sends ρ_ℓ to 1.00 already at state 1 (unplanted: the 0.90
+cloud): ‖b‖ 345 is about the whole stream at block 1 (its output's RMS norm 390, unplanted) and
+0.13 of it at block 16 (2669), since it was sized on the middle states' median (690), so the
+collapse is block 1's, not a build-up over blocks. **The MLPs do not relay b; they write a new,
+larger constant** (corrected after `/challenge-pr` on #303, finding 1; this PR first wrote
+"relays"): the token-constant MLP vector is near-orthogonal to b in every block (cos −0.16 to 0.05;
+its norm 190–11951 against ‖b‖ 345; from a re-run of the planted forward, not stored), the token
+RMS norms grow 2.8–7.3 ×, and b lies at cos 0.20–0.43 to the planted u in blocks 1–15 (0.73 at
+16), so u follows the MLPs' new constant, not b. Blocks 1, 7, 8 and 16 write the most. **The split
+is exact** (the sum gate; the bias path is n · b·u per block, tested on tiny models,
+`tests/test_trackT_t5f_smoke.py`); **the gate's plant moves the model** into another regime, and
+the "planted component" (fixed as the model-level difference in `design-T5.md` "U3's split, the
+details", before output) counts that response. Checking ‖b‖ against each block's norm before output
+would have shown the plant as large as block 1's stream (finding 2). So the gate tests the model's
+response to a large constant, not the split. And (finding 3): with a random direction in 384
+dimensions, b's own component on the unplanted u is small and of either sign, and the two runs are
+each measured on their own u, so ΔT also carries u's rotation; a plant along the unplanted u, both
+runs measured on it, avoids both.
 
 **Seen before the gate's revision:** the unplanted 9536 shares (sink 0.13, attn_rest 0.60,
 mlp_const 0.24, mlp_rest 0.03; biases 0 by architecture), printed by the run. No other step run.

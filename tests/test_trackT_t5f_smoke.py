@@ -79,8 +79,19 @@ def test_plant_lands_in_bias_path():
     m = _llama()
     base = t5f.aggregate([t5f._np(t5f.split_prompt(m, _enc(torch), "cpu")["blocks"])])
     assert base["share"]["attn_bias"] == 0.0 and base["share"]["mlp_bias"] == 0.0
-    t5f.plant(m, t5f.plant_vector(32, 5.0))
+    b = t5f.plant_vector(32, 5.0)
+    t5f.plant(m, b)
     with pytest.raises(t5f.T5fRefused):
         t5f.plant(m, t5f.plant_vector(32, 5.0))
-    pl = t5f.aggregate([t5f._np(t5f.split_prompt(m, _enc(torch), "cpu")["blocks"])])
-    assert pl["err_sum"] < 1e-5 and pl["share"]["attn_bias"] > 0.5
+    r = t5f.split_prompt(m, _enc(torch), "cpu")
+    pl = t5f.aggregate([t5f._np(r["blocks"])])
+    assert pl["err_sum"] < 1e-5
+    # the direct attribution, which is what the split promises: per block, the bias path is n · b·u
+    # exactly, and nothing else carries a constant term (the MLP bias stays 0)
+    for blk, c in zip(r["blocks"], pl["per_block"]["component"]["attn_bias"]):
+        assert c == pytest.approx(11 * float(torch.as_tensor(b, dtype=blk["u"].dtype) @ blk["u"]), rel=1e-6)
+    assert pl["share"]["mlp_bias"] == 0.0
+    # and the gate's statistic is computed from the two runs as `plant_share` defines it
+    g = t5f.plant_share(pl, base)
+    assert g["planted_component"] == pytest.approx(pl["write_total"] - base["write_total"])
+    assert g["bias_path"] == pytest.approx(sum(pl["per_block"]["component"]["attn_bias"]))

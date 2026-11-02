@@ -978,13 +978,17 @@ needs the user to enable it on GitHub.
   gate itself, on the first output, before the batch): the planted o_proj bias was frozen at 0.5 ×
   the median token norm in every block of `-32m`, and the gate asked the bias path to hold ≥ 0.9
   of "the planted component". The author fixed that as the model-level difference (planted less
-  unplanted write component), without computing what the plant does to the model: it sends the
-  cloud to mean cosine 1.00, every block's normed input becomes one direction, and the MLPs
-  re-write it, so 0.95 of the difference is mlp_const and the bias path 0.125. The split was exact;
-  the gate could not tell a misplaced bias from a model that relays it. Cost: one refused gate and
-  a decision (Blocked 131), seconds of GPU. Rule: **a planted effect on a trained model is sized so
-  the model's own response to it is measured first (ρ, or the statistic, with the plant beside
-  without it); a plant that changes the regime tests the model, not the instrument.**
+  unplanted write component), without computing what the plant does to the model. Sized on the
+  middle states' median norm, it was as large as block 1's whole stream: the cloud reaches mean
+  cosine 1.00 at state 1 and the MLPs write a new constant, near-orthogonal to the bias and up to
+  35 × its norm, so 0.95 of the difference is mlp_const and the bias path 0.125. The split was
+  exact; the gate measured the model's response. **The author then misread it as the MLPs
+  "relaying" the bias**, in four files; `/challenge-pr` on #303 (finding 1) caught it from the
+  stored components (b at cos 0.2–0.4 to u), and the MLP vector's angle to b (≈ 0) was then
+  computed. Cost: one refused gate, one misreading corrected, a decision (Blocked 131), seconds of
+  GPU. Rule: **a plant's size is checked against the quantity it perturbs at every point it enters
+  (here each block's norm) before output, and a model's response to a plant is measured, not named,
+  before it is written; a plant that changes the regime tests the model, not the instrument.**
 - 2026-11-02, T5 U3's first read (a rule that assumed its derivation exists everywhere; caught
   by the producer's own refusal, before the reading): the rule moved T2's preflight along 14
   steps and "stated before output" only that the two ends pass and fail. T2's arms are derived per

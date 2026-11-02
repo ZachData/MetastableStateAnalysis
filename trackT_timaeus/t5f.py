@@ -124,11 +124,14 @@ def forward_capture(model, enc, device):
 
     def first(args, kwargs):
         return args[0] if args else kwargs["hidden_states"]
+
+    def main_out(o):                     # a tuple on 4.44; a bare tensor on some later versions
+        return o[0] if isinstance(o, (tuple, list)) else o
     for l, (L, A, M) in enumerate(blocks(model)):
         hooks.append(L.register_forward_pre_hook(lambda m, a, k, l=l: cap.__setitem__(("in", l), first(a, k)), with_kwargs=True))
-        hooks.append(L.register_forward_hook(lambda m, a, o, l=l: cap.__setitem__(("out", l), o[0])))
+        hooks.append(L.register_forward_hook(lambda m, a, o, l=l: cap.__setitem__(("out", l), main_out(o))))
         hooks.append(A.register_forward_pre_hook(lambda m, a, k, l=l: cap.__setitem__(("ax", l), first(a, k)), with_kwargs=True))
-        hooks.append(A.register_forward_hook(lambda m, a, o, l=l: cap.__setitem__(("ao", l), o[0])))
+        hooks.append(A.register_forward_hook(lambda m, a, o, l=l: cap.__setitem__(("ao", l), main_out(o))))
         hooks.append(M.register_forward_hook(lambda m, a, o, l=l: cap.__setitem__(("mo", l), o)))
     try:
         with torch.no_grad():
@@ -321,16 +324,21 @@ def run(a) -> int:
         repo, steps, tk = MODELS[mk]
         for s in (a.steps or steps):
             p = out / mk / f"step{s}.json"
-            if p.exists() and not a.force:
+            pp = out / mk / f"step{s}_planted.json"
+            want_plant = mk == "32m" and s == PLANT_STEP and (a.force or not pp.exists())
+            if p.exists() and not a.force and not want_plant:
                 continue
             m = t5.load_real(repo, f"step{s}", a.hf_roots, device)
-            rec = read_model(m, toks[tk], device)
-            rec.update({"model": repo, "step": s, "commit": t2.commit_of(m), "code": meta["code"],
-                        "wall_s": round(time.time() - t0, 1)})
-            _write(p, rec)
-            print(json.dumps({"wrote": str(p.relative_to(out)), "err_sum": f"{rec['err_sum']:.2e}",
-                              "share": {k: round(v, 3) for k, v in rec["share"].items()}, "t": rec["wall_s"]}), flush=True)
-            if mk == "32m" and s == PLANT_STEP:
+            if p.exists() and not a.force:             # resumed after the plant was lost: the base as written
+                rec = _load(p)
+            else:
+                rec = read_model(m, toks[tk], device)
+                rec.update({"model": repo, "step": s, "commit": t2.commit_of(m), "code": meta["code"],
+                            "wall_s": round(time.time() - t0, 1)})
+                _write(p, rec)
+                print(json.dumps({"wrote": str(p.relative_to(out)), "err_sum": f"{rec['err_sum']:.2e}",
+                                  "share": {k: round(v, 3) for k, v in rec["share"].items()}, "t": rec["wall_s"]}), flush=True)
+            if want_plant:
                 b = plant_vector(m.config.hidden_size, PLANT_SCALE * rec["median_mid_norm"])
                 plant(m, b)
                 pr = read_model(m, toks[tk], device)
@@ -353,7 +361,10 @@ def gate(out: Path, known_dir: Path) -> dict:
     errs = {f"{mk}@{s}": _load(out / mk / f"step{s}.json")["err_sum"] for mk, (_, st, _) in MODELS.items() for s in st}
     g["parts_sum"] = {"max_rel_err": max(errs.values()), "bar": SUM_TOL, "pass": max(errs.values()) <= SUM_TOL}
     base = _load(out / "32m" / f"step{PLANT_STEP}.json")
-    g["planted_bias"] = plant_share(_load(out / "32m" / f"step{PLANT_STEP}_planted.json"), base)
+    pp = out / "32m" / f"step{PLANT_STEP}_planted.json"
+    if not pp.exists():
+        raise T5fRefused(f"{pp} missing: re-run `t5f run --models 32m --steps {PLANT_STEP}` (it writes the plant alone)")
+    g["planted_bias"] = plant_share(_load(pp), base)
     diffs = {}
     for mk, steps in KNOWN.items():
         ref = _load(known_dir / f"diag_{mk}.json")["populations"]
