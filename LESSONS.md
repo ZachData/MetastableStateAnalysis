@@ -1991,6 +1991,15 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-11-02, T5 U3's split, the batch (#305, `/challenge-pr` findings 1, 2): the write-up called
+  the MLP write's pooled mean "the MLPs' token-constant write" and read "the constant writes are
+  equal in size at the end states" from it. On summed components every path counts only through
+  token averages, so the label claimed what the statistic cannot see. A post hoc token-constancy
+  measure showed only 0.06–0.15 of `-32m`'s MLP write lies in its mean. "No path changes abruptly
+  at a count's stop" was also read on shares while the frozen "reported" row asked for sizes, which
+  show the MLP mean growing fastest into the uncentred stop. Rule: a path's name says what its
+  statistic measures (here "pooled mean"); every number the design's "reported" row lists is in
+  the write-up before a reading is stated.
 - 2026-10-14, Track A A1a re-gate (#203, `/challenge-pr` finding 1): the write-up read "G4 fails at
   blocks 20–22" as the reading's error there and recommended re-planting the start cosine. The
   sweep runs all 23 planted steps through one frame; the reading takes one step per block's frame
