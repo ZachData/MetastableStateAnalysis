@@ -27,7 +27,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-01 · body `ff05e0ae0e`
+- **Reviewed:** 2026-11-02 · body `3ea880c3cc`
 <!-- /phase-card -->
 
 ## Units
@@ -49,15 +49,19 @@
 
 Blocked 130 (a), the user's, as recommended; docs only, nothing run. `design-T5.md` "U3 revised
 toward the late rise" fixes, before any U3 output: `-32m` at 917, 1253, 1713, 2340, 3198, 4369,
-6979, 9536 (ρ_mid 0.11 → 0.90, spread over the rise; 410m's 8 kept); as U3's first read, T2's
-preflight at the six new steps (917 and 9536 from their records, which also gate it), read as T2's
-arms, the fixed-τ arms (U2b's post hoc sweep, now fixed) and the uncentred count, with ρ, position
-0's norm, the loss and the LR phase beside, and "where each count stops" as a description; the
-split's paths then sit beside it. Stated before output: every crossing lies in (917, 9536] unless
-not monotone, and since ρ, the norm, the loss and the LR all move together on the rise, the read
-cannot say which makes a count stop. U4 is aimed at the rise; at its cap an arm reaches about 800
-steps at Dodecahedron's batch (ROADMAP row), before the rise, so its design must take a smaller
-batch or fewer arms. U2b's Parked 1 is taken into U3's first read; Parked 2 stays with T5's close-out.
+6979, 9536 (ρ_mid 0.11 → 0.90, spread over the rise), plus step 1 (410m's 8 kept); as U3's
+first read, T2's preflight at all 14 grid steps in (917, 9536) (917 and 9536 from their records,
+which also gate it), read as T2's arms, the fixed-τ arms (U2b's post hoc sweep, now fixed) and the
+uncentred count, with ρ, position 0's norm, the loss and the LR phase beside, and "where each count
+stops" as a description; the split's paths then sit beside it. Stated before output: every
+crossing lies in (917, 9536] unless not monotone; a crossing at 1072 (ρ_mid 0.116, inside the
+trough's passing range, after the warmup ends and position 0's norm grows) reads "stops before ρ
+rises"; from 1465 on ρ, the norm, the loss and the LR move together and the read cannot say which
+makes a count stop. U4 is aimed at the rise; whether its cap reaches the rise depends on
+Dodecahedron's batch (ROADMAP row; T1 Q3 "leaning"), and its design states whether it matches
+steps, tokens or the LR schedule. `/challenge-pr` on #301: accept with changes, findings 1–4 taken
+(1072, step 1 kept, the batch dependence, one home for the compute number). U2b's Parked 1 is taken
+into U3's first read; Parked 2 stays with T5's close-out.
 
 ## T5 U2b: T2's planted gates in the trough (2026-11-01)
 

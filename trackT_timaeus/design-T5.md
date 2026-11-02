@@ -174,10 +174,10 @@ preflight with its trained population moved from 9536 to step s and nothing else
 | not done | no date, no V, no scored grid, `-67m` not read (its null-matched τ refused in unit 1) |
 | exit, budget | the label computed or the gate refuses; one unit, minutes of GPU |
 
-**U3, where the shared direction is written (H2).** At 8 checkpoints a model: **Dodecahedron
-`-32m` at 917, 1253, 1713, 2340, 3198, 4369, 6979, 9536, on the late rise** (revised 2026-11-01,
-below; first frozen as 1, ~10, ~100, ~300, ~1000, ~3000, ~6000, 9536); 410m 0, 16, 128, 512, 1000,
-4000, 32000, 143000 (kept). u_ℓ = x̄_ℓ / ‖x̄_ℓ‖ at the block's output. For each block and token, the write's component
+**U3, where the shared direction is written (H2).** **Dodecahedron `-32m` at step 1 and at 917,
+1253, 1713, 2340, 3198, 4369, 6979, 9536, on the late rise** (revised 2026-11-01, below; first
+frozen as 1, ~10, ~100, ~300, ~1000, ~3000, ~6000, 9536); 410m at 0, 16, 128, 512, 1000, 4000,
+32000, 143000 (kept). u_ℓ = x̄_ℓ / ‖x̄_ℓ‖ at the block's output. For each block and token, the write's component
 on u_ℓ is split exactly. On attention it splits into the sink path (a_i0 · W_O v_0) and the rest.
 On Pythia it also splits into the bias terms (b_O, W_O b_V, since attention rows sum to 1, and the
 MLP's output bias) and the rest. The MLP's write also splits into its token-constant part (its
@@ -203,26 +203,37 @@ rise, where Dodecahedron's cloud re-concentrates and the counts stop passing: ρ
 | position 0's norm / median, middle states (U2) | 2.2 | 4.1 | 4.8 | 9.0 | 11.3 | 15.1 | 18.4 | 23.8 |
 | LR phase (linear warmup to 3.5e-3 over 1000; cosine after, floor unknown) | warmup, 0.92 | decay | decay | decay | decay | decay | decay | end of decay |
 
-Step 1 leaves the split (U1 and U2 read it; it stays in the known answer). `-67m` not read.
+**Step 1 stays in the split** (revised after `/challenge-pr` on #301, finding 2): U1 and U2 read
+its ρ, not its paths, and it is the one comparison of what writes the init cloud against the trained
+one; 410m keeps its step 0. So the split reads 9 Dodecahedron steps. `-67m` not read.
+
+**The first read takes every grid step on the rise, not only the split's 8** (revised after
+`/challenge-pr` on #301, finding 1): from 491 to 1072 ρ_mid stays at 0.111–0.127 while position
+0's norm goes 1.4 → 3.5 and the warmup ends at 1000, so the steps 1072 and 1253 can tell a count
+that stops before ρ rises from one that stops with it. The extra steps (U2's ρ_mid): 1072 0.116,
+1465 0.198, 2002 0.431, 2735 0.639, 3738 0.763, 5108 0.847, 5970 0.872, 8158 0.900.
 
 | item | fixed as |
 |---|---|
-| **U3's first read: the gates along the rise** (U2b's Parked 1) | `t2.py preflight --model 32m --trained-step s` at 1253, 1713, 2340, 3198, 4369, 6979 (new, minutes each); 917 from U2b's record, 9536 from T2 unit 1's; T2's family, re-inits, prompts, plants and seed as in U2b |
+| **U3's first read: the gates along the rise** (U2b's Parked 1) | `t2.py preflight --model 32m --trained-step s` at the 14 grid steps in (917, 9536): 1072, 1253, 1465, 1713, 2002, 2340, 2735, 3198, 3738, 4369, 5108, 5970, 6979, 8158 (new, minutes each); 917 from U2b's record, 9536 from T2 unit 1's; T2's family, re-inits, prompts, plants and seed as in U2b |
 | its gate | `--trained-step 9536` reproduces unit 1's `preflight_plants.json` (`9b141c42cff7`) and `--trained-step 917` reproduces U2b's (`c96699cfde27`): `derived`, `arms` and every `gate` number equal to 1e-12. Fails → refuse the reading |
-| per step | (i) T2's four centred arms as derived at s: the full gate and P (as U2b); (ii) **the fixed-τ arms, fixed now** (post hoc in U2b): τ ∈ {1e-3, 2e-3, 3e-3, 5e-3, 8.82e-3, 1.2e-2} × B dose {0.25, 0.5}, plant A and B shares (`t5d sweep`'s code over the 8 steps); (iii) the uncentred count at 1e-3: plant A share, binned as U2b ("as on Pythia" ≥ 0.79, "as at 9536" ≤ 0.10, else "between") |
+| per step | (i) T2's four centred arms as derived at s: the full gate and P (as U2b); (ii) **the fixed-τ arms, fixed now** (post hoc in U2b): τ ∈ {1e-3, 2e-3, 3e-3, 5e-3, 8.82e-3, 1.2e-2} × B dose {0.25, 0.5}, plant A and B shares (`t5d sweep`'s code over the 16 steps); (iii) the uncentred count at 1e-3: plant A share, binned as U2b ("as on Pythia" ≥ 0.79, "as at 9536" ≤ 0.10, else "between") |
 | beside each step | ρ_mid and ρ_mid⁻⁰ and position 0's norm (U2's record), the mean loss (the preflight's `checks`), the LR phase (table above) |
 | **where each count stops** (description, no label) | for (i), the last step where some arm has P, and the first step from which no arm has P at it and every later step; for (ii) at τ 3e-3, dose 0.5 (U2b's passing band), the first step from which plant A > 0.10 at it and every later step; for (iii), the first step from which A < 0.79 at it and every later step. A series that crosses back is reported "not monotone", with its steps |
-| stated before output | 917 passes and 9536 fails on every one of (i)–(iii) (the records), so each crossing lies in (917, 9536] unless a series is not monotone. ρ_mid, position 0's norm and the steps since warmup all rise across the 8 steps together, and the loss falls, so a crossing step is paired with all of them at once: **the read places where each count stops on the rise; it cannot say which of them makes it stop** |
-| then the split | as above, at the 8 steps, each step's paths reported beside its row of the first read, so where the shared write grows sits beside where each count stops |
+| stated before output | 917 passes and 9536 fails on every one of (i)–(iii) (the records), so each crossing lies in (917, 9536] unless a series is not monotone |
+| **the one-sided reading** (fixed now, after `/challenge-pr` on #301, finding 1) | a crossing at **1072** reads **"stops before ρ rises"**: its ρ_mid (0.116) lies inside the range where the counts passed in U2b (0.111–0.124 at 491–917), so ρ_mid's rise is not needed for that stop; the end of the warmup and position 0's norm (2.2 → 3.5) are not told apart from each other. A crossing at **1253** (ρ_mid 0.129, just above that range) reads "at the rise's start", not told apart. A crossing at 1465 or later reads "with the rise": ρ_mid, position 0's norm and the steps since warmup all rise together there and the loss falls, so **the read cannot say which makes it stop** |
+| then the split | as above, at its 9 Dodecahedron steps, each rise step's paths reported beside its row of the first read, so where the shared write grows sits beside where each count stops |
 | not done | no date, no V, no H2 label, `-67m` not read |
 
 **U4, the causal arm.** Its design is written after U2 and the `gpt-2-small` read, as a section
 of this file and its own Blocked item, before any training (D3). Cap: 3 GPU-days. **Aimed at the
 rise** (Blocked 130 (a)): its arms are read on whether they re-concentrate after their trough, not
-at init. The ROADMAP row's compute line (`docs/ROADMAP.md` §7b T5) puts 3 GPU-days at about 800
-Dodecahedron steps per arm at 4.19M tokens a step, inside the warmup and before the rise (1253 →
-9536), so an arm reaches the rise's update count only at a smaller batch or with fewer arms; whether
-the rise appears there is unknown, and U4's design decides it with U3's crossings in hand.
+at init. The cap's reach in Dodecahedron steps is the ROADMAP row's compute line (`docs/ROADMAP.md`
+§7b T5). It depends on the batch, which T1 Q3 grades only "leaning" 4.19M tokens a step: at that
+batch an arm stops before the rise (1253 → 9536), and at the card's 524k it reaches into the rise.
+Whether the rise is fixed in steps, in tokens or by the LR schedule is not known, so a run with
+another batch or schedule may not rise where Dodecahedron did (`/challenge-pr` on #301, finding 3).
+U4's design states which of the three it matches, with U3's crossings in hand.
 
 **U5, the controls.** U2's statistics on Mistral GPT-2 small from checkpoint 0 (on disk), on
 410m's seeds 1–9 at the 18 steps (on disk), and on `gpt-2-small` if D1 (b). They describe, with no rule.
@@ -276,14 +287,16 @@ clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 - U2's synthetic plants the descent at the bar and draws noise i.i.d. over steps: its pass is
   set by the trough's length (15 steps), not by s; a real prompt's offset persists over steps, which
   this noise model does not have. A plant at 0.20 is reported beside.
-- U3's revision (Blocked 130 (a)): the steps are spread over U2's ρ_mid, not over log step, so the
-  rise's middle (1713–3198) gets four of eight and the trough one (917). Rejected: Blocked 130 (b),
-  U3 as frozen (~1000, ~3000, ~6000, 9536 already on the rise, but it overrides U2b's outcome
-  table); fixing a ρ threshold for "stops" (no derivation picks one; the crossing is read at the
-  step instead).
-- "Where each count stops" pairs one step with ρ, position 0's norm, the loss and the LR at once,
-  since all move together on the rise; the first read cannot rank them. Its use is to place the
-  split's paths beside it and to tell U4 where its arms must reach.
+- U3's revision (Blocked 130 (a)): the split's rise steps are spread over U2's ρ_mid, not over log
+  step, so the rise's middle (1713–3198) gets four of eight and the trough one (917); the first read
+  takes all 14 grid steps on the rise. Rejected: Blocked 130 (b), U3 as frozen (~1000, ~3000,
+  ~6000, 9536 already on the rise, but it overrides U2b's outcome table); fixing a ρ threshold for
+  "stops" (no derivation picks one; the crossing is read at the step instead).
+- "Where each count stops" is one-sided: only a crossing at 1072 separates ρ_mid from the rest (it
+  stops before ρ rises). From 1465 on, ρ, position 0's norm, the loss and the LR move together and
+  the read cannot rank them; its use there is to place the split's paths beside it and to tell U4
+  where its arms must reach. The first version claimed they moved together everywhere, which 1072
+  contradicts (`/challenge-pr` on #301, finding 1).
 - The fixed-τ arms (ii) were chosen after U2b's reading (its post hoc sweep). They are fixed here
   before any rise output, but the choice of 3e-3 at dose 0.5 as the crossing's arm is informed by
   where U2b's trough passed.
