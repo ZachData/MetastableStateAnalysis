@@ -562,5 +562,65 @@
  {
   "literal": "14 300",
   "why": "§7: Belrose et al.'s warmup length for pythia-14m/70m-warmup01, as their text states (2402.04362, Pythia experiments); a cited paper's number (lit-C2p-fulltext.md M1)"
+ },
+ {
+  "slot": "{{c6.dates|list}}",
+  "where": "§1, §7 (C6 close-out, Blocked 129 (a)): the run's centred date on its three gated arms"
+ },
+ {
+  "slot": "{{c6.ref|range}}",
+  "where": "§1, §7 C6: 70m's centred dates over its ten seeds (REF70)"
+ },
+ {
+  "slot": "{{c6.band[step]|range}}",
+  "where": "§7 C6: step's band on the run"
+ },
+ {
+  "slot": "{{c6.band[cumulative]|range}}",
+  "where": "§7 C6: the cumulative rate's band on the run"
+ },
+ {
+  "slot": "{{c6.band[instantaneous]|range}}",
+  "where": "§7 C6: the instantaneous rate's band on the run"
+ },
+ {
+  "slot": "{{c6.at_date|range}}",
+  "where": "§7 C6: the gated arms' centred count at the run's date (1 at 512 and 2 at 1000 are beside.V_c too)"
+ },
+ {
+  "slot": "{{c6.shift_s0[0]|f1}}",
+  "where": "§7 C6: the shift's lower end"
+ },
+ {
+  "slot": "{{c6.shift_s0[1]|f1}}",
+  "where": "§7 C6: the shift against seed 0"
+ },
+ {
+  "slot": "{{c6.shift_ten[1]|f1}}",
+  "where": "§7 C6: the shift against the ten seeds"
+ },
+ {
+  "slot": "{{c6.cal_alone[literal]}}",
+  "where": "§7 C6: cumulative plants that read the label (the same under every late version, a claim)"
+ },
+ {
+  "slot": "{{c6.cal_n}}",
+  "where": "§7 C6: cumulative plants"
+ },
+ {
+  "slot": "{{c6.cal_m}}",
+  "where": "§7 C6: the step and instantaneous plants, none reading the label"
+ },
+ {
+  "slot": "{{c6.cal_both}}",
+  "where": "§7 C6: cumulative plants that also kept instantaneous"
+ },
+ {
+  "literal": "01",
+  "why": "§7 C6: part of the model's name, pythia-70m-warmup01 (EleutherAI's repository name), not a number"
+ },
+ {
+  "literal": "10",
+  "why": "§7 C6: the summed rate's shift √10, the square root of the run's ten-times longer warmup (√(p/p′) with the in-warmup rate a tenth; design-C6.md, c6_schedule.py); a claim checks both shift ranges contain it"
  }
 ]

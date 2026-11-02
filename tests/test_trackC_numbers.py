@@ -28,6 +28,14 @@ def test_every_key_names_a_listed_record():
     assert {v["record"] for v in table["keys"].values()} <= set(table["records"]) == set(n.RECORDS.values())
 
 
+def test_tracked_records_match_the_table():
+    """A `repo:` record is on every checkout, so CI can see the table go stale when one is edited
+    without re-running `produce` (LESSONS 3, 2026-11-01: the registry after CLAIM-C's withdrawal)."""
+    table = json.loads(n.TABLE.read_text())["records"]
+    stale = [rid for rid, h in table.items() if rid.startswith("repo:") and n.sha256(n.resolve(rid)) != h]
+    assert not stale, f"re-run `numbers produce` (with --reread for each): {stale}"
+
+
 def test_unknown_key_refuses():
     with pytest.raises(n.Refused):
         n.render("V is {{s0.nope}}", keys(**{"s0.V512": 56}))
