@@ -171,8 +171,11 @@ def split_block(x_in, x_out, ax, att, ao, mo, maps) -> dict:
     u = mu / torch.linalg.norm(mu)
     comps = {"attn_sink": sink @ u, "attn_bias": (abias @ u).expand(n), "attn_rest": rest @ u,
              "mlp_bias": (mbias @ u).expand(n), "mlp_free": mfree @ u, "write": write @ u}
+    aw = attn                                                  # beside: the attention write
     return {
         "n": n, "u": u, "mfree_sum": mfree.sum(0),
+        # beside (post hoc, /challenge-pr on #305 finding 1): token-constancy's ingredients
+        "mfree_sq": float((mfree * mfree).sum()), "attn_sum": aw.sum(0), "attn_sq": float((aw * aw).sum()),
         "sum": {k: float(v.sum()) for k, v in comps.items()},
         "sum_no0": {k: float(v[1:].sum()) for k, v in comps.items()},
         "sq": float((x_out * x_out).sum()),
@@ -231,7 +234,20 @@ def aggregate(prompts: List[dict]) -> dict:
         size_write.append(write[-1] / N / R)
         rms.append(R)
     T, T0 = sum(write), sum(write_no0)
+    # beside (post hoc, /challenge-pr on #305 finding 1): per block, the fraction of a module's
+    # write's squared norm in its mean over every token of the 7 prompts, N ||m||^2 / sum_i ||w_i||^2;
+    # 1 iff every token gets the same vector. The const/rest split above sees only token averages
+    tc = {"mlp": [], "attn": []}
+    for l in range(nb):
+        rows = [p[l] for p in prompts]
+        N = sum(r["n"] for r in rows)
+        for key, vs, sq in (("mlp", "mfree_sum", "mfree_sq"), ("attn", "attn_sum", "attn_sq")):
+            if all(vs in r for r in rows):
+                m = np.sum([r[vs] for r in rows], 0) / N
+                tc[key].append(float(N * (m @ m) / sum(r[sq] for r in rows)))
+    rec_tc = {k: {"per_block": v, "mean": float(np.mean(v))} for k, v in tc.items() if v}
     rec = {
+        "token_constancy": rec_tc,
         "paths": list(PATHS),
         "per_block": {"component": out, "component_no0": out_no0, "write": write, "write_no0": write_no0,
                       "size": size, "size_write": size_write, "rms_norm": rms,
@@ -266,7 +282,8 @@ def plant_share(planted: dict, base: dict) -> dict:
 # ---------------------------------------------------------------- commands
 
 def _np(blocks_: List[dict]) -> List[dict]:
-    return [{**b, "u": b["u"].cpu().numpy(), "mfree_sum": b["mfree_sum"].cpu().numpy()} for b in blocks_]
+    return [{**b, "u": b["u"].cpu().numpy(), "mfree_sum": b["mfree_sum"].cpu().numpy(),
+             "attn_sum": b["attn_sum"].cpu().numpy()} for b in blocks_]
 
 
 def read_model(model, tok, device) -> dict:
@@ -421,6 +438,7 @@ def read(a) -> int:
             for s in steps:
                 r = _load(out / mk / f"step{s}.json")
                 tab[f"{mk}@{s}"] = {"share": r["share"], "share_no0": r["share_no0"], "size": r["size"],
+                                    "token_constancy": {k: v["mean"] for k, v in r.get("token_constancy", {}).items()},
                                     "size_write": r["size_write"], "code": r["code"],
                                     "first_read": beside.get(s) if mk == "32m" else None}
         res.update({"per_step": tab, "where_each_count_stops": first["where_each_count_stops"]})
@@ -430,6 +448,11 @@ def read(a) -> int:
         print(f"{'step':>14} " + " ".join(f"{k:>10}" for k in PATHS) + "   size_write")
         for key, r in res["per_step"].items():
             print(f"{key:>14} " + " ".join(f"{r['share'][k]:10.3f}" for k in PATHS) + f"   {r['size_write']:.4f}")
+        print("sizes (mean over blocks; beside, token constancy of the MLP and attention writes, post hoc)")
+        for key, r in res["per_step"].items():
+            tc = r["token_constancy"]
+            print(f"{key:>14} " + " ".join(f"{r['size'][k]:10.4f}" for k in PATHS)
+                  + f"   tc mlp {tc.get('mlp', float('nan')):.3f} attn {tc.get('attn', float('nan')):.3f}")
     return 0 if "refused" not in res else 1
 
 

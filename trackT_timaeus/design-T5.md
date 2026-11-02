@@ -267,6 +267,15 @@ under one code hash into a fresh directory, `data/trackT/t5u3s/2026-11-02-batch/
 must equal the first output's record (`c8c966ac571c`) in every share, size and the write to 1e-12, a
 reproduction check beside the gates (the first output is kept as it was).
 
+**Token constancy, beside (post hoc, after `/challenge-pr` on #305, finding 1; fixed before its
+re-run).** On summed components every path counts only through its average over tokens, so
+"mlp_const" against "mlp_rest" is the MLP write's pooled mean against each prompt's deviation from
+it; it does not say the MLP writes one vector to every token. Beside, per block and module (the
+bias-free MLP write, the attention write), the fraction of its squared norm in its pooled mean,
+N ‖m‖² / Σ_i ‖w_i‖² (1 iff every token gets the same vector), mean over blocks. The batch is re-run
+with `--force` into the same directory (the paths' numbers must not move: the 9536 reproduction
+check again); no rule, no label.
+
 **U4, the causal arm.** Its design is written after U2 and the `gpt-2-small` read, as a section
 of this file and its own Blocked item, before any training (D3). Cap: 3 GPU-days. **Aimed at the
 rise** (Blocked 130 (a)): its arms are read on whether they re-concentrate after their trough, not

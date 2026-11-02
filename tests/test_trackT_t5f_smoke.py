@@ -137,3 +137,24 @@ def test_reproduce_compares_every_number():
     assert t5f.reproduce(r, r)["equal"]
     q = {**r, "share": {**r["share"], "mlp_rest": 0.1 + 1e-9}}
     assert not t5f.reproduce(r, q)["equal"]
+
+
+def test_token_constancy_is_one_for_a_constant_write():
+    """Post hoc (/challenge-pr on #305, finding 1): N||m||^2 / sum ||w_i||^2 is 1 iff every token's
+    write is the same vector, and the const/rest split cannot tell that apart from a varying write
+    with the same mean."""
+    np = pytest.importorskip("numpy")
+    u = np.array([1.0, 0.0])
+    def row(ws):
+        ws = np.asarray(ws, float)
+        z = {k: 0.0 for k in ("attn_sink", "attn_bias", "attn_rest", "mlp_bias")}
+        return {"n": len(ws), "u": u, "mfree_sum": ws.sum(0), "mfree_sq": float((ws * ws).sum()),
+                "attn_sum": np.zeros(2), "attn_sq": 1.0, "sq": 1.0,
+                "sum": {**z, "mlp_free": float(ws.sum(0) @ u), "write": float(ws.sum(0) @ u)},
+                "sum_no0": {**z, "mlp_free": float(ws[1:].sum(0) @ u), "write": float(ws[1:].sum(0) @ u)},
+                "err_sum": 0.0, "err_attn": 0.0, "err_modules": 0.0, "bias_norm": {"attn": 0.0, "mlp": 0.0}}
+    const = t5f.aggregate([[row([[1.0, 0.5]] * 4)]])
+    vary = t5f.aggregate([[row([[1.0, 3.0], [1.0, -3.0], [1.0, 3.0], [1.0, -3.0]])]])
+    assert const["token_constancy"]["mlp"]["mean"] == pytest.approx(1.0)
+    assert vary["token_constancy"]["mlp"]["mean"] == pytest.approx(1.0 / 10.0)
+    assert const["share"]["mlp_const"] == pytest.approx(vary["share"]["mlp_const"]) == pytest.approx(1.0)
