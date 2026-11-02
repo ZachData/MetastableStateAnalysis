@@ -1816,6 +1816,13 @@ figure shows the n-gram minima moving with it. C2 had read that paper for its tr
 when a scan asks "does a run or result X exist", it greps the full texts of the papers already
 cited for X's terms (here `warmup`) before searching outside; a claim from a part of a paper the
 fetch did not reach is not stated.
+2026-11-02 (#304, ROADMAP §7c): the row, the status page and the chat answer quoted Cammarata's
+"We haven't looked over training" as said of language models, from a fetch summary. In the essay
+(line 390 of the local copy) it is said of MoE experts, and the essay had watched neurons form
+over training in a retrained InceptionV1 (line 690, "the movement is local"). The full text was
+saved locally in the same session and not grepped before the quote was written. Found by
+`/challenge-pr` on #304, finding 1. Rule: a quote taken from a fetch summary is grepped in the
+raw text, with its context, before it is written down.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).

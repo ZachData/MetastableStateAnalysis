@@ -10,6 +10,8 @@ Stages 3–7, `LESSONS.md`, `docs/readings/2609.28448v1` (Gao–Yang–Chen, rep
 **Revised 2026-10-18** (the user's check-in, docs only): Track S added as candidates (§7a), C2
 re-scoped and given the user's target (§8), process items (§5), a proposed order after B3 (§9
 row 6) and §10 items 8–10. Nothing was run; Hugging Face and the PolyPythias refs were checked (§6).
+**Revised 2026-11-02** (the user's, docs only): Track N (§7c), the MLP's neurons across
+training, placed after Track T by the user; whether and when it opens needs no §10 item.
 **Revised 2026-10-29** (the user's check-in, docs only): Track T added as candidates (§7b) and
 §10 item 11. Nothing was run or downloaded; the search is `docs/lit-T.md`. Same day: §10 item 11
 decided (Blocked 117 (a), the user's), Track T opened and T1 done (`trackT_timaeus/status-T.md`);
@@ -316,6 +318,36 @@ deeper released model with a published curve, this replaces T3–T4. *T1 found n
 Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 passes; T5
 after T2's close, independent of T3–T4. Whether T opens, and where it sits against the other
 open rows, is §10 item 11; whether T5 opens is §10 item 12.
+
+## 7c. Track N: what the MLP's neurons do across training (added 2026-11-02, the user's; after Track T)
+
+From the user (2026-11-02), after reading Cammarata, "Neural Networks Are Already Clean"
+(Goodfire, 2026-10-15; local copy `docs/readings/goodfire_already_clean_2026-10-15.txt`, never
+committed). The essay: most MLP neuron poles (each sign of a neuron read on its own) do one
+readable job (about 90 % in preliminary Qwen3-32B audits); apparent polysemanticity is a job
+growing like a branch ("recursive generalization"), not packing. A working hypothesis by its own
+label, unreplicated, its technical paper pending: quote nothing from it as established.
+
+**Why here.** The particle picture models attention as the force; the MLP is the part least
+read, and it keeps turning up, though none of these reads a trained neuron: T5 U1b (swapping
+in the GeLU 4d MLP removes 0.164 of E0 0.363, on random-init models), T5 U3's split (`mlp_const`
+0.24 of the shared direction at `-32m` 9536, the first output of a split whose planted gate
+refused, Blocked 131), 1e's U2 (the MLP supplies the shared ascent at 8–1000), 7d (MLP 6 an
+OR-gate with `L5H2`, a whole-layer effect carried by its mean output). The essay watched neurons
+form over training in a retrained InceptionV1 and reports "the movement is local" (local copy,
+line 690); its "We haven't looked over training" (line 390) is about MoE experts. So N3 tests
+that vision result on a language model, at C2's dated events. Read as what the forces write, not
+as particles (features are directions: the user's view, 2026-10-18).
+
+| # | item | why | cost (estimate, not measured) |
+|---|---|---|---|
+| N1 | **scan, inventory and the unit**: the essay's method (poles, the blind-maximum test, thresholds), its companion paper if out, published work on MLP neurons across Pythia's checkpoints; **what a pole is under GeLU** (Pythia's `hidden_act`; its negative side is bounded at about −0.17, while the essay's two-sign reading comes from SwiGLU), defined before anything is built on it | §3's scan before a design; whether the question is already answered; the unit N2 and N3 count | free |
+| N2 | **positive control**: the audit must read a planted neuron of known job before any rate is trusted. No single neuron with a known job is identified in the repo on any Pythia size (MLP 6's OR-gate is a whole-layer effect), so the control is planted | the essay's rates are LLM-graded with no planted control (`CLAUDE.md` calibration gate) | small |
+| N3 | **poles on `pythia-410m` at C2's 18 steps**: when each pole's job appears against the break (512) and the centred break and induction (1000); growth local or non-local, the essay's discriminating prediction. All poles at all steps is about 3.5M explanations (24 × 4096 neurons × 2 × 18), so first an LLM-free pass (each pole's top contexts and how they drift between steps), then explanations on a sample fixed before output | the dated timeline and the 9 seeds are on 410m (70m has neither a known neuron nor C2's full set of events); Dodecahedron-32m is SwiGLU and on disk, but has no dated events | forward passes on cached checkpoints; LLM calls only on the sample (unmeasured) |
+
+Not designed, downloaded or run. Opens after Track T closes (the user's words, 2026-11-02: "add
+the motions to analyse the MLP after part T"), under §3 (exit condition and unit budget in its
+design).
 
 ## 8. Track C: write-ups
 
