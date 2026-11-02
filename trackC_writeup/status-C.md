@@ -31,18 +31,19 @@
   - C6 unit 0, the design (2026-10-31; tier 1, description; no energy on the run): `pythia-70m-warmup01` read off its weights is Pythia-70m's init and first batch (76 of 76 tensors bit-equal at step 0), its in-warmup rate a tenth of Pythia's (W 14 300 at peak 1e-3, H0 confirmed), its peak Pythia's within ~10 %; 70m's dates over `pythia-70m` and PolyPythias seeds 1–9: V 256 or 512 (5 and 5), the centred date 512–1000 (1000–2000 at 4.78e-3); bands per schedule and arm frozen into `c6_warmup.REF70`, with the reading revised after it was calibrated on the seeds' own profiles (planted truth survives 10, 9, 9 of 10; alone 7, 4, 9; the instantaneous truth only 2–4 of 10 if 70m's late states are planted less literally, all on V's count: Blocked 127); the gate fixed for U1 — `trackC_writeup/status-C.md` "C6 unit 0, the design (2026-10-31)"
   - C6 unit 1 (2026-11-01; Blocked 127 (a), the user's: V not read under instantaneous, frozen before output): seed 0's known answer exact, but **the run's gate refuses**. On the run, V sees plant B at 0.38 (7000; 13 of 34 units, 14 needed) and 0.33 (20 000) against the bar of 0.4 (`pythia-70m` at 7000, its own plant draws: 0.45, 13 of 29). The frozen gate takes the centred arms' dose from V's rule, so no arm is gated, though three would pass at the top dose (beside). Nothing on the run's grid was computed; the exit is met as "refused by its gate"; whether to read the centred count alone is Blocked 128 — `trackC_writeup/status-C.md` "C6 unit 1, Blocked 127 (a) and the run's gate (2026-11-01)"
   - C6 unit 1b (2026-11-01; Blocked 128 (a), the user's, one unit beyond the budget; frozen after U1's gate output, before any output on the run's grid): the centred count alone, plant B at 3b's 0.5, V not read. Gate: 9.61e-5, 1e-4, 3e-4 gated (4.78e-3 not, B 0.39 at 20 000), equal to U1's top-dose arms. **The centred count reads "consistent with cumulative"**: dated 2000 on all three arms against 70m's 512–1000 over ten seeds; step excluded (its band 512–1000), instantaneous excluded (the run is already at 16–18 at 2000, a step its early set holds); in the in-sample calibration that label came only from cumulative plants (2 of 10, none from the 20 others). So on 70m the centred date comes later than a fixed step allows, compatible with the summed rate; the grid places the shift at a factor of about 1 to 3.9 against seed 0 (`/challenge-pr` on #298, finding 1). V not read (its profile on disk and seen: a lean, finding 2); one count's three near-equal arms — `trackC_writeup/status-C.md` "C6 unit 1b"
+  - **C6 closed 2026-11-01 at its exit** (U0, U1, U1b + close-out; Blocked 128 (a) extended it by one unit; 129 (a), the user's; writing only): V refused by its gate on the run; the centred count "consistent with cumulative", written into `paper/` scoped to that count (the abstract's schedule sentence scoped to 410m, §1, a §7 paragraph, "compatible with" the summed rate; 17 `c6.*` keys, 4 claims, `paper_check` 0, 35 pages; `/challenge-pr` on #299: accept with changes, findings 1–5 taken); F1 narrowed for 70m's centred date only (a fixed count of updates excluded there); V's date, the shift's size and 410m not established; U0's Parked 1 dropped, V on the run carried to ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
-  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a)); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them is ROADMAP C4, the schedule intervention (with 3c's Parked 0), and for 70m the released long-warmup run, ROADMAP C6 (U0 frozen 2026-10-31; U1 refused by its gate; U1b: the centred count "consistent with cumulative", V not read; the close-out next) — `trackC_writeup/design-C6.md`, `trackC_writeup/status-C.md` "C6 unit 0"
+  - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); the run that separates them on 410m is ROADMAP C4, the schedule intervention (with 3c's Parked 0); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-01 · body `810be5baa4`
+- **Reviewed:** 2026-11-01 · body `bbea1c9245`
 <!-- /phase-card -->
 
 ## Units
@@ -75,6 +76,82 @@
 | C6 0. the design (opened 2026-10-30, the user's; budget 3 units) | **done 2026-10-31: the run's schedule, init and first batch from its weights (H0); 70m's dates on seeds 0–9; `REF70` and the bands frozen, the reading calibrated on the seeds' profiles and revised before freezing; the gate fixed; no energy on the run** | `design-C6.md`, `c6_schedule.py`, `c6_warmup.py`, `tools/math_checks/c6_bands.py`; "C6 unit 0" below |
 | C6 1. Blocked 127 (a), the gate | **done 2026-11-01: 127 (a) frozen before output (`98d3f38`); seed 0's known answer exact; the run's gate refuses (no plant-B dose for the uncentred count at 7000 or 20 000, so no arm gated); no record on the run's grid; the exit met ("refused by its gate"); Blocked 128** | `c6_warmup.py`; "C6 unit 1" below |
 | C6 1b. the centred count alone (Blocked 128 (a), the user's; beyond the budget) | **done 2026-11-01: frozen before output on the run's grid (`fd18085`); 3 arms gated, equal to U1's top-dose arms; "consistent with cumulative" (dated 2000; step and instantaneous excluded); V not read** | `c6_warmup.py gate --centred-only`; "C6 unit 1b" below |
+| C6 close-out (Blocked 129 (a), the user's) | **done 2026-11-01: writing only; the label in `paper/` (abstract, §1, a §7 paragraph), scoped to the centred count; 17 `c6.*` keys from three records, 4 claims; `paper_check` 0, 35 pages; F1 narrowed for 70m's centred date; exit met; revised after `/challenge-pr` on #299 (findings 1–5 taken)** | "C6 on one page" below |
+
+## C6 on one page (closed 2026-11-01)
+
+**Asked** (`design-C6.md` "What C6 is for"): read C2's two dates (E₁'s break in V, the
+token-centred cloud's date) on `pythia-70m-warmup01`, 70m retrained with a ten times longer
+warmup, against 70m's own dates, and label each by the schedule that predicts it. **Exit met**
+(U0, U1, U1b + close-out; one unit beyond the budget of 3, extended by the user on the record,
+Blocked 128 (a)): for V, "the read refused by its gate" (U1); for the centred count, a label (U1b).
+Blocked 129 decided (a), the user's (2026-11-01): the close-out writes the label into `paper/`,
+scoped to the centred count.
+
+**Established** (tier 1, description; one run):
+
+1. **The run is 70m's init and first batch with a tenth of the in-warmup rate** (U0, read off the
+   weights: 76 of 76 tensors bit-equal at step 0; W 14 300, peak 1e-3 within ~10 %).
+2. **70m's centred date over ten seeds is 512–1000; V's 256 or 512** (U0; `pythia-70m` and
+   PolyPythias seeds 1–9).
+3. **V cannot be read on the run under the frozen gate** (U1): at the top planted dose V sees plant
+   B at 0.38 (7000) and 0.33 (20 000) against 0.4.
+4. **The centred count on the run reads "consistent with cumulative"** (U1b): dated 2000 on three
+   gated arms against step's band 512–1000; instantaneous excluded by its early set; in the
+   in-sample calibration the label came from 2 of 10 cumulative plants and 0 of 10 instantaneous
+   ones (the 10 step plants are the seeds' own profiles and could not give it, so the calibration
+   speaks against instantaneous, not step: `/challenge-pr` on #299, finding 2). Against step, the
+   direct evidence is seed 0 (same init and first batch): its centred count is 12–14 at 1000, the
+   run's 2. So on 70m the centred date comes later than a fixed count of updates allows,
+   compatible with the summed rate (not its point prediction: seed 0's cumulative plant dates at
+   4000; finding 1); the shift is a factor of 1.0 to 3.9 against seed 0 (1.0 to 7.8 against the
+   ten seeds).
+5. **In `paper/`** (this close-out): the abstract's schedule sentence is scoped to 410m and names
+   the run's centred result; §1's "What none of this separates" says the run tells the centred date
+   apart for 70m; §7 gets "Pythia 70m with a ten times longer warmup" (the bands from 70m's dates,
+   the gate, the label, seed 0's count at 1000, the shift, the calibration, the three revisions (two
+   in-sample before the run was read, one after the gate's refusal), and what it does not say);
+   410m's separating run stays the third kind; "compatible with", not "predicts" (finding 1).
+   Every new number is a `c6.*` key (17; `numbers.py`; records U1b's `reading.json`, U1's
+   `calibration_127a.json` and 3b's for seed 0) or a stated literal; four claims check the
+   sentences (the label and its statuses; √10 inside both shift ranges, with seed 0's date 3b's;
+   the calibration the same under every late version; seed 0's count at 1000 far above the run's).
+   F1's fence in `design-C2.md` is narrowed to match. A new test recomputes every key from the
+   in-repo records and fails if a value moved (finding 3).
+
+**Not established:** whether V's date (E₁'s break) moves with the warmup; the shift's size (any
+partial shift fits the grid); anything on 410m (C4); a replicate of the long-warmup recipe. V's
+profile on the run and the ungated 4.78e-3 arm's are on disk and were seen: leans, not readings.
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 0. the design | #295 | the run read off its weights; `REF70`, bands, rule, gate frozen |
+| 1. 127 (a), the gate | #297 | the gate refuses; no arm gated; a vacuous known-answer check fixed |
+| 1b. the centred count alone (128 (a)) | #298 | "consistent with cumulative"; V not read |
+| close-out (129 (a)) | this | `paper/` abstract, §1, §7; F1 narrowed for 70m's centred date |
+
+**Parked items at close:**
+- U0's Parked 1 (a finer grid between 4000 and 16 000): **dropped**. It could only change
+  instantaneous's late window, and U1b excluded instantaneous by its early set (the run already at
+  16–18 at 2000); the step/cumulative edge is at 1000/2000, which the grid already holds.
+- V on the run (unread, not Parked): **carried to ROADMAP C6's row** as a reopen candidate. A gate
+  that reaches plant B ≥ 0.4 on the run needs a design that does not take the dose from rule
+  100 (a); no unit is scheduled.
+
+**Found at the close-out.** `numbers.json` still hashed the registry from before CLAIM-C's
+withdrawal (#296 changed `claims/registry.json` without re-producing the table), so `produce`
+refused until the registry was named with `--reread`; no key reading it moved. Under conda's
+Python 3.10, 4 keys move in the last ulp (≤ 4.4e-16: `ridge.e1`, `ridge.ident_*`,
+`reg.falsifier_p`); `.venv`'s 3.14 reproduces the table exactly, so this close-out used it.
+
+**For the user's Overleaf copy.** Carry over this close-out's edits: the diff of
+`trackC_writeup/paper/` from `d7a0795` (its last change on `main`) to this PR's merge. Build:
+`pdflatex main && bibtex main`, then `pdflatex main` twice (35 pages).
+
+**Re-run.** `METS_DATA=<main>/data <main>/.venv/bin/python -m trackC_writeup.numbers produce`,
+then `python -m trackC_writeup.paper_check` (0) and `python -m trackC_writeup.numbers check`.
 
 ## C6 unit 1b, the centred count alone (2026-11-01)
 

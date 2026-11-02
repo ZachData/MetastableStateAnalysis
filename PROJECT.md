@@ -3013,6 +3013,24 @@ is project-wide. `CLAIM-C` was the registry's one hard stop and H-TRANSFER's onl
 
 ---
 
+## 3.77 Track C's C6 closed: on 70m with a ten times longer warmup, the token-centred date moves as the summed learning rate does; V unread (2026-11-01)
+
+**`trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"** holds the numbers; this
+section says why it is project-wide. Tier 1, `pythia-70m-warmup01` against `pythia-70m` and its
+nine PolyPythias seeds, v1's 7 prompts; nothing scored.
+
+- The first run in the project that varies the schedule with everything else held fixed (the
+  same init and first batch, read off the weights). On it, the centred count's date is 2000
+  against 70m's 512–1000, so on 70m that date is not a fixed count of updates; it fits the summed
+  rate, with the shift's size left open by the grid (§3.68 could not tell the two apart).
+- E₁'s break, the paper's headline, was not read there: V's gate refused on the run. So F1
+  ("nothing separates the dates from the schedule") is narrowed for 70m's centred date only, and
+  stands for the break and for 410m (ROADMAP C4).
+- The label came through a dose fixed after a gate output (Blocked 128 (a)), on a rule revised
+  twice in-sample before the run was read; `paper/` §7 says so beside it (Blocked 129 (a)).
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this

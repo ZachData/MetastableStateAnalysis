@@ -821,6 +821,13 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   gate checks). `Hooked` already had `getattr(model, "gpt_neox", model)`. Two loaders return two
   shapes. A batch whose gate is tied to its code hash cannot run before its gate, so whatever the
   batch takes from the model gets a test on the object `load_model` actually returns.
+- 2026-11-01, C6 close-out: `trackC_writeup/numbers.json` hashes `claims/registry.json` as one
+  of its records, but CLAIM-C's withdrawal (#296) changed the registry without re-running
+  `produce`, so the tracked table hashed a registry that no longer existed, and CI passed (`check`
+  renders from the table and never re-hashes the records). `produce` refused at the next change
+  (the refusal worked; cost: one check that no `reg.*` key moved). A PR that edits a `repo:`
+  record of `numbers.py` re-runs `produce` in the same PR; CI now recomputes every key from the
+  `repo:` records and fails if a value moved (`test_keys_from_tracked_records_match_the_table`).
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a

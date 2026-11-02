@@ -87,6 +87,10 @@ RECORDS = {
     "ridge": "data:trackC/c2ridge/2026-10-28/ridge.json",
     # figure 13 (the user's, 2026-10-29): the layer × step small multiples from data/phase12 (`c2_grid.py`)
     "lxs": "data:trackC/c2grid/2026-10-29/grid.json",
+    # C6 (§1, §7; the close-out, Blocked 129 (a)): U1b's centred reading on pythia-70m-warmup01, and
+    # the in-sample calibration its label is quoted with (U1's record, `centred_only_3arms`)
+    "c6u1b": "data:trackC/c6/2026-11-01-u1b/reading.json",
+    "c6cal": "data:trackC/c6/2026-11-01-u1/calibration_127a.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -722,7 +726,46 @@ KEYS: Dict[str, tuple] = {
     "lxs.mass": ("lxs", lambda r: [r["mass_near_1"][str(s)] for s in r["steps"]]),
     "lxs.de": ("lxs", lambda r: [r["energy_change"][str(s)] for s in r["steps"]]),
     "lxs.schur": ("lxs", lambda r: [r["log10_schur"][str(s)] for s in r["steps"]]),
+    # C6 U1b (§1, §7): the centred count alone on pythia-70m-warmup01, V not read
+    "c6.label": ("c6u1b", lambda r: r["joint"]["label"]),
+    "c6.v_read": ("c6u1b", lambda r: r["uncentred_read"]),
+    "c6.arms": ("c6u1b", lambda r: sorted(float(a) for a, g in r["arms_gated"].items() if g)),
+    "c6.dates": ("c6u1b", lambda r: r["counts"]["c"]["cumulative"]["dates"]),
+    "c6.ref": ("c6u1b", lambda r: _span(x for a, g in r["arms_gated"].items() if g for x in r["ref70"]["c"][a])),
+    "c6.band": ("c6u1b", lambda r: {s: _span(x for b in r["counts"]["c"][s]["band"].values() for x in b)
+                                    for s in ("step", "cumulative", "instantaneous")}),
+    "c6.status": ("c6u1b", lambda r: {s: r["counts"]["c"][s]["status"] for s in ("step", "cumulative", "instantaneous")}),
+    "c6.at_date": ("c6u1b", lambda r: _span(r["beside"]["V_c"][a][GRID.index(r["counts"]["c"]["cumulative"]["dates"][0])]
+                                            for a, g in r["arms_gated"].items() if g)),
+    # the run's centred count before its date, and seed 0's at 1000 on the same arms (3b's record;
+    # seed 0 shares the run's init and first batch): /challenge-pr on #299, findings 2 and 4
+    "c6.run_at": ("c6u1b", lambda r: {str(s): _span(r["beside"]["V_c"][a][GRID.index(s)]
+                                                    for a, g in r["arms_gated"].items() if g) for s in (512, 1000)}),
+    "c6.s0_at1000": ("c3b", lambda c: _span(c["beside"]["70m"]["V_c"][a][GRID.index(1000)]
+                                            for a in ("9.61e-05", "0.0001", "0.0003"))),
+    # The factor by which the run's crossing can lie later than a reference crossing the grid allows:
+    # against seed 0's (dated 1000, a claim checks 3b's) and against the ten seeds' (`ref70`).
+    "c6.shift_s0": ("c6u1b", lambda r: _shift(r, 1000, 1000)),
+    "c6.shift_ten": ("c6u1b", lambda r: _shift(r, *_span(x for a, g in r["arms_gated"].items() if g
+                                                          for x in r["ref70"]["c"][a]))),
+    "c6.cal_alone": ("c6cal", lambda c: {v: d["summary"]["cumulative"]["truth_alone"]
+                                         for v, d in c["centred_only_3arms"].items()}),
+    "c6.cal_other": ("c6cal", lambda c: {v: sum(1 for k, row in d["rows"].items() if not k.endswith("|cumulative")
+                                                and row["joint"]["label"] == "consistent with cumulative")
+                                         for v, d in c["centred_only_3arms"].items()}),
+    "c6.cal_n": ("c6cal", lambda c: sum(1 for k in c["centred_only_3arms"]["literal"]["rows"] if k.endswith("|cumulative"))),
+    "c6.cal_m": ("c6cal", lambda c: sum(1 for k in c["centred_only_3arms"]["literal"]["rows"] if not k.endswith("|cumulative"))),
+    "c6.cal_both": ("c6cal", lambda c: sum(1 for k, row in c["centred_only_3arms"]["literal"]["rows"].items()
+                                           if k.endswith("|cumulative")
+                                           and row["joint"]["label"] == "consistent with cumulative and instantaneous")),
 }
+
+
+def _shift(r: dict, first: int, last: int) -> List[float]:
+    """The factor range the grid allows between the run's crossing and a reference's: a date g stands
+    for a crossing in (g′, g] (`paper/` §7), the run's dated d and the reference's in first..last."""
+    d = r["counts"]["c"]["cumulative"]["dates"][0]
+    return [round(GRID[GRID.index(d) - 1] / last, 1), round(d / GRID[GRID.index(first) - 1], 1)]
 
 
 #: What the draft's sentences assert of the keys, beyond the values it prints. Checked by `produce`
@@ -893,6 +936,20 @@ CLAIMS: List[tuple] = [
      and k["m2.q2_not"] == k["m2.q2_of"] and k["m2.recurring"] == 0),
     ("§4.1, M2: the break's date kept on most seeds, the centred date on all", lambda k: k["m2.n"] / 2 < k["m2.p1_kept"] < k["m2.n"]
      and k["m2.p2_kept"] == k["m2.n"]),
+    # C6 close-out (Blocked 129 (a)): §1 and §7's long-warmup paragraph
+    ("§1, §7 C6: the centred count alone, V not read; one date on every gated arm, past step's band, inside "
+     "cumulative's; instantaneous excluded", lambda k: k["c6.label"] == "consistent with cumulative"
+     and k["c6.v_read"] is False and len(k["c6.dates"]) == 1 and k["c6.dates"][0] > k["c6.band"]["step"][1]
+     and k["c6.band"]["cumulative"][0] <= k["c6.dates"][0] <= k["c6.band"]["cumulative"][1]
+     and k["c6.status"] == {"step": "inconsistent", "cumulative": "consistent", "instantaneous": "inconsistent"}),
+    ("§7 C6: seed 0's centred date is 1000 (3b), and the shift's ranges contain √10, the summed rate's",
+     lambda k: k["c3b.c"]["70m"] == [1000] and k["c6.shift_s0"][0] <= 10 ** 0.5 <= k["c6.shift_s0"][1]
+     and k["c6.shift_ten"][0] <= 10 ** 0.5 <= k["c6.shift_ten"][1]),
+    ("§7 C6: in the calibration the label came only from cumulative plants, the same under every late version",
+     lambda k: len(set(k["c6.cal_alone"].values())) == 1 and set(k["c6.cal_other"].values()) == {0}),
+    ("§7 C6: seed 0's centred count at 1000 is far above the run's, which is still at its early level",
+     lambda k: k["c6.s0_at1000"][0] > 4 * k["c6.run_at"]["1000"][1]
+     and k["c6.run_at"]["512"][1] <= k["c6.run_at"]["1000"][1] < k["c6.at_date"][0] / 4),
 ]
 
 

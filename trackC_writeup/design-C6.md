@@ -272,7 +272,7 @@ it closes at what it knows unless the user extends it on the record.
 | 0 (this) | the run's schedule, init and first batch from the weights; 70m's date range from seeds 0–9; the bands, the reading and the gate frozen | this file frozen, `REF70` set and pushed |
 | 1 | Blocked 127 decided; `run --models seed0`, then `gate` on the run's steps 7000 and 20 000; `run --models run` (18 steps, offline); `read` | the label, or the gate's refusal |
 | 1b (Blocked 128 (a), beyond the budget) | the centred count alone, plant B at 0.5 ("U1b" above): `gate --centred-only`, `run --models run`, `read` | the centred label, or the gate's refusal |
-| close-out | writing only: what C6 established, §7 and F1 for 70m in `paper/` if the label is clean, Parked items homed, the card current | the card current |
+| close-out | writing only: what C6 established, §7 and F1 for 70m in `paper/` if the label is clean, Parked items homed, the card current | the card current (**done 2026-11-01**, Blocked 129 (a), the user's: `status-C.md` "C6 on one page (closed 2026-11-01)") |
 
 ## Worth challenging (for the PR)
 
