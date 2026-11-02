@@ -737,6 +737,12 @@ KEYS: Dict[str, tuple] = {
     "c6.status": ("c6u1b", lambda r: {s: r["counts"]["c"][s]["status"] for s in ("step", "cumulative", "instantaneous")}),
     "c6.at_date": ("c6u1b", lambda r: _span(r["beside"]["V_c"][a][GRID.index(r["counts"]["c"]["cumulative"]["dates"][0])]
                                             for a, g in r["arms_gated"].items() if g)),
+    # the run's centred count before its date, and seed 0's at 1000 on the same arms (3b's record;
+    # seed 0 shares the run's init and first batch): /challenge-pr on #299, findings 2 and 4
+    "c6.run_at": ("c6u1b", lambda r: {str(s): _span(r["beside"]["V_c"][a][GRID.index(s)]
+                                                    for a, g in r["arms_gated"].items() if g) for s in (512, 1000)}),
+    "c6.s0_at1000": ("c3b", lambda c: _span(c["beside"]["70m"]["V_c"][a][GRID.index(1000)]
+                                            for a in ("9.61e-05", "0.0001", "0.0003"))),
     # The factor by which the run's crossing can lie later than a reference crossing the grid allows:
     # against seed 0's (dated 1000, a claim checks 3b's) and against the ten seeds' (`ref70`).
     "c6.shift_s0": ("c6u1b", lambda r: _shift(r, 1000, 1000)),
@@ -941,6 +947,9 @@ CLAIMS: List[tuple] = [
      and k["c6.shift_ten"][0] <= 10 ** 0.5 <= k["c6.shift_ten"][1]),
     ("§7 C6: in the calibration the label came only from cumulative plants, the same under every late version",
      lambda k: len(set(k["c6.cal_alone"].values())) == 1 and set(k["c6.cal_other"].values()) == {0}),
+    ("§7 C6: seed 0's centred count at 1000 is far above the run's, which is still at its early level",
+     lambda k: k["c6.s0_at1000"][0] > 4 * k["c6.run_at"]["1000"][1]
+     and k["c6.run_at"]["512"][1] <= k["c6.run_at"]["1000"][1] < k["c6.at_date"][0] / 4),
 ]
 
 

@@ -608,8 +608,20 @@
   "where": "§7 C6: cumulative plants"
  },
  {
-  "slot": "{{c6.cal_m}}",
-  "where": "§7 C6: the step and instantaneous plants, none reading the label"
+  "slot": "{{c6.run_at[512]|minmax}}",
+  "where": "§7 C6: the run's centred count at 512 on the gated arms (/challenge-pr on #299, finding 4)"
+ },
+ {
+  "slot": "{{c6.run_at[1000]|minmax}}",
+  "where": "§7 C6: the run's centred count at 1000 on the gated arms"
+ },
+ {
+  "slot": "{{c6.s0_at1000|range}}",
+  "where": "§7 C6: seed 0's centred count at 1000 on the same arms, 3b's record (/challenge-pr on #299, finding 2)"
+ },
+ {
+  "literal": "4000",
+  "why": "§7 C6: seed 0's cumulative plant dates at 4000 (U1's calibration, the plant's own date, not stored in calibration_127a.json's rows; status-C.md \"C6 unit 1b\" caveats; /challenge-pr on #299, finding 1, re-derived it)"
  },
  {
   "slot": "{{c6.cal_both}}",

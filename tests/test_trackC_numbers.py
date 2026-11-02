@@ -28,12 +28,26 @@ def test_every_key_names_a_listed_record():
     assert {v["record"] for v in table["keys"].values()} <= set(table["records"]) == set(n.RECORDS.values())
 
 
-def test_tracked_records_match_the_table():
-    """A `repo:` record is on every checkout, so CI can see the table go stale when one is edited
-    without re-running `produce` (LESSONS 3, 2026-11-01: the registry after CLAIM-C's withdrawal)."""
-    table = json.loads(n.TABLE.read_text())["records"]
-    stale = [rid for rid, h in table.items() if rid.startswith("repo:") and n.sha256(n.resolve(rid)) != h]
-    assert not stale, f"re-run `numbers produce` (with --reread for each): {stale}"
+def _same(a, b) -> bool:
+    if isinstance(a, float) or isinstance(b, float):
+        return isinstance(a, (int, float)) and isinstance(b, (int, float)) and a == pytest.approx(b, rel=1e-12, abs=1e-300)
+    if isinstance(a, dict):
+        return isinstance(b, dict) and a.keys() == b.keys() and all(_same(a[k], b[k]) for k in a)
+    if isinstance(a, list):
+        return isinstance(b, list) and len(a) == len(b) and all(_same(x, y) for x, y in zip(a, b))
+    return a == b
+
+
+def test_keys_from_tracked_records_match_the_table():
+    """A `repo:` record is on every checkout, so CI recomputes its keys: a number the draft prints
+    cannot move unseen when such a file is edited without re-running `produce` (LESSONS 3,
+    2026-11-01, the registry after CLAIM-C's withdrawal). Values, not hashes, so an edit that moves
+    no key passes (`/challenge-pr` on #299, finding 3); `produce` still refuses on the hash."""
+    table = json.loads(n.TABLE.read_text())["keys"]
+    repo = {name: n.load(rid) for name, rid in n.RECORDS.items() if rid.startswith("repo:")}
+    moved = [key for key, (name, fn) in n.KEYS.items() if name in repo
+             and not _same(json.loads(json.dumps(fn(repo[name]))), table[key]["value"])]
+    assert not moved, f"re-run `numbers produce` (with --reread for the record): {moved}"
 
 
 def test_unknown_key_refuses():

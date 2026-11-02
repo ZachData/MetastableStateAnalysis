@@ -826,7 +826,8 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   `produce`, so the tracked table hashed a registry that no longer existed, and CI passed (`check`
   renders from the table and never re-hashes the records). `produce` refused at the next change
   (the refusal worked; cost: one check that no `reg.*` key moved). A PR that edits a `repo:`
-  record of `numbers.py` re-runs `produce` in the same PR.
+  record of `numbers.py` re-runs `produce` in the same PR; CI now recomputes every key from the
+  `repo:` records and fails if a value moved (`test_keys_from_tracked_records_match_the_table`).
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a
