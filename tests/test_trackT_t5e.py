@@ -41,7 +41,7 @@ def test_lr_phase():
 
 
 def _per(i, ii, iii):
-    return {"centred": {"any_trained_part": i, "uncentred_beside": {"A_share": iii}},
+    return {"centred": {"any_trained_part": i, "uncentred_beside": {"A_share": iii}}, "uncentred_A_share": iii,
             "fixed_tau": {"0.5": {"0.003": {"A_share": ii}}}}
 
 
@@ -53,3 +53,15 @@ def test_series_bars_inclusive_and_stated():
     assert all(t5e.stated_before_output(per).values())
     per[917] = _per(False, 0.2, 0.5)
     assert not any(t5e.stated_before_output(per).values())
+
+
+def test_refused_read_both_ways():
+    per = {917: _per(True, 0.0, 0.9), 1072: _per(True, 0.0, 0.9), 1253: _per(False, 0.0, 0.9),
+           2340: {**_per(None, 0.0, 0.9), "centred": {"refused": "DoseRefused"}},
+           3198: _per(True, 0.0, 0.9), 9536: _per(False, 0.4, 0.04)}
+    for v in per.values():
+        v["uncentred_A_share"] = v["centred"].get("uncentred_beside", {"A_share": 0.9})["A_share"]
+    per[9536]["uncentred_A_share"] = 0.04
+    i = t5e.stops(per)["i_centred_any_P"]
+    assert i["refused"] == [2340] and i["stop"] == 9536 and i["fails_before_stop"] == [1253, 2340]
+    assert i["refused_left_out"]["fails_before_stop"] == [1253] and i["refused_agree"]

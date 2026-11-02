@@ -92,21 +92,39 @@ def fixed_tau(units: list) -> dict:
                  for k, v in d.gate_arms(units, TAUS, bd)["arms"].items()} for bd in DOSES}
 
 
-def pass_series(per: Dict[int, dict]) -> Dict[str, List[Tuple[int, bool]]]:
-    """(i) some centred arm has P; (ii) plant A ≤ 0.10 at τ 3e-3, B dose 0.5; (iii) the uncentred
-    plant-A share ≥ 0.79 ("as on Pythia")."""
+def uncentred_a(units: dict) -> float:
+    """(iii) from the units alone, as `t2.py preflight` computes ``uncentred_at_1e-3.A_share``
+    (it does not need B's dose, so it is read at a step whose B derivation refused)."""
+    tr = units["trained"]
+    return t5d.cs.share(t5d.cs.rate(tr["plants"]["A_u"][t5d.cs.A_DOSE], t5d.cs.REL_TOL),
+                        t5d.cs.rate(tr["base"]["u"], t5d.cs.REL_TOL))
+
+
+def pass_series(per: Dict[int, dict]) -> Dict[str, List[Tuple[int, Optional[bool]]]]:
+    """(i) some centred arm has P (None where T2's derivation refused at s); (ii) plant A ≤ 0.10 at
+    τ 3e-3, B dose 0.5; (iii) the uncentred plant-A share ≥ 0.79 ("as on Pythia")."""
     s = sorted(per)
     return {
-        "i_centred_any_P": [(k, per[k]["centred"]["any_trained_part"]) for k in s],
+        "i_centred_any_P": [(k, None if "refused" in per[k]["centred"] else per[k]["centred"]["any_trained_part"])
+                            for k in s],
         "ii_fixed_tau": [(k, per[k]["fixed_tau"][STOP_DOSE][STOP_TAU]["A_share"] <= t5d.cs.A_LEAK) for k in s],
-        "iii_uncentred": [(k, per[k]["centred"]["uncentred_beside"]["A_share"] >= t5d.UNC_PYTHIA) for k in s],
+        "iii_uncentred": [(k, per[k]["uncentred_A_share"] >= t5d.UNC_PYTHIA) for k in s],
     }
 
 
 def stops(per: Dict[int, dict]) -> dict:
+    """Where each count stops. A step whose derivation refused (only (i) can have one) is read two
+    ways, fixed after the batch and before the reading (post hoc: the frozen rule did not foresee a
+    refusal): counted as no arm with P, and left out; ``refused_agree`` says whether they agree."""
     out = {}
     for k, ser in pass_series(per).items():
-        out[k] = {**stop(ser), "passes": [s for s, p in ser if p]}
+        refused = [s for s, p in ser if p is None]
+        as_fail = stop([(s, bool(p)) for s, p in ser])
+        out[k] = {**as_fail, "passes": [s for s, p in ser if p], "refused": refused}
+        if refused:
+            left_out = stop([(s, p) for s, p in ser if p is not None])
+            out[k]["refused_left_out"] = left_out
+            out[k]["refused_agree"] = left_out["stop"] == as_fail["stop"]
         out[k]["reads"] = one_sided(out[k]["stop"])
     out["ii_fixed_tau"]["cell"] = {"tau": STOP_TAU, "b_dose": STOP_DOSE}
     return out
@@ -116,6 +134,15 @@ def stated_before_output(per: Dict[int, dict]) -> Dict[str, bool]:
     """917 passes and 9536 fails on each of (i)–(iii) (the records), so each crossing lies in
     (917, 9536] unless a series is not monotone."""
     return {k: bool(ser[0][1]) and not ser[-1][1] for k, ser in pass_series(per).items()}
+
+
+def refusal(pre: Path, s: int) -> str:
+    """The refusal a step's preflight raised (its log's last ``Refused`` line); a step with no
+    plants record and no refusal is not a reading but a failed run."""
+    lines = [ln for ln in (pre / f"log_{s}.txt").read_text().splitlines() if "Refused:" in ln]
+    if not lines:
+        raise U3Refused(f"step {s}: no preflight_plants.json and no refusal in its log")
+    return lines[-1].strip()
 
 
 def read(a) -> int:
@@ -131,12 +158,25 @@ def read(a) -> int:
     else:
         beside = series_beside(json.loads(Path(a.u2).read_text()))
         per: Dict[int, dict] = {}
-        codes = {}
+        codes, unc_check = {}, {}
         for s in RISE:
-            rec = t5d.load(pre, s)
-            codes[s] = rec["code"]
             units = json.loads((t5d._dir(pre, s) / "preflight_units.json").read_text())
-            per[s] = {"centred": t5d.step_reading(rec), "fixed_tau": fixed_tau(units), "beside": beside[s]}
+            if (t5d._dir(pre, s) / "preflight_plants.json").exists():
+                rec = t5d.load(pre, s)
+                codes[s] = rec["code"]
+                centred = t5d.step_reading(rec)
+                unc_check[s] = abs(uncentred_a(units) - rec["uncentred_at_1e-3"]["A_share"])
+            elif s in (917, t5d.SCALE_STEP):
+                raise U3Refused(f"step {s}: no preflight_plants.json")
+            else:
+                centred = {"refused": refusal(pre, s)}
+            per[s] = {"centred": centred, "fixed_tau": fixed_tau(units), "uncentred_A_share": uncentred_a(units),
+                      "beside": beside[s]}
+        worst = max(unc_check.values())
+        res["gate"]["uncentred_from_units"] = {"max_abs_diff": worst, "steps": sorted(unc_check),
+                                               "pass": worst <= t5d.KNOWN_TOL}
+        if worst > t5d.KNOWN_TOL:
+            raise U3Refused(f"(iii) from the units differs from the records by {worst}")
         st = stops(per)
         res.update({"record_codes": codes, "per_step": per, "where_each_count_stops": st,
                     "stated_before_output_held": stated_before_output(per)})
@@ -152,11 +192,15 @@ def _print(res: dict) -> None:
         return
     for s, p in res["per_step"].items():
         c, b = p["centred"], p["beside"]
+        ft = p["fixed_tau"][STOP_DOSE][STOP_TAU]
+        if "refused" in c:
+            print(f"{s:>5} rho {b['rho_mid']:.3f} n0 {b['n0_mid']:5.1f} | (i) REFUSED: {c['refused']} "
+                  f"| tau3e-3: A {ft['A_share']:.2f} | unc A {p['uncentred_A_share']:.2f}")
+            continue
         arms = " ".join(f"{k}:{'P' if v['trained_part'] else '-'}{'G' if v['full_gate'] else ''}"
                         f"(A{v['A_share']:.2f},B{v['B_share']:.2f})" for k, v in c["arms"].items())
-        ft = p["fixed_tau"][STOP_DOSE][STOP_TAU]
         print(f"{s:>5} rho {b['rho_mid']:.3f} n0 {b['n0_mid']:5.1f} loss {c['loss_mean_beside']:.2f} "
-              f"| {arms} | tau3e-3: A {ft['A_share']:.2f} | unc A {c['uncentred_beside']['A_share']:.2f}")
+              f"| {arms} | tau3e-3: A {ft['A_share']:.2f} | unc A {p['uncentred_A_share']:.2f}")
     print(json.dumps(res["where_each_count_stops"], indent=1))
     print(json.dumps(res["stated_before_output_held"]))
 
