@@ -1833,6 +1833,10 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 ## 8. Git and PR mechanics
 
 **Instances.**
+- 2026-11-02 (#305): `./scripts/check.sh | tail -2 && git commit … && git push` committed and
+  pushed `aaac0f8` with 2 tests red, because the chain took `tail`'s exit status, not check's.
+  Fixed in the next commit (`16e400e`). Rule: run check.sh on its own, or redirect it to a file,
+  and test its exit status before any commit.
 - #59 targeted another PR's branch; after that base merged, #59 merged into a
   dead branch and its work never reached `main` (cost twice).
 - PR sizes: #24 +618k lines, #17 +146k, 2026-09-12's merge 51 commits /
