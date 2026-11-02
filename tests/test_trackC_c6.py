@@ -200,3 +200,31 @@ def test_a_refused_b_dose_still_records_every_arm_null_rate():
     assert g["b_dose"] is None and not g["pass"] and g["arms"] == {}
     assert set(g["null_rates"]) == {f"{t:.3g}" for t in w.ARMS}
     assert set(g["B_u_share"]) == {f"{d:g}" for d in w.cd.DOSES_B} and "arms_beside_top_dose" in g
+
+
+def _pops(b_c_half: float, b_u: float = 0.0):
+    # one unit per prompt: base 0 (no violation); plant B at 0.5 turns the centred count by b_c_half
+    base = {"u": [0.0], "c": [0.0]}
+    plants = {k: {f"{d:g}": [0.0] for d in (w.cs.DOSES_A if k[0] == "A" else w.cd.DOSES_B)}
+              for k in ("A_u", "A_c", "B_u", "B_c")}
+    plants["B_c"] = {**plants["B_c"], "0.5": [b_c_half]}
+    plants["B_u"] = {**plants["B_u"], "0.5": [b_u]}
+    return {n: {p: {"base": base, "plants": plants} for p in w.V1} for n in ("r", "t")}
+
+
+def test_blocked_128a_fixed_dose_gates_the_centred_arms_with_v_refused():
+    # U1b: rule 100 (a) refuses (V never sees B), the centred arms still read B at 0.5
+    g = w.gate_one(_pops(1.0), ["r"], "t", w.U1B_B_DOSE)
+    assert g["b_dose"] == "0.5" and g["b_dose_fixed"] and g["rule_100a_beside"].startswith("refused")
+    assert set(g["arms"]) == {f"{t:.3g}" for t in w.ARMS} and all(v["B_share"] == 1.0 for v in g["arms"].values())
+    assert g["pass"]
+    g0 = w.gate_one(_pops(0.0), ["r"], "t", w.U1B_B_DOSE)       # the plant unseen: no arm passes
+    assert not any(v["pass"] for v in g0["arms"].values())
+    assert w.gate_one(_pops(1.0), ["r"], "t")["b_dose"] is None  # as frozen, the same input refuses
+
+
+def test_blocked_128a_dose_is_unit_3bs():
+    import json
+    if not w.U3B_PREFLIGHT.exists():
+        pytest.skip("unit 3b's preflight not on this machine")
+    assert json.loads(w.U3B_PREFLIGHT.read_text())["gate"]["b_dose"] == w.U1B_B_DOSE

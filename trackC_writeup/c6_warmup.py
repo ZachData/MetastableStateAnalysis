@@ -38,6 +38,7 @@ Tier 1, description (nothing here is registered).
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_warmup run --out <dir> --models run   # U1
     python -m trackC_writeup.c6_warmup read --out <dir>           # U1
     python -m trackC_writeup.c6_warmup recalibrate --seeds <U0>/seeds.json --out <dir>   # Blocked 127 (a)
+    HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c6_warmup gate --out <dir> --centred-only   # U1b, Blocked 128 (a)
 """
 
 from __future__ import annotations
@@ -86,6 +87,13 @@ U3B_PREFLIGHT = DATA / "trackC/c2u3b/2026-10-22-preflight/70m/preflight_plants.j
 #: states past its peak are reached; #295, finding 1). The scored rule; the rule as frozen on
 #: 2026-10-31 (``not_read=()``) is read beside it. A second in-sample revision (`design-C6.md`).
 NOT_READ: FrozenSet[Tuple[str, str]] = frozenset({("u", "instantaneous")})
+#: Blocked 128 (a), the user's, 2026-11-01 (U1b, one unit beyond C6's budget), frozen after U1's
+#: gate output and before any output on the run's grid: `gate --centred-only` reads the centred
+#: count alone, plant B's dose fixed at unit 3b's 70m dose (its preflight's ``gate.b_dose``, checked,
+#: not re-derived on the run), every other gate row as frozen, V not read. Rule 100 (a)'s outcome
+#: is recorded beside. A revision made after seeing a gate output (`design-C6.md` "U1b").
+U1B_B_DOSE = "0.5"
+U1_GATE = DATA / "trackC/c6/2026-11-01-u1/gate.json"     # U1's refusal: its top-dose arms are U1b's known answer
 ENERGY_TOL = 1e-4                               # placed: |Δe1| / e1 against unit 3b's records (seed 0 gives 0.0)
 SEED = 20261031
 
@@ -501,7 +509,9 @@ def _flat(pops: dict, names: Sequence[str], w: str, key: str = None, dose: str =
             for x in (pops[n][p]["base"][w] if key is None else pops[n][p]["plants"][key][dose])]
 
 
-def gate_one(pops: dict, reinits: Sequence[str], step: str) -> dict:
+def gate_one(pops: dict, reinits: Sequence[str], step: str, fixed_b: Optional[str] = None) -> dict:
+    """One step's gate. With ``fixed_b`` (Blocked 128 (a)) the centred arms read plant B at that
+    dose, and rule 100 (a)'s dose (or its refusal) is recorded beside, not used."""
     units = {pop: {"base": {w: _flat(pops, ns, w) for w in ("u", "c")},
                    "plants": {k: {f"{d:g}": _flat(pops, ns, None, k, f"{d:g}")
                                   for d in (cs.DOSES_A if k[0] == "A" else cd.DOSES_B)}
@@ -512,6 +522,14 @@ def gate_one(pops: dict, reinits: Sequence[str], step: str) -> dict:
     diag = {"uncentred_null_rate": cs.rate(units["reinit"]["base"]["u"], REL_TOL), "base_rate_u": base_u,
             "B_u_share": {k: cs.share(cs.rate(v, REL_TOL), base_u) for k, v in tr["plants"]["B_u"].items()},
             "null_rates": {f"{t:.3g}": cs.rate(units["reinit"]["base"]["c"], t) for t in ARMS}}
+    if fixed_b is not None:
+        try:
+            rule = cd.b_dose(tr["base"]["u"], tr["plants"]["B_u"])
+        except cd.DoseRefused as e:
+            rule = f"refused: {e}"
+        g = cd.gate_arms(units, ARMS, fixed_b)
+        g.update(diag, b_dose=fixed_b, b_dose_fixed=True, rule_100a_beside=rule)
+        return g
     try:
         bd = cd.b_dose(tr["base"]["u"], tr["plants"]["B_u"])
     except cd.DoseRefused as e:
@@ -526,8 +544,14 @@ def gate_one(pops: dict, reinits: Sequence[str], step: str) -> dict:
 
 def gate(a) -> int:
     """U1's gate. Needs `run --models seed0` into the same --out first: seed 0's records there must
-    equal unit 3b's (`known_answer`), else refuse (#295, finding 4)."""
+    equal unit 3b's (`known_answer`), else refuse (#295, finding 4). ``--centred-only`` is U1b
+    (Blocked 128 (a)): plant B at `U1B_B_DOSE`, which must be unit 3b's 70m dose; V not read; the
+    centred arms' shares must equal U1's top-dose ones (`U1_GATE`, the same draws), else refuse."""
     _frozen()
+    co = bool(getattr(a, "centred_only", False))
+    pf = json.loads(U3B_PREFLIGHT.read_text())
+    if co and pf["gate"]["b_dose"] != U1B_B_DOSE:
+        raise C6Refused(f"U1B_B_DOSE {U1B_B_DOSE} is not unit 3b's 70m dose {pf['gate']['b_dose']}")
     ka = known_answer(load_model(Path(a.out), "seed0"))
     os.environ["HF_HUB_OFFLINE"] = "1"
     torch, device = c._torch_setup()
@@ -550,9 +574,16 @@ def gate(a) -> int:
         pops[f"step{s}" if name == "run" else f"{name}:step{s}"] = _units(model, tok, device, rng, u)
         del model
         torch.cuda.empty_cache()
-    per_step = {f"step{s}": gate_one(pops, reinits, f"step{s}") for s in GATE_STEPS}
-    beside = {f"{n}:step{s}": gate_one(pops, reinits, f"{n}:step{s}") for n, s in BESIDE_STEPS}
-    pf = json.loads(U3B_PREFLIGHT.read_text())
+    fb = U1B_B_DOSE if co else None
+    per_step = {f"step{s}": gate_one(pops, reinits, f"step{s}", fb) for s in GATE_STEPS}
+    beside = {f"{n}:step{s}": gate_one(pops, reinits, f"{n}:step{s}", fb) for n, s in BESIDE_STEPS}
+    if co:
+        u1 = json.loads(U1_GATE.read_text())["per_step"]
+        for k, g in per_step.items():
+            want = u1[k]["arms_beside_top_dose"]
+            if set(want) != set(g["arms"]) or any(
+                    abs(g["arms"][t][q] - want[t][q]) > 1e-12 for t in want for q in ("B_share", "A_share", "null_rate")):
+                raise C6Refused(f"{k}: the centred arms differ from U1's top-dose arms ({U1_GATE})")
     null_now = per_step[f"step{GATE_STEPS[0]}"]["null_rates"]
     null_3b = {k: pf["gate"]["arms"][k]["null_rate"] for k in null_now}
     if set(null_now) != {f"{t:.3g}" for t in ARMS}:     # was vacuous when 100 (a) refused (U1, #297)
@@ -561,8 +592,10 @@ def gate(a) -> int:
         raise C6Refused(f"the re-inits' rates {null_now} differ from unit 3b's {null_3b}")
     arms = {f"{t:.3g}": all(g["arms"].get(f"{t:.3g}", {}).get("pass", False) for g in per_step.values())
             for t in ARMS}
-    u_ok = all(g["b_dose"] is not None for g in per_step.values())
+    u_ok = not co and all(g["b_dose"] is not None for g in per_step.values())
     res = {"code": code_sha(), "meta": meta(torch), "seed0_known_answer_max_rel": ka,
+           "mode": "centred_only, Blocked 128 (a)" if co else "as frozen",
+           "b_dose_fixed": U1B_B_DOSE if co else None,
            "per_step": per_step, "beside_not_gating": beside, "arms_gated": arms,
            "uncentred_read": u_ok, "readable": u_ok or any(arms.values()), "null_vs_3b": [null_now, null_3b]}
     (out / "gate.json").write_text(json.dumps(res, indent=1) + "\n")
@@ -590,6 +623,7 @@ def read(a) -> int:
     frozen = {"u": count_reading({"1e-3": vu}, {"1e-3": g["uncentred_read"]}, "u", ref, ()),
               "c": count_reading(vcs, g["arms_gated"], "c", ref, ())}
     res = {"code": code_sha(), "record_codes": sorted({r["code"] for r in recs.values()}), "ref70": ref,
+           "gate_mode": g.get("mode", "as frozen"), "arms_gated": g["arms_gated"], "uncentred_read": g["uncentred_read"],
            "early_first": {k: {h: {a_: r["early"] for a_, r in counts[k][h]["per_arm"].items()} for h in HYPS}
                            for k in counts},
            "not_read": sorted(NOT_READ), "counts": counts, "joint": joint(counts),
@@ -609,6 +643,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for cmd in ("run", "seeds", "gate", "read", "recalibrate"):
         sp = sub.add_parser(cmd)
         sp.add_argument("--out", required=True)
+        if cmd == "gate":
+            sp.add_argument("--centred-only", action="store_true",
+                            help="U1b, Blocked 128 (a): plant B at unit 3b's 70m dose, V not read")
         if cmd == "recalibrate":
             sp.add_argument("--seeds", required=True, help="U0's seeds.json")
         if cmd == "run":
