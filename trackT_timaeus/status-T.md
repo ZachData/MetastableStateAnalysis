@@ -5,7 +5,7 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"; T5 U2 ran `dodecahedron-32m`, `-67m` at their 53 steps, `pythia-70m`, `-160m`, `-410m` at C2's 18 and `timaeus/gpt-2-small` at its init and 19 checkpoints, the 7 v1 prompts (`976b62d677bc`), code `3d425b32db90`, listed in `trackT_timaeus/status-T.md` "T5 U2"; T5 U2b ran `dodecahedron-32m` at steps 491, 671, 917 and 9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, listed in `trackT_timaeus/status-T.md` "T5 U2b"; T5 U3's first read ran `dodecahedron-32m` at the 16 grid steps 917–9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, reader `t5e.py`, listed in `trackT_timaeus/status-T.md` "T5 U3, first read"; T5 U3's split ran `dodecahedron-32m` at 9 steps (1, 917–9536) with a planted o_proj bias at 9536 and `pythia-410m` at C2's 8 split steps (0–143000), the 7 v1 prompts (`976b62d677bc`), code `ef81a441e7dc`, listed in `trackT_timaeus/status-T.md` "T5 U3's split, the batch"; T5 U4s ran 3,160 random models (Llama at 32m's shape without biases, 79 cells: the 64 subsets of U1b's six swaps, `untied`, the `gelu` split, the reverse ablation, × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `2d7d55d4e4f9`, listed in `trackT_timaeus/status-T.md` "T5 U4s"; T5 U4a ran released `dodecahedron-32m` at 1, 917, 4369, 9536 and `pythia-410m` seeds 0–9 at 4000 and 143000 through U2's reader, built FineWeb `sample-10BT`'s stream (revision `9bb295dd`, files 000–003, main `a7c1b38b`), and timed 60 updates of A0's configuration (discarded), code `24f9a6c81ed3`, listed in `trackT_timaeus/status-T.md` "T5 U4a, before A0"
+- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"; T5 U2 ran `dodecahedron-32m`, `-67m` at their 53 steps, `pythia-70m`, `-160m`, `-410m` at C2's 18 and `timaeus/gpt-2-small` at its init and 19 checkpoints, the 7 v1 prompts (`976b62d677bc`), code `3d425b32db90`, listed in `trackT_timaeus/status-T.md` "T5 U2"; T5 U2b ran `dodecahedron-32m` at steps 491, 671, 917 and 9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, listed in `trackT_timaeus/status-T.md` "T5 U2b"; T5 U3's first read ran `dodecahedron-32m` at the 16 grid steps 917–9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, reader `t5e.py`, listed in `trackT_timaeus/status-T.md` "T5 U3, first read"; T5 U3's split ran `dodecahedron-32m` at 9 steps (1, 917–9536) with a planted o_proj bias at 9536 and `pythia-410m` at C2's 8 split steps (0–143000), the 7 v1 prompts (`976b62d677bc`), code `ef81a441e7dc`, listed in `trackT_timaeus/status-T.md` "T5 U3's split, the batch"; T5 U4s ran 3,160 random models (Llama at 32m's shape without biases, 79 cells: the 64 subsets of U1b's six swaps, `untied`, the `gelu` split, the reverse ablation, × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `2d7d55d4e4f9`, listed in `trackT_timaeus/status-T.md` "T5 U4s"; T5 U4a ran released `dodecahedron-32m` at 1, 917, 4369, 9536 and `pythia-410m` seeds 0–9 at 4000 and 143000 through U2's reader, built FineWeb `sample-10BT`'s stream (revision `9bb295dd`, files 000–003, main `a7c1b38b`), and timed 60 updates of A0's configuration (discarded), code `b9e5724ac9d2`, listed in `trackT_timaeus/status-T.md` "T5 U4a, before A0"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
@@ -32,7 +32,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-03 · body `aa27947293`
+- **Reviewed:** 2026-11-03 · body `74868153c9`
 <!-- /phase-card -->
 
 ## Units
@@ -51,11 +51,11 @@
 | T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
 | T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; U4a's preparation done, nothing trained. **Next: Blocked 133, yours, then A0** | "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
 | T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU brings back all of it, the sequential residual about half; within `gelu`, ungating (or the write's size) | "T5 U4s" below |
-| T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 107.4k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000): Blocked 133 | "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
+| T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000): Blocked 133 | "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
 
 ## T5 U4a, before A0: the loop, the shard, θ, the known answer; the noise floor refuses (2026-11-03)
 
-Code `trackT_timaeus/t5h.py` (`24f9a6c81ed3` for every output below; the committed file, `a4b905cc3ed7`, adds four threshold labels in comments and nothing else, checked by diff with comments stripped); details fixed before any
+Code `trackT_timaeus/t5h.py` `b9e5724ac9d2` (commit `d8927fb`) for every output below; each was first produced at `24f9a6c81ed3`, which no commit holds, and re-run at the committed code after `/challenge-pr` on #309 (finding 4): known answer and floor equal to the last digit, the shard's sha256s equal, θ 2.4 % lower with the shard rebuild running beside it (the first records kept, suffixed `_24f9a6c81ed3`); details fixed before any
 arm output in `design-T5.md` "U4a's details" (d1)–(t12). **No arm has run.** The 410m noise
 floor, a gate row before the arms, fails, and the loop's gate row was changed from float32 to
 float64; both are Blocked 133, yours. Records `<HDD_1TB>/mets_data/trackT/t5u4/` (linked from
@@ -66,11 +66,12 @@ float64; both are Blocked 133, yours. Records `<HDD_1TB>/mets_data/trackT/t5u4/`
 | known answer: released `-32m` 1 and 9536 saved and reloaded through t5h's format, read, against U2 (`known/known.json`) | max \|Δρ_ℓ\| 1.7e-9, 6.8e-10 (917 and 4369 beside: 1.1e-9, 3.7e-9; v1 loss 4.160, 3.766, as U3's 4.16, 3.77) | yes |
 | the loop (`tests/test_trackT_t5h_smoke.py`) | float64, the loop's two micro-batches against a hand-written AdamW's full batch, clip off and binding: rel 1e-14 (bar 1e-10). **As written, float32 at rel 1e-5: 1.2–2.5e-5, fails**; each float32 side is 2.4e-4 from the float64 result, so the bar is below float32's rounding (LESSONS 4) | float64 yes; as written no |
 | **the noise floor** (`floor/floor.json`): ρ_mid SD over `pythia-410m` seeds 0–9 | 4000: SD 0.0104, 2·SD 0.021. **143000: SD 0.0765, 2·SD 0.153** (seeds 3, 4 at 0.233, 0.228; the other eight 0.385–0.428). Seed 0 equals U2's record at both (0.0) | **no** (bar 0.1) |
-| θ, A0's configuration, 10 + 50 updates of the real stream (`theta.json`) | **107.4k tokens/s** (4.89 s an update, 4.3 GB; `torch.compile`, micro-batch 4); the loss 9.77 → 7.60 over the 60 | row: five arms and every continuation |
+| θ, A0's configuration, 10 + 50 updates of the real stream (`theta.json`) | **104.8k tokens/s** (107.4k at the first run, with the CPU idle; 4.3 GB; `torch.compile`, micro-batch 4); the loss 9.77 → 7.60 over the 60 | row: five arms and every continuation |
 
 Beside: the interaction's planted null (a unit test before U4b, `tests/test_trackT_t5h.py`), read
-two-sided ((t11)): "interaction" 0.012 against the pair's 0.013 at σ 0.03, **0.095 against 0.075 at
-σ 0.05, on the line** (bar + 0.02 = 0.095). The rule's arithmetic on planted series passes (a
+two-sided ((t11)), at 1e5 draws ((t11); the design's 1,000 passed about 76 % of seeds, `/challenge-pr`
+on #309, finding 2): "interaction" 0.0121 against the pair's 0.0096 at σ 0.03, **0.0895 against
+0.0749 at σ 0.05** (bound 0.0949; at 1,000 draws it had read 0.095 against 0.095). The rule's arithmetic on planted series passes (a
 lowered-by-R/2 series reads "lowers", A0′'s "does not"; the delay check and the H labels).
 
 **The shard** (`data/meta.json`): FineWeb `sample-10BT` at `9bb295dd`, files 000–003, 4,133,057
@@ -78,8 +79,13 @@ documents, 1,528,320 sequences of 2048 (3.13B tokens): main 4369 × 256 (sha256 
 delay check's tail 1601 × 256 (`18f023eb…`); `<|endoftext|>` 0.13 % of tokens (about 740 tokens a
 document); 19 min on the CPU. First sequences decode as FineWeb text.
 
-**What θ does to the budget.** A0 to 4369 is 5.9 h; the five arms and four continuations
-14.8B tokens, 38 h of the 96 h cap; a further replicate seed with its continuation 8.1 h.
+**What θ does to the budget.** A0 to 4369 is 6.1 h; the five arms and four continuations
+14.8B tokens, 39 h of the 96 h cap; a further replicate seed with its continuation 8.3 h.
+
+**The floor's shape** (`/challenge-pr` on #309, finding 1): at 143000 the ten seeds sit in two
+groups, so 2·SD (0.153) understates what one pair can differ by: the largest pair difference is
+0.200 (at 4000, 0.032). A pair drawn from 410m's split lands in one group 68 % of the time, three
+seeds 52 %. Blocked 133's options carry both numbers.
 
 **Not established.** Anything about training: no arm ran. Whether 410m's late bimodality
 (two seeds of ten end 0.17 below the rest) has any counterpart at Dodecahedron's 4369, which is
@@ -90,10 +96,10 @@ document); 19 min on the CPU. First sequences decode as FineWeb text.
 step is the one Blocked 133 should take; U5 describes it.
 
 Re-run (`HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data`): `python -m trackT_timaeus.t5h
-shard`, `known`, `floor`, `theta --n-micro 64 --compile --out <root>/theta.json`;
+shard`, `known`, `floor`, `theta --out <root>/theta.json`;
 `SMOKE_REAL_DEPS=1 python -m pytest tests/test_trackT_t5h_smoke.py tests/test_trackT_t5h.py`. A0,
-once Blocked 133 is decided: `N_MICRO=64 COMPILE=--compile scripts/t5u4a_A0.sh` (stages 103,
-1253, 4369, each gated; resumable).
+once Blocked 133 is decided: `scripts/t5u4a_A0.sh` (stages 103, 1253, 4369, each gated; resumable;
+the configuration (t12) is fixed in `t5h` and refused if a segment differs, finding 3).
 
 ## T5 U4s: the screen at init (2026-11-03)
 

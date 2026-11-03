@@ -946,6 +946,11 @@ not fixed).
   Caught by the test before any arm; the gate moved to float64 at 1e-10 and put to the user
   (Blocked 133 (ii)). Rule, as S2's G0 above: **a bar comparing two float32 implementations of
   the same arithmetic is placed after measuring each against float64**; gate the logic in float64.
+- 2026-11-03 (T5 U4a, `/challenge-pr` on #309, finding 2): the interaction's planted-null test
+  compared two rates estimated from 1,000 draws at one fixed seed. At σ 0.05 the true margin is
+  0.005 (2M draws), so the outcome depended on the seed (76 % of seeds pass), and the recorded "on
+  the line" was one high draw. Moved to 1e5 draws, vectorised. Rule: **a test that compares
+  Monte Carlo rates sizes its draws to the margin** (SE well under it), or it tests the seed.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
@@ -1926,6 +1931,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   found it by unpacking the commit. Rule: **a PR that adds a file type or a new non-`.py`/`.md`
   file runs its new tests on `git archive HEAD | tar -x` before the PR opens**, and checks
   `git status --short --ignored` for the new paths.
+- 2026-11-03 (T5 U4a, `/challenge-pr` on #309, finding 4): every output was produced by a new,
+  uncommitted `t5h.py` (code `24f9a6c81ed3`), and four threshold labels added for the lint before
+  the first commit moved the hash (`a4b905cc3ed7`), so no commit produced the records. Re-run at a
+  committed hash (`b9e5724ac9d2`, `d8927fb`): all equal, the shard's sha256s too. Rule: **commit
+  the producer before the outputs it names, and run the lint before the run**, not after.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
