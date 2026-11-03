@@ -414,6 +414,9 @@ Again 2026-11-02 (U4's design): the main tree 22 commits (#301–#305) behind; t
 split", which that file did not hold. Caught by the age check; read from `origin/main`. Fifth
 instance in four days: a hook that prints `git show origin/main:STATE.md` after a fetch would end
 it (a settings change, the user's).
+Again 2026-11-03 (Blocked 132): the main tree 25 commits (#301–#305) behind; the hook printed
+"next: Blocked 130, yours" while #306 already held Blocked 132. Caught by `status.sh` listing #306;
+read from the PR branch. Sixth instance; the hook unchanged.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files

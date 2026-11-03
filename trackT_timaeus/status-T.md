@@ -26,11 +26,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design proposed 2026-11-02 (Dodecahedron's recipe at 524k a step to 4369, five arms, A0 as the positive control), waiting on Blocked 132 — `trackT_timaeus/status-T.md` "T5 U4's design"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first) — `trackT_timaeus/status-T.md` "T5 U4's design frozen"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-02 · body `b9fae0d6c1`
+- **Reviewed:** 2026-11-03 · body `26fd5b5054`
 <!-- /phase-card -->
 
 ## Units
@@ -47,7 +47,23 @@
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
 | T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
-| T5 U4. the causal arm (aimed at the rise) | **design proposed 2026-11-02, not frozen: Blocked 132** (D4 schedule, D5 the fifth arm, D6 the pair screen dropped, D7 two units); nothing trained | "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
+| T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); nothing trained. **Next: U4s** | "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
+
+## T5 U4's design frozen (Blocked 132, 2026-11-03)
+
+The user's: **D4 (a)** Dodecahedron's steps and LR at 524k a step to 4369; **D5 (b)**, over the
+recommended (a), "but add to the budget": A3 (biases and Pythia's init together, A2 plus zero
+biases) runs, under the arm rule and the delay check, with its own label and an interaction
+I = ΔL_A3 − ΔL_A1 − ΔL_A2 at bar max(0.1, 2√2 τ) (B10); the cap goes from 3 to 4 GPU-days so
+the delay check keeps its budget (B9: five arms and four continuations at θ ≥ 42.9k tokens/s, five
+arms ≥ 33.1k, else A0 alone and back to the user); **D6 (b)**, over the recommended (a): U4s runs
+first, the full screen of U1b's six swaps (64 subsets), `gelu` split into its three changes, and the
+reverse ablation (one Llama part into GPT-NeoX), 3,080 random models, about 10 GPU-minutes,
+labelled with U1b's bar, context at init that does not change U4's arms; **D7 (a)** U4a, then U4b.
+So U4 is three units (U4s, U4a, U4b), two beyond T5's budget, on the record. The rules A3, the
+interaction and U4s were written at the freeze, before any code (`design-T5.md` "U4, the causal
+arm, designed" and "U4s, the screen at init"); they were not in the design `/challenge-pr` saw on
+#306. Re-run the arithmetic: `python tools/math_checks/t5_u4_budget.py`.
 
 ## T5 U4's design: the causal arm, aimed at the rise (2026-11-02)
 
