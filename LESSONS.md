@@ -939,6 +939,13 @@ not fixed).
 - 2026-10-21 (S2 unit 1): the smoke bars for the hook were 1e-10 in float64, and under 4.57 the
   constant moved into the bias is off by `(1 − rowsum P)·c` (the float32 softmax, the 2026-10-11
   instance above). The bars now add 10× the measured row-sum gap, which is 0 under 4.44.
+- 2026-11-03 (T5 U4a): U4's frozen gate row "the loop: 2 steps equal a hand-written float32
+  AdamW, rel 1e-5" was placed at the design without a measurement. On a tiny Llama the loop and
+  the reference differ by 1.2–2.5e-5 in float32, each 2.4e-4 from the float64 result (Adam's
+  m/√v amplifies op-order rounding where gradients are small), and agree to 1e-14 in float64.
+  Caught by the test before any arm; the gate moved to float64 at 1e-10 and put to the user
+  (Blocked 133 (ii)). Rule, as S2's G0 above: **a bar comparing two float32 implementations of
+  the same arithmetic is placed after measuring each against float64**; gate the logic in float64.
 
 **The rule now.** A numerical threshold in a test gets its margin measured
 across kernels (`OPENBLAS_CORETYPE=Prescott|Haswell|Zen`) and written next to
