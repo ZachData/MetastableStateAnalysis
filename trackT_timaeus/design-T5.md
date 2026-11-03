@@ -466,6 +466,21 @@ bar for one model built another way, since the seeds' draws need not line up); t
 minutes on the 3080 at U1b's rate (360 in 69 s). It cannot say what training does with a part
 (U4's arms do that for biases and the init only).
 
+*Implementation, fixed before any output (2026-11-03, U4s's code `t5g.py`, which imports `t5b`
+and leaves its code hash alone; none of these moves the rule):* (i) **79 cells, not 77**: the 64
+subsets, `untied` (the gate's and τ's), the split's six plus the three built together, the reverse's
+six plus its all-six; 77 left out two of these. 3,160 models. (ii) **The reverse cells are U1b's
+`all` with the part's swap removed, under their own key (`+rev-<part>`, `+rev-all6`)**, so their
+seeds are independent of the screen's five-part subsets, which are the same construction: a second
+draw of those six cells, compared beside. Building them from `GPTNeoXForCausalLM` was not chosen:
+NeoX has no grouped KV heads, so `mha` could not be put back. (iii) **The six-set is U1b's `all`
+record for record**, `untied` included, as in U1b (drawn last, it never reaches a state); the other
+subsets are tied. (iv) **The split's MLP** is one module: `gate_proj` (when gated), `up_proj`,
+`down_proj`, no biases, P's small_init in and wang_init out; gated: down(act(gate x) ⊙ up x),
+ungated: down(act(up x)); `act` is exact GeLU as NeoX's, else SiLU; `width` 1536, else 1024. With
+gated SiLU at 1024 it equals Llama's MLP on the same weights (a test). (v) **The scales beside:**
+per cell the median over seeds of logit ρ_mid and of atanh ρ_mid, then the same differences.
+
 **U5, the controls.** U2's statistics on Mistral GPT-2 small from checkpoint 0 (on disk), on
 410m's seeds 1–9 at the 18 steps (on disk), and on `gpt-2-small` if D1 (b). They describe, with no rule.
 
