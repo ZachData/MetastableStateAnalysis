@@ -19,7 +19,7 @@
   - T5 U3's first read (Blocked 130 (a); both known answers exact): along the late rise every count stops passing with the rise, none before it: the uncentred count leaves its Pythia behaviour at 1713 (plant A 0.89 → 0.72; ρ_mid 0.32), the fixed-τ centred arm (τ 3e-3) leaks plant A from 2002 (0.12; ρ 0.43), and T2's B-matched arm passes T2's full gate to 3738 (ρ 0.76; at 3198 and 3738 only with its τ search widened past the code's 1e-2, post hoc) and every arm fails from 4369 (ρ 0.81); at 2340 and 2735 the uncentred count sees plant B at no dose, so no arm is defined; ρ, position 0's norm, the loss, steps since warmup and each count's operating point (base rate, matched τ) move together there, so which makes a count stop is not told apart — `trackT_timaeus/status-T.md` "T5 U3, first read"
   - T5 U3's split refused by its planted-bias gate (2026-11-02; the sum and known-answer gates pass at `-32m` 9536): a constant o_proj bias at half the median middle-state norm in every block (as large as block 1's whole stream) collapses the cloud at state 1 (mean cosine 1.00), and the MLPs then write a new constant, near-orthogonal to the bias and much larger, which takes 95 % of the planted component, so the bias path holds 0.125 against the bar 0.9; the split is exact, the gate's plant moves the model; no other step run; Blocked 131 — `trackT_timaeus/status-T.md` "T5 U3's split"
   - T5 U3's split, the batch (Blocked 131 (a), the user's: the planted gate retired on the record before output; sum and known-answer gates pass, 9536 reproduced exactly): read as direct writes, through `-32m`'s rise attention's ordinary keys (share 0.43–0.60) and the MLP write's pooled mean (0.25–0.44) carry the shared component about equally, the sink grows 0.006 → 0.13 with position 0's norm; on shares no path changes abruptly where a count stops, while on sizes the MLP mean carries most of the write's growth to 4369, fastest over 1253 → 1713; Dodecahedron's step 1 is written by attention (0.87), 410m's step 0 by the MLP mean (0.58); 410m's biases write 0.31 at 143000; post hoc, neither MLP writes one vector to every token (0.06–0.15 of `-32m`'s MLP write in its mean), while `-32m`'s attention write grows more uniform (0.14 → 0.42); what raises ρ is not measured; no H2 reading — `trackT_timaeus/status-T.md` "T5 U3's split, the batch"
-  - T5 U4s, the screen at init (D6 (b), the user's; gate passes, U1b reproduced exactly): at 32m's shape the flat init's concentrating effect needs GPT-NeoX's parallel residual and its ungated MLP together to go (the two remove 1.15 of it, every other pair's interaction ≤ 0.08 of it); put back into GPT-NeoX, SwiGLU alone (1.33) or the sequential residual alone (0.72) brings it back; in the MLP it is the gate, not GeLU against SiLU nor the width; the norm, rotary fraction, KV heads and tokenizer do nothing in any combination; `gelu` with 6 KV heads also carries, on the line (0.52, 82 % of a seed bootstrap); at init only — `trackT_timaeus/status-T.md` "T5 U4s"
+  - T5 U4s, the screen at init (D6 (b), the user's; gate passes, U1b reproduced exactly): at 32m's shape the flat init's concentrating effect needs GPT-NeoX's parallel residual and its ungated MLP together to go (the two remove 1.15 of it, every other pair's interaction ≤ 0.08 of it); put back into GPT-NeoX, SwiGLU alone brings all of it back (E 1.15 of the Llama's) and the sequential residual about half (0.53); in the MLP, ungating removes about half (not told apart from the larger write it brings), GeLU for SiLU does not, and the width amplifies it; the norm, rotary fraction, KV heads and tokenizer do nothing in any combination; `gelu` with 6 KV heads also carries, on the line (0.52, 82 % of a seed bootstrap); at init only — `trackT_timaeus/status-T.md` "T5 U4s"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -27,11 +27,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first); U4s done 2026-11-03 (at init the effect needs the parallel residual and the ungated MLP together to go; either Llama part brings it back; next U4a) — `trackT_timaeus/status-T.md` "T5 U4s"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first); U4s done 2026-11-03 (at init the effect needs the parallel residual and the ungated MLP together to go; SwiGLU brings it all back, the sequential residual half; next U4a) — `trackT_timaeus/status-T.md` "T5 U4s"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-03 · body `de4b5a5263`
+- **Reviewed:** 2026-11-03 · body `0d2da5957b`
 <!-- /phase-card -->
 
 ## Units
@@ -49,7 +49,7 @@
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
 | T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
 | T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; nothing trained. **Next: U4a** | "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
-| T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU and the sequential residual each suffice; within `gelu` the gate | "T5 U4s" below |
+| T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU brings back all of it, the sequential residual about half; within `gelu`, ungating (or the write's size) | "T5 U4s" below |
 
 ## T5 U4s: the screen at init (2026-11-03)
 
@@ -68,7 +68,7 @@ cells; implementation (i)).
 |---|---|---|
 | U1b's records reproduced: ∅, the six singles, `untied`, `all`, same seeds | max \|Δρ_ℓ\| 0.0 over 360 models | ≤ 1e-6 |
 | `gate` + `act` + `width` built together against `gelu`'s cell | −0.001 (P), −0.006 (F) | ≤ 0.05 |
-| the reverse's all-six against the base | −0.010 (P), −0.003 (F) | ≤ 0.05 |
+| the reverse's all-six against the base: *by implementation (ii) this cell is `untied`'s construction on fresh seeds, so it tests seed noise, not the reverse's build* (`/challenge-pr` on #308, finding 4) | −0.010 (P), −0.003 (F) | ≤ 0.05 |
 | the init: per role, seed 0 of every cell | largest relative gap 0.13 % | ≤ 2 % |
 
 τ 0.02 (`untied`'s M −0.003, −0.001, as U1b), bar 0.1, **E0 0.363**, E0 / 2 = 0.182.
@@ -98,39 +98,54 @@ not, none amplifies. Every carrying set holds `gelu`; all but `gelu`+`mha` hold 
   | sequential residual | 0.363 / 0.379 | 0.199 / 0.191 |
   | parallel residual | 0.404 / 0.417 | −0.054 / −0.070 |
 
-  Either Llama part brings the effect back. **Reverse** G = E_k − E_all: SwiGLU 0.487 (1.33 of E0),
-  the sequential residual 0.261 (0.72), both "suffices" (bootstrap 5 % ends 1.27 and 0.66);
-  RMSNorm 0.007, full rotary 0.016, 2 KV heads 0.017, Dodecahedron's tokenizer −0.004, "does not".
-  To remove it from the Llama both must go.
-- **Within `gelu`, the gate carries it.** `gate` (SiLU 1024, ungated) 0.163 (0.45), the same as
+  **Reverse** G = E_k − E_all (the frozen labels): SwiGLU 0.487 (1.33 of E0), the sequential
+  residual 0.261 (0.72), both "suffices" (bootstrap 5 % ends 1.27 and 0.66); RMSNorm 0.007, full
+  rotary 0.016, 2 KV heads 0.017, Dodecahedron's tokenizer −0.004, "does not". **G overstates both
+  against the Llama's effect**, since GPT-NeoX's own E is below zero (−0.070, 0.19 of E0): measured
+  as E_k / E0, SwiGLU put back gives **1.15** (all of it) and the sequential residual **0.53** (about
+  half, on the line as `gelu`+`mha` is) (`/challenge-pr` on #308, finding 2). So the gated MLP
+  carries the whole effect whatever the residual; the residual's form matters once the MLP is
+  ungated. To remove it from the Llama both must go.
+- **Within `gelu`, ungating carries it.** `gate` (SiLU 1024, ungated) 0.163 (0.45), the same as
   `gelu`'s 0.164; `act` (GeLU, gated) −0.053 "does not"; `width` (1536, gated SiLU) −0.125
   **"amplifies"** (P falls to 0.310); `gate`+`act` 0.180 and `gate`+`width` 0.118 "partly",
-  `act`+`width` −0.159 "amplifies". All three 0.169.
+  `act`+`width` −0.159 "amplifies". All three 0.169. **The gate is not told apart from the MLP's
+  write size** (`/challenge-pr` on #308, finding 3): each role's SD is fixed whatever the form, so
+  at init the ungated cells write 1.6–2.1× the base's RMS under P and 2.6–3.3× under F, the gated
+  ones 1.06–1.33× (`tools/math_checks/t5_u4s_mlp_size.py`, a Gaussian-input estimate, not the
+  records). Size is not monotone in the share (gated 1.2–1.3× amplify, ungated 1.6–3.3× remove about
+  half), but every cell that removes it is ungated *and* writes more.
 - **Not additive:** mean ΔE by subset size 0.05, 0.17, 0.33, 0.55, 0.84, 1.19 of E0 (logit and atanh
   within 0.07 of these).
 - **Two draws of one construction** (the screen's five-part subsets against the reverse cells,
   independent seeds): E within 0.023 for all six, the size of τ.
 
 **What it says.** At init, in Dodecahedron's architecture at 32m's shape, the flat init concentrates
-the cloud when the block has **either** a gated MLP (E 0.36–0.42 with it, whatever the residual)
-**or** a sequential residual (0.19–0.20 with GPT-NeoX's MLP, about half); with both of GPT-NeoX's
-(parallel residual, ungated GeLU MLP) it does not (E −0.05 to −0.07). In the MLP the gate
-matters, not GeLU against SiLU nor the width. RMSNorm, the rotary fraction, the KV heads and the
+the cloud fully when the block has a gated MLP (E 0.36–0.42, 1.0–1.15 of E0, whatever the
+residual), and about half when it has a sequential residual with GPT-NeoX's ungated MLP (0.19–0.20);
+with both of GPT-NeoX's (parallel residual, ungated GeLU MLP) not at all (E −0.05 to −0.07). In the
+MLP, ungating removes about half (with the larger write it brings; not told apart), GeLU for SiLU
+does not, and the wider gated MLP amplifies it. RMSNorm, the rotary fraction, the KV heads and the
 tokenizer do nothing in any combination screened. This explains U1b's "no single part": no single
-swap removes the effect because each of two parts produces it.
+swap removes the effect because the gated MLP produces it and the sequential residual half of it.
 
 **Not established.** Why either part makes the flat init concentrate. U1b's candidate (an ungated
 activation's positive mean writes one vector every token shares; a gated product's mean is 0) names
 the gate, but read plainly it predicts ungating raises ρ under both inits, and dropping the gate
 raises it under P (0.478 → 0.583) and lowers it under F (0.842 → 0.783); not tested. Why the
-residual's form matters is not addressed by any candidate here. Whether other shapes agree (one shape read).
+residual's form matters is not addressed by any candidate here. Whether the gate or the write's
+size it sets carries the MLP's part (Parked 2). Whether other shapes agree (one shape read).
 Anything through training: U2 found the init's concentration gone by 671–917, and U4's arms
 (biases, the init) are frozen and not changed by this (the design).
 
-**Parked** (why / cost / which decision it could change): 1. A trained arm that swaps the residual
-and the gate (A0 with a parallel residual and an ungated MLP) / one U4-sized arm, about 11 h /
-whether the late rise, which the init's concentration does not carry (U2), needs these parts. U4's
-arms are frozen without it, so it is a candidate after U4b, not a change to U4.
+**Parked** (why / cost / which decision it could change): 1. A trained arm that swaps the MLP's
+form, and the residual with it (A0 with an ungated MLP and a parallel residual; the MLP is the part
+that carries the whole effect alone, finding 2) / one U4-sized arm, about 11 h / whether the late
+rise, which the init's concentration does not carry (U2), needs these parts. U4's arms are frozen
+without it, so it is a candidate after U4b, not a change to U4. 2. A size-matched control: the
+ungated cells with `down_proj` scaled to the base's write RMS, and the base scaled up to theirs
+(finding 3) / about 2 GPU-minutes and a rule / whether 1 swaps the gate or the MLP's scale; it goes
+before 1 is costed.
 
 Re-run: `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m trackT_timaeus.t5g run --out <dir>`
 (skips records present), then `METS_DATA=<main>/data python -m trackT_timaeus.t5g read --out <dir>`
