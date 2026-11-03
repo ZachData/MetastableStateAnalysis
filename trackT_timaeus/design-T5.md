@@ -361,8 +361,11 @@ U4a fixes the packing and BOS details before any arm runs, as U3's split did.
 - **A3, together** (D5 (b)): read under the same rule and the same delay check, labelled "biases
   and Pythia's init together: lowers / partly / delays / does not / raises". It does not enter H1's
   or H2's label, which come from A1 and A2 alone. **The interaction** I = ΔL_A3 − ΔL_A1 − ΔL_A2
-  (= L_A1 + L_A2 − L_A0 − L_A3), at 4369, with bar_I = max(0.1, 2√2 τ) (B10: I's noise is √2
-  times a pair's). I ≥ bar_I: **together lower it more than the sum**; I ≤ −bar_I: **less than the
+  (= L_A1 + L_A2 − L_A0 − L_A3), at 4369, with **bar_I = √2 · bar = max(0.1√2, 2√2 τ)** (B10: I's noise is √2
+  times a pair's, so the whole bar scales, floor included; first frozen as max(0.1, 2√2 τ), which
+  left the floor unscaled and read a no-interaction null as "interaction" 6–16 % of the time at
+  σ 0.03–0.05 against the main effect's 1–8 %; corrected 2026-11-03 before any code or output,
+  `/challenge-pr` on #307, finding 3; the threshold is *placed*, not calibrated). I ≥ bar_I: **together lower it more than the sum**; I ≤ −bar_I: **less than the
   sum** (one change takes what the other would); |I| < bar_I: **no interaction seen at this noise**
   (not "additive": one replicate seed sets the bar). I is read at 4369 only; at 5970 it is beside,
   and only if all three of A1, A2, A3 continued. If neither A1 nor A2 lowers L and A3 lowers and
@@ -393,6 +396,9 @@ other arms start only after A0 passes, so a recipe that does not rise costs one 
 | the seed noise leaves the rule readable | A0′ at 4369 | bar < R_A0 / 2; else "removes" and "partly" merge, and U4 reads only removes against does not, saying so |
 
 There is no trained positive control at the rule's size: no recipe is known to remove the rise.
+**The interaction's planted null** (finding 3 on #307; a unit test before U4b): five arms' L drawn
+i.i.d. at σ 0.03, 0.05 (1,000 draws each, τ from the A0, A0′ pair) read "interaction" at most as
+often as one main-effect pair reads "partly" or more, plus 0.02.
 The rule's arithmetic is tested on planted series instead (A0's series with L lowered by R/2 reads
 "removes"; A0′'s reads "does not"; as a unit test).
 
@@ -540,8 +546,9 @@ clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
   "lowers" at half of A0's rise copies U1b's "carries". The noise comes from one replicate seed,
   so τ could be underestimated; the floor 0.1 is checked against 410m's ten seeds (another model
   and recipe) before the arms.
-- A3 (D5 (b)) gets a label of its own and an interaction bar, max(0.1, 2√2 τ), scaled from one
-  replicate pair by an independence assumption (B10). Rejected: I beside with no label (the user
+- A3 (D5 (b)) gets a label of its own and an interaction bar, √2 × the main bar (floor included),
+  scaled from one replicate pair by an independence assumption (B10; the floor first left unscaled,
+  finding 3 on #307). Rejected: I beside with no label (the user
   added the arm to read the 2 × 2). LR, the candidate the records leave beside biases, is still not
   tested in U4.
 - U4s (D6 (b)) labels 77 cells with U1b's bar and no correction for the number of cells; its

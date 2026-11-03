@@ -8,8 +8,8 @@ else only when the task needs it. `LESSONS.md` explains why each rule exists.
 
 ## Start (every session, before any work)
 
-1. Read `STATE.md` (the hook prints `origin/main`'s after a fetch). If its
-   first lines name a failed fetch or a branch's newer STATE, say so first.
+1. Read the hook's output (`origin/main`'s STATE; if cut, its saved file, not
+   `./STATE.md`). Report its first lines' fetch failure or merged-without-tip.
 2. `git fetch`, then `./scripts/status.sh`: one line each for `main` CI, the
    nightly smoke and open PRs. Report any red.
 3. Verify any claim from `STATE.md` you are about to act on against the tree

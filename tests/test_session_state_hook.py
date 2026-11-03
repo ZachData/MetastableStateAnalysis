@@ -31,6 +31,15 @@ def repos(tmp_path, monkeypatch):
     git(up, "switch", "-qc", "pr")
     (up / "STATE.md").write_text("branch state\n")
     git(up, "commit", "-qam", "pr state"); git(up, "push", "-q", "origin", "pr")
+    git(up, "switch", "-qc", "merged", "main")
+    (up / "m.txt").write_text("m\n")
+    git(up, "add", "m.txt"); git(up, "commit", "-qm", "m1"); git(up, "push", "-q", "origin", "merged")
+    git(up, "switch", "-q", "main")
+    git(up, "merge", "-q", "--no-ff", "-m", "Merge pull request #9 from someone/merged", "merged")
+    git(up, "push", "-q", "origin", "main")
+    git(up, "switch", "-q", "merged")
+    (up / "m.txt").write_text("late\n")
+    git(up, "commit", "-qam", "late freeze"); git(up, "push", "-q", "origin", "merged")
     git(up, "switch", "-qc", "other", "main")
     (up / "x.txt").write_text("x\n")
     git(up, "add", "x.txt"); git(up, "commit", "-qm", "no state"); git(up, "push", "-q", "origin", "other")
@@ -46,10 +55,18 @@ def test_prints_origin_main_state_with_provenance_first(repos):
     out = run(repos)
     head, _, body = out.partition("\n\n")
     assert body.strip() == "new state"          # origin/main's, not the tree's "old state"
-    assert "fetched now" in head
-    assert "1 commits behind origin/main" in head
-    assert "origin/pr changed STATE.md" in head  # unmerged branch that changed STATE
-    assert "origin/other" not in head            # unmerged, but STATE untouched
+    assert "fetched now" in head and "NOT ./STATE.md" in head
+    assert "3 commits behind origin/main" in head
+    assert "MERGED WITHOUT ITS TIP: origin/merged" in head and "1 of its commits" in head
+    assert "in flight, not on main (proposals, not state): other pr" in head
+    assert "MERGED WITHOUT ITS TIP: origin/pr" not in head
+
+
+def test_failed_fetch_with_stale_origin_main(repos):
+    git(repos, "remote", "set-url", "origin", str(repos.parent / "gone.git"))
+    head, _, body = run(repos).partition("\n\n")
+    assert "FETCH FAILED" in head and "is as old as the last fetch" in head
+    assert body.strip() == "old state"          # the last-fetched origin/main, said to be old
 
 
 def test_falls_back_to_tree_without_origin(tmp_path):
@@ -57,4 +74,5 @@ def test_falls_back_to_tree_without_origin(tmp_path):
     (tmp_path / "STATE.md").write_text("local only\n")
     out = run(tmp_path)
     assert "FETCH FAILED" in out and "the working tree" in out
+    assert "commits behind" not in out
     assert out.rstrip().endswith("local only")

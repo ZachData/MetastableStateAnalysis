@@ -30,7 +30,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-03 · body `26fd5b5054`
+- **Reviewed:** 2026-11-03 · body `4c25064e22`
 <!-- /phase-card -->
 
 ## Units
@@ -54,7 +54,7 @@
 The user's: **D4 (a)** Dodecahedron's steps and LR at 524k a step to 4369; **D5 (b)**, over the
 recommended (a), "but add to the budget": A3 (biases and Pythia's init together, A2 plus zero
 biases) runs, under the arm rule and the delay check, with its own label and an interaction
-I = ΔL_A3 − ΔL_A1 − ΔL_A2 at bar max(0.1, 2√2 τ) (B10); the cap goes from 3 to 4 GPU-days so
+I = ΔL_A3 − ΔL_A1 − ΔL_A2 at bar √2 × max(0.1, 2τ) (B10; the floor scaled after `/challenge-pr` on #307, finding 3); the cap goes from 3 to 4 GPU-days so
 the delay check keeps its budget (B9: five arms and four continuations at θ ≥ 42.9k tokens/s, five
 arms ≥ 33.1k, else A0 alone and back to the user); **D6 (b)**, over the recommended (a): U4s runs
 first, the full screen of U1b's six swaps (64 subsets), `gelu` split into its three changes, and the

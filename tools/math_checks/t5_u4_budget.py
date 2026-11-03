@@ -32,7 +32,8 @@ B9  (Blocked 132 D5 (b), the user's, 2026-11-03: A3 added and the cap raised to 
 B10 The interaction I = ΔL_A3 − ΔL_A1 − ΔL_A2 = L_A1 + L_A2 − L_A0 − L_A3 (positive: together
     lower L by more than the two changes' sum). With each arm's L
     independent with SD σ, SD(I) = 2σ, while a pair difference (τ's |L_A0 − L_A0′|) has SD √2 σ:
-    I's noise is √2 times a pair's, so its bar is max(0.1, 2√2 τ).
+    I's noise is √2 times a pair's, so its bar is √2 · max(0.1, 2τ), floor included (/challenge-pr
+    on #307, finding 3: an unscaled floor 0.1 doubles the null's false 'interaction' rate).
 
 NOT proved: the throughput (B8 is a ceiling argument, not a measurement). 60k tokens/s is the ROADMAP's rough guess, never measured on this
 GPU; U4a measures it and the arm count follows B9's thresholds (B2's at the old 3-day cap). Nothing here says the rise will
@@ -147,4 +148,6 @@ assert sp.expand(I - (L1 + L2 - L0 - L3)) == 0
 var = lambda expr: sum(sp.diff(expr, v) ** 2 for v in (L0, L1, L2, L3, L0p)) * sig ** 2
 ratio = sp.sqrt(var(I)) / sp.sqrt(var(L0 - L0p))
 assert sp.simplify(ratio - sp.sqrt(2)) == 0
-print(f"B10 SD(I) / SD(pair difference) = {ratio}")
+bar_I = lambda tau: sp.sqrt(2) * sp.Max(sp.Rational(1, 10), 2 * tau)
+assert sp.simplify(bar_I(sp.Rational(1, 100)) - sp.sqrt(2) / 10) == 0  # the floor scales too
+print(f"B10 SD(I) / SD(pair difference) = {ratio}; bar_I = sqrt2 * max(0.1, 2 tau), floor {float(bar_I(0)):.4f}")

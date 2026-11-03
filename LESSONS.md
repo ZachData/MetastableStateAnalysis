@@ -2435,6 +2435,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   before it. The ROADMAP row did ask "whether it ever spreads in between", but scheduled it third.
   Rule: a property read at two checkpoints is written "at steps a and b", not as a state, and the
   cheap trajectory is read before a thread spends units explaining it.
+- 2026-11-03, T5 U4's freeze (`/challenge-pr` on #307, finding 3): the interaction bar was written
+  max(0.1, 2√2 τ), scaling τ by I's √2 noise but not the floor, and sympy checked only the ratio
+  √2, not the bar's false rate. A no-interaction null read "interaction" 6–16 % against the main
+  effect's 1–8 % (σ 0.03–0.05). Fixed before code: the whole bar scales, and a planted null gates
+  it. Rule: a bar derived from another bar by a noise ratio scales every term, and gets a planted
+  null of its own.
 
 ## 12. Deleted, then needed
 
