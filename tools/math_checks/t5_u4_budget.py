@@ -26,10 +26,19 @@ B8  (finding 3) A rough throughput ceiling: about 6 N + 12 L d n_ctx = 339.8 MFL
     (N 31.47M, attention at 2048), so 60k tokens/s is 20.4 TFLOP/s, 34 % of the RTX 3080's
     59.5 TFLOP/s dense bf16 with float32 accumulate (NVIDIA's sheet, not measured). With d 384 the
     matmuls are small, so θ of 25–45k is as likely as 60k: the rows of B2 below 44.2k are live.
+B9  (Blocked 132 D5 (b), the user's, 2026-11-03: A3 added and the cap raised to 4 GPU-days, 96 h)
+    Five arms plus four continuations (A0, A1, A2, A3) fit in 96 h at θ ≥ 42.9k tokens/s; five
+    arms alone at θ ≥ 33.1k. A3 and its continuation alone cost 3.13e9 tokens (19.3 h at 45.1k).
+B10 The interaction I = ΔL_A3 − ΔL_A1 − ΔL_A2 = L_A1 + L_A2 − L_A0 − L_A3 (positive: together
+    lower L by more than the two changes' sum). With each arm's L
+    independent with SD σ, SD(I) = 2σ, while a pair difference (τ's |L_A0 − L_A0′|) has SD √2 σ:
+    I's noise is √2 times a pair's, so its bar is √2 · max(0.1, 2τ), floor included (/challenge-pr
+    on #307, finding 3: an unscaled floor 0.1 doubles the null's false 'interaction' rate).
 
 NOT proved: the throughput (B8 is a ceiling argument, not a measurement). 60k tokens/s is the ROADMAP's rough guess, never measured on this
-GPU; U4a measures it and the arm count follows B2's thresholds. Nothing here says the rise will
-appear at 524k a step: that is A0's positive control.
+GPU; U4a measures it and the arm count follows B9's thresholds (B2's at the old 3-day cap). Nothing here says the rise will
+appear at 524k a step: that is A0's positive control. B10 assumes the arms' L are independent with
+equal SD; one replicate seed (A0′) estimates that SD, so the bar is only as good as that estimate.
 """
 
 import sympy as sp
@@ -120,3 +129,25 @@ flop_tok = 6 * n + 12 * Lyr * d * n_ctx
 tflops = flop_tok * 60_000 / 1e12
 assert abs(flop_tok / 1e6 - 339.8) < 0.1 and abs(tflops / 59.5 - 0.343) < 0.01
 print(f"B8 {flop_tok / 1e6:.1f} MFLOP a token; 60k tokens/s = {tflops:.1f} TFLOP/s = {tflops / 59.5:.0%} of 59.5")
+
+# B9
+CAP4_S = 4 * 24 * 3600
+need5c = sp.Rational(5 * tok_card + 4 * cont, CAP4_S)
+need5 = sp.Rational(5 * tok_card, CAP4_S)
+assert round(float(need5c)) == 42_855 and round(float(need5)) == 33_140
+a3_h = float(sp.Rational(tok_card + cont, 1) / 45_064 / 3600)
+assert abs(a3_h - 19.29) < 0.01
+print(f"B9 96 h: 5 arms + 4 continuations need θ ≥ {float(need5c):.0f}; 5 arms ≥ {float(need5):.0f}; "
+      f"A3 + its continuation {(tok_card + cont):.4g} tokens, {a3_h:.1f} h at 45.1k")
+
+# B10
+sig = sp.symbols("sigma", positive=True)
+L0, L0p, L1, L2, L3 = sp.symbols("L0 L0p L1 L2 L3")
+I = (L0 - L3) - (L0 - L1) - (L0 - L2)  # ΔL_A3 − ΔL_A1 − ΔL_A2, ΔL_k = L_A0 − L_k
+assert sp.expand(I - (L1 + L2 - L0 - L3)) == 0
+var = lambda expr: sum(sp.diff(expr, v) ** 2 for v in (L0, L1, L2, L3, L0p)) * sig ** 2
+ratio = sp.sqrt(var(I)) / sp.sqrt(var(L0 - L0p))
+assert sp.simplify(ratio - sp.sqrt(2)) == 0
+bar_I = lambda tau: sp.sqrt(2) * sp.Max(sp.Rational(1, 10), 2 * tau)
+assert sp.simplify(bar_I(sp.Rational(1, 100)) - sp.sqrt(2) / 10) == 0  # the floor scales too
+print(f"B10 SD(I) / SD(pair difference) = {ratio}; bar_I = sqrt2 * max(0.1, 2 tau), floor {float(bar_I(0)):.4f}")

@@ -5,7 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat \"$CLAUDE_PROJECT_DIR/STATE.md\" 2>/dev/null || echo 'STATE.md missing: say so before starting work (CLAUDE.md, Start step 1).'"
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/session_state.sh\" 2>/dev/null || cat \"$CLAUDE_PROJECT_DIR/STATE.md\" 2>/dev/null || echo 'STATE.md missing: say so before starting work (CLAUDE.md, Start step 1).'",
+            "timeout": 30
           }
         ]
       }
