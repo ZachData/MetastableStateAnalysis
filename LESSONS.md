@@ -409,6 +409,11 @@ check; the main tree not moved (another session may use it); the hook not yet ch
 Again 2026-11-02 (U3's split, the batch): the main tree four merges behind (#301–#304); the hook
 printed a file with no Blocked 131 while the prompt decided it. Caught by the age check; read from
 `origin/main`; the hook not yet changed (a settings change, the user's).
+Again 2026-11-02 (U4's design): the main tree 22 commits (#301–#305) behind; the hook printed
+"next: Blocked 130, yours" while the prompt asked for U4's design "using U3's crossings and
+split", which that file did not hold. Caught by the age check; read from `origin/main`. Fifth
+instance in four days: a hook that prints `git show origin/main:STATE.md` after a fetch would end
+it (a settings change, the user's).
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files

@@ -26,11 +26,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); next U4's design (its own Blocked item) — `trackT_timaeus/status-T.md` "T5 U3's split, the batch"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design proposed 2026-11-02 (Dodecahedron's recipe at 524k a step to 4369, five arms, A0 as the positive control), waiting on Blocked 132 — `trackT_timaeus/status-T.md` "T5 U4's design"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-02 · body `2bbea46000`
+- **Reviewed:** 2026-11-02 · body `b9fae0d6c1`
 <!-- /phase-card -->
 
 ## Units
@@ -47,6 +47,29 @@
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
 | T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
+| T5 U4. the causal arm (aimed at the rise) | **design proposed 2026-11-02, not frozen: Blocked 132** (D4 schedule, D5 the fifth arm, D6 the pair screen dropped, D7 two units); nothing trained | "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
+
+## T5 U4's design: the causal arm, aimed at the rise (2026-11-02)
+
+Docs only; nothing trained or run except `tools/math_checks/t5_u4_budget.py` (arithmetic). The
+design is `design-T5.md` "U4, the causal arm, designed", **proposed, not frozen: Blocked 132**
+(D4–D7). In short: Dodecahedron's recipe trained from scratch at the card's 524,288 tokens a step
+under its steps and LR schedule, stopped at 4369, where every count has stopped (U3's first read).
+Four arms: A0 the recipe, A0′ a second seed, A1 biases on (H2), A2 Pythia's init (H1 through
+training); no fifth (D5 (a)). Rule: per arm the late level L (mean ρ_mid at 3738, 4369); a change
+**lowers the late level** if it lowers L by at least half of A0's rise L − T, **partly** from the
+bar max(0.1, 2τ), where τ comes from A0′; then **the delay check**: A0 and every arm that lowers L
+continue to 5970, and the label holds only if the gap stays (≥ bar and ≥ half of it); else
+"delays", read "not told apart". The floor 0.1 is checked first against `pythia-410m`'s ten seeds. Gate: A0 runs first and alone, and must reproduce the fall
+(T ≤ 0.25 by 1253) and the rise (L ≥ 0.60); otherwise U4 refuses with A0's series as the reading
+on steps against tokens. The arms that fit follow a measured throughput (B7: the four arms and
+every continuation need ≥ 45.1k tokens/s; below 35.4k only A0 runs and the rest returns to the
+user; ROADMAP's 60k is never measured and about 34 % of the GPU's dense rate, B8). Not matched: Dodecahedron's FineWeb subset and order,
+packing and BOS, LR floor (0.662 against 0.696 of the peak at 4369, B3), weight-decay exclusions.
+Proposed dropped: Blocked 125 (a)'s pair screen and reverse ablation (D6). U3's Parked 3 (the τ
+search bound) is not hit by U4, which derives no T2 arm; carried to T5's close-out. `/challenge-pr` on #306: accept with changes; findings 1–5 taken (the
+delay check and the renamed label; no fifth arm, LR's case and why it is not readable here (B6);
+the throughput rows; the 410m noise floor; the step-0 bands written out, A2's added).
 
 ## T5 U3's split, the batch: which paths write the shared direction (2026-11-02)
 
