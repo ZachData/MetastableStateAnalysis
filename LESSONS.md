@@ -1003,6 +1003,14 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-03, T5 U4a (a frozen floor checked against data that was already on disk; caught by its
+  own gate row before any arm): U4's bar floor 0.1 was frozen, and its check, 2·SD of ρ_mid over
+  `pythia-410m`'s ten seeds, was put in the gate rather than read first, though the read takes
+  minutes. At 143000 the seeds split into two groups (2·SD 0.153, largest pair 0.1996), so the floor
+  sat inside the known spread, and 2·SD understated what the rule compares (a pair). Cost: one
+  Blocked item (133, decided (d): floor 0.2 and a third seed, +8.3 GPU-h). Rule: **a placed floor
+  that has a cheap outside check is read before the freeze, and is checked on the statistic the
+  rule uses** (here a pair difference, not an SD).
 - 2026-11-02, T5 U3's split (a positive control whose plant moved the model; caught by the
   gate itself, on the first output, before the batch): the planted o_proj bias was frozen at 0.5 ×
   the median token norm in every block of `-32m`, and the gate asked the bias path to hold ≥ 0.9
