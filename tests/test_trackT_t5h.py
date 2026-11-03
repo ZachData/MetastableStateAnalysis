@@ -101,23 +101,38 @@ def test_the_interaction():
     assert t5h.interaction({**L, "A3": 0.8 - 0.14}, bar)[1] == "no interaction seen at this noise"   # < √2·0.1
 
 
-def interaction_null(sigma: float, rng, draws: int = 1000):
-    """Five arms' L i.i.d. N(0.79, σ); τ from the A0, A0′ pair. Returns (rate of 'interaction', rate
-    of one main-effect pair (A0, A1) reading |ΔL| ≥ bar: 'partly' or more, either sign)."""
-    L = rng.normal(0.79, sigma, (draws, 5))
+NULL_DRAWS = 100_000            # /challenge-pr on #309, finding 2: at the design's 1,000 the test passed ~76 % of seeds
+
+
+def interaction_null(sigma: float, rng, draws: int = NULL_DRAWS):
+    """Five arms' L i.i.d. N(0.79, σ); τ from the A0, A0′ pair (t5h.tau_bar's bar, vectorised).
+    Returns (rate of 'interaction': |I| ≥ √2·bar; rate of one main-effect pair (A0, A1) reading
+    'partly' or more either way: |ΔL| ≥ bar)."""
+    L0, L0p, L1, L2, L3 = rng.normal(0.79, sigma, (5, draws))
+    bar = np.maximum(t5h.BAR_MIN, 2 * np.maximum(t5h.TAU_MIN, np.abs(L0 - L0p)))
+    i = L1 + L2 - L0 - L3
+    return float(np.mean(np.abs(i) >= math.sqrt(2) * bar)), float(np.mean(np.abs(L0 - L1) >= bar))
+
+
+def test_the_vectorised_null_matches_the_rule_functions():
+    """The vectorised rates equal `tau_bar`, `interaction` and `arm_label` applied draw by draw."""
+    rng = np.random.default_rng(7)
+    L = rng.normal(0.79, 0.05, (500, 5))
     inter = main = 0
     for L0, L0p, L1, L2, L3 in L:
         _, bar = t5h.tau_bar(L0, L0p)
-        inter += t5h.interaction({"A0": L0, "A1": L1, "A2": L2, "A3": L3}, bar)[1] != \
-            "no interaction seen at this noise"
-        main += t5h.arm_label(L0 - L1, 10.0, bar) != "does not"         # R large: lowers/partly/raises by size
-    return inter / draws, main / draws
+        inter += t5h.interaction({"A0": L0, "A1": L1, "A2": L2, "A3": L3}, bar)[1] != "no interaction seen at this noise"
+        main += t5h.arm_label(L0 - L1, 10.0, bar) != "does not"
+    L0, L0p, L1, L2, L3 = L.T
+    bar = np.maximum(0.1, 2 * np.maximum(0.02, np.abs(L0 - L0p)))
+    assert (float(np.mean(np.abs(L1 + L2 - L0 - L3) >= math.sqrt(2) * bar)), float(np.mean(np.abs(L0 - L1) >= bar))) \
+        == (inter / 500, main / 500)
 
 
 @pytest.mark.parametrize("sigma", [0.03, 0.05])
 def test_the_interactions_planted_null(sigma):
     """design-T5.md (finding 3 on #307): 'interaction' at most as often as a main-effect pair reads
     'partly' or more, plus 0.02. Read two-sided (I's label is two-sided; 'raises' is the pair's
-    other side), the reading `status-T.md` "T5 U4a" records."""
+    other side), (t11); 1e5 draws so the test reads the rates, not one draw of them."""
     inter, main = interaction_null(sigma, np.random.default_rng(NULL_SEED + int(sigma * 1000)))
     assert inter <= main + 0.02, (sigma, inter, main)

@@ -71,6 +71,7 @@ N_TAIL = (CONT_TO - READ_STEP) * BATCH_SEQ
 EOT = "<|endoftext|>"
 # θ (design "Throughput"; B9, at the 4 GPU-day cap)
 THETA_WARM, THETA_TIMED = 10, 50
+N_MICRO, COMPILE = 64, True              # details (t12): micro-batch 4, compiled; every arm, every segment
 THETA_ALL, THETA_ARMS = 42_855, 33_140
 # the gate (design "Gate"; fixed)
 KNOWN_TOL = 1e-6                         # placed (U2's known-answer bar)
@@ -437,8 +438,16 @@ def train(a) -> int:
         start = int(st["step"])
         if st["code"] != code_sha() and not a.allow_code_change:
             raise T5hRefused(f"resume state from code {st['code']}, now {code_sha()}")
+    if (a.n_micro, a.compile) != (N_MICRO, COMPILE) and not a.allow_config_change:
+        raise T5hRefused(f"configuration (n_micro {a.n_micro}, compile {a.compile}) is not (t12)'s "
+                         f"({N_MICRO}, {COMPILE})")
     meta_p = d / "meta.json"
-    if not meta_p.exists():
+    if meta_p.exists():
+        m0 = json.loads(meta_p.read_text())
+        if (m0["n_micro"], m0["compile"]) != (a.n_micro, a.compile):
+            raise T5hRefused(f"{arm} began with n_micro {m0['n_micro']}, compile {m0['compile']}; "
+                             f"a resumed segment may not change them")
+    else:
         _jdump(meta_p, {"design": "trackT_timaeus/design-T5.md", "arm": arm, "init": ARMS[arm][0],
                         "seed": ARMS[arm][1], "biases": ARMS[arm][2], "code": code_sha(), "n_micro": a.n_micro,
                         "compile": a.compile, "attn": "sdpa", "amp": "bf16 autocast, float32 master",
@@ -451,6 +460,8 @@ def train(a) -> int:
         save_weights(model, d / "ckpt" / "step0.safetensors")
     fwd = torch.compile(model) if a.compile else model
     log = (d / "train_log.jsonl").open("a")
+    log.write(json.dumps({"segment": {"from": start, "until": a.until, "code": code_sha(), "n_micro": a.n_micro,
+                                      "compile": a.compile, "started": time.strftime("%Y-%m-%dT%H:%M:%S")}}) + "\n")
     t0, last_save = time.time(), start
     def save_state(s):
         tmp = state.with_suffix(".tmp")
@@ -557,6 +568,8 @@ def read(a) -> int:
 def known(a) -> int:
     """Released `-32m` steps 1 and 9536 through save_weights → load_weights → read_one, against U2."""
     os.environ["HF_HUB_OFFLINE"] = "1"
+    if prompts_hash() != t5.PROMPTS_HASH:
+        raise T5hRefused(f"prompts_hash {prompts_hash()} != {t5.PROMPTS_HASH}")
     from trackC_writeup import c2_aniso as c
     torch, device = c._torch_setup()
     dcfg = dodeca_cfg(a.hf_roots)
@@ -577,7 +590,8 @@ def known(a) -> int:
                   "v1_loss_mean": rec["v1_loss_mean"], "gated": s in (1, 9536)}
         print(json.dumps({"step": s, **out[s]}), flush=True)
     ok = all(v["max_abs_diff"] <= KNOWN_TOL for v in out.values() if v["gated"])
-    _jdump(tmp / "known.json", {"steps": out, "tol": KNOWN_TOL, "pass": ok, "code": code_sha()})
+    _jdump(tmp / "known.json", {"steps": out, "tol": KNOWN_TOL, "pass": ok, "code": code_sha(),
+                                "prompts_hash": prompts_hash()})
     print(json.dumps({"known_pass": ok}))
     return 0 if ok else 3
 
@@ -585,6 +599,8 @@ def known(a) -> int:
 def floor(a) -> int:
     """ρ_mid over `pythia-410m` seeds 0–9 at 4000 and 143000 (U2's reader), and the gate 2·SD ≤ 0.1."""
     os.environ["HF_HUB_OFFLINE"] = "1"
+    if prompts_hash() != t5.PROMPTS_HASH:
+        raise T5hRefused(f"prompts_hash {prompts_hash()} != {t5.PROMPTS_HASH}")
     from trackC_writeup import c2_aniso as c
     from trackT_timaeus import t5c
     torch, device = c._torch_setup()
@@ -598,7 +614,8 @@ def floor(a) -> int:
             if not p.exists():
                 m = t5.load_real(repo, f"step{s}", a.hf_roots, device)
                 rec = t5c.read_model(m, tok, device)
-                rec.update({"model": repo, "step": s, "commit": t2.commit_of(m), "code": code_sha()})
+                rec.update({"model": repo, "step": s, "commit": t2.commit_of(m), "code": code_sha(),
+                            "prompts_hash": prompts_hash()})
                 _jdump(p, rec)
                 del m
                 torch.cuda.empty_cache()
@@ -611,7 +628,8 @@ def floor(a) -> int:
     res = {"rho_mid": {str(s): v for s, v in vals.items()}, "sd": {str(s): v for s, v in sd.items()},
            "two_sd": {str(s): 2 * v for s, v in sd.items()}, "max": FLOOR_MAX,
            "pass": all(2 * v <= FLOOR_MAX for v in sd.values()),
-           "seed0_vs_u2_abs_diff": {str(s): v for s, v in seed0.items()}, "code": code_sha()}
+           "seed0_vs_u2_abs_diff": {str(s): v for s, v in seed0.items()}, "code": code_sha(),
+           "max_pair_diff": {str(s): float(max(v) - min(v)) for s, v in vals.items()}}
     _jdump(out / "floor.json", res)
     print(json.dumps(res))
     return 0 if res["pass"] else 3
@@ -628,6 +646,8 @@ def train_log(root: Path, arm: str) -> Dict[int, dict]:
     out = {}
     for line in (Path(root) / arm / "train_log.jsonl").read_text().splitlines():
         r = json.loads(line)
+        if "segment" in r:
+            continue
         out[r["step"]] = r                          # a resumed run's later line for a step wins
     return out
 
@@ -700,14 +720,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p.add_argument("--hf-cache", default=None)
     p.add_argument("--tmp-dir", default=str(DATA / "trackT"))
     p = common(sub.add_parser("theta"))
-    p.add_argument("--n-micro", type=int, default=16)
-    p.add_argument("--compile", action="store_true")
+    p.add_argument("--n-micro", type=int, default=N_MICRO)
+    p.add_argument("--no-compile", dest="compile", action="store_false")
     p.add_argument("--out", default=None)
     p = common(sub.add_parser("train"))
     p.add_argument("--arm", required=True, choices=sorted(ARMS))
     p.add_argument("--until", type=int, required=True)
-    p.add_argument("--n-micro", type=int, default=16)
-    p.add_argument("--compile", action="store_true")
+    p.add_argument("--n-micro", type=int, default=N_MICRO)
+    p.add_argument("--no-compile", dest="compile", action="store_false")
+    p.add_argument("--allow-config-change", action="store_true")
     p.add_argument("--resume-every", type=int, default=200)
     p.add_argument("--allow-code-change", action="store_true")
     p = common(sub.add_parser("read"))
