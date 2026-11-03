@@ -481,6 +481,29 @@ ungated: down(act(up x)); `act` is exact GeLU as NeoX's, else SiLU; `width` 1536
 gated SiLU at 1024 it equals Llama's MLP on the same weights (a test). (v) **The scales beside:**
 per cell the median over seeds of logit ρ_mid and of atanh ρ_mid, then the same differences.
 
+**U4a's details, fixed before any arm output (2026-11-03; code `trackT_timaeus/t5h.py`; none of
+these moves the rule).**
+
+| item | fixed as |
+|---|---|
+| (d1) documents | FineWeb `sample-10BT` at revision `9bb295dd`, its parquet files in name order, rows in order; each `text` encoded by Dodecahedron's tokenizer with no special tokens (it adds none; the reader adds none either), then `<|endoftext|>` (id 0) |
+| (d2) packing | the documents concatenated, cut into consecutive 2048-token sequences; no mask across documents; no BOS (the tokenizer has none) |
+| (d3) the stream | the first 4369 × 256 sequences permuted by `default_rng(20261102)` (the design's), stored in that order; update t reads rows 256(t − 1) … 256t − 1 |
+| (d4) the delay check's tail | the next 1601 × 256 sequences of the same packing, permuted by `default_rng(20261103)`, read by updates 4370 … 5970; built now so every arm's continuation sees one stream |
+| (d5) storage | uint16 on the HDD (`<HDD_1TB>/mets_data/trackT/t5u4/data/`, linked from `$METS_DATA/trackT/t5u4`), with each part's sha256 in `meta.json` |
+| (t1) the update | update t (1-indexed) uses B3's LR, peak · t / 1000 to 1000, then cosine, and makes checkpoint t; step 0 is the init |
+| (t2) the loss | mean next-token cross-entropy over each sequence's 2047 predictions, in float32 from bf16 logits; the 256 sequences in equal micro-batches, summed gradients ÷ their number |
+| (t3) the optimizer | `torch.optim.AdamW` (foreach), ε 1e-8 (the card gives none; PyTorch's default), weight decay on every 2-D weight (the tied embedding included), none on norm gains or biases; clip by the global norm |
+| (t4) attention | SDPA in training (bf16 autocast); every checkpoint is read eager in float32 (U2's reader), so the training kernel does not enter the read |
+| (t5) checkpoints | float32 safetensors without the tied `lm_head.weight`; the reader rebuilds `t5.config_of`'s eager model, loads them and checks the tie. A resume state (weights, optimizer, step) every 200 updates and at each grid step, overwritten; the 4369 state kept |
+| (t6) A0's first output | the step-1 and step-10 checkpoints read with finite ρ_ℓ; the training loss falls: mean over updates 91–100 below the mean over 1–10 |
+| (t7) the trough stage | T over the grid steps 103 … 1253 (100 is not on the grid), read once A0 reaches 1253; A0 stops there if T > 0.25 |
+| (t8) the noise floor | U2's reader on `pythia-410m` (seed 0) and `-seed1` … `-seed9` at 4000 and 143000; SD with ddof 1, per step; passes if 2 · SD ≤ 0.1 at both; seed 0 against U2's record beside |
+| (t9) the known answer | released `-32m` steps 1 and 9536 saved and reloaded through (t5)'s format, then read: the gate covers the save, the load and the reader (917 and 4369 beside) |
+| (t10) the loop's test | **deviates from the gate row as written**: in float32 the loop and the hand-written AdamW differ by 1.2–2.5e-5 relative (bar 1e-5), while each is 2.4e-4 from the float64 result, so the bar is below float32's own rounding; in float64 they agree to 1e-14. The gate is the float64 test at 1e-10 (the loop's two micro-batches against the reference's full batch, clip off and binding); float32 is a sanity bound beside. Put to the user before A0 |
+| (t12) the configuration | `torch.compile`, micro-batch 4 (64 accumulations); chosen by a probe on random tokens (5 updates each: 69k tokens/s eager at 4, 106k compiled; 8 and 16 run out of memory); fixed in `t5h` (`N_MICRO`, `COMPILE`), refused if an arm's segment differs from its `meta.json` (after `/challenge-pr` on #309, finding 3) |
+| (t11) the interaction's planted null | "reads 'partly' or more" read two-sided, \|ΔL\| ≥ bar ('raises' is the other side), since I's label is two-sided; seed `default_rng(20261103 + 1000σ)`, fixed before the test first ran; **1e5 draws, not the design's 1,000** (`/challenge-pr` on #309, finding 2: at 1,000 the outcome is about a coin flip on the seed, 76 % pass), so the test reads the rates |
+
 **U5, the controls.** U2's statistics on Mistral GPT-2 small from checkpoint 0 (on disk), on
 410m's seeds 1–9 at the 18 steps (on disk), and on `gpt-2-small` if D1 (b). They describe, with no rule.
 
