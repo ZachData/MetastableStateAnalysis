@@ -18,7 +18,9 @@ def test_the_recipe_constants():
     assert t5h.CONT_STEPS == (5108, 5970)
     assert set(t5h.L_STEPS) <= set(t5h.CKPT_STEPS) and set(t5h.LP_STEPS) <= set(t5h.CONT_STEPS)
     assert t5h.TROUGH_BY in t5h.CKPT_STEPS and min(s for s in t2.GRID if s >= t5h.T_FROM) == 103
-    assert (t5h.THETA_ALL, t5h.THETA_ARMS) == (42_855, 33_140)        # B9, rounded
+    assert (t5h.THETA_ALL, t5h.THETA_ARMS) == (51_911, 39_768)        # B11, rounded
+    assert t5h.ARMS["A0pp"] == ("F", 2, False) and t5h.REPLICATES == ("A0", "A0p", "A0pp")
+    assert (t5h.BAR_MIN, t5h.FLOOR_MAX) == (0.2, 0.2)                 # Blocked 133 (i) (d)
     assert t5h.BAND == {"F": (0.787, 0.881), "P": (0.415, 0.544)}
 
 
@@ -61,8 +63,13 @@ def test_the_rule_on_planted_series():
     assert L0 == pytest.approx(0.7875) and (T0, ts) == (pytest.approx(0.111), 917)
     R0 = L0 - T0
     a0p = {s: v + 0.01 for s, v in a0.items()}                       # A0′: the seed noise, 0.01
-    tau, bar = t5h.tau_bar(L0, t5h.late_level(a0p))
-    assert (tau, bar) == (pytest.approx(0.02), pytest.approx(0.1)) and t5h.readable(R0, bar)
+    a0pp = {s: v - 0.005 for s, v in a0.items()}                     # A0″
+    tau, bar = t5h.tau_bar(L0, t5h.late_level(a0p), t5h.late_level(a0pp))
+    assert (tau, bar) == (pytest.approx(0.02), pytest.approx(0.2)) and t5h.readable(R0, bar)
+    # τ is the largest of the three pairs: A0′ − A0″ here, not either pair with A0
+    assert t5h.tau_bar(0.80, 0.85, 0.72) == (pytest.approx(0.13), pytest.approx(0.26))
+    with pytest.raises(t5h.T5hRefused):
+        t5h.tau_bar(0.80, 0.85)
     def arm(shift, cont_shift=None):
         k = dict(a0)
         for s in t5h.L_STEPS:
@@ -73,7 +80,7 @@ def test_the_rule_on_planted_series():
     lab = lambda k: t5h.arm_label(L0 - t5h.late_level(k), R0, bar)
     assert lab(arm(R0 / 2)) == "lowers"                               # the design's planted "removes"
     assert lab(a0p) == "does not"                                     # A0′'s series
-    assert lab(arm(0.15)) == "partly" and lab(arm(-0.15)) == "raises" and lab(arm(0.05)) == "does not"
+    assert lab(arm(0.25)) == "partly" and lab(arm(-0.25)) == "raises" and lab(arm(0.15)) == "does not"
     # the delay check
     dl = R0 / 2
     hold = arm(dl)
@@ -105,11 +112,13 @@ NULL_DRAWS = 100_000            # /challenge-pr on #309, finding 2: at the desig
 
 
 def interaction_null(sigma: float, rng, draws: int = NULL_DRAWS):
-    """Five arms' L i.i.d. N(0.79, σ); τ from the A0, A0′ pair (t5h.tau_bar's bar, vectorised).
+    """Six arms' L i.i.d. N(0.79, σ); τ from the largest of the A0, A0′, A0″ pairs (t5h.tau_bar's bar,
+    vectorised).
     Returns (rate of 'interaction': |I| ≥ √2·bar; rate of one main-effect pair (A0, A1) reading
     'partly' or more either way: |ΔL| ≥ bar)."""
-    L0, L0p, L1, L2, L3 = rng.normal(0.79, sigma, (5, draws))
-    bar = np.maximum(t5h.BAR_MIN, 2 * np.maximum(t5h.TAU_MIN, np.abs(L0 - L0p)))
+    L0, L0p, L0pp, L1, L2, L3 = rng.normal(0.79, sigma, (6, draws))
+    reps = np.stack([L0, L0p, L0pp])
+    bar = np.maximum(t5h.BAR_MIN, 2 * np.maximum(t5h.TAU_MIN, reps.max(0) - reps.min(0)))
     i = L1 + L2 - L0 - L3
     return float(np.mean(np.abs(i) >= math.sqrt(2) * bar)), float(np.mean(np.abs(L0 - L1) >= bar))
 
@@ -117,14 +126,15 @@ def interaction_null(sigma: float, rng, draws: int = NULL_DRAWS):
 def test_the_vectorised_null_matches_the_rule_functions():
     """The vectorised rates equal `tau_bar`, `interaction` and `arm_label` applied draw by draw."""
     rng = np.random.default_rng(7)
-    L = rng.normal(0.79, 0.05, (500, 5))
+    L = rng.normal(0.79, 0.12, (500, 6))      # σ large enough that bar's floor 0.2 does not decide every draw
     inter = main = 0
-    for L0, L0p, L1, L2, L3 in L:
-        _, bar = t5h.tau_bar(L0, L0p)
+    for L0, L0p, L0pp, L1, L2, L3 in L:
+        _, bar = t5h.tau_bar(L0, L0p, L0pp)
         inter += t5h.interaction({"A0": L0, "A1": L1, "A2": L2, "A3": L3}, bar)[1] != "no interaction seen at this noise"
         main += t5h.arm_label(L0 - L1, 10.0, bar) != "does not"
-    L0, L0p, L1, L2, L3 = L.T
-    bar = np.maximum(0.1, 2 * np.maximum(0.02, np.abs(L0 - L0p)))
+    L0, L0p, L0pp, L1, L2, L3 = L.T
+    reps = np.stack([L0, L0p, L0pp])
+    bar = np.maximum(0.2, 2 * np.maximum(0.02, reps.max(0) - reps.min(0)))
     assert (float(np.mean(np.abs(L1 + L2 - L0 - L3) >= math.sqrt(2) * bar)), float(np.mean(np.abs(L0 - L1) >= bar))) \
         == (inter / 500, main / 500)
 

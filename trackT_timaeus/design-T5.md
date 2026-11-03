@@ -330,6 +330,7 @@ U4a fixes the packing and BOS details before any arm runs, as U3's split did.
 |---|---|---|---|
 | A0 | none: Dodecahedron's recipe | F (0.02 everywhere), seed 0 | positive control: the rise reproduced |
 | A0′ | none | F, seed 1 | seed noise τ |
+| A0″ | none; trained to 5970 with its continuation (added 2026-11-03, Blocked 133 (i) (d), the user's, before any arm output) | F, seed 2 | seed noise τ (with A0, A0′); beside, a seed pair at 5970 (A0, A0″) that enters no label |
 | A1 | biases on every linear (q, k, v, o, gate, up, down), zero at init | A0's weights plus zero biases, so A1 is A0 at step 0 exactly | **H2** |
 | A2 | Pythia's init P (U1's: small_init on the embedding and input maps, wang_init(384, 16) on `o_proj`, `down_proj`) | P, seed 0 | **H1 through training** |
 | A3 | biases on every linear, as A1 (D5 (b), the user's, with the cap raised so it does not take the delay check's budget) | A2's weights plus zero biases, so A3 is A2 at step 0 exactly | biases and P together; the interaction, beside H1 and H2 |
@@ -342,7 +343,7 @@ U4a fixes the packing and BOS details before any arm runs, as U3's split did.
 | T_k | the trough: min ρ_mid over grid steps 100 … 4369, with its step | 0.111 (917) |
 | R_k | the re-concentration, L_k − T_k | 0.677 |
 | ΔL_k | L_A0 − L_k: how much of A0's late level the change removes | |
-| τ, bar | τ = max(0.02, \|L_A0 − L_A0′\|); bar = max(0.1, 2τ) (U1b's form) | |
+| τ, bar | τ = max(0.02, the largest of \|L_A0 − L_A0′\|, \|L_A0 − L_A0″\|, \|L_A0′ − L_A0″\|); **bar = max(0.2, 2τ)** (Blocked 133 (i) (d), the user's, 2026-11-03, before any arm output: the floor is 410m's largest seed-pair difference at 143000, 0.1996, so it sits outside the whole measured spread; first frozen τ from A0, A0′ alone and bar = max(0.1, 2τ), U1b's form; B11) | |
 
 - At 4369 the change **lowers the late level** if ΔL_k ≥ R_A0 / 2; **partly** if bar ≤ ΔL_k <
   R_A0 / 2; **does not** if |ΔL_k| < bar; **raises it** if ΔL_k ≤ −bar. (First written "removes
@@ -361,13 +362,13 @@ U4a fixes the packing and BOS details before any arm runs, as U3's split did.
 - **A3, together** (D5 (b)): read under the same rule and the same delay check, labelled "biases
   and Pythia's init together: lowers / partly / delays / does not / raises". It does not enter H1's
   or H2's label, which come from A1 and A2 alone. **The interaction** I = ΔL_A3 − ΔL_A1 − ΔL_A2
-  (= L_A1 + L_A2 − L_A0 − L_A3), at 4369, with **bar_I = √2 · bar = max(0.1√2, 2√2 τ)** (B10: I's noise is √2
+  (= L_A1 + L_A2 − L_A0 − L_A3), at 4369, with **bar_I = √2 · bar = max(0.2√2, 2√2 τ)** (floor 0.1√2 until Blocked 133 (i) (d) raised bar's floor to 0.2; B10: I's noise is √2
   times a pair's, so the whole bar scales, floor included; first frozen as max(0.1, 2√2 τ), which
   left the floor unscaled and read a no-interaction null as "interaction" 6–16 % of the time at
   σ 0.03–0.05 against the main effect's 1–8 %; corrected 2026-11-03 before any code or output,
   `/challenge-pr` on #307, finding 3; the threshold is *placed*, not calibrated). I ≥ bar_I: **together lower it more than the sum**; I ≤ −bar_I: **less than the
   sum** (one change takes what the other would); |I| < bar_I: **no interaction seen at this noise**
-  (not "additive": one replicate seed sets the bar). I is read at 4369 only; at 5970 it is beside,
+  (not "additive": three seeds' largest pair sets the bar). I is read at 4369 only; at 5970 it is beside,
   and only if all three of A1, A2, A3 continued. If neither A1 nor A2 lowers L and A3 lowers and
   holds, the reading says so in those words: "neither alone; together".
 
@@ -386,18 +387,18 @@ other arms start only after A0 passes, so a recipe that does not rise costs one 
 | check | when | pass |
 |---|---|---|
 | known answer: the reader on released `-32m` steps 1 and 9536 against U2's record | before any arm | max \|Δρ_ℓ\| ≤ 1e-6 |
-| the loop: on a tiny Llama, 2 steps on fixed tokens equal a hand-written float32 AdamW with the schedule | before any arm (a test) | rel 1e-5 |
-| the init: per-role SDs at step 0 against F (A0, A0′, A1) and P (A2, A3) | each arm's step 0 | within 2 % |
-| step-0 ρ_mid inside U1's 20-seed range of its cell (without biases) ± 0.03: A0, A0′ in Llama-32m F's [0.817, 0.851], so **[0.787, 0.881]**; A2 in Llama-32m P's [0.445, 0.514], so **[0.415, 0.544]** (finding 5) | each arm's step 0 | inside |
+| the loop: on a tiny Llama, 2 steps on fixed tokens equal a hand-written AdamW with the schedule, **in float64** (Blocked 133 (ii), the user's, 2026-11-03: first frozen as float32 at rel 1e-5, which sits below float32's own rounding here, details (t10)); float32 beside as a sanity bound | before any arm (a test) | rel 1e-10 |
+| the init: per-role SDs at step 0 against F (A0, A0′, A0″, A1) and P (A2, A3) | each arm's step 0 | within 2 % |
+| step-0 ρ_mid inside U1's 20-seed range of its cell (without biases) ± 0.03: A0, A0′, A0″ in Llama-32m F's [0.817, 0.851], so **[0.787, 0.881]**; A2 in Llama-32m P's [0.445, 0.514], so **[0.415, 0.544]** (finding 5) | each arm's step 0 | inside |
 | A1 is A0 at step 0, A3 is A2 at step 0: ρ_ℓ equal | step 0 | ≤ 1e-6 |
-| **the noise floor, from outside** (finding 4): ρ_mid's SD over `pythia-410m` seeds 0–9 at steps 4000 and 143000 (on disk; U5's input, minutes) | U4a, before any arm | 2 × SD ≤ 0.1, else back to the user before the arms: the bar's floor would sit inside a known seed spread |
+| **the noise floor, from outside** (finding 4): ρ_mid's SD over `pythia-410m` seeds 0–9 at steps 4000 and 143000 (on disk; U5's input, minutes) | U4a, before any arm | 2 × SD and the largest pair difference ≤ bar's floor **0.2** at both steps, else back to the user before the arms: the bar's floor would sit inside a known seed spread (first frozen 2 × SD ≤ 0.1; it refused at 143000, 2 × SD 0.153, largest pair 0.1996, and Blocked 133 (i) (d) raised the floor to 0.2) |
 | first output populated: A0's step-1 and step-10 checkpoints load and give finite ρ_ℓ; the training loss falls over steps 1–100 | A0, before it continues | yes |
 | **positive control: A0 reproduces the rise** | A0 at 1253, then at 4369 | T_A0 ≤ 0.25 by 1253 (every trough read is 0.10–0.21), else A0 stops there; L_A0 ≥ 0.60 (every Pythia end level read is 0.37–0.44; Dodecahedron 0.79) |
-| the seed noise leaves the rule readable | A0′ at 4369 | bar < R_A0 / 2; else "removes" and "partly" merge, and U4 reads only removes against does not, saying so |
+| the seed noise leaves the rule readable | A0′, A0″ at 4369 | bar < R_A0 / 2 (on Dodecahedron's R, τ < 0.169; B11); else "removes" and "partly" merge, and U4 reads only removes against does not, saying so |
 
 There is no trained positive control at the rule's size: no recipe is known to remove the rise.
-**The interaction's planted null** (finding 3 on #307; a unit test before U4b): five arms' L drawn
-i.i.d. at σ 0.03, 0.05 (1,000 draws each, τ from the A0, A0′ pair) read "interaction" at most as
+**The interaction's planted null** (finding 3 on #307; a unit test before U4b): six arms' L drawn
+i.i.d. at σ 0.03, 0.05 (1,000 draws each, 1e5 since (t11); τ from the largest of the A0, A0′, A0″ pairs since Blocked 133) read "interaction" at most as
 often as one main-effect pair reads "partly" or more, plus 0.02.
 The rule's arithmetic is tested on planted series instead (A0's series with L lowered by R/2 reads
 "removes"; A0′'s reads "does not"; as a unit test).
@@ -405,11 +406,11 @@ The rule's arithmetic is tested on planted series instead (A0's series with L lo
 **Throughput, and the arms that fit (fixed now).** U4a measures θ on A0's configuration over 50
 timed steps after 10 warm-up steps (discarded):
 
-| θ (tokens/s) | arms, in a 4 GPU-day cap (B9; the 3-day rows were 45.1k and 35.4k, B2, B7) |
+| θ (tokens/s) | arms, in a 4 GPU-day cap (B11, with A0″ (Blocked 133); B9's five-arm rows were 42.9k and 33.1k; the 3-day rows 45.1k and 35.4k, B2, B7) |
 |---|---|
-| ≥ 42.9k | the five arms and every continuation |
-| 33.1k – 42.9k | the five arms; continuations as the cap allows, A0's first, then A1's, A2's, A3's; an arm without one reads as the rule says (never "supported") |
-| < 33.1k | A0 alone runs (any version of U4 needs its control); the rest goes back to the user with θ and A0's result. Revised after finding 3: the first version dropped A0′ below its row and read with unmeasured noise, which degrades instead of refusing. A3 is not dropped to fit either: you added it with the budget |
+| ≥ 51.9k | the six arms and every continuation (A0, A0″, A1, A2, A3) |
+| 39.8k – 51.9k | the six arms; continuations as the cap allows, A0's first, then A1's, A2's, A3's, A0″'s last (it enters no label); an arm without one reads as the rule says (never "supported") |
+| < 39.8k | A0 alone runs (any version of U4 needs its control); the rest goes back to the user with θ and A0's result. Revised after finding 3: the first version dropped A0′ below its row and read with unmeasured noise, which degrades instead of refusing. A3 is not dropped to fit either: you added it with the budget |
 
 60k tokens/s (the ROADMAP's guess) is about 34 % of the RTX 3080's dense bf16 rate at 340 MFLOP a
 token (B8, a ceiling argument), and d 384 makes the matmuls small, so the middle and last rows
@@ -427,8 +428,8 @@ are live.
 biases or Pythia's init do to a Llama trained on FineWeb at LR 3.5e-3, not why Pythia's cloud stays
 lower: the data, tokenizer, LR, norm and MLP differ there too (ROADMAP row, "Not told apart").
 The delay check reaches 5970 only, so a rise delayed beyond it reads "holds". A2's smaller output
-init may move the trough's timing (T_k beside). There is one run per arm and one replicate seed
-for the noise (checked from outside on 410m's seeds). **The records do not separate biases from
+init may move the trough's timing (T_k beside). There is one run per arm and two replicate seeds
+for the noise (A0′, A0″; checked from outside on 410m's seeds, where 2 of 10 seeds end in a lower group: if Dodecahedron's recipe splits as often, three seeds all land in one group 52 % of the time, B11). **The records do not separate biases from
 LR:** every run read that ends low (Pythia's three, `gpt-2-small`) has both biases and a lower peak
 LR (6e-4 or less against 3.5e-3) (finding 2). If A1 reads "not supported", LR is the next
 candidate. It needs its own design: within this schedule an LR arm never reaches A0's cumulative
@@ -498,9 +499,9 @@ these moves the rule).**
 | (t5) checkpoints | float32 safetensors without the tied `lm_head.weight`; the reader rebuilds `t5.config_of`'s eager model, loads them and checks the tie. A resume state (weights, optimizer, step) every 200 updates and at each grid step, overwritten; the 4369 state kept |
 | (t6) A0's first output | the step-1 and step-10 checkpoints read with finite ρ_ℓ; the training loss falls: mean over updates 91–100 below the mean over 1–10 |
 | (t7) the trough stage | T over the grid steps 103 … 1253 (100 is not on the grid), read once A0 reaches 1253; A0 stops there if T > 0.25 |
-| (t8) the noise floor | U2's reader on `pythia-410m` (seed 0) and `-seed1` … `-seed9` at 4000 and 143000; SD with ddof 1, per step; passes if 2 · SD ≤ 0.1 at both; seed 0 against U2's record beside |
+| (t8) the noise floor | U2's reader on `pythia-410m` (seed 0) and `-seed1` … `-seed9` at 4000 and 143000; SD with ddof 1, per step; passes if 2 · SD ≤ 0.1 at both; seed 0 against U2's record beside. **Refused** (2 · SD 0.153 at 143000); Blocked 133 (i) (d), the user's: floor 0.2, 2 · SD and the largest pair difference both ≤ it (passes: 0.153, 0.1996), and A0″ |
 | (t9) the known answer | released `-32m` steps 1 and 9536 saved and reloaded through (t5)'s format, then read: the gate covers the save, the load and the reader (917 and 4369 beside) |
-| (t10) the loop's test | **deviates from the gate row as written**: in float32 the loop and the hand-written AdamW differ by 1.2–2.5e-5 relative (bar 1e-5), while each is 2.4e-4 from the float64 result, so the bar is below float32's own rounding; in float64 they agree to 1e-14. The gate is the float64 test at 1e-10 (the loop's two micro-batches against the reference's full batch, clip off and binding); float32 is a sanity bound beside. Put to the user before A0 |
+| (t10) the loop's test | **deviates from the gate row as written**: in float32 the loop and the hand-written AdamW differ by 1.2–2.5e-5 relative (bar 1e-5), while each is 2.4e-4 from the float64 result, so the bar is below float32's own rounding; in float64 they agree to 1e-14. The gate is the float64 test at 1e-10 (the loop's two micro-batches against the reference's full batch, clip off and binding); float32 is a sanity bound beside. Put to the user before A0: **confirmed, Blocked 133 (ii), 2026-11-03** |
 | (t12) the configuration | `torch.compile`, micro-batch 4 (64 accumulations); chosen by a probe on random tokens (5 updates each: 69k tokens/s eager at 4, 106k compiled; 8 and 16 run out of memory); fixed in `t5h` (`N_MICRO`, `COMPILE`), refused if an arm's segment differs from its `meta.json` (after `/challenge-pr` on #309, finding 3) |
 | (t11) the interaction's planted null | "reads 'partly' or more" read two-sided, \|ΔL\| ≥ bar ('raises' is the other side), since I's label is two-sided; seed `default_rng(20261103 + 1000σ)`, fixed before the test first ran; **1e5 draws, not the design's 1,000** (`/challenge-pr` on #309, finding 2: at 1,000 the outcome is about a coin flip on the seed, 76 % pass), so the test reads the rates |
 
@@ -581,11 +582,11 @@ clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
   for), and reading at matched cumulative LR (the same as matched steps for every arm here).
 - U4's bands are judgement: the positive control's T ≤ 0.25 and L ≥ 0.60 sit between the
   troughs and end levels read so far (0.10–0.21; Pythia 0.37–0.44, Dodecahedron 0.79), and
-  "lowers" at half of A0's rise copies U1b's "carries". The noise comes from one replicate seed,
-  so τ could be underestimated; the floor 0.1 is checked against 410m's ten seeds (another model
-  and recipe) before the arms.
+  "lowers" at half of A0's rise copies U1b's "carries". The noise comes from two replicate seeds
+  (A0″ added by Blocked 133), so τ could still be underestimated; the floor, 0.2 since Blocked 133
+  (0.1 first), is 410m's largest seed-pair difference (another model and recipe).
 - A3 (D5 (b)) gets a label of its own and an interaction bar, √2 × the main bar (floor included),
-  scaled from one replicate pair by an independence assumption (B10; the floor first left unscaled,
+  scaled from the replicates' largest pair by an independence assumption (B10; the floor first left unscaled,
   finding 3 on #307). Rejected: I beside with no label (the user
   added the arm to read the 2 × 2). LR, the candidate the records leave beside biases, is still not
   tested in U4.

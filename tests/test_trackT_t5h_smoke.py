@@ -1,5 +1,6 @@
-"""T5 U4 (`trackT_timaeus/t5h.py`): the loop against a hand-written float32 AdamW on a tiny Llama
-(design-T5.md "U4", gate row "the loop": 2 updates on fixed tokens, rel 1e-5).
+"""T5 U4 (`trackT_timaeus/t5h.py`): the loop against a hand-written AdamW on a tiny Llama
+(design-T5.md "U4", gate row "the loop": 2 updates on fixed tokens; in float64 at rel 1e-10, the
+user's on Blocked 133 (ii), 2026-11-03; first frozen as float32 at rel 1e-5).
     SMOKE_REAL_DEPS=1 python -m pytest tests/test_trackT_t5h_smoke.py -m smoke
 """
 import copy
@@ -99,7 +100,8 @@ def test_the_loop_in_float32(clip, monkeypatch):
     """The same in float32, both sides on the loop's micro-batches. The design's bar was rel 1e-5;
     measured 1.2-2.5e-5, while each float32 side is ~2.4e-4 from the float64 result (op order
     amplified by Adam's normalisation), so 1e-5 is below float32's own rounding here and the gate
-    is the float64 test above (`status-T.md` "T5 U4a"). This is a sanity bound only."""
+    is the float64 test above (`status-T.md` "T5 U4a"; confirmed by the user, Blocked 133 (ii)).
+    This is a sanity bound only."""
     import torch
     rel = _run(clip, torch.float32, 2, monkeypatch)
     assert max(rel.values()) <= 1e-3, max(rel.items(), key=lambda kv: kv[1])
