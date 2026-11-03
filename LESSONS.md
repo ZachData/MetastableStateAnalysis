@@ -2441,6 +2441,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   effect's 1–8 % (σ 0.03–0.05). Fixed before code: the whole bar scales, and a planted null gates
   it. Rule: a bar derived from another bar by a noise ratio scales every term, and gets a planted
   null of its own.
+- 2026-11-03, T5 U4s (found writing its producer): the U4s rule, written at the freeze and not seen
+  by `/challenge-pr`, counted 77 cells; enumerating its own gate gives 79 (the split's three-together
+  cell and the reverse's all-six were not counted), and "built another way" for the reverse left
+  open whether it meant a GPT-NeoX build (impossible for `mha`: NeoX has no grouped KV heads). Both
+  settled in the design before output (`e947ded`); cost +3 %. Rule: a rule written at a freeze
+  enumerates its cells in code (a test of the count) before the count is quoted as a cost.
 
 ## 12. Deleted, then needed
 

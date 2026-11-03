@@ -341,6 +341,32 @@ def read(a) -> int:
     return 0 if g["pass"] else 1
 
 
+BOOT_CELLS = ("gelu+mha", "gelu", "gate", "gate+act", "par+gelu", "rev-par", "rev-gelu")
+
+
+def boot(a) -> int:
+    """Post hoc, beside (added after the reading, as U1b's): a seed bootstrap of ΔE / E0 (G / E0 for a
+    reverse cell) for the cells near the E0 / 2 line; 2,000 resamples of the 20 seeds per cell."""
+    out = Path(a.out)
+    rng = np.random.default_rng(0)
+    rho = {(i, n): np.array([r["rho_mid"] for r in _cell(out / "cells" / cell_key(i, n))])
+           for n in (None, ALL) + BOOT_CELLS for i in t5.INITS}
+    mb = lambda i, n: float(np.median(rng.choice(rho[(i, n)], t5.N_SEEDS)))
+    res = {}
+    for n in BOOT_CELLS:
+        sh = []
+        for _ in range(2000):
+            e0 = mb("F", None) - mb("P", None)
+            e = mb("F", n) - mb("P", n)
+            sh.append((e - (mb("F", ALL) - mb("P", ALL))) / e0 if n.startswith("rev-") else (e0 - e) / e0)
+        sh = np.array(sh)
+        res[n] = {"p5_p50_p95": np.percentile(sh, [5, 50, 95]).round(3).tolist(),
+                  "frac_ge_half": round(float((sh >= 0.5).mean()), 3)}
+    (out / "boot.json").write_text(json.dumps({"post_hoc": True, "reader": code_sha(), "share": res}, indent=1) + "\n")
+    print(json.dumps(res, indent=1))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -351,8 +377,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     sp = sub.add_parser("read")
     sp.add_argument("--out", required=True)
     sp.add_argument("--u1b", default=str(DATA / U1B_DIR))
+    sp = sub.add_parser("boot")
+    sp.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    return {"run": run, "read": read}[a.cmd](a)
+    return {"run": run, "read": read, "boot": boot}[a.cmd](a)
 
 
 if __name__ == "__main__":
