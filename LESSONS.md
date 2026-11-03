@@ -416,7 +416,13 @@ instance in four days: a hook that prints `git show origin/main:STATE.md` after 
 it (a settings change, the user's).
 Again 2026-11-03 (Blocked 132): the main tree 25 commits (#301–#305) behind; the hook printed
 "next: Blocked 130, yours" while #306 already held Blocked 132. Caught by `status.sh` listing #306;
-read from the PR branch. Sixth instance; the hook unchanged.
+read from the PR branch. Sixth instance. The same day #306 was merged at 11:49 while the freeze
+commit (`5307da9`) was pushed to its branch at 11:58, so `main` held the proposal without the
+freeze and its STATE still said "Blocked 132, yours"; the new hook's first run named the branch.
+**Fixed 2026-11-03 (the user's request):** the hook runs `scripts/hooks/session_state.sh`, which
+fetches, prints `origin/main`'s STATE.md (not the tree's), says how far this tree lags, and names
+every unmerged remote branch that changed STATE.md, those lines first. It takes effect in the main
+tree after one fast-forward; until then the old hook runs.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
