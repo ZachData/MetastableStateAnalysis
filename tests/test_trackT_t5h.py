@@ -44,6 +44,15 @@ def test_the_rows():
             t5h.batch_rows(bad)
 
 
+def test_an_empty_segment_and_the_named_resume_crossing():
+    # Parked 2 on #310: --until at or below the resume step trains nothing (and writes no segment line)
+    assert t5h.nothing_to_train(3198, 103) and t5h.nothing_to_train(4369, 4369)
+    assert not t5h.nothing_to_train(4369, 5970) and not t5h.nothing_to_train(0, 103)
+    # A0's 4369 state was written at 66af413c31fe; U4b's first change names that crossing
+    assert t5h.resume_allowed("66af413c31fe", "new") and t5h.resume_allowed("abc", "abc")
+    assert not t5h.resume_allowed("abc", "new") and t5h.resume_allowed("abc", "new", allow_any=True)
+
+
 def _dodeca_like(noise=0.0, seed=0):
     """A ρ_mid series on the checkpoint grid shaped as `-32m`'s (B4): 0.8 at 0, 1.0 by 40, the trough
     0.111 at 917, a rise to 0.763 at 3738 and 0.812 at 4369, on to 0.872 at 5970."""

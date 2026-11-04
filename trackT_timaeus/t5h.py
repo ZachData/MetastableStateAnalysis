@@ -81,8 +81,10 @@ SD_TOL = 0.02                            # placed (U1's init bar)
 BAND = {"F": (0.787, 0.881), "P": (0.415, 0.544)}
 FLOOR_STEPS = (4000, 143000)
 FLOOR_SEEDS = tuple(range(10))
-FLOOR_MAX = 0.2                          # Blocked 133 (i) (d): the largest pair difference at 143000 (0.1996);
-                                         # 2 × SD and the largest pair difference both ≤ it (first frozen 0.1, 2 × SD only)
+FLOOR_MAX = 0.2                          # placed, Blocked 133 (i) (d): at the largest pair difference at 143000
+                                         # (0.1996), so on these data the row cannot fail; it shows they were re-read
+                                         # unchanged (/challenge-pr on #310, finding 1). 2 × SD and the largest pair
+                                         # difference both ≤ it (first frozen 0.1, 2 × SD only)
 TROUGH_BY, TROUGH_MAX = 1253, 0.25
 LATE_MIN = 0.60                          # placed (above every Pythia end level read, 0.37–0.44)
 LOSS_FALL = (range(1, 11), range(91, 101))   # mean training loss over steps 91–100 below 1–10 (details (t6))
@@ -95,6 +97,13 @@ N_BOOT, BOOT_SEED = 1000, 20261030
 U2_DIR = "trackT/t5u2/2026-10-30"
 HDD = Path("/run/media/system/HDD_1TB/mets_data")
 ROOT = HDD / "trackT" / "t5u4"
+#: earlier codes whose resume states this code may continue, each with what changed (U4b, Parked 2 on #310):
+#: named here so a crossing is on the record, not a blanket ``--allow-code-change``
+RESUMABLE = {
+    "66af413c31fe": "U4b's first change (Parked 2-3 on #310): an empty segment returns without a log line; "
+                    "FLOOR_MAX's comment; RESUMABLE itself. The loop, the stream, the checkpoints and the read "
+                    "are unchanged (t5c, t5, t2, c2_aniso untouched)",
+}
 
 
 class T5hRefused(RuntimeError):
@@ -129,6 +138,16 @@ def batch_rows(step: int) -> Tuple[str, int, int]:
         k = step - READ_STEP - 1
         return "tail", k * BATCH_SEQ, (k + 1) * BATCH_SEQ
     raise T5hRefused(f"update {step}: past the stream ({CONT_TO})")
+
+
+def nothing_to_train(start: int, until: int) -> bool:
+    """A segment whose ``--until`` is at or below the resume step trains nothing (Parked 2 on #310)."""
+    return until <= start
+
+
+def resume_allowed(state_code: str, now: str, allow_any: bool = False) -> bool:
+    """A resume state continues under this code if it was written by it, or by a code in RESUMABLE."""
+    return state_code == now or state_code in RESUMABLE or allow_any
 
 
 def decays(name: str, p) -> bool:
@@ -437,14 +456,17 @@ def train(a) -> int:
     dcfg = dodeca_cfg(a.hf_roots)
     model = build_arm(arm, dcfg, device)
     opt = make_opt(model)
-    state, start = d / "resume.pt", 0
+    state, start, from_code = d / "resume.pt", 0, None
     if state.exists():
         st = torch.load(state, map_location=device, weights_only=False)
         model.load_state_dict(st["model"])
         opt.load_state_dict(st["opt"])
-        start = int(st["step"])
-        if st["code"] != code_sha() and not a.allow_code_change:
-            raise T5hRefused(f"resume state from code {st['code']}, now {code_sha()}")
+        start, from_code = int(st["step"]), st["code"]
+        if not resume_allowed(from_code, code_sha(), a.allow_code_change):
+            raise T5hRefused(f"resume state from code {from_code}, now {code_sha()} (not in RESUMABLE)")
+    if nothing_to_train(start, a.until):          # Parked 2 on #310: say so, write no segment line
+        print(json.dumps({"arm": arm, "until": a.until, "resume_step": start, "nothing_to_train": True}))
+        return 0
     if (a.n_micro, a.compile) != (N_MICRO, COMPILE) and not a.allow_config_change:
         raise T5hRefused(f"configuration (n_micro {a.n_micro}, compile {a.compile}) is not (t12)'s "
                          f"({N_MICRO}, {COMPILE})")
@@ -467,8 +489,9 @@ def train(a) -> int:
         save_weights(model, d / "ckpt" / "step0.safetensors")
     fwd = torch.compile(model) if a.compile else model
     log = (d / "train_log.jsonl").open("a")
-    log.write(json.dumps({"segment": {"from": start, "until": a.until, "code": code_sha(), "n_micro": a.n_micro,
-                                      "compile": a.compile, "started": time.strftime("%Y-%m-%dT%H:%M:%S")}}) + "\n")
+    log.write(json.dumps({"segment": {"from": start, "until": a.until, "code": code_sha(), "from_code": from_code,
+                                      "n_micro": a.n_micro, "compile": a.compile,
+                                      "started": time.strftime("%Y-%m-%dT%H:%M:%S")}}) + "\n")
     t0, last_save = time.time(), start
     def save_state(s):
         tmp = state.with_suffix(".tmp")
