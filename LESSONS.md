@@ -995,6 +995,13 @@ running it overwrote the tracked `tex/fig/*.pdf`. Fixed: the test reads the figu
 draft and sends both outputs to `tmp_path`. A list a test can derive from the tracked source is
 derived, not typed.
 
+2026-11-04: **#310 red in the deps tier from the push answering `/challenge-pr` finding 4.**
+The new `test_the_floor_gate_reads_the_pair_difference` called `t5h.floor`, which checks
+`prompts_hash()` first; `tests/conftest.py` replaces `PROMPTS` with a stub lacking the V1 keys,
+so both cases raised `KeyError` before reaching the gate. It failed locally too: the test was never
+run. Fixed by stubbing `t5h.prompts_hash`, as `test_b7_activity.py` does. A test written to
+answer a review is run before the push that answers it.
+
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋
 `CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection

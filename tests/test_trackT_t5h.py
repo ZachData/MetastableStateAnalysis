@@ -118,6 +118,7 @@ def test_the_floor_gate_reads_the_pair_difference(tmp_path, monkeypatch, low, wa
     from trackC_writeup import c2_aniso
     monkeypatch.setattr(c2_aniso, "_torch_setup", lambda: (None, "cpu"))
     monkeypatch.setattr(t2, "p_tokenizer", lambda: None)
+    monkeypatch.setattr(t5h, "prompts_hash", lambda: t5h.t5.PROMPTS_HASH)   # conftest stubs PROMPTS (no V1 keys)
     monkeypatch.setenv("METS_DATA", str(tmp_path / "data"))
     u2 = tmp_path / "data" / t5h.U2_DIR / "pythia-410m"
     u2.mkdir(parents=True)
