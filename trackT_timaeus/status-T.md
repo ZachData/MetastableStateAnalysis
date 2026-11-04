@@ -29,11 +29,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first); U4s done 2026-11-03 (at init the effect needs the parallel residual and the ungated MLP together to go; SwiGLU brings it all back, the sequential residual half); U4a's preparation done 2026-11-03: the 410m noise floor refused at 0.1; Blocked 133 decided (floor 0.2, a second replicate seed A0″, the float64 loop gate); U4a done 2026-11-04 (A0 passes its positive control, L 0.794); next U4b, the other arms — `trackT_timaeus/status-T.md` "T5 U4a: Blocked 133 decided; A0"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first); U4s done 2026-11-03 (at init the effect needs the parallel residual and the ungated MLP together to go; SwiGLU brings it all back, the sequential residual half); U4a's preparation done 2026-11-03: the 410m noise floor refused at 0.1; Blocked 133 decided (floor 0.2, a second replicate seed A0″, the float64 loop gate); U4a done 2026-11-04 (A0 passes its positive control, L 0.794); U4b started 2026-11-04 (the replicates first, then the seed-noise gate before A1–A3) — `trackT_timaeus/status-T.md` "T5 U4b"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-04 · body `1d3da9a799`
+- **Reviewed:** 2026-11-04 · body `349e154ed8`
 <!-- /phase-card -->
 
 ## Units
@@ -50,9 +50,31 @@
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
 | T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
-| T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; U4a's preparation done; Blocked 133 decided ((i) (d): bar's floor 0.2 and a second replicate seed A0″; (ii) float64 loop gate). **U4a done 2026-11-04: A0 passes its positive control (L 0.794); next U4b** | "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
+| T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; U4a's preparation done; Blocked 133 decided ((i) (d): bar's floor 0.2 and a second replicate seed A0″; (ii) float64 loop gate). **U4a done 2026-11-04: A0 passes its positive control (L 0.794). U4b started 2026-11-04: the first change (Parked 2–3, code `40289679fc36`), A0′ and A0″ to 4369 running, then the seed-noise gate before A1–A3** | "T5 U4b" and "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
 | T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU brings back all of it, the sequential residual about half; within `gelu`, ungating (or the write's size) | "T5 U4s" below |
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
+
+## T5 U4b: the replicates first (A0′, A0″), the seed-noise gate before A1–A3 (2026-11-04)
+
+The order proposed on #310 and taken by the user (this session's prompt): A0′ and A0″ to 4369, then the
+design's last gate row, **bar < R_A0 / 2** (R_A0 0.657, so readable iff τ < 0.164), before A1–A3 start.
+A0″'s continuation to 5970 waits for the continuations' stage (it enters no label; design "Throughput").
+
+**The first change** (commit `6f01a3f`, before any replicate output; `t5h` code `66af413c31fe` →
+**`40289679fc36`**; `t5c`, `t5`, `t2`, `c2_aniso` untouched, so the loop, stream, checkpoints and read are
+the same bytes):
+
+| item | change |
+|---|---|
+| Parked 2 on #310 (defect) | `t5h train` with `--until` ≤ the resume step prints `nothing_to_train` and returns 0 without a `segment` line (not a refusal, so the stage scripts stay resumable) |
+| Parked 3 | `FLOOR_MAX`'s comment says *placed* |
+| the resume across the change | `t5h.RESUMABLE` names `66af413c31fe` with what changed, so A0's 4369 state continues by name, not by `--allow-code-change`; each `segment` line now records `from_code` |
+| the reading | `trackT_timaeus/t5i.py` (outside `t5h`'s hash, as `t5g` left `t5b`'s): `replicates` reads L, T, R of A0, A0′, A0″, τ, bar, bar_I and readability from `t5h`'s rule functions; refuses unless A0's late gate and the replicates' start gates passed; beside (Parked 1): their ρ_mid at 1253, 1713, 2002 and its spread, the v1 loss at 4369, the codes read at |
+| the batch | `scripts/t5u4b_replicates.sh`: per arm, train to 103, read, start gate, train to 4369, read; then `t5i replicates` (exit 3: not readable, back to the user) |
+
+Tests: `test_trackT_t5i.py` (readable at small noise, unreadable at τ 0.17 and readable at 0.16, the
+refusals), `test_trackT_t5h.py` (empty segment, the named crossing); `check.sh` 3254 passed; the loop's
+smoke tests 4 passed. **Launched 2026-11-04** (≈ 6 h an arm at θ ≈ 105k).
 
 ## T5 U4a: Blocked 133 decided; A0 (2026-11-03; A0 passes, 2026-11-04)
 
@@ -126,8 +148,9 @@ continuation to 5970 (U4b) resumes from A0's state at `66af413c31fe`; U4b change
 and will say how the resume is allowed across it. Fix: refuse, or say so and return without a line.
 3. `FLOOR_MAX`'s comment (`t5h.py:84`) should say *placed* (finding 1); with 2, for the same reason.
 
-Re-run: `METS_DATA=<main>/data scripts/t5u4a_A0.sh` (resumable; each stage is gated; the code must
-be `66af413c31fe`, else it refuses to resume).
+Re-run: `METS_DATA=<main>/data scripts/t5u4a_A0.sh` (resumable; each stage is gated; a resume state
+continues only under its own code or one named in `t5h.RESUMABLE`: since U4b's first change, `40289679fc36`
+continues `66af413c31fe`'s). Parked 2–3 fixed there ("T5 U4b" above); Parked 1 is read by `t5i replicates`.
 
 ## T5 U4a, before A0: the loop, the shard, θ, the known answer; the noise floor refuses (2026-11-03)
 
