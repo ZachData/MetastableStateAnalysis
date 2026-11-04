@@ -583,4 +583,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   session (tokenizer format, the float32 bar, a test tier), five background runs watched by notification, then four
   findings answered with code and a full re-run at the committed hash. Splitting the code from the runs would have cut it.
 | 2026-11-04 | T5 U4a: Blocked 133 applied (floor 0.2, A0'', float64 loop gate; floor, known, tests re-run at 66af413c31fe); A0 launched, start and trough gates pass, paused by the user at 3346 · subagents: runner haiku-5-5 7.3M · runner batches, main calls: 23 (haiku-5-5) | 59 | 150k | 6.2M | 38k | #310 |
-| 2026-11-04 | T5 U4a: A0 resumed 3198 → 4369, late gate passes (before /challenge-pr) · subagents: runner haiku-5-5 1.2M · runner batches, main calls: 7 (haiku-5-5) | 34 | 98k | 2.4M | 22k | #310 |
+| 2026-11-04 | T5 U4a: A0 resumed 3198 → 4369, late gate passes; after /challenge-pr (accept with changes; finding 4 fixed in tests, 1 reworded, 2-3 parked to U4b for the code hash) · subagents: general-purpose opus-5-5 1.4M, runner haiku-5-5 1.2M · runner batches, main calls: 7 (haiku-5-5) | 56 | 124k | 4.9M | 28k | #310 |

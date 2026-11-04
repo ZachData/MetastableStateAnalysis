@@ -1011,6 +1011,11 @@ needs the user to enable it on GitHub.
   Blocked item (133, decided (d): floor 0.2 and a third seed, +8.3 GPU-h). Rule: **a placed floor
   that has a cheap outside check is read before the freeze, and is checked on the statistic the
   rule uses** (here a pair difference, not an SD).
+- 2026-11-04, T5 U4a (the same floor, then reported as a pass; caught by `/challenge-pr` on #310,
+  finding 1): the new floor 0.2 was set from the largest pair (0.1996), and its gate row on those same
+  records was written "pass", though it could not fail there (margin 4e-4). Cost: wording in STATE and
+  status-T. Rule: **a check against the data a bar was set from is written "placed, reproduced", not
+  "passes"**.
 - 2026-11-02, T5 U3's split (a positive control whose plant moved the model; caught by the
   gate itself, on the first output, before the batch): the planted o_proj bias was frozen at 0.5 ×
   the median token norm in every block of `-32m`, and the gate asked the bias path to hold ≥ 0.9

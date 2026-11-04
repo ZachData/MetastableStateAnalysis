@@ -99,13 +99,37 @@ def test_the_rule_on_planted_series():
 
 
 def test_the_interaction():
-    bar = 0.1
+    bar = t5h.BAR_MIN               # 0.2, the smallest bar the rule can give (Blocked 133 (i) (d)); /challenge-pr on #310, finding 4
     L = {"A0": 0.8, "A1": 0.8, "A2": 0.8, "A3": 0.8}
     assert t5h.interaction(L, bar) == (0.0, "no interaction seen at this noise")
     i, lab = t5h.interaction({**L, "A3": 0.8 - math.sqrt(2) * bar - 1e-9}, bar)
     assert lab == "together lower it more than the sum" and i == pytest.approx(math.sqrt(2) * bar)
-    assert t5h.interaction({**L, "A1": 0.6}, bar)[1] == "less than the sum"
-    assert t5h.interaction({**L, "A3": 0.8 - 0.14}, bar)[1] == "no interaction seen at this noise"   # < √2·0.1
+    assert t5h.interaction({**L, "A1": 0.5}, bar)[1] == "less than the sum"
+    assert t5h.interaction({**L, "A3": 0.8 - 0.28}, bar)[1] == "no interaction seen at this noise"   # < √2·0.2
+
+
+@pytest.mark.parametrize("low, want", [(0.205, 0), (0.19, 3)])
+def test_the_floor_gate_reads_the_pair_difference(tmp_path, monkeypatch, low, want):
+    """The floor gate's second half (Blocked 133 (i) (d); /challenge-pr on #310, finding 4): nine seeds at
+    0.40 and one at `low` keep 2·SD ≤ 0.2 (0.13 at 0.19), so only the largest pair difference decides
+    (0.195 passes, 0.21 refuses). Records are planted where `floor` caches them; no model is loaded."""
+    import json
+    import types
+    from trackC_writeup import c2_aniso
+    monkeypatch.setattr(c2_aniso, "_torch_setup", lambda: (None, "cpu"))
+    monkeypatch.setattr(t2, "p_tokenizer", lambda: None)
+    monkeypatch.setenv("METS_DATA", str(tmp_path / "data"))
+    u2 = tmp_path / "data" / t5h.U2_DIR / "pythia-410m"
+    u2.mkdir(parents=True)
+    (tmp_path / "floor").mkdir()
+    for s in t5h.FLOOR_STEPS:
+        (u2 / f"step{s}.json").write_text(json.dumps({"rho_mid": 0.40}))
+        for k in t5h.FLOOR_SEEDS:
+            v = low if (k == 9 and s == 143000) else 0.40
+            (tmp_path / "floor" / f"seed{k}_step{s}.json").write_text(json.dumps({"rho_mid": v}))
+    assert t5h.floor(types.SimpleNamespace(root=str(tmp_path), hf_roots=None)) == want
+    res = json.loads((tmp_path / "floor" / "floor.json").read_text())
+    assert res["two_sd"]["143000"] <= 0.2 and (res["max_pair_diff"]["143000"] > 0.2) == bool(want)
 
 
 NULL_DRAWS = 100_000            # /challenge-pr on #309, finding 2: at the design's 1,000 the test passed ~76 % of seeds
