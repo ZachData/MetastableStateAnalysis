@@ -34,11 +34,20 @@ B10 The interaction I = ΔL_A3 − ΔL_A1 − ΔL_A2 = L_A1 + L_A2 − L_A0 − 
     independent with SD σ, SD(I) = 2σ, while a pair difference (τ's |L_A0 − L_A0′|) has SD √2 σ:
     I's noise is √2 times a pair's, so its bar is √2 · max(0.1, 2τ), floor included (/challenge-pr
     on #307, finding 3: an unscaled floor 0.1 doubles the null's false 'interaction' rate).
+B11 (Blocked 133, the user's, 2026-11-03: (i) (d), floor 0.2 and a second replicate seed A0″ trained to
+    5970 with its continuation) Six arms plus five continuations (A0, A0″, A1, A2, A3) fit in 96 h at
+    θ ≥ 51.9k tokens/s; six arms alone at θ ≥ 39.8k. At the measured 104.8k: 47.6 h (39.3 h
+    before). The floor: bar = max(0.2, 2τ), bar_I = √2 · bar, so bar_I's floor 0.2828; on
+    Dodecahedron's R/2 = 0.338 the rule stays readable while τ < 0.169. τ is the largest of the
+    three pairs, max(L) − min(L). With 410m's split (2 of 10 seeds low, so p = 0.2), one pair lands
+    in a single group with probability 0.68 and three seeds 0.52, so a third seed raises the
+    chance of seeing a split by 0.16.
 
 NOT proved: the throughput (B8 is a ceiling argument, not a measurement). 60k tokens/s is the ROADMAP's rough guess, never measured on this
 GPU; U4a measures it and the arm count follows B9's thresholds (B2's at the old 3-day cap). Nothing here says the rise will
 appear at 524k a step: that is A0's positive control. B10 assumes the arms' L are independent with
-equal SD; one replicate seed (A0′) estimates that SD, so the bar is only as good as that estimate.
+equal SD; two replicate seeds (A0′, A0″; B11) estimate that SD, so the bar is only as good as that estimate.
+B11's 0.68 / 0.52 treat 410m's 2-in-10 split as the probability for Dodecahedron's recipe, which is not known.
 """
 
 import sympy as sp
@@ -151,3 +160,20 @@ assert sp.simplify(ratio - sp.sqrt(2)) == 0
 bar_I = lambda tau: sp.sqrt(2) * sp.Max(sp.Rational(1, 10), 2 * tau)
 assert sp.simplify(bar_I(sp.Rational(1, 100)) - sp.sqrt(2) / 10) == 0  # the floor scales too
 print(f"B10 SD(I) / SD(pair difference) = {ratio}; bar_I = sqrt2 * max(0.1, 2 tau), floor {float(bar_I(0)):.4f}")
+
+# B11
+need6c = sp.Rational(6 * tok_card + 5 * cont, CAP4_S)
+need6 = sp.Rational(6 * tok_card, CAP4_S)
+assert round(float(need6c)) == 51_911 and round(float(need6)) == 39_768
+h_at = lambda arms, conts, th: float(sp.Rational(arms * tok_card + conts * cont, 1) / th / 3600)
+assert abs(h_at(6, 5, 104_800) - 47.55) < 0.01 and abs(h_at(5, 4, 104_800) - 39.26) < 0.01
+bar = lambda tau: sp.Max(sp.Rational(2, 10), 2 * tau)
+assert sp.simplify(sp.sqrt(2) * bar(0) - sp.sqrt(2) / 5) == 0 and abs(float(sp.sqrt(2) / 5) - 0.2828) < 1e-4
+R2 = (sp.Rational(7875, 10000) - sp.Rational(111, 1000)) / 2      # B4's R / 2
+assert bar(sp.Rational(169, 1000)) < R2 <= bar(sp.Rational(170, 1000))
+pr = sp.Rational(2, 10)
+same2, same3 = (1 - pr) ** 2 + pr ** 2, (1 - pr) ** 3 + pr ** 3
+assert (same2, same3) == (sp.Rational(68, 100), sp.Rational(52, 100))
+print(f"B11 96 h: 6 arms + 5 continuations need θ ≥ {float(need6c):.0f}; 6 arms ≥ {float(need6):.0f}; "
+      f"at 104.8k {h_at(6, 5, 104_800):.1f} h (was {h_at(5, 4, 104_800):.1f}); bar_I floor {float(sp.sqrt(2) / 5):.4f}; "
+      f"readable while τ < {float(R2) / 2:.4f}; one pair in one group {same2}, three seeds {same3}")

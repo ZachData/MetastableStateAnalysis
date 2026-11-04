@@ -58,8 +58,10 @@ BETAS, EPS, WD, CLIP = (0.9, 0.95), 1e-8, 0.01, 1.0
 CKPT_STEPS = (0,) + tuple(s for s in t2.GRID if s <= READ_STEP)          # 48 grid steps and step 0
 CONT_STEPS = tuple(s for s in t2.GRID if READ_STEP < s <= CONT_TO)       # 5108, 5970 (the delay check)
 #: arm → (init, generator seed, biases); A1 is A0 plus zero biases, A3 is A2 plus zero biases
-ARMS = {"A0": ("F", 0, False), "A0p": ("F", 1, False), "A1": ("F", 0, True), "A2": ("P", 0, False),
-        "A3": ("P", 0, True)}
+#: A0pp is A0″, the second replicate seed (Blocked 133 (i) (d), the user's, 2026-11-03), trained to 5970
+ARMS = {"A0": ("F", 0, False), "A0p": ("F", 1, False), "A0pp": ("F", 2, False), "A1": ("F", 0, True),
+        "A2": ("P", 0, False), "A3": ("P", 0, True)}
+REPLICATES = ("A0", "A0p", "A0pp")       # τ from the largest of their three pairs
 # the data (design "data"; details "U4a's details" (d1)–(d5))
 FINEWEB = "HuggingFaceFW/fineweb"
 FINEWEB_REV = "9bb295ddab0e05d785b879661af7260fed5140fc"
@@ -72,14 +74,15 @@ EOT = "<|endoftext|>"
 # θ (design "Throughput"; B9, at the 4 GPU-day cap)
 THETA_WARM, THETA_TIMED = 10, 50
 N_MICRO, COMPILE = 64, True              # details (t12): micro-batch 4, compiled; every arm, every segment
-THETA_ALL, THETA_ARMS = 42_855, 33_140
+THETA_ALL, THETA_ARMS = 51_911, 39_768  # B11: six arms + five continuations (A0, A0″, A1, A2, A3); six arms
 # the gate (design "Gate"; fixed)
 KNOWN_TOL = 1e-6                         # placed (U2's known-answer bar)
 SD_TOL = 0.02                            # placed (U1's init bar)
 BAND = {"F": (0.787, 0.881), "P": (0.415, 0.544)}
 FLOOR_STEPS = (4000, 143000)
 FLOOR_SEEDS = tuple(range(10))
-FLOOR_MAX = 0.1                          # placed: 2 × SD ≤ the bar's floor 0.1
+FLOOR_MAX = 0.2                          # Blocked 133 (i) (d): the largest pair difference at 143000 (0.1996);
+                                         # 2 × SD and the largest pair difference both ≤ it (first frozen 0.1, 2 × SD only)
 TROUGH_BY, TROUGH_MAX = 1253, 0.25
 LATE_MIN = 0.60                          # placed (above every Pythia end level read, 0.37–0.44)
 LOSS_FALL = (range(1, 11), range(91, 101))   # mean training loss over steps 91–100 below 1–10 (details (t6))
@@ -87,7 +90,7 @@ LOSS_FALL = (range(1, 11), range(91, 101))   # mean training loss over steps 91�
 L_STEPS = (3738, 4369)
 LP_STEPS = (5108, 5970)
 T_FROM = 100
-TAU_MIN, BAR_MIN = 0.02, 0.1
+TAU_MIN, BAR_MIN = 0.02, 0.2            # bar's floor raised from 0.1 by Blocked 133 (i) (d), before any arm output
 N_BOOT, BOOT_SEED = 1000, 20261030
 U2_DIR = "trackT/t5u2/2026-10-30"
 HDD = Path("/run/media/system/HDD_1TB/mets_data")
@@ -161,8 +164,12 @@ def trough(series: Dict[int, float], until: int = READ_STEP) -> Tuple[float, int
     return float(series[s]), int(s)
 
 
-def tau_bar(l_a0: float, l_a0p: float) -> Tuple[float, float]:
-    tau = max(TAU_MIN, abs(l_a0 - l_a0p))
+def tau_bar(*levels: float) -> Tuple[float, float]:
+    """τ = max(0.02, the largest pair difference among the replicates' L: A0, A0′, A0″);
+    bar = max(0.2, 2τ) (Blocked 133 (i) (d))."""
+    if len(levels) != len(REPLICATES):
+        raise T5hRefused(f"tau_bar takes the {len(REPLICATES)} replicates' L, got {len(levels)}")
+    tau = max(TAU_MIN, max(levels) - min(levels))
     return tau, max(BAR_MIN, 2 * tau)
 
 
@@ -510,8 +517,8 @@ def theta(a) -> int:
         losses.append(r["loss"])
     timed = times[THETA_WARM:]
     th = THETA_TIMED * TOKENS_STEP / sum(timed)
-    rows = "five arms and every continuation" if th >= THETA_ALL else \
-        "five arms; continuations as the cap allows" if th >= THETA_ARMS else "A0 alone; the rest back to the user"
+    rows = "six arms and every continuation" if th >= THETA_ALL else \
+        "six arms; continuations as the cap allows" if th >= THETA_ARMS else "A0 alone; the rest back to the user"
     rec = {"theta_tokens_s": th, "row": rows, "n_micro": a.n_micro, "compile": a.compile,
            "step_s": {"median": float(np.median(timed)), "min": min(timed), "max": max(timed)},
            "warm_s": times[:THETA_WARM], "loss_first_last": [losses[0], losses[-1]],
@@ -597,7 +604,8 @@ def known(a) -> int:
 
 
 def floor(a) -> int:
-    """ρ_mid over `pythia-410m` seeds 0–9 at 4000 and 143000 (U2's reader), and the gate 2·SD ≤ 0.1."""
+    """ρ_mid over `pythia-410m` seeds 0–9 at 4000 and 143000 (U2's reader), and the gate: 2·SD and the
+    largest pair difference ≤ 0.2 at both steps (Blocked 133 (i) (d))."""
     os.environ["HF_HUB_OFFLINE"] = "1"
     if prompts_hash() != t5.PROMPTS_HASH:
         raise T5hRefused(f"prompts_hash {prompts_hash()} != {t5.PROMPTS_HASH}")
@@ -627,7 +635,8 @@ def floor(a) -> int:
     sd = {s: float(np.std(v, ddof=1)) for s, v in vals.items()}
     res = {"rho_mid": {str(s): v for s, v in vals.items()}, "sd": {str(s): v for s, v in sd.items()},
            "two_sd": {str(s): 2 * v for s, v in sd.items()}, "max": FLOOR_MAX,
-           "pass": all(2 * v <= FLOOR_MAX for v in sd.values()),
+           "pass": all(2 * v <= FLOOR_MAX for v in sd.values())
+           and all(max(v) - min(v) <= FLOOR_MAX for v in vals.values()),
            "seed0_vs_u2_abs_diff": {str(s): v for s, v in seed0.items()}, "code": code_sha(),
            "max_pair_diff": {str(s): float(max(v) - min(v)) for s, v in vals.items()}}
     _jdump(out / "floor.json", res)

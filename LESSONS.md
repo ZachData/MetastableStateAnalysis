@@ -995,6 +995,13 @@ running it overwrote the tracked `tex/fig/*.pdf`. Fixed: the test reads the figu
 draft and sends both outputs to `tmp_path`. A list a test can derive from the tracked source is
 derived, not typed.
 
+2026-11-04: **#310 red in the deps tier from the push answering `/challenge-pr` finding 4.**
+The new `test_the_floor_gate_reads_the_pair_difference` called `t5h.floor`, which checks
+`prompts_hash()` first; `tests/conftest.py` replaces `PROMPTS` with a stub lacking the V1 keys,
+so both cases raised `KeyError` before reaching the gate. It failed locally too: the test was never
+run. Fixed by stubbing `t5h.prompts_hash`, as `test_b7_activity.py` does. A test written to
+answer a review is run before the push that answers it.
+
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋
 `CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection
@@ -1003,6 +1010,19 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-03, T5 U4a (a frozen floor checked against data that was already on disk; caught by its
+  own gate row before any arm): U4's bar floor 0.1 was frozen, and its check, 2·SD of ρ_mid over
+  `pythia-410m`'s ten seeds, was put in the gate rather than read first, though the read takes
+  minutes. At 143000 the seeds split into two groups (2·SD 0.153, largest pair 0.1996), so the floor
+  sat inside the known spread, and 2·SD understated what the rule compares (a pair). Cost: one
+  Blocked item (133, decided (d): floor 0.2 and a third seed, +8.3 GPU-h). Rule: **a placed floor
+  that has a cheap outside check is read before the freeze, and is checked on the statistic the
+  rule uses** (here a pair difference, not an SD).
+- 2026-11-04, T5 U4a (the same floor, then reported as a pass; caught by `/challenge-pr` on #310,
+  finding 1): the new floor 0.2 was set from the largest pair (0.1996), and its gate row on those same
+  records was written "pass", though it could not fail there (margin 4e-4). Cost: wording in STATE and
+  status-T. Rule: **a check against the data a bar was set from is written "placed, reproduced", not
+  "passes"**.
 - 2026-11-02, T5 U3's split (a positive control whose plant moved the model; caught by the
   gate itself, on the first output, before the batch): the planted o_proj bias was frozen at 0.5 ×
   the median token norm in every block of `-32m`, and the gate asked the bias path to hold ≥ 0.9
