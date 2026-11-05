@@ -55,6 +55,26 @@
 | T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU brings back all of it, the sequential residual about half; within `gelu`, ungating (or the write's size) | "T5 U4s" below |
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
 
+## T5 U4b: the arms A1, A2, A3 to 4369 (2026-11-05)
+
+**Before any arm output** (commits `c65ae87`, `49a1613`; `t5h` `81b2e03bdcf7` unchanged, so A0's and the
+replicates' states keep their crossings): `scripts/t5u4b_arms.sh` runs per arm, as the replicates' script,
+train to 103, read, the start gate, then train to 4369 and read; it refuses unless `t5h` is `81b2e03bdcf7`
+and `replicates.json` reads readable. Order A1, A2, A3, so A3's step-0 check has A2's record.
+
+| item | change (outside `t5h`'s hash) |
+|---|---|
+| a gate row not checked | the design's "A1 is A0 at step 0, A3 is A2 at step 0: ρ_ℓ equal ≤ 1e-6" was in no code: `t5h gate` checks the init SDs and the band only. `t5i step0 --arm A1` / `A3` reads it on the step-0 records (`<arm>/gate_step0_same.json`, exit 3 if not) |
+| the reading | `t5i arms` (`t5i` `5c2a19625df1`): ΔL_k = L_A0 − L_k and `t5h.arm_label` with τ, bar, R_A0 recomputed from the replicates' current records; I and its label at bar_I; H1 (A2), H2 (A1) final only where the arm does not lower L ("not supported"); an arm that lowers, fully or partly, reads **"pending the delay check"**, since its continuation to 5970 is the next stage (the design's "no continuation in the cap" wording is for an arm the cap cannot fit, not one not yet run). Refuses unless every gate passed on the current records (`_gate_pass`) and the step-0 equality holds on them. Beside: the 7-prompt bootstrap of each ΔL_k (U2's: one resample shared across arms and steps, 1,000, `default_rng(20261030)`; the records' `rho_mid` equals `t5c.mid_series` of `rho_per_prompt` exactly, checked on A0 at 0, 3738, 4369), T_k and its step, R_k, the step-0 ρ_mid, ρ_mid at 1253, 1713, 2002, the v1 loss at 4369 |
+
+Tests: `test_trackT_t5i.py` (step-0 equality and its refusals; labels, the pending delay check, the
+continuations list, raises, "neither alone; together", the interaction both ways; refusal when unreadable
+or step 0 differs; the bootstrap on equal and unequal prompts). **Launched 2026-11-05** via the runner
+(`logs/u4b_arms.log`).
+
+**Not in this stage, carried to the continuations' stage** (design "Beside": at 4369 U3's split on each arm
+and counts (ii), (iii)): they need the GPU after the arms and are beside, no label.
+
 ## T5 U4b: the replicates first (A0′, A0″), the seed-noise gate before A1–A3 (2026-11-04)
 
 The order proposed on #310 and taken by the user (this session's prompt): A0′ and A0″ to 4369, then the
