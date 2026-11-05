@@ -74,18 +74,31 @@ def replicates_read(series: Dict[str, Dict[int, float]], v1: Optional[Dict[str, 
     return out
 
 
-def _gate_pass(root: Path, arm: str, stage: str) -> bool:
+def _gate_pass(root: Path, arm: str, stage: str, recs: Dict[int, dict]) -> bool:
+    """A saved gate counts only if it passed and was read on these records: every ρ_mid in its stored
+    ``series`` equals the record's now, so a ``t5h read --force`` after the gate refuses here instead of
+    carrying the old pass (CodeRabbit on #311)."""
     p = root / arm / f"gate_{stage}.json"
-    return p.exists() and bool(json.loads(p.read_text())["pass"])
+    if not p.exists():
+        return False
+    g = json.loads(p.read_text())
+    if not g["pass"]:
+        return False
+    series = g.get("series") or {}
+    stale = [s for s, v in series.items() if int(s) not in recs or recs[int(s)]["rho_mid"] != v]
+    if not series or stale:
+        raise t5h.T5hRefused(f"{arm} gate_{stage}: not read on the current records "
+                             f"({'no series' if not series else f'differs at steps {stale[:5]}'}); re-gate")
+    return True
 
 
 def replicates(a) -> int:
     root = Path(a.root)
+    recs = {x: t5h.records(root, x) for x in t5h.REPLICATES}
     need = [("A0", "late")] + [(x, "start") for x in t5h.REPLICATES if x != "A0"]
-    bad = [f"{x} {st}" for x, st in need if not _gate_pass(root, x, st)]
+    bad = [f"{x} {st}" for x, st in need if not _gate_pass(root, x, st, recs[x])]
     if bad:
         raise t5h.T5hRefused(f"gates not passed: {bad}")
-    recs = {x: t5h.records(root, x) for x in t5h.REPLICATES}
     series = {x: {s: r["rho_mid"] for s, r in rs.items()} for x, rs in recs.items()}
     v1 = {x: {s: r["v1_loss_mean"] for s, r in rs.items()} for x, rs in recs.items()}
     res = replicates_read(series, v1)

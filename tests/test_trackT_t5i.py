@@ -59,7 +59,7 @@ def _write(root, arm, series, gates):
     for s, v in series.items():
         (d / f"step{s}.json").write_text(json.dumps({"rho_mid": v, "v1_loss_mean": 4.0, "code": "x"}))
     for st, ok in gates.items():
-        (root / arm / f"gate_{st}.json").write_text(json.dumps({"pass": ok}))
+        (root / arm / f"gate_{st}.json").write_text(json.dumps({"pass": ok, "series": {str(k): v for k, v in series.items()}}))
 
 
 def test_the_command_refuses_on_an_unpassed_gate_and_reads_otherwise(tmp_path, monkeypatch):
@@ -70,7 +70,17 @@ def test_the_command_refuses_on_an_unpassed_gate_and_reads_otherwise(tmp_path, m
     a = type("A", (), {"root": str(tmp_path)})()
     with pytest.raises(t5h.T5hRefused, match="A0pp start"):
         t5i.replicates(a)
-    (tmp_path / "A0pp" / "gate_start.json").write_text(json.dumps({"pass": True}))
+    good = {str(k): v for k, v in _series().items()}
+    (tmp_path / "A0pp" / "gate_start.json").write_text(json.dumps({"pass": True, "series": good}))
     assert t5i.replicates(a) == 0
     rec = json.loads((tmp_path / "replicates.json").read_text())
     assert rec["pass"] and rec["read_codes"]["A0"] == ["x"] and rec["beside_v1_loss_4369"]["A0p"] == 4.0
+    # a gate read on other records (a `t5h read --force` after it) refuses, as does one with no series
+    # (CodeRabbit on #311)
+    k = next(iter(good))
+    (tmp_path / "A0pp" / "gate_start.json").write_text(json.dumps({"pass": True, "series": {**good, k: good[k] + 1e-6}}))
+    with pytest.raises(t5h.T5hRefused, match="A0pp gate_start: not read on the current records"):
+        t5i.replicates(a)
+    (tmp_path / "A0pp" / "gate_start.json").write_text(json.dumps({"pass": True}))
+    with pytest.raises(t5h.T5hRefused, match="no series"):
+        t5i.replicates(a)

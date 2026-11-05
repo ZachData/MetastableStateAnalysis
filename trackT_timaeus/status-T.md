@@ -34,7 +34,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-05 · body `a05f5d7e03`
+- **Reviewed:** 2026-11-05 · body `4884f2f92f`
 <!-- /phase-card -->
 
 ## Units
@@ -80,7 +80,7 @@ smoke tests 4 passed. **Launched 2026-11-04** (≈ 6 h an arm at θ ≈ 105k).
 **The replicates read: readable (2026-11-05).** Input: arms A0′ (init F, seed 1) and A0″ (F, seed 2),
 no biases, Dodecahedron's recipe at 524,288 tokens a step on the shard `a7c1b38b…`, trained and read at
 `t5h` `40289679fc36` throughout (A0's records at `66af413c31fe`; the reader's code, `t5c`/`t5`/`t2`, is
-the same bytes at both); 7 v1 prompts `976b62d677bc`; `t5i` `74f766b6a53b` (re-read at `24c73c378c21`, a docstring; below). Records
+the same bytes at both); 7 v1 prompts `976b62d677bc`; `t5i` `74f766b6a53b` (re-read at `74cdc66d32f6`; below). Records
 `<HDD_1TB>/mets_data/trackT/t5u4/` (`replicates.json`; `A0p/`, `A0pp/` with `gate_start.json`, `read/`
 at the 49 grid steps, `ckpt/`). **The pause:** the user stopped the batch overnight after A0″'s update
 2622; its state was at 2540, so the rerun (2026-11-05, `logs/u4b_replicates_resume.log`, exit 0, 9116 s
@@ -132,8 +132,11 @@ narrow. Crossings are now (from, to) pairs in a sidecar outside the hash, `track
 (a pair names the code that reads it, so it cannot sit in a hashed file): 66af… → 4028… (history),
 66af… → 81b2… (A0, for 5970), 4028… → 81b2… (A0′, A0″). Tests flipped (`test_trackT_t5h.py`: a pair
 carries a state into its one code only); the loop's smoke tests 4 passed; `t5i`'s docstring gains
-finding 2's clause, so `replicates.json` was re-read at `t5i` `24c73c378c21`, `t5h_now` `81b2e03bdcf7`:
-every number equal, only those two fields changed. A1–A3 train at `81b2e03bdcf7`.
+finding 2's clause. CodeRabbit on #311: `t5i` took a saved gate's `pass` without checking it was read on
+the current records; it now refuses unless each gate's stored ρ_mid series equals the records (tests: a
+changed value and a missing series refuse). `replicates.json` re-read at `t5i` `74cdc66d32f6`, `t5h_now`
+`81b2e03bdcf7`: the three gates match their records, every number equal, only those two fields changed.
+A1–A3 train at `81b2e03bdcf7`.
 
 Re-run: `METS_DATA=<main>/data scripts/t5u4b_replicates.sh` (resumable; each stage gated); `python -m
 trackT_timaeus.t5i replicates` alone rewrites `replicates.json` from the records. **Next: A1–A3 to 4369**
