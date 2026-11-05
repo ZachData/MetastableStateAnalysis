@@ -715,6 +715,13 @@ well-formed but empty/zero result. It looks exactly like a real result.
   something (the key set it was meant to cover). A refusal records the numbers it refused on.**
   In the same unit, an Edit to this file failed (not yet read) and the commit went out without
   it; caught at `git status`.
+- 2026-11-05, T5 U4b (`/challenge-pr` on #311, finding 1): `t5h.RESUMABLE`, written to let A0's
+  state cross *one* named code change, was keyed on the old code alone, so that state would resume
+  under any later `t5h`. The guard would have passed silently, with only a `from_code` field in the
+  log to show it, and its test asserted the over-broad case (`resume_allowed(old, "new")`). Nothing
+  had resumed through it yet. Fixed: crossings are (from, to) pairs in a sidecar outside the hash,
+  since a pair names the code that reads it. **An exception to a guard names both ends, and its
+  test asserts that a third value is refused.**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

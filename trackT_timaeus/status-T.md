@@ -34,7 +34,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-05 · body `dcc41049cb`
+- **Reviewed:** 2026-11-05 · body `a05f5d7e03`
 <!-- /phase-card -->
 
 ## Units
@@ -69,7 +69,7 @@ the same bytes):
 |---|---|
 | Parked 2 on #310 (defect) | `t5h train` with `--until` ≤ the resume step prints `nothing_to_train` and returns 0 without a `segment` line (not a refusal, so the stage scripts stay resumable) |
 | Parked 3 | `FLOOR_MAX`'s comment says *placed* |
-| the resume across the change | `t5h.RESUMABLE` names `66af413c31fe` with what changed, so A0's 4369 state continues by name, not by `--allow-code-change`; each `segment` line now records `from_code` |
+| the resume across the change | `t5h.RESUMABLE` named `66af413c31fe` with what changed, so A0's 4369 state continues by name, not by `--allow-code-change`; each `segment` line now records `from_code`. Keyed on the old code alone, it let that state resume under any later code; since the second change (below) a crossing is a (from, to) pair |
 | the reading | `trackT_timaeus/t5i.py` (outside `t5h`'s hash, as `t5g` left `t5b`'s): `replicates` reads L, T, R of A0, A0′, A0″, τ, bar, bar_I and readability from `t5h`'s rule functions; refuses unless A0's late gate and the replicates' start gates passed; beside (Parked 1): their ρ_mid at 1253, 1713, 2002 and its spread, the v1 loss at 4369, the codes read at |
 | the batch | `scripts/t5u4b_replicates.sh`: per arm, train to 103, read, start gate, train to 4369, read; then `t5i replicates` (exit 3: not readable, back to the user) |
 
@@ -80,7 +80,7 @@ smoke tests 4 passed. **Launched 2026-11-04** (≈ 6 h an arm at θ ≈ 105k).
 **The replicates read: readable (2026-11-05).** Input: arms A0′ (init F, seed 1) and A0″ (F, seed 2),
 no biases, Dodecahedron's recipe at 524,288 tokens a step on the shard `a7c1b38b…`, trained and read at
 `t5h` `40289679fc36` throughout (A0's records at `66af413c31fe`; the reader's code, `t5c`/`t5`/`t2`, is
-the same bytes at both); 7 v1 prompts `976b62d677bc`; `t5i` `74f766b6a53b`. Records
+the same bytes at both); 7 v1 prompts `976b62d677bc`; `t5i` `74f766b6a53b` (re-read at `24c73c378c21`, a docstring; below). Records
 `<HDD_1TB>/mets_data/trackT/t5u4/` (`replicates.json`; `A0p/`, `A0pp/` with `gate_start.json`, `read/`
 at the 49 grid steps, `ckpt/`). **The pause:** the user stopped the batch overnight after A0″'s update
 2622; its state was at 2540, so the rerun (2026-11-05, `logs/u4b_replicates_resume.log`, exit 0, 9116 s
@@ -119,8 +119,21 @@ Beside, no label (U4a's Parked 1; after output):
 So A0's earlier rise is not its seed: all three are 0.13–0.23 above Dodecahedron at 1253–2002, against
 a three-seed spread of 0.04–0.075. Its cause (the data, the tokens a step, Dodecahedron's own seed) is
 still not told apart. For timing reads between arms at these steps, differences under ≈ 0.075 are within
-three seeds' spread; no timing rule was frozen, so this is a scale, not a bar. **U4a's Parked 1: done**
+three seeds' spread; no timing rule was frozen, so this is a scale, not a bar. The three differ in the
+init seed only (one shard, one order), so τ and this spread are the noise *between arms*, which share
+that stream; against another run (Dodecahedron: other data, order and batch) they understate it, and
+"not its seed" means not its init seed (/challenge-pr on #311, finding 2). **U4a's Parked 1: done**
 (the spread recorded; the onset's cause stays under U4a's "Not established").
+
+**The second change** (/challenge-pr on #311, finding 1, after output; nothing trained at it yet; `t5h`
+`40289679fc36` → **`81b2e03bdcf7`**, `t5c`/`t5`/`t2`/`c2_aniso` untouched): `RESUMABLE` keyed only on the
+old code, so A0's 4369 state would have resumed under *any* later `t5h`, the guard it was meant to
+narrow. Crossings are now (from, to) pairs in a sidecar outside the hash, `trackT_timaeus/t5h_resumable.json`
+(a pair names the code that reads it, so it cannot sit in a hashed file): 66af… → 4028… (history),
+66af… → 81b2… (A0, for 5970), 4028… → 81b2… (A0′, A0″). Tests flipped (`test_trackT_t5h.py`: a pair
+carries a state into its one code only); the loop's smoke tests 4 passed; `t5i`'s docstring gains
+finding 2's clause, so `replicates.json` was re-read at `t5i` `24c73c378c21`, `t5h_now` `81b2e03bdcf7`:
+every number equal, only those two fields changed. A1–A3 train at `81b2e03bdcf7`.
 
 Re-run: `METS_DATA=<main>/data scripts/t5u4b_replicates.sh` (resumable; each stage gated); `python -m
 trackT_timaeus.t5i replicates` alone rewrites `replicates.json` from the records. **Next: A1–A3 to 4369**
@@ -199,8 +212,8 @@ and will say how the resume is allowed across it. Fix: refuse, or say so and ret
 3. `FLOOR_MAX`'s comment (`t5h.py:84`) should say *placed* (finding 1); with 2, for the same reason.
 
 Re-run: `METS_DATA=<main>/data scripts/t5u4a_A0.sh` (resumable; each stage is gated; a resume state
-continues only under its own code or one named in `t5h.RESUMABLE`: since U4b's first change, `40289679fc36`
-continues `66af413c31fe`'s). Parked 2–3 fixed there ("T5 U4b" above); Parked 1 is read by `t5i replicates`.
+continues only under its own code or under a (from, to) pair in `trackT_timaeus/t5h_resumable.json`:
+`66af413c31fe`'s continues under `40289679fc36` and `81b2e03bdcf7`). Parked 2–3 fixed there ("T5 U4b" above); Parked 1 is read by `t5i replicates`.
 
 ## T5 U4a, before A0: the loop, the shard, θ, the known answer; the noise floor refuses (2026-11-03)
 

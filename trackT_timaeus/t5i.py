@@ -11,7 +11,10 @@ Commands:
                  bar = max(0.2, 2τ); bar_I = √2 · bar; **readable iff bar < R_A0 / 2**. Refuses unless
                  A0's late gate and A0′'s and A0″'s start gates passed. Beside, no label (Parked 1 on #310):
                  the three's ρ_mid at 1253, 1713, 2002 and their spread (max − min), each one's T, its step
-                 and R, the v1 loss at 4369, the codes the records were read at.
+                 and R, the v1 loss at 4369, the codes the records were read at. The replicates differ in
+                 the init seed only (one shard, one order: `t5h`'s stream), so τ and the timing spread are
+                 the noise between arms, which share that stream; against another run (Dodecahedron) they
+                 understate it (/challenge-pr on #311, finding 2).
 
 Tier 1, description (nothing here is registered).
     python -m trackT_timaeus.t5i replicates          # exit 0 readable, 3 not (back to the user)

@@ -97,13 +97,18 @@ N_BOOT, BOOT_SEED = 1000, 20261030
 U2_DIR = "trackT/t5u2/2026-10-30"
 HDD = Path("/run/media/system/HDD_1TB/mets_data")
 ROOT = HDD / "trackT" / "t5u4"
-#: earlier codes whose resume states this code may continue, each with what changed (U4b, Parked 2 on #310):
-#: named here so a crossing is on the record, not a blanket ``--allow-code-change``
-RESUMABLE = {
-    "66af413c31fe": "U4b's first change (Parked 2-3 on #310): an empty segment returns without a log line; "
-                    "FLOOR_MAX's comment; RESUMABLE itself. The loop, the stream, the checkpoints and the read "
-                    "are unchanged (t5c, t5, t2, c2_aniso untouched)",
-}
+#: resume crossings, each an (earlier code, later code) pair with what changed: a resume state continues
+#: under a new code only if a pair names both, so a crossing is on the record, not a blanket
+#: ``--allow-code-change``, and one pair cannot carry a state into every later code (/challenge-pr on #311,
+#: finding 1). A sidecar outside ``code_sha``'s files, since a pair names the code that reads it.
+RESUMABLE_FILE = REPO / "trackT_timaeus/t5h_resumable.json"
+
+
+def resumable(path: Path = RESUMABLE_FILE) -> Dict[Tuple[str, str], str]:
+    """The named crossings: {(from code, to code): what changed}."""
+    if not path.exists():
+        return {}
+    return {(r["from"], r["to"]): r["why"] for r in json.loads(path.read_text())}
 
 
 class T5hRefused(RuntimeError):
@@ -145,9 +150,12 @@ def nothing_to_train(start: int, until: int) -> bool:
     return until <= start
 
 
-def resume_allowed(state_code: str, now: str, allow_any: bool = False) -> bool:
-    """A resume state continues under this code if it was written by it, or by a code in RESUMABLE."""
-    return state_code == now or state_code in RESUMABLE or allow_any
+def resume_allowed(state_code: str, now: str, allow_any: bool = False,
+                   pairs: Optional[Dict[Tuple[str, str], str]] = None) -> bool:
+    """A resume state continues under this code if it was written by it, or if a pair in
+    ``t5h_resumable.json`` names (its code, this code)."""
+    pairs = resumable() if pairs is None else pairs
+    return state_code == now or (state_code, now) in pairs or allow_any
 
 
 def decays(name: str, p) -> bool:
@@ -463,7 +471,7 @@ def train(a) -> int:
         opt.load_state_dict(st["opt"])
         start, from_code = int(st["step"]), st["code"]
         if not resume_allowed(from_code, code_sha(), a.allow_code_change):
-            raise T5hRefused(f"resume state from code {from_code}, now {code_sha()} (not in RESUMABLE)")
+            raise T5hRefused(f"resume state from code {from_code}, now {code_sha()} (no pair in t5h_resumable.json)")
     if nothing_to_train(start, a.until):          # Parked 2 on #310: say so, write no segment line
         print(json.dumps({"arm": arm, "until": a.until, "resume_step": start, "nothing_to_train": True}))
         return 0
