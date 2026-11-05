@@ -84,3 +84,24 @@ def test_the_command_refuses_on_an_unpassed_gate_and_reads_otherwise(tmp_path, m
     (tmp_path / "A0pp" / "gate_start.json").write_text(json.dumps({"pass": True}))
     with pytest.raises(t5h.T5hRefused, match="no series"):
         t5i.replicates(a)
+
+
+def test_step0_same_reads_the_largest_state_difference():
+    r = t5i.step0_same([0.8, 0.9, 0.85], [0.8, 0.9 + 5e-7, 0.85])
+    assert r["pass"] and r["max_abs_diff"] == pytest.approx(5e-7)
+    assert not t5i.step0_same([0.8, 0.9], [0.8, 0.9 + 2e-6])["pass"]
+    with pytest.raises(t5h.T5hRefused):
+        t5i.step0_same([0.8, 0.9], [0.8])
+
+
+def test_step0_command_refuses_without_the_base_record(tmp_path):
+    d = tmp_path / "A1" / "read"
+    d.mkdir(parents=True)
+    (d / "step0.json").write_text(json.dumps({"rho": [0.8, 0.9]}))
+    with pytest.raises(t5h.T5hRefused):
+        t5i.main(["step0", "--arm", "A1", "--root", str(tmp_path)])
+    b = tmp_path / "A0" / "read"
+    b.mkdir(parents=True)
+    (b / "step0.json").write_text(json.dumps({"rho": [0.8, 0.9]}))
+    assert t5i.main(["step0", "--arm", "A1", "--root", str(tmp_path)]) == 0
+    assert json.loads((tmp_path / "A1" / "gate_step0_same.json").read_text())["pass"]

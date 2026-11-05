@@ -15,9 +15,12 @@ Commands:
                  the init seed only (one shard, one order: `t5h`'s stream), so τ and the timing spread are
                  the noise between arms, which share that stream; against another run (Dodecahedron) they
                  understate it (/challenge-pr on #311, finding 2).
+    step0        the gate row "A1 is A0 at step 0, A3 is A2 at step 0: ρ_ℓ equal, ≤ 1e-6" (design "Gate"), on
+                 the arm's and its base's step-0 records; writes ``<arm>/gate_step0_same.json``; exit 3 if not.
 
 Tier 1, description (nothing here is registered).
     python -m trackT_timaeus.t5i replicates          # exit 0 readable, 3 not (back to the user)
+    python -m trackT_timaeus.t5i step0 --arm A1      # exit 0 equal to its base at step 0, 3 not
 """
 from __future__ import annotations
 
@@ -114,13 +117,42 @@ def replicates(a) -> int:
     return 0 if res["readable"] else 3
 
 
+#: an arm with biases and the arm it equals at step 0 (design "The arms": zero biases on the base's weights)
+BASE = {"A1": "A0", "A3": "A2"}
+
+
+def step0_same(rho: Sequence[float], rho_base: Sequence[float], tol: float = t5h.KNOWN_TOL) -> dict:
+    """The step-0 equality row (pure): max |Δρ_ℓ| over the states, at ``tol``."""
+    if len(rho) != len(rho_base):
+        raise t5h.T5hRefused(f"step 0: {len(rho)} states against {len(rho_base)}")
+    d = max(abs(x - y) for x, y in zip(rho, rho_base))
+    return {"max_abs_diff": d, "tol": tol, "pass": d <= tol}
+
+
+def step0(a) -> int:
+    root = Path(a.root)
+    base = BASE[a.arm]
+    recs = {x: t5h.records(root, x).get(0) for x in (a.arm, base)}
+    miss = [x for x, r in recs.items() if r is None]
+    if miss:
+        raise t5h.T5hRefused(f"step-0 record missing: {miss}")
+    res = {"arm": a.arm, "base": base, **step0_same(recs[a.arm]["rho"], recs[base]["rho"]),
+           "rho": recs[a.arm]["rho"], "rho_base": recs[base]["rho"], "t5i": own_sha(), "t5h_now": t5h.code_sha()}
+    t5h._jdump(root / a.arm / "gate_step0_same.json", res)
+    print(json.dumps({k: res[k] for k in ("arm", "base", "max_abs_diff", "tol", "pass")}))
+    return 0 if res["pass"] else 3
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="t5i")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("replicates")
     p.add_argument("--root", default=str(t5h.ROOT))
+    p = sub.add_parser("step0")
+    p.add_argument("--arm", required=True, choices=sorted(BASE))
+    p.add_argument("--root", default=str(t5h.ROOT))
     a = ap.parse_args(argv)
-    return {"replicates": replicates}[a.cmd](a)
+    return {"replicates": replicates, "step0": step0}[a.cmd](a)
 
 
 if __name__ == "__main__":
