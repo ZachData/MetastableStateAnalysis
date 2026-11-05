@@ -1,0 +1,8 @@
+[
+ {"from": "66af413c31fe", "to": "40289679fc36",
+  "why": "U4b's first change (Parked 2-3 on #310): an empty segment returns without a log line; FLOOR_MAX's comment; RESUMABLE (then a dict of earlier codes in t5h.py). The loop, the stream, the checkpoints and the read are unchanged (t5c, t5, t2, c2_aniso untouched)"},
+ {"from": "66af413c31fe", "to": "81b2e03bdcf7",
+  "why": "the first change above, then /challenge-pr on #311 finding 1: RESUMABLE moved to this sidecar, keyed by (from, to) pairs. The loop, the stream, the checkpoints and the read are unchanged (t5c, t5, t2, c2_aniso untouched). A0's 4369 state, for its continuation to 5970"},
+ {"from": "40289679fc36", "to": "81b2e03bdcf7",
+  "why": "/challenge-pr on #311 finding 1: RESUMABLE moved to this sidecar, keyed by (from, to) pairs. The loop, the stream, the checkpoints and the read are unchanged (t5c, t5, t2, c2_aniso untouched). A0', A0'' 4369 states, for A0''s continuation to 5970"}
+]

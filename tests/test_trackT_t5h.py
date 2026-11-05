@@ -44,6 +44,25 @@ def test_the_rows():
             t5h.batch_rows(bad)
 
 
+def test_an_empty_segment_and_the_named_resume_crossing():
+    # Parked 2 on #310: --until at or below the resume step trains nothing (and writes no segment line)
+    assert t5h.nothing_to_train(3198, 103) and t5h.nothing_to_train(4369, 4369)
+    assert not t5h.nothing_to_train(4369, 5970) and not t5h.nothing_to_train(0, 103)
+    # a crossing is a named (from, to) pair: it carries a state into that one code, not every later one
+    # (/challenge-pr on #311, finding 1)
+    pairs = {("old", "mid"): "why"}
+    assert t5h.resume_allowed("old", "mid", pairs=pairs) and t5h.resume_allowed("abc", "abc", pairs=pairs)
+    assert not t5h.resume_allowed("old", "new", pairs=pairs) and not t5h.resume_allowed("mid", "old", pairs=pairs)
+    assert not t5h.resume_allowed("abc", "new", pairs=pairs)
+    assert t5h.resume_allowed("abc", "new", allow_any=True, pairs=pairs)
+    # the sidecar: each pair crosses to another code and says why; A0's 4369 state (66af413c31fe)
+    # crossed into U4b's first change by name
+    live = t5h.resumable()
+    assert live and all(f != t and w.strip() for (f, t), w in live.items())
+    assert ("66af413c31fe", "40289679fc36") in live
+    assert not t5h.resume_allowed("66af413c31fe", "anything-else", pairs=live)
+
+
 def _dodeca_like(noise=0.0, seed=0):
     """A ρ_mid series on the checkpoint grid shaped as `-32m`'s (B4): 0.8 at 0, 1.0 by 40, the trough
     0.111 at 917, a rise to 0.763 at 3738 and 0.812 at 4369, on to 0.872 at 5970."""

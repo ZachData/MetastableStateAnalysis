@@ -48,6 +48,8 @@
 !trackC_writeup/gpt2_small_lr_log.json
 # GitHub's activity events for P-A5's registration branch (§3.4's outside timestamp; GitHub keeps them ~90 days). A `repo:` record of numbers.py.
 !trackC_writeup/p_a5_push_record.json
+# T5 U4's named resume crossings, (from, to) code pairs read by t5h.resume_allowed (outside t5h's hash).
+!trackT_timaeus/t5h_resumable.json
 # The session-start hook that prints STATE.md (CLAUDE.md, Start). settings.local.json stays ignored.
 !.claude/settings.json
 !*.sh
