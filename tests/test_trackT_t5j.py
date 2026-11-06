@@ -4,6 +4,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.deps  # t5j imports a1a
 from trackT_timaeus import t5j
 
 

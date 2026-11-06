@@ -68,6 +68,9 @@ world moves, nobody updates the line, and the next session acts on it.
   2026-10-25 (B7 unit 0): again, at #240 with `origin/main` at #270 (170 commits behind); the
   hook's output was 50 KB, so even the stale copy was read from a file, not from context.
   2026-10-25 (B7 unit 1b): again, at #240 with `origin/main` at #272.
+  2026-11-06 (T5 beside stage): again, at #300 (dated 2026-11-01) with `origin/main` at #312;
+  Blocked 134 was read from `git show origin/main:STATE.md`. The same session's prompt carried
+  "decided (a/b/c)" unfilled, a template, not a decision; asked, not inferred.
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
