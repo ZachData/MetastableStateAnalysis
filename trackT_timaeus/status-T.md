@@ -24,7 +24,7 @@
   - T5 U4a's A0, the positive control: Dodecahedron's recipe retrained on FineWeb at 524k tokens a step reproduces its fall (mean cosine 0.14 at 671, against 0.11) and its late level (0.79 against 0.79, the mean of 3738 and 4369), so the one-change arms are read against it; the rise starts earlier than in the released run (0.31 against 0.13 at 1253, a description after output, one seed) — `trackT_timaeus/status-T.md` "T5 U4a: Blocked 133 decided; A0"
   - T5 U4b's replicates: two more seeds of A0 land within 0.046 of it at the late level (0.781, 0.748 against 0.794), so the noise bar stays at its floor 0.2, under half A0's rise (0.328), and the one-change arms are read with all four labels; the earlier rise is not A0's seed (all three 0.13–0.23 above the released run at 1253–2002, spread 0.04–0.075; after output) — `trackT_timaeus/status-T.md` "T5 U4b"
   - T5 U4b's arms: neither biases (A1), nor Pythia's init (A2), nor both (A3) lowers Dodecahedron's late level by the bar (ΔL 0.141, 0.066, 0.171 against 0.2), so H2 and H1 through training read "not supported" at that bar (A3 0.6 τ and A1 1.3 τ under it, one run each) and no interaction is seen; beside, after output, each arm sits 1.4–3.7 τ below A0, biases as a steady lower level (0.14 from 2735, about 21 % of A0's rise), Pythia's init as a slower rise whose gap closes (0.17 → 0.06) and is within seed spread at equal loss — `trackT_timaeus/status-T.md` "T5 U4b: the arms"
-  - T5 U4's beside stage at 4369 (Blocked 134 (a), the user's; gates pass): at one step and near-equal loss, T2's B-matched count passes on one A0 seed (ρ 0.755), A1 (0.66) and A3 (0.63) and fails on A0, A0′ (0.79–0.80) and A2 (0.74), and the uncentred count is as on Pythia on A1 and A3 only, its share falling with ρ over all six arms (post hoc; across recipes it does not: Dodecahedron 0.16 at 0.81, A0 0.54 at 0.80); so neither stop is set by step or loss alone in this recipe, and ρ is not told from biases; biases write 0.06 of the shared component, Pythia's init cuts position 0's norm about 3×, and no sink or massive-activation onset leads the rise (Sun et al.'s criterion met nowhere) — `trackT_timaeus/status-T.md` "T5 U4's beside stage at 4369"
+  - T5 U4's beside stage at 4369 (Blocked 134 (a), the user's; gates pass): at one step and near-equal loss, the uncentred count is as on Pythia on A1 and A3 and on none of the three A0 seeds, its share falling with ρ over all six arms (post hoc; across recipes it does not: Dodecahedron 0.16 at 0.81, A0 0.54 at 0.80); T2's B-matched count passes on one A0 seed (ρ 0.755) and A3 (0.63) only, A1 and A0 both failing it, so it does not separate ρ from step or loss; ρ is not told from biases; biases write 0.06 of the shared component, Pythia's init cuts position 0's norm about 3×; whether a sink or massive-activation onset leads the rise is not determined by the frozen half-rise (post hoc, the massive top and position 0's norm grow first), and Sun et al.'s criterion is met nowhere — `trackT_timaeus/status-T.md` "T5 U4's beside stage at 4369"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -36,7 +36,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-06 · body `28ddd3769d`
+- **Reviewed:** 2026-11-06 · body `6cf2a84322`
 <!-- /phase-card -->
 
 ## Units
@@ -91,6 +91,12 @@ step 4369, v1 loss 3.90–3.95.
 | (ii) | **neither A1 nor an A0 seed passes**: no arm under 0.10 (A3 0.108, A1 0.134 nearest) |
 | (iii) | **A1 passes, no A0 seed does**: goes with ρ or with what biases change (the table cannot tell them apart) |
 
+(i) is U3's (i), as frozen: some centred arm has P. **On the B-matched arm alone** (the arm Blocked 134
+named; corrected after `/challenge-pr` on #313, finding 1, which found the first write-up saying A1
+passes it): P on A0″ (A 0.086, B 0.49) and A3 (0.02, 0.82) only; A1's is A 0.118, B 0.62, so on
+that arm **A1 and A0 both fail**, and the contrast Blocked 134 added it for reads nothing. A1's P
+under (i) comes from the fixed 1e-4 and 3e-4 arms, whose re-init rate fails the full gate.
+
 **Beside, after output (post hoc):** (iii)'s share is in exact reverse order of ρ_mid over the six arms
 (0.96, 0.86, 0.79, 0.60, 0.56, 0.54 at ρ 0.63 … 0.80), A2 without biases sitting in that order. So within
 this recipe at one step, (iii) follows ρ. Across recipes it does not: Dodecahedron at ρ 0.81 reads
@@ -124,18 +130,30 @@ write" is not told apart from seed noise.
 | A3 | 0.10 (3198) | 2214 / 544 (2340) | 0.53; dim 262, 0.52 | 2.8 (2002) | 2340 |
 
 Sun et al.'s criterion is met on no arm at any step: the top coordinate passes 100 (≈ 500–900 by
-3738, about 2000 at 4369), but its ratio to the median coordinate stays at 540–940, under 1000. Every
-massive and sink half-rise falls at or after the ρ half-rise (1713–2340), and n0's at 2002 (A2 917), so
-none of them leads the rise on this grid. Pythia's init (A2, A3) sets position 0's norm about 3× lower
+3738, about 2000 at 4369), but its ratio to the median coordinate stays at 540–940, under 1000. On
+the frozen half-rise, every massive and sink onset falls at or after ρ's (1713–2340), and n0's at 2002
+(A2's at 917, before its ρ at 2002). **That ordering comes from the rule, not the data** (`/challenge-pr` on #313, finding 2): the
+half-rise measures toward the 4369 value, and S and M are still climbing there, so it lands late by
+construction. Post hoc, from the same series: on log M the half-rise is at 1253–1465 on every arm; the
+first step past 10 % of the rise is 671–1253 for n0 and 917–1465 for S, against ρ's 1253–1465 (10 %)
+and 1713–2340 (half). So whether an onset leads the rise is **not determined** by this stage; the
+massive top and position 0's norm grow before ρ does under these post hoc definitions. Pythia's init (A2, A3) sets position 0's norm about 3× lower
 (2.4–2.8 against 6.6–8.4) and halves the share of the top coordinate at position 0. Biases do neither
 (A1 8.4, 0.74). A1's sink half-rises earlier (2002 against 2735–3198) and its massive one later (3198
 against 2340–2735), one run. The massive dimension is set by the init seed: A0 and A1 share seed 0
 and dimension 225.
 
 **What this stage adds to U3:** at one step and near-equal loss, (i) and (iii) pass on some arms and
-fail on others, so neither count's stop is set by step or loss alone in this recipe. (iii) follows ρ
-within it. (i) does not follow ρ alone, and the A1/A0 contrast cannot tell ρ from biases. Not
-established: any cause; any noise on the counts beyond the three seeds; anything past 4369.
+fail on others, so neither count's stop is set by step or loss alone in this recipe. For (i) that rests
+mostly on the A0 seeds splitting 1 of 3 near the bar (finding 3), which is seed noise and says nothing
+for ρ. (iii) is the cleaner reading: A1 and A3 against all three A0 seeds, and it follows ρ within
+the recipe (post hoc). On the B-matched arm A1 and A0 both fail, so it does not separate ρ from step
+or loss. Not established: any cause; ρ against biases; any noise on the counts beyond the three
+seeds; whether any onset leads the rise; anything past 4369.
+
+**Carried to T5's close-out** (from `/challenge-pr` on #313): the onset question as "not determined by
+the half-rise rule", with the post hoc departures beside; `t5j.outcome_row` counts a refused run as
+"not passing" without a flag (finding 4; no refusal occurred here, every `source.json` has `rc`).
 
 **Parked:** `t5i`'s import order and a test of `arms` (#312, finding 4): the beside stage needed no `t5i`
 change, so **carried to T5's close-out**.
