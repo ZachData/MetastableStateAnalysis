@@ -84,3 +84,79 @@ def test_the_command_refuses_on_an_unpassed_gate_and_reads_otherwise(tmp_path, m
     (tmp_path / "A0pp" / "gate_start.json").write_text(json.dumps({"pass": True}))
     with pytest.raises(t5h.T5hRefused, match="no series"):
         t5i.replicates(a)
+
+
+def test_step0_same_reads_the_largest_state_difference():
+    r = t5i.step0_same([0.8, 0.9, 0.85], [0.8, 0.9 + 5e-7, 0.85])
+    assert r["pass"] and r["max_abs_diff"] == pytest.approx(5e-7)
+    assert not t5i.step0_same([0.8, 0.9], [0.8, 0.9 + 2e-6])["pass"]
+    with pytest.raises(t5h.T5hRefused):
+        t5i.step0_same([0.8, 0.9], [0.8])
+
+
+def test_step0_command_refuses_without_the_base_record(tmp_path):
+    d = tmp_path / "A1" / "read"
+    d.mkdir(parents=True)
+    (d / "step0.json").write_text(json.dumps({"rho": [0.8, 0.9]}))
+    with pytest.raises(t5h.T5hRefused):
+        t5i.main(["step0", "--arm", "A1", "--root", str(tmp_path)])
+    b = tmp_path / "A0" / "read"
+    b.mkdir(parents=True)
+    (b / "step0.json").write_text(json.dumps({"rho": [0.8, 0.9]}))
+    assert t5i.main(["step0", "--arm", "A1", "--root", str(tmp_path)]) == 0
+    assert json.loads((tmp_path / "A1" / "gate_step0_same.json").read_text())["pass"]
+
+
+def _six(a1=0.0, a2=0.0, a3=0.0, reps=(0.03, -0.02)):
+    s = {"A0": _series(), "A0p": _series(reps[0]), "A0pp": _series(reps[1]),
+         "A1": _series(-a1), "A2": _series(-a2), "A3": _series(-a3)}
+    rho0 = {a: [0.8] * 17 for a in ("A0", "A1", "A2", "A3")}
+    return s, rho0
+
+
+def test_arms_labels_and_pending_delay_check():
+    # R_A0 = 0.7875 − 0.111 = 0.6765, half 0.338; bar 0.2 (floor)
+    s, rho0 = _six(a1=0.40, a2=0.05, a3=0.25)
+    r = t5i.arms_read(s, rho0)
+    assert r["arms"]["A1"]["label"] == "lowers" and r["arms"]["A1"]["hyp_label"] == "pending the delay check"
+    assert r["arms"]["A2"]["label"] == "does not" and r["arms"]["A2"]["hyp_label"] == "not supported"
+    assert r["arms"]["A3"]["label"] == "partly" and r["arms"]["A3"]["continues_to_5970"]
+    assert r["arms"]["A1"]["dL"] == pytest.approx(0.40)
+    # I = ΔL_A3 − ΔL_A1 − ΔL_A2 = 0.25 − 0.40 − 0.05 = −0.20, inside bar_I 0.283
+    assert r["interaction"]["I"] == pytest.approx(-0.20)
+    assert r["interaction"]["label"] == "no interaction seen at this noise"
+    assert r["continuations"] == ["A0", "A1", "A3", "A0pp"]
+    assert not r["neither_alone_together"]
+
+
+def test_arms_raises_and_neither_alone_together():
+    s, rho0 = _six(a1=-0.25, a2=0.1, a3=0.5)
+    r = t5i.arms_read(s, rho0)
+    assert r["arms"]["A1"]["label"] == "raises" and r["arms"]["A1"]["hyp_label"] == "not supported"
+    assert r["neither_alone_together"]
+    assert r["interaction"]["label"] == "together lower it more than the sum"      # 0.5 + 0.25 − 0.1 = 0.65
+
+
+def test_arms_refuse_unreadable_or_unequal_step0():
+    s, rho0 = _six(reps=(-0.17, 0.0))
+    with pytest.raises(t5h.T5hRefused, match="not readable"):
+        t5i.arms_read(s, rho0)
+    s, rho0 = _six()
+    rho0["A3"] = [0.8] * 16 + [0.81]
+    with pytest.raises(t5h.T5hRefused, match="step-0"):
+        t5i.arms_read(s, rho0)
+    del s["A3"]
+    with pytest.raises(t5h.T5hRefused, match="missing"):
+        t5i.arms_read(s, rho0)
+
+
+def test_boot_dl_on_equal_prompts_is_the_point_value():
+    pp = {a: {st: np.full((7, 17), v) for st in t5h.L_STEPS} for a, v in (("A0", 0.8), ("A1", 0.5))}
+    b = t5i.boot_dl(pp, ["A1"])["A1"]
+    assert b["p5"] == pytest.approx(0.3) and b["p95"] == pytest.approx(0.3)
+    # unequal prompts: the interval is not a point, and it brackets the point value
+    rng = np.random.default_rng(0)
+    pp["A1"] = {st: 0.5 + 0.05 * rng.standard_normal((7, 17)) for st in t5h.L_STEPS}
+    b = t5i.boot_dl(pp, ["A1"])["A1"]
+    assert b["p5"] < b["p95"]
+    assert t5i._mid(np.full((7, 17), 0.8)) == pytest.approx(0.8)
