@@ -70,7 +70,11 @@ and `replicates.json` reads readable. Order A1, A2, A3, so A3's step-0 check has
 Tests: `test_trackT_t5i.py` (step-0 equality and its refusals; labels, the pending delay check, the
 continuations list, raises, "neither alone; together", the interaction both ways; refusal when unreadable
 or step 0 differs; the bootstrap on equal and unequal prompts). **Launched 2026-11-05** via the runner
-(`logs/u4b_arms.log`).
+(`logs/u4b_arms.log`). **Paused by the user 2026-11-05** (process killed after A2's update 3911, no
+`.exit` file): A1 trained and read to 4369 (49 checkpoints, `state4369.pt`; start gate and step-0
+equality pass, max |Δρ_ℓ| 3.3e-9); A2's start gate passes, its resume state is at 3738 (48 checkpoints,
+25 read), so the rerun retrains 3739–3911 (as A0″'s pause, the log keeps both, split by `segment` lines;
+not bit-exact); A3 not started. No ΔL read. Resume: rerun the script (A1's stages return at once).
 
 **Not in this stage, carried to the continuations' stage** (design "Beside": at 4369 U3's split on each arm
 and counts (ii), (iii)): they need the GPU after the arms and are beside, no label.
