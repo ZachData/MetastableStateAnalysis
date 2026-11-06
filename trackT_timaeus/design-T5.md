@@ -505,6 +505,45 @@ these moves the rule).**
 | (t12) the configuration | `torch.compile`, micro-batch 4 (64 accumulations); chosen by a probe on random tokens (5 updates each: 69k tokens/s eager at 4, 106k compiled; 8 and 16 run out of memory); fixed in `t5h` (`N_MICRO`, `COMPILE`), refused if an arm's segment differs from its `meta.json` (after `/challenge-pr` on #309, finding 3) |
 | (t11) the interaction's planted null | "reads 'partly' or more" read two-sided, \|ΔL\| ≥ bar ('raises' is the other side), since I's label is two-sided; seed `default_rng(20261103 + 1000σ)`, fixed before the test first ran; **1e5 draws, not the design's 1,000** (`/challenge-pr` on #309, finding 2: at 1,000 the outcome is about a coin flip on the seed, 76 % pass), so the test reads the rates |
 
+**U4's beside stage at 4369 (Blocked 134 (a), the user's, 2026-11-06; fixed before any output; code
+`trackT_timaeus/t5j.py`).** Description, no label: U4's labels are final. The continuations do not
+run (134 (a)); LR goes to ROADMAP §7b, not opened.
+
+| item | fixed |
+|---|---|
+| models | the six arms' `ckpt/step4369.safetensors` (A0, A0′, A0″, A1, A2, A3), loaded by `t5h.load_weights`; for the onsets each arm's 49 checkpoints 0 … 4369. Reference row: released `-32m` at 4369 from U3's records |
+| counts (i)–(iii) | `t2.py preflight` unchanged at trained step 4369, the trained population loaded from the arm's checkpoint (its loader swapped in-process, so `t2.py`'s hash and `t5h`'s stay); **T2's re-inits, plants, `u` seed and doses, as U3**. (i) T2's centred arms as derived: P and the full gate per arm, and the wide B-matched search beside (U3's post hoc `WIDE_HI`); (ii) the fixed-τ grid (`t5e.TAUS` × `DOSES`), read at 3e-3 / 0.5: plant A ≤ 0.10; (iii) the uncentred plant-A share at 1e-3, binned as U2b. P, (ii)'s plant A and (iii) do not read the re-inits; the full gate and the null-matched arm do, against Llama re-inits that are A0's init in distribution and not A1–A3's (stated beside, not corrected) |
+| the split | `t5f.read_model` on each arm at 4369: the six shares and sizes, the write's size, token constancy; on A1 and A3 the bias paths (attn_bias, mlp_bias). Gate: each record's `err_sum` ≤ `t5f.SUM_TOL` (1e-4) |
+| sink metric S(s) | Gu et al. 2410.10781's Sink^ε to the first token, ε = 0.3: the share of (block, head) whose attention to position 0, averaged over every query position, exceeds ε; mean over the 7 prompts |
+| massive activation M(s) | per prompt and block output ℓ = 1 … L − 1 (the last is seen only after the final norm): the largest \|coordinate\| over tokens and dimensions, and its ratio to the median \|coordinate\|; per ℓ the median over prompts; M(s) the largest ratio over ℓ, with that ℓ's magnitude. **Sun et al. 2402.17762's criterion**: some ℓ with magnitude ≥ 100 and ratio ≥ 1000 |
+| position 0's norm n0(s) | the read records' n0 (position 0's norm over the median token norm), the median over the middle states, as U2's `n0_mid`; no new forward |
+| onset (each of S, M, n0) | the **half-rise step**: the first grid step s from which x ≥ x(0) + ½ (x(4369) − x(0)) at s and every later step; "no rise" if x(4369) ≤ x(0). Sun et al.'s criterion: the first step from which it holds at every later step, else "not met by 4369". Beside: ρ_mid's half-rise from its trough (x(T_k) in place of x(0), steps after T_k) |
+| beside the onsets | the share of (prompt, ℓ) whose largest coordinate sits at position 0, and the dimension index most often holding it |
+
+**Gates (before the reading; any failure goes back to the user).**
+
+| check | pass |
+|---|---|
+| counts, the code path: released `-32m` 4369 through `t5j`'s harness with `t2.load` itself, against U3's `32m-step4369/preflight_plants.json` | `t5d.known_answer` at 1e-12 |
+| counts, the load path: `t5u4/known/step4369.safetensors` (released 4369 saved by (t9)) through the swapped loader, against the same record | `t5d.known_answer` at 1e-6 (the reader's known-answer bar, design "Gate") |
+| the split's load path: the same file through `t5f.read_model`, against U3's batch record `t5u3s/2026-11-02-batch/32m/step4369.json` | shares, sizes, `rho` within 1e-6 |
+| the onsets' forward: n0 per state from `t5j`'s forward on each arm's checkpoints equals the read records' n0 | 1e-6 at every step |
+| tests: S on a hand-built attention tensor, M and the criterion on planted arrays, the half-rise rule on planted series (with "no rise" and a series that crosses back) | pass |
+
+**What the comparisons can say, stated before output** (one run per arm; the replicates' spread of
+each reading at 4369 is the only noise on them). Dodecahedron's records: (i) has P at 3738 (ρ_mid
+0.76, wide search) and none at 4369 (0.81). At 4369 A1 sits at A0's step and v1 loss with ρ_mid 0.66
+against 0.80, and the replicates at 0.75–0.80.
+
+| (i) at 4369 | reads (description) |
+|---|---|
+| A1 has P; A0, A0′, A0″ none | the count's stop goes with ρ (or with what biases change), not with step or loss, in this recipe |
+| A1 none; A0 none | not ρ alone at 0.66: step, loss or something the arms share |
+| A0 (or a replicate) has P | the count passes at ρ ≈ 0.75–0.80 in this recipe, unlike Dodecahedron at 0.81; ρ alone is not its stop |
+
+The same table is read for (ii) and (iii) beside. **Not shown by it:** one run per arm; A1 differs from
+A0 in biases as well as ρ, so "goes with ρ" cannot be told from "goes with biases".
+
 **U5, the controls.** U2's statistics on Mistral GPT-2 small from checkpoint 0 (on disk), on
 410m's seeds 1–9 at the 18 steps (on disk), and on `gpt-2-small` if D1 (b). They describe, with no rule.
 
