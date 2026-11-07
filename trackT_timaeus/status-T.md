@@ -5,7 +5,7 @@
 ## Card
 
 - **Question:** Do Timaeus's released checkpoints (Dodecahedron, a fourth training schedule) and the local learning coefficient give C2's energy break a second schedule and a degeneracy curve to sit beside, and which released model and settings make the LLC a calibrated instrument here?
-- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"; T5 U2 ran `dodecahedron-32m`, `-67m` at their 53 steps, `pythia-70m`, `-160m`, `-410m` at C2's 18 and `timaeus/gpt-2-small` at its init and 19 checkpoints, the 7 v1 prompts (`976b62d677bc`), code `3d425b32db90`, listed in `trackT_timaeus/status-T.md` "T5 U2"; T5 U2b ran `dodecahedron-32m` at steps 491, 671, 917 and 9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, listed in `trackT_timaeus/status-T.md` "T5 U2b"; T5 U3's first read ran `dodecahedron-32m` at the 16 grid steps 917–9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, reader `t5e.py`, listed in `trackT_timaeus/status-T.md` "T5 U3, first read"; T5 U3's split ran `dodecahedron-32m` at 9 steps (1, 917–9536) with a planted o_proj bias at 9536 and `pythia-410m` at C2's 8 split steps (0–143000), the 7 v1 prompts (`976b62d677bc`), code `ef81a441e7dc`, listed in `trackT_timaeus/status-T.md` "T5 U3's split, the batch"; T5 U4s ran 3,160 random models (Llama at 32m's shape without biases, 79 cells: the 64 subsets of U1b's six swaps, `untied`, the `gelu` split, the reverse ablation, × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `2d7d55d4e4f9`, listed in `trackT_timaeus/status-T.md` "T5 U4s"; T5 U4a ran released `dodecahedron-32m` at 1, 917, 4369, 9536 and `pythia-410m` seeds 0–9 at 4000 and 143000 through U2's reader, built FineWeb `sample-10BT`'s stream (revision `9bb295dd`, files 000–003, main `a7c1b38b`), and timed 60 updates of A0's configuration (discarded), code `b9e5724ac9d2`, listed in `trackT_timaeus/status-T.md` "T5 U4a, before A0"; T5 U4a's A0 trained the Llama-32m (init F, seed 0, no biases) on that stream's main part to 4369 at 524,288 tokens a step and read its 49 grid checkpoints on the 7 v1 prompts (`976b62d677bc`), code `66af413c31fe`, listed in `trackT_timaeus/status-T.md` "T5 U4a: Blocked 133 decided; A0"
+- **Inputs:** T1 ran nothing: it read Hugging Face metadata (cards, config files, branch and file listings, LFS hashes) and papers through a summarising fetch, listed in `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"; T2 unit 1 ran `dodecahedron-32m` and `-67m` at steps 1 and 9536, 3 re-inits each, and `pythia-410m` steps 0–4000, the 7 v1 prompts (`976b62d677bc`), code `4fd84525dd37`, listed in `trackT_timaeus/status-T.md` "T2 unit 1"; T5 U0 read weights only (`timaeus/gpt-2-small-init-seed-5` `4f072cfb2d`, no forward pass), listed in `trackT_timaeus/status-T.md` "T5 U0"; T5 U1 ran `pythia-70m`, `-160m`, `-410m` step 0, `dodecahedron-32m` step 1, `timaeus/gpt-2-small-init-seed-5` and 680 random models (32 cells × 20 seeds, 2 controls × 20), the 7 v1 prompts (`976b62d677bc`), code `f6b205d00f5c`, listed in `trackT_timaeus/status-T.md` "T5 U1"; T5 U1b ran 360 random models (Llama at 32m's shape without biases, base and 8 swaps × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `d205f0b180e3`, listed in `trackT_timaeus/status-T.md` "T5 U1b"; T5 U2 ran `dodecahedron-32m`, `-67m` at their 53 steps, `pythia-70m`, `-160m`, `-410m` at C2's 18 and `timaeus/gpt-2-small` at its init and 19 checkpoints, the 7 v1 prompts (`976b62d677bc`), code `3d425b32db90`, listed in `trackT_timaeus/status-T.md` "T5 U2"; T5 U2b ran `dodecahedron-32m` at steps 491, 671, 917 and 9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, listed in `trackT_timaeus/status-T.md` "T5 U2b"; T5 U3's first read ran `dodecahedron-32m` at the 16 grid steps 917–9536 with its 3 re-inits, the 7 v1 prompts (`976b62d677bc`), code `b01ad9e3e4d8`, reader `t5e.py`, listed in `trackT_timaeus/status-T.md` "T5 U3, first read"; T5 U3's split ran `dodecahedron-32m` at 9 steps (1, 917–9536) with a planted o_proj bias at 9536 and `pythia-410m` at C2's 8 split steps (0–143000), the 7 v1 prompts (`976b62d677bc`), code `ef81a441e7dc`, listed in `trackT_timaeus/status-T.md` "T5 U3's split, the batch"; T5 U4s ran 3,160 random models (Llama at 32m's shape without biases, 79 cells: the 64 subsets of U1b's six swaps, `untied`, the `gelu` split, the reverse ablation, × 2 inits × 20 seeds), the 7 v1 prompts (`976b62d677bc`), code `2d7d55d4e4f9`, listed in `trackT_timaeus/status-T.md` "T5 U4s"; T5 U4a ran released `dodecahedron-32m` at 1, 917, 4369, 9536 and `pythia-410m` seeds 0–9 at 4000 and 143000 through U2's reader, built FineWeb `sample-10BT`'s stream (revision `9bb295dd`, files 000–003, main `a7c1b38b`), and timed 60 updates of A0's configuration (discarded), code `b9e5724ac9d2`, listed in `trackT_timaeus/status-T.md` "T5 U4a, before A0"; T5 U4a's A0 trained the Llama-32m (init F, seed 0, no biases) on that stream's main part to 4369 at 524,288 tokens a step and read its 49 grid checkpoints on the 7 v1 prompts (`976b62d677bc`), code `66af413c31fe`, listed in `trackT_timaeus/status-T.md` "T5 U4a: Blocked 133 decided; A0"; T5 U4's beside stage read the six arms' checkpoints at 4369 (and 0 … 4369 for the onsets) with released `-32m` 4369 as the known answer, the 7 v1 prompts (`976b62d677bc`), code `fe03163af6dc`, listed in `trackT_timaeus/status-T.md` "T5 U4's beside stage at 4369"
 - **Results:**
   - Opened 2026-10-29 (Blocked 117 (a), the user's: T1 and T2 first) with T1's questions, grades and a one-unit budget fixed before reading — `trackT_timaeus/design-T1.md`
   - T1 closed at its budget: Dodecahedron's 40B tokens fits a global batch of 8 × 524k (per GPU), not 524k, and under it T2's token window overlaps both its step and its LR-dose windows, so T2 separates LR dose from step either way and tests tokens only if the batch is 524k; `-v2` is a rename and `-archived` the same weights, but `-pilot-dense` is a different run; 2402.02364's LLC settings are read, its model is most likely `tetrahedron-3m-og`; no released model deeper than 2 layers has a published whole-model LLC curve (`L4` has one head's, 2507.21449); `gpt-2-small` is a GPT-NeoX of Pythia-160m's shape; the Pythia negative stands for the two papers read — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
@@ -24,6 +24,7 @@
   - T5 U4a's A0, the positive control: Dodecahedron's recipe retrained on FineWeb at 524k tokens a step reproduces its fall (mean cosine 0.14 at 671, against 0.11) and its late level (0.79 against 0.79, the mean of 3738 and 4369), so the one-change arms are read against it; the rise starts earlier than in the released run (0.31 against 0.13 at 1253, a description after output, one seed) — `trackT_timaeus/status-T.md` "T5 U4a: Blocked 133 decided; A0"
   - T5 U4b's replicates: two more seeds of A0 land within 0.046 of it at the late level (0.781, 0.748 against 0.794), so the noise bar stays at its floor 0.2, under half A0's rise (0.328), and the one-change arms are read with all four labels; the earlier rise is not A0's seed (all three 0.13–0.23 above the released run at 1253–2002, spread 0.04–0.075; after output) — `trackT_timaeus/status-T.md` "T5 U4b"
   - T5 U4b's arms: neither biases (A1), nor Pythia's init (A2), nor both (A3) lowers Dodecahedron's late level by the bar (ΔL 0.141, 0.066, 0.171 against 0.2), so H2 and H1 through training read "not supported" at that bar (A3 0.6 τ and A1 1.3 τ under it, one run each) and no interaction is seen; beside, after output, each arm sits 1.4–3.7 τ below A0, biases as a steady lower level (0.14 from 2735, about 21 % of A0's rise), Pythia's init as a slower rise whose gap closes (0.17 → 0.06) and is within seed spread at equal loss — `trackT_timaeus/status-T.md` "T5 U4b: the arms"
+  - T5 U4's beside stage at 4369 (Blocked 134 (a), the user's; gates pass): at one step and near-equal loss, the uncentred count is as on Pythia on A1 and A3 and on none of the three A0 seeds, its share falling with ρ over all six arms (post hoc; across recipes it does not: Dodecahedron 0.16 at 0.81, A0 0.54 at 0.80); T2's B-matched count passes on one A0 seed (ρ 0.755) and A3 (0.63) only, A1 and A0 both failing it, so it does not separate ρ from step or loss; ρ is not told from biases; biases write 0.06 of the shared component, Pythia's init cuts position 0's norm about 3×; whether a sink or massive-activation onset leads the rise is not determined by the frozen half-rise (post hoc, the massive top and position 0's norm grow first), and Sun et al.'s criterion is met nowhere — `trackT_timaeus/status-T.md` "T5 U4's beside stage at 4369"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -35,7 +36,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-06 · body `618fd39216`
+- **Reviewed:** 2026-11-06 · body `6cf2a84322`
 <!-- /phase-card -->
 
 ## Units
@@ -52,9 +53,110 @@
 | T5 U2. the trajectories | **done 2026-10-30** (Blocked 125 (a)): gate passes; both Dodecahedron models spread (Δ 0.73–0.74, trough 0.10–0.11 at 671–917) and re-concentrate to 0.90; `gpt-2-small` spreads (0.17) | "T5 U2" below |
 | T5 U2b. T2's gates in the trough (added, Blocked 126 (a)) | **done 2026-11-01**: known answer exact; **passes in the trough**, on the B-matched arm alone (full gate at all 3 steps); the uncentred count as on Pythia (plant A 0.93–1.00) | "T5 U2b" below |
 | T5 U3. where the shared direction is written | **done 2026-11-02.** Revised 2026-11-01 (Blocked 130 (a), docs only); first read: known answers exact; every count stops with the rise (uncentred 1713, fixed τ 3e-3 2002, T2's B-matched arm 4369, last pass 3738 with its τ search widened post hoc), none before it; the split's planted-bias gate refused, then retired on the record (Blocked 131 (a)); **the batch: gates pass; through the rise attention's ordinary keys and the MLP write's pooled mean write the shared component about equally, the sink grows 0.006 → 0.13; on shares no path changes abruptly where a count stops, on sizes the MLP mean grows fastest over 1253 → 1713; neither MLP writes one vector to every token (post hoc)** | "T5 U3's split, the batch", "T5 U3's split", "T5 U3, first read" and "T5 U3's revision" below; `design-T5.md` "U3 revised", "U3's split, the details", "The planted-bias gate retired on the record" |
-| T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; U4a's preparation done; Blocked 133 decided ((i) (d): bar's floor 0.2 and a second replicate seed A0″; (ii) float64 loop gate). **U4a done 2026-11-04: A0 passes its positive control (L 0.794). U4b started 2026-11-04: the first change (Parked 2–3, code `40289679fc36`). Replicates done 2026-11-05: A0′, A0″ to 4369 (L 0.781, 0.748); the seed-noise gate passes, readable (τ 0.046, bar 0.2 < 0.328), all four labels in use. Arms read 2026-11-06: A1, A2, A3 all "does not" (ΔL 0.141, 0.066, 0.171 < bar 0.2): H2 and H1 through training not supported at bar 0.2 (A3 0.6 τ, A1 1.3 τ under it), I −0.036 none; no delay check needed; next Blocked 134** | "T5 U4b" and "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
+| T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; U4a's preparation done; Blocked 133 decided ((i) (d): bar's floor 0.2 and a second replicate seed A0″; (ii) float64 loop gate). **U4a done 2026-11-04: A0 passes its positive control (L 0.794). U4b started 2026-11-04: the first change (Parked 2–3, code `40289679fc36`). Replicates done 2026-11-05: A0′, A0″ to 4369 (L 0.781, 0.748); the seed-noise gate passes, readable (τ 0.046, bar 0.2 < 0.328), all four labels in use. Arms read 2026-11-06: A1, A2, A3 all "does not" (ΔL 0.141, 0.066, 0.171 < bar 0.2): H2 and H1 through training not supported at bar 0.2 (A3 0.6 τ, A1 1.3 τ under it), I −0.036 none; no delay check needed. Blocked 134 decided (a) 2026-11-06: the beside stage at 4369 done (counts, split, onsets on all six arms); next U5 (Blocked 135)** | "T5 U4b" and "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
 | T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU brings back all of it, the sequential residual about half; within `gelu`, ungating (or the write's size) | "T5 U4s" below |
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
+
+## T5 U4's beside stage at 4369: the counts, the split, the onsets on every arm (2026-11-06)
+
+**Blocked 134 decided (a), the user's, as recommended:** the continuations to 5970 do not run; the
+beside readings at 4369 run on every arm; LR goes to ROADMAP §7b, not opened. Rules fixed before any
+output (`design-T5.md` "U4's beside stage at 4369", commit `aa9501d`); producer `trackT_timaeus/t5j.py`
+`fe03163af6dc`; batch `scripts/t5j_beside.sh` via the runner (exit 0, 14 min on the 3080); records
+`HDD_1TB/mets_data/trackT/t5u4/beside/` (`reading.json`). **Input:** the six arms' `ckpt/step4369`
+(and 49 checkpoints each for the onsets), trained at `t5h` `81b2e03bdcf7` (A0 `66af413c31fe`,
+replicates `40289679fc36`); the 7 v1 prompts (`976b62d677bc`); T2's re-inits, plants, `u` seed, doses.
+
+**Gates (all pass):** counts' code path (released `-32m` 4369 through `t2.load`) equals U3's record
+exactly (0.0, bar 1e-12); the load path (the saved 4369 through the swapped loader) 1.5e-10 (bar 1e-6);
+the split's load path against U3's batch record 3.7e-9 (bar 1e-6); the split's sum ≤ 1.04e-5 on every
+arm (bar 1e-4); n0 from the onset forward equals the read records at every step of every arm (0.0).
+
+**The counts at 4369** (description, no label; the frozen outcome table per count). All six arms at
+step 4369, v1 loss 3.90–3.95.
+
+| arm | ρ_mid | (i) arms with P (full gate) | (ii) plant A, 3e-3 / 0.5 (≤ 0.10) | (iii) uncentred plant A at 1e-3 |
+|---|---|---|---|---|
+| Dodecahedron (U3) | 0.81 | none | 0.46 | 0.16, between |
+| A0 | 0.802 | none | 0.36 | 0.54, between |
+| A0′ | 0.788 | none | 0.48 | 0.56, between |
+| A0″ | 0.755 | B-matched 6.0e-3 (full gate passes) | 0.19 | 0.60, between |
+| A2 (Pythia's init) | 0.739 | none (B-matched A 0.19) | 0.37 | 0.79 (0.788), between |
+| A1 (biases) | 0.660 | fixed 1e-4, 3e-4 (P only: re-init rate 0.08–0.09) | 0.13 | 0.86, as on Pythia |
+| A3 (both) | 0.633 | B-matched 4.6e-3 (full gate passes) | 0.11 | 0.96, as on Pythia |
+
+| count | the frozen table's row |
+|---|---|
+| (i) | **an A0 seed passes** (A0″ at 0.755): ρ alone is not its stop. The row's text says "unlike Dodecahedron at 0.81", written expecting a pass near 0.80; the pass came at 0.755, where Dodecahedron also passed (0.76 at 3738, wide search). A2 fails at 0.739, so (i) across the arms is not monotone in ρ |
+| (ii) | **neither A1 nor an A0 seed passes**: no arm under 0.10 (A3 0.108, A1 0.134 nearest) |
+| (iii) | **A1 passes, no A0 seed does**: goes with ρ or with what biases change (the table cannot tell them apart) |
+
+(i) is U3's (i), as frozen: some centred arm has P. **On the B-matched arm alone** (the arm Blocked 134
+named; corrected after `/challenge-pr` on #313, finding 1, which found the first write-up saying A1
+passes it): P on A0″ (A 0.086, B 0.49) and A3 (0.02, 0.82) only; A1's is A 0.118, B 0.62, so on
+that arm **A1 and A0 both fail**, and the contrast Blocked 134 added it for reads nothing. A1's P
+under (i) comes from the fixed 1e-4 and 3e-4 arms, whose re-init rate fails the full gate.
+
+**Beside, after output (post hoc):** (iii)'s share is in exact reverse order of ρ_mid over the six arms
+(0.96, 0.86, 0.79, 0.60, 0.56, 0.54 at ρ 0.63 … 0.80), A2 without biases sitting in that order. So within
+this recipe at one step, (iii) follows ρ. Across recipes it does not: Dodecahedron at ρ 0.81 reads
+0.16, A0 at 0.80 reads 0.54. (ii)'s plant A also falls with ρ except for A2 (0.37). Every arm's
+(i) result sits at the τ-arm edge of a few hundredths in A or B, one run each. The lean written into
+Blocked 134 ("(ii), (iii) likely fail on every arm there") held for (ii) and not for (iii).
+
+**U3's split at 4369** (shares of the shared component's write):
+
+| arm | attn_sink | attn_bias | attn_rest | mlp_bias | mlp_const | mlp_rest |
+|---|---|---|---|---|---|---|
+| Dodecahedron (U3) | 0.078 | 0 | 0.479 | 0 | 0.401 | 0.042 |
+| A0, A0′, A0″ | 0.055, 0.026, 0.081 | 0 | 0.51, 0.42, 0.52 | 0 | 0.39, 0.51, 0.36 | 0.05 |
+| A1 | 0.031 | 0.044 | 0.408 | 0.021 | 0.433 | 0.063 |
+| A2 | 0.035 | 0 | 0.469 | 0 | 0.455 | 0.042 |
+| A3 | 0.030 | 0.042 | 0.427 | 0.019 | 0.436 | 0.046 |
+
+A0 retrained writes the shared component as Dodecahedron does. The biases' two paths take 0.06 of it
+on A1 and A3. Their sink share (0.03) is inside the A0 seeds' 0.026–0.081, so "biases take the sink's
+write" is not told apart from seed noise.
+
+**The onsets** (half-rise steps on the grid; one run each):
+
+| arm | S at 4369 (half-rise) | massive: top \|x\| / ratio at 4369 (half-rise) | top at position 0; one dim | n0_mid at 4369 (half-rise) | ρ_mid half-rise from trough |
+|---|---|---|---|---|---|
+| A0 | 0.15 (3198) | 1831 / 651 (2735) | 0.73; dim 225, all | 7.0 (2002) | 1713 |
+| A0′ | 0.14 (2735) | 2076 / 937 (2735) | 0.72; dim 349, all | 7.7 (2002) | 1713 |
+| A0″ | 0.19 (3198) | 2023 / 785 (2340) | 0.82; dim 252, all | 6.6 (2002) | 1713 |
+| A1 | 0.18 (2002) | 2077 / 648 (3198) | 0.74; dim 225, 0.74 | 8.4 (2002) | 2002 |
+| A2 | 0.08 (2735) | 2896 / 724 (2735) | 0.45; dim 154, all | 2.4 (917) | 2002 |
+| A3 | 0.10 (3198) | 2214 / 544 (2340) | 0.53; dim 262, 0.52 | 2.8 (2002) | 2340 |
+
+Sun et al.'s criterion is met on no arm at any step: the top coordinate passes 100 (≈ 500–900 by
+3738, about 2000 at 4369), but its ratio to the median coordinate stays at 540–940, under 1000. On
+the frozen half-rise, every massive and sink onset falls at or after ρ's (1713–2340), and n0's at 2002
+(A2's at 917, before its ρ at 2002). **That ordering comes from the rule, not the data** (`/challenge-pr` on #313, finding 2): the
+half-rise measures toward the 4369 value, and S and M are still climbing there, so it lands late by
+construction. Post hoc, from the same series: on log M the half-rise is at 1253–1465 on every arm; the
+first step past 10 % of the rise is 671–1253 for n0 and 917–1465 for S, against ρ's 1253–1465 (10 %)
+and 1713–2340 (half). So whether an onset leads the rise is **not determined** by this stage; the
+massive top and position 0's norm grow before ρ does under these post hoc definitions. Pythia's init (A2, A3) sets position 0's norm about 3× lower
+(2.4–2.8 against 6.6–8.4) and halves the share of the top coordinate at position 0. Biases do neither
+(A1 8.4, 0.74). A1's sink half-rises earlier (2002 against 2735–3198) and its massive one later (3198
+against 2340–2735), one run. The massive dimension is set by the init seed: A0 and A1 share seed 0
+and dimension 225.
+
+**What this stage adds to U3:** at one step and near-equal loss, (i) and (iii) pass on some arms and
+fail on others, so neither count's stop is set by step or loss alone in this recipe. For (i) that rests
+mostly on the A0 seeds splitting 1 of 3 near the bar (finding 3), which is seed noise and says nothing
+for ρ. (iii) is the cleaner reading: A1 and A3 against all three A0 seeds, and it follows ρ within
+the recipe (post hoc). On the B-matched arm A1 and A0 both fail, so it does not separate ρ from step
+or loss. Not established: any cause; ρ against biases; any noise on the counts beyond the three
+seeds; whether any onset leads the rise; anything past 4369.
+
+**Carried to T5's close-out** (from `/challenge-pr` on #313): the onset question as "not determined by
+the half-rise rule", with the post hoc departures beside; `t5j.outcome_row` counts a refused run as
+"not passing" without a flag (finding 4; no refusal occurred here, every `source.json` has `rc`).
+
+**Parked:** `t5i`'s import order and a test of `arms` (#312, finding 4): the beside stage needed no `t5i`
+change, so **carried to T5's close-out**.
 
 ## T5 U4b: the arms A1, A2, A3 to 4369 (2026-11-05; read 2026-11-06)
 
