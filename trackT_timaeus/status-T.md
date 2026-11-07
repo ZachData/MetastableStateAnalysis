@@ -35,11 +35,11 @@
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
   - What raises Dodecahedron's late level (not biases or Pythia's init at bar 0.2; LR and the MLP's form untested, rows T5″ and T5‴ of `docs/ROADMAP.md`) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
-  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design proposed, D1–D5 are Blocked 138; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ U0"
+  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refuses on G6's held-out ICL leg, no power at 64 sequences, nothing dated, Blocked 139; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ U1 (gate)"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `8cf6fefe42`
+- **Reviewed:** 2026-11-07 · body `6f148ceb04`
 <!-- /phase-card -->
 
 ## Units
@@ -61,7 +61,46 @@
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
 | T5 U5. the controls (Blocked 135 (a)) | **done 2026-11-06**: gate passes (seed 0 = U2, seeds = U4a's floor, both 0.0; Mistral loss 10.9 → 3.9); described, no rule: the 410m shape holds on all ten seeds (peak 0.80–0.83 at 16, trough 0.16–0.19 at 2000–4000), the late level parts with the loss (0.39–0.43 on eight seeds; 0.23 on seeds 3, 4, whose loss rose after 54000; U4's bar floor rests on seed 4, carried to the close-out); Mistral GPT-2 small peaks at 0.98 at step 20 and is still falling at 16000–20000 (0.26–0.29) | "T5 U5" below; `design-T5.md` "U5's details" |
 | T5 close-out | **closed 2026-11-07 at its exit** (writing only; the PolyPythias paper read for U5's Parked item, no GPU); every Parked item carried or dropped; one item for the user, Blocked 136 (U4's bar floor and PolyPythias's outliers) | "T5 on one page" below |
-| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out | "T5′ U0" below; `design-T5p.md` |
+| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out. **Design frozen 2026-11-07** (Blocked 138: all (a), the user's). **U1's gate refuses on G6's ICL leg** (G1–G3, G7 and G6's I leg pass; no batch run); Blocked 139 | "T5′ U1 (gate)" below; "T5′ U0" below; `design-T5p.md` |
+
+## T5′ U1 (gate): G6's ICL leg has no power at 64 sequences (2026-11-07)
+
+Design frozen before any output (`f6784b4`, Blocked 138: D1–D5 all (a), the user's); producer
+`trackT_timaeus/t5k.py` committed before its first output (`02ecc4e`; the implementation details the
+design left open are fixed in its docstring); its code hash is in `gate.json`. Run on the 3080, conda
+`mets` (transformers 4.44.2, torch 2.10.0), 26 s. **Input:** 32 sequence triples of T = 256 random
+ordinary tokens (seed 20261107; Dodecahedron 16,382 ids, `<|endoftext|>` excluded; inputs hash
+`3ec2f8921abc` on Dodecahedron's vocabulary), the first 64 sequences of `t5u4/data/tail.bin`
+(positions 0–509; Pythia's re-encoded). Records `data/trackT/t5k/2026-11-07/` (main tree):
+`gate.json`, `A0/step4369.*`, `pythia-410m/step{0,143000}.*`.
+
+| gate | value | bar | |
+|---|---|---|---|
+| G1, ρ_mid through the reader | A0 671, A0 4369, released 4369: diff 0.0 | ≤ 1e-6 | pass |
+| G2, eager vs sdpa at A0 4369 | max rel 2.9e-6 (`LlamaSdpaAttention`) | ≤ 1e-4 | pass |
+| G3, scorer on synthetic attention | planted PM 1.0; uniform PM = analytic 0.0027067; net I 0.0 | 1e-12 | pass |
+| G7, first output populated | A0 4369: I 0.723 (L9H3), I_null 0.0002, P 0.919, B −8.69, ICL −0.56 | all finite | pass |
+| G6, positive control (410m at 143000), I leg | I 0.957 (L10H9); step 0: 3e-5 | ≥ 0.3 | pass |
+| **G6, ICL leg** | ICL −0.250 (SE 0.144) against step 0's 0.015 (SE 0.029): difference 0.265 | ≥ 4 SE = 0.586 | **fail** |
+
+**Why it fails, checked:** not a bug. The losses are sane (410m step 0: 11.00 nats late, 10.98
+early, ≈ ln 50k; 143000: 2.90, 3.15), and the sign is right. The per-sequence SD of a
+20-token-window difference is 1.19 nats at 143000 (1.23 on A0 at 4369, 0.24 at init), so 64
+sequences give SE ≈ 0.15 on a 0.26 effect. The design fixed N = 64 without estimating this SE
+(`LESSONS.md` 6). Under the 4 SE floor on dating (4 · √2 · 0.15 ≈ 0.85 nats), ICL would be refused
+on every run, so as frozen it carries nothing. B, the behavioural check on the random repeats, has
+power (−11.8 ± 0.03 at 143000 against −0.01 at 0).
+
+**Seen before the decision (the gate's own output):** A0 has a head at L9H3 with net prefix
+matching 0.72 at 4369, so "no induction formed by 4369" is not A0's row. Nothing is dated; the rule
+is frozen and does not move with it.
+
+**Refused:** G4, G5, the batch (`run` refuses without a passing `gate.json`), the reading. Blocked 139.
+
+**Re-run:** `HF_HOME=<HDD_1TB>/mets_data/hf HF_HUB_OFFLINE=1 METS_REPO=$PWD METS_DATA=<main>/data
+python -m trackT_timaeus.t5k gate` (conda `mets`, the GPU).
+
+**Parked:** none.
 
 ## T5′ U0: the design and the scan (2026-11-07)
 
