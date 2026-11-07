@@ -25,6 +25,7 @@
   - T5 U4b's replicates: two more seeds of A0 land within 0.046 of it at the late level (0.781, 0.748 against 0.794), so the noise bar stays at its floor 0.2, under half A0's rise (0.328), and the one-change arms are read with all four labels; the earlier rise is not A0's seed (all three 0.13–0.23 above the released run at 1253–2002, spread 0.04–0.075; after output) — `trackT_timaeus/status-T.md` "T5 U4b"
   - T5 U4b's arms: neither biases (A1), nor Pythia's init (A2), nor both (A3) lowers Dodecahedron's late level by the bar (ΔL 0.141, 0.066, 0.171 against 0.2), so H2 and H1 through training read "not supported" at that bar (A3 0.6 τ and A1 1.3 τ under it, one run each) and no interaction is seen; beside, after output, each arm sits 1.4–3.7 τ below A0, biases as a steady lower level (0.14 from 2735, about 21 % of A0's rise), Pythia's init as a slower rise whose gap closes (0.17 → 0.06) and is within seed spread at equal loss — `trackT_timaeus/status-T.md` "T5 U4b: the arms"
   - T5 U4's beside stage at 4369 (Blocked 134 (a), the user's; gates pass): at one step and near-equal loss, the uncentred count is as on Pythia on A1 and A3 and on none of the three A0 seeds, its share falling with ρ over all six arms (post hoc; across recipes it does not: Dodecahedron 0.16 at 0.81, A0 0.54 at 0.80); T2's B-matched count passes on one A0 seed (ρ 0.755) and A3 (0.63) only, A1 and A0 both failing it, so it does not separate ρ from step or loss; ρ is not told from biases; biases write 0.06 of the shared component, Pythia's init cuts position 0's norm about 3×; whether a sink or massive-activation onset leads the rise is not determined by the frozen half-rise (post hoc, the massive top and position 0's norm grow first), and Sun et al.'s criterion is met nowhere — `trackT_timaeus/status-T.md` "T5 U4's beside stage at 4369"
+  - T5 U5, the controls (Blocked 135 (a); gate passes, seed 0 and the floor seeds reproduced exactly): described with no rule, Pythia 410m's rise, fall and second rise hold on all ten seeds (peak 0.80–0.83 at step 16, trough 0.16–0.19 at 2000–4000, 0.45–0.49 at 32000–54000, seed SD ≤ 0.026 to 54000), but its late level does not: at 143000 the eight seeds whose loss keeps falling sit at 0.39–0.43 and seeds 3 and 4, whose loss rose after 54000, at 0.23 (U4's bar floor, 0.2, was placed on seed 4's pair; carried to the close-out); Mistral GPT-2 small (two runs, biases, flat init with depth-scaled outputs) starts at Pythia's level (0.42–0.43), peaks at 0.98 at step 20 as Dodecahedron does (on ρ_1:5 too: 0.93–0.94 against 0.94–0.96), and is still falling at its last checkpoint read (0.26–0.29 at 16000–20000, about 5 % of its run) — `trackT_timaeus/status-T.md` "T5 U5"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -32,11 +33,11 @@
 - **Feeds:** none
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
-  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first); U4s done 2026-11-03 (at init the effect needs the parallel residual and the ungated MLP together to go; SwiGLU brings it all back, the sequential residual half); U4a's preparation done 2026-11-03: the 410m noise floor refused at 0.1; Blocked 133 decided (floor 0.2, a second replicate seed A0″, the float64 loop gate); U4a done 2026-11-04 (A0 passes its positive control, L 0.794); U4b started 2026-11-04 (the replicates first, then the seed-noise gate before A1–A3); U4b's replicates done 2026-11-05 (readable: τ 0.046, bar 0.2 < R_A0 / 2 0.328; A1–A3 next) — `trackT_timaeus/status-T.md` "T5 U4b"
+  - Why the Pythia counts fail on Dodecahedron (H1 the init, H2 no biases): T5, opened 2026-10-30, design frozen 2026-10-30 (Blocked 123, D1–D3 (a)); U1 done (H1 at init partly); U1b done (no single part); U2 done (the cloud spreads in the middle of training and re-concentrates late); U2b done (the counts pass, on the trained side, where the cloud is spread); U3 revised toward the late rise (Blocked 130 (a)); U3's first read done (every count stops with the rise, 1713–4369; `c2_seeds`' τ search bound, Parked 3); U3 done 2026-11-02 (the split read as direct writes; its planted gate retired, Blocked 131 (a)); U4's design frozen 2026-11-03 (Blocked 132: Dodecahedron's recipe at 524k a step to 4369, five arms with A3, A0 as the positive control, the cap 4 GPU-days; U4s, the screen at init, first); U4s done 2026-11-03 (at init the effect needs the parallel residual and the ungated MLP together to go; SwiGLU brings it all back, the sequential residual half); U4a's preparation done 2026-11-03: the 410m noise floor refused at 0.1; Blocked 133 decided (floor 0.2, a second replicate seed A0″, the float64 loop gate); U4a done 2026-11-04 (A0 passes its positive control, L 0.794); U4b started 2026-11-04 (the replicates first, then the seed-noise gate before A1–A3); U4b's replicates done 2026-11-05 (readable: τ 0.046, bar 0.2 < R_A0 / 2 0.328); U4b's arms read 2026-11-06 (A1–A3 "does not" at bar 0.2); U4's beside stage done 2026-11-06; U5 done 2026-11-06 (described, no rule); next: T5's close-out — `trackT_timaeus/status-T.md` "T5 U5"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-06 · body `6cf2a84322`
+- **Reviewed:** 2026-11-06 · body `5dd9d10128`
 <!-- /phase-card -->
 
 ## Units
@@ -56,6 +57,96 @@
 | T5 U4. the causal arm (aimed at the rise) | **design frozen 2026-11-03** (Blocked 132, the user's: D4 (a) steps at 524k; D5 (b) A3, biases and P together, with the cap raised to 4 GPU-days; D6 (b) U4s, the screen at init, run first; D7 (a) U4a then U4b); U4s done; U4a's preparation done; Blocked 133 decided ((i) (d): bar's floor 0.2 and a second replicate seed A0″; (ii) float64 loop gate). **U4a done 2026-11-04: A0 passes its positive control (L 0.794). U4b started 2026-11-04: the first change (Parked 2–3, code `40289679fc36`). Replicates done 2026-11-05: A0′, A0″ to 4369 (L 0.781, 0.748); the seed-noise gate passes, readable (τ 0.046, bar 0.2 < 0.328), all four labels in use. Arms read 2026-11-06: A1, A2, A3 all "does not" (ΔL 0.141, 0.066, 0.171 < bar 0.2): H2 and H1 through training not supported at bar 0.2 (A3 0.6 τ, A1 1.3 τ under it), I −0.036 none; no delay check needed. Blocked 134 decided (a) 2026-11-06: the beside stage at 4369 done (counts, split, onsets on all six arms); next U5 (Blocked 135)** | "T5 U4b" and "T5 U4's design" below; `design-T5.md` "U4, the causal arm, designed" |
 | T5 U4s. the screen at init (D6 (b)) | **done 2026-11-03**: gate passes (U1b reproduced exactly); minimal carrying sets `par`+`gelu` (1.15 of E0) and `gelu`+`mha` (0.52, on the line); reverse: SwiGLU brings back all of it, the sequential residual about half; within `gelu`, ungating (or the write's size) | "T5 U4s" below |
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
+| T5 U5. the controls (Blocked 135 (a)) | **done 2026-11-06**: gate passes (seed 0 = U2, seeds = U4a's floor, both 0.0; Mistral loss 10.9 → 3.9); described, no rule: the 410m shape holds on all ten seeds (peak 0.80–0.83 at 16, trough 0.16–0.19 at 2000–4000), the late level parts with the loss (0.39–0.43 on eight seeds; 0.23 on seeds 3, 4, whose loss rose after 54000; U4's bar floor rests on seed 4, carried to the close-out); Mistral GPT-2 small peaks at 0.98 at step 20 and is still falling at 16000–20000 (0.26–0.29) | "T5 U5" below; `design-T5.md` "U5's details" |
+
+## T5 U5, the controls: ten 410m seeds and Mistral GPT-2 small through training (2026-11-06)
+
+**Blocked 135 decided (a), the user's, as recommended.** Rules fixed before any output
+(`design-T5.md` "U5's details", commit `31a0d17`); producer `trackT_timaeus/t5c.py` `43fc18a8b5e8`
+(`run --unit U5`, then `u5`); batch `scripts/t5u5.sh` via the runner (exit 0, 30 min on the 3080, no
+edits); records `data/trackT/t5u5/2026-11-06/` (main tree; `u5.json`, re-read with reader `1b8816791bff`
+after `/challenge-pr` on #314, finding 4 (a late rise is null where the trough is the last step) and
+CodeRabbit's NaN check in the gate; gate passes again, no number changed). **Input:** `pythia-410m` seeds 0–9
+at C2's 18 steps; `stanford-crfm/alias-gpt2-small-x21` at 36 checkpoints (0 … 20000) and
+`battlestar-gpt2-small-x49` at 35 (0 … 16000), the GPT-2 BPE from alias's checkpoint 0 for both; the
+7 v1 prompts (`976b62d677bc`), ≤ 512 tokens, float32, eager, tf32 off.
+
+**Gate (passes).** Seed 0 re-read against U2's records at all 18 steps: 0.0 (bar 1e-6, every state of
+ρ, ρ⁻⁰, m, m⁻⁰, n0); seeds 1–9 at 4000 and 143000 against U4a's floor records: 0.0. Mistral load: prompt
+loss at checkpoint 0 10.88 / 10.97 (ln 50257 = 10.82, within 1), at the last 3.94 / 3.86 (≥ 3 below).
+
+**`pythia-410m`, ten seeds** (ρ_mid; description, no label; per-step table in `u5.json`):
+
+| step | 0 | 16 | 64 | 128 | 512 | 1000 | 2000 | 4000 | 8000 | 16000 | 32000 | 54000 | 143000 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| mean | 0.472 | 0.811 | 0.396 | 0.281 | 0.328 | 0.240 | 0.183 | 0.177 | 0.242 | 0.378 | 0.471 | 0.468 | 0.373 |
+| SD | 0.017 | 0.007 | 0.015 | 0.019 | 0.010 | 0.007 | 0.004 | 0.010 | 0.018 | 0.015 | 0.011 | 0.007 | **0.077** |
+| min–max | 0.44–0.49 | 0.80–0.83 | 0.38–0.42 | 0.26–0.32 | 0.31–0.34 | 0.23–0.25 | 0.18–0.19 | 0.16–0.19 | 0.21–0.27 | 0.35–0.40 | 0.45–0.49 | 0.46–0.48 | **0.23–0.43** |
+
+| shape (frozen: peak in (0, 1000], trough after it, end at 143000) | over the ten seeds |
+|---|---|
+| early peak | 0.80–0.83, at 16 on every seed |
+| trough | 0.16–0.19, at 2000 (seeds 1–3) or 4000 (the other seven) |
+| fall (peak − trough) | 0.62–0.64 |
+| end (143000) | 0.39–0.43 on eight seeds; **0.233 (seed 3), 0.228 (seed 4)** |
+| prompt loss, 54000 → 143000 | falls on eight seeds (2.74–2.77 → 2.64–2.69); **rises on seeds 3 (2.75 → 2.80, on 5 of 7 prompts) and 4 (2.75 → 3.20, on all 7)** |
+| late rise (end − trough) | 0.20–0.27 on eight; 0.05 on seeds 3, 4 |
+
+ρ_mid⁻⁰ agrees with ρ_mid within 0.002 everywhere (position 0 decides nothing, as in U2). ρ_1:5 has its
+trough earlier, at 128 on every seed (0.11–0.13). n0 at the middle states: mean 0.85–1.2 to 1000, then
+1.5 → 22 by 143000 (4.1–29.7 over the seeds at 143000).
+
+**Mistral GPT-2 small** (GPT-2 with biases, flat 0.02 init with outputs at 0.02/√(2L), its own data and
+schedule; two runs of one recipe):
+
+| | init | early peak | trough (frozen: at or after the peak) | end | loss at end |
+|---|---|---|---|---|---|
+| alias x21 | 0.419 (ρ_1:5 0.29) | **0.984 at 20** (ρ_1:5 0.93) | none: the last, 0.263 at 20000; late rise not measured | 0.263 | 3.94 |
+| battlestar x49 | 0.432 (0.30) | **0.982 at 20** (ρ_1:5 0.94) | none: the last, 0.287 at 16000; late rise not measured | 0.287 | 3.86 |
+
+After the peak both fall to about 0.47 by 150, rise to 0.54–0.57 at 250–350, then fall slowly and
+nearly monotonically (0.35 at 1000, 0.30–0.33 at 2000, 0.26–0.29 at the last). The two runs differ by
+≤ 0.081 (at 60, in the fall from the peak) and ≤ 0.04 from 1000 on. n0 1.2 → 6.4–8.1. ρ_mid⁻⁰ within 0.002.
+
+**What it says.**
+- Pythia 410m's rise, fall and second rise are not seed 0's: on all ten seeds the peak is at 16, the trough at
+  2000–4000 and the level at 32000–54000 at 0.45–0.49, with a seed SD ≤ 0.026 at every step to 54000.
+- Its late level parts after 54000, and with the loss: at 143000 the eight seeds whose loss keeps
+  falling sit at 0.39–0.43; seeds 3 and 4, whose loss rose from 54000 (seed 4 by 0.45 nats), sit at 0.23
+  (`/challenge-pr` on #314, finding 1; the loss was recorded but not read before the first write-up). So
+  the SD at 143000 (0.077, three times any earlier step's) is the two seeds whose training went back, not a
+  spread among seeds that train normally (the eight: 0.385–0.428, largest pair 0.043). The close-out
+  quotes "0.39–0.43 on the eight seeds whose loss keeps falling; 0.23 on seeds 3 and 4, whose loss rose".
+- **This bears on U4's bar** (finding 2, not acted on here): Blocked 133 (i) (d) raised the bar's floor from
+  0.1 to 0.2, placed at 143000's largest seed pair, 0.1996, which is seed 5 (0.428) against seed 4 (0.228).
+  Without seeds 3 and 4 the largest pair is 0.043 and the first floor 0.1 would have passed; at bar 0.1
+  A1 (ΔL 0.141) and A3 (0.171) would clear the bar, and their label would then rest on the delay check,
+  not "does not". The floor was the user's decision before any arm output, and this unit relabels nothing;
+  **carried to T5's close-out as a decision for the user.**
+- Mistral GPT-2 small starts at Pythia's level (0.42–0.43; ρ_1:5 0.29–0.30 against 410m's 0.25), so a flat
+  init with depth-scaled outputs in a GPT-2 does not start concentrated, as U1 found for `gpt-2-small`.
+  Its early peak (0.98 at 20) is as high as Dodecahedron's (1.00 at 30–47), above Pythia's 0.80–0.83. On
+  ρ_1:5, the statistic for models of different depth (finding 3), the same: Mistral 0.93–0.94 at 20,
+  Dodecahedron 0.94–0.96 at 40, against 410m 0.37, 70m 0.58, `gpt-2-small` 0.53 (U2's records, the same
+  frozen window).
+  The trough is not reached by 20000, so there is no late rise in the first 5 % of its run (400k steps,
+  as the release describes it; not read here), at a loss of 3.9 on these prompts.
+
+**Not shown by it.** Mistral's 20000 is about 5 % of its training and its schedule is not read here, so
+"no late rise" covers only these checkpoints; it is not compared at equal tokens or loss with any other
+run. Mistral differs from Pythia and Dodecahedron in data, tokenizer, schedule and architecture at once,
+so it is one more description, not a control for one factor. The early-peak window (0, 1000] was fixed
+before output, but where a Mistral trough falls depends on its last checkpoint. Ten seeds bound 410m's
+seed spread, not 70m's or 160m's (option (b), not taken).
+
+**Parked:** why seeds 3 and 4's loss rises after 54000 (an instability, or their data order; half answered
+by the loss above; cost: the PolyPythias paper's account of these seeds, no GPU, then if needed their loss
+at the intermediate checkpoints; it could change how the close-out words Pythia's late level and the
+bar's floor) → T5's close-out. `gpt-2-small` was not re-read (its U2 trajectory stands).
+
+`/challenge-pr` on #314: **accept with changes**; findings 1, 3, 4, 5 taken (the loss reading above; ρ_1:5
+beside; null late rise and a refusal if a 410m seed's trough is its last step; a test of a floor record that
+differs), finding 2 carried to the close-out as the user's decision.
 
 ## T5 U4's beside stage at 4369: the counts, the split, the onsets on every arm (2026-11-06)
 

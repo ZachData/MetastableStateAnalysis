@@ -547,6 +547,35 @@ A0 in biases as well as ρ, so "goes with ρ" cannot be told from "goes with bia
 **U5, the controls.** U2's statistics on Mistral GPT-2 small from checkpoint 0 (on disk), on
 410m's seeds 1–9 at the 18 steps (on disk), and on `gpt-2-small` if D1 (b). They describe, with no rule.
 
+### U5's details (fixed 2026-11-06 before any U5 output; Blocked 135 (a), the user's)
+
+**Inputs.** `EleutherAI/pythia-410m-seed1` … `-seed9` at C2's 18 steps; `pythia-410m` (seed 0) re-read
+at the 18; `stanford-crfm/alias-gpt2-small-x21` at its 36 checkpoint branches on disk (0 … 20000) and
+`battlestar-gpt2-small-x49` at its 35 (0 … 16000; the same recipe, another seed). Every checkpoint read as
+U2 reads one (`t5c.read_model`), plus the mean next-token loss on the 7 prompts. Tokenizers: Pythia's;
+for both Mistral runs the GPT-2 BPE from alias's checkpoint 0 (battlestar's branches hold none). Code
+`t5c.py` `u5`, `scripts/t5u5.sh`; records `data/trackT/t5u5/2026-11-06/` (main tree).
+
+**Gate** (any failure back to the user before the description):
+
+| check | pass |
+|---|---|
+| seed 0 re-read against U2's records, all 18 steps (run first; the batch stops on a refusal) | ρ_ℓ, ρ_ℓ⁻⁰, m, m⁻⁰, n0 at every state within 1e-6 (absolute below 1, relative above) |
+| seeds 1–9 at 4000 and 143000 against U4a's floor records (`HDD_1TB/…/t5u4/floor`) | the same, 1e-6 |
+| Mistral load: both runs | checkpoint 0's loss within 1 nat of ln 50257 (10.82), the last checkpoint's ≥ 3 nats below it |
+
+**Described** (no rule, no label; `u5.json`): per trajectory the series ρ_mid, ρ_mid⁻⁰, ρ_1:5, m and n0
+at the middle states (median), loss; U2's shape on ρ_mid, ρ_mid⁻⁰ and ρ_1:5, fixed: **early peak** the
+maximum over steps in (0, 1000], **trough** the minimum at or after it, **end** the last step, fall = peak −
+trough, late rise = end − trough. Over the ten 410m seeds, per step: mean, SD, min, max, which seeds
+sit at the ends, seed 0's rank; and each shape feature's range over the seeds. Mistral: the two runs'
+|Δρ_mid| at their 35 common checkpoints. The 410m late level is quoted as the seeds' range at 143000.
+
+**Not shown by it.** Mistral's checkpoints stop at 20000 of 400000 steps, so its "end" is not a trained
+level; its recipe (data, LR, batch) differs from every other run here, so it is one more architecture under
+a flat init with depth-scaled outputs, not a control for any one factor. Ten seeds of one Pythia size
+bound that size's seed spread, not the spread across sizes or recipes.
+
 ## Calibration gate (each unit, before its reading)
 
 | unit | check | pass |

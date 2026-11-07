@@ -12,10 +12,16 @@ log-spaced checkpoints.
 resample used at every step, the minimum retaken in each). Spreads if Δ ≥ 0.15 and the 5th
 percentile > 0.05; does not spread if the 95th < 0.15; else not told apart (checked in that order).
 
+U5 (`design-T5.md` "U5's details"; Blocked 135 (a)): the same statistics on `pythia-410m` seeds 1–9 at
+the 18 steps and on Mistral GPT-2 small (`alias-gpt2-small-x21`, `battlestar-gpt2-small-x49`) from
+checkpoint 0, described with no rule: `u5` gates (seed 0 against U2's records, seeds against U4a's floor
+records, the Mistral prompt loss), then writes the series, the shapes and the ten-seed table.
+
 Tier 1, description (nothing here is registered).
     python -m trackT_timaeus.t5c fetch [--hf-root <HDD_1TB>/mets_data/hf]
     METS_DATA=<main>/data python -m trackT_timaeus.t5c run --out <dir>
     METS_DATA=<main>/data python -m trackT_timaeus.t5c read --out <dir>
+    METS_DATA=<main>/data scripts/t5u5.sh                      # U5: run, then `t5c u5 --out <dir>`
 """
 from __future__ import annotations
 
@@ -67,6 +73,33 @@ SYN_PLANTED_MIN, SYN_FLAT_MAX = 0.90, 0.05
 SPREAD_STEP = 9536                  # the step whose 7-prompt spread sets the synthetic's s
 DEFAULT_ROOTS = t5.DEFAULT_ROOTS
 HDD_ROOT = DEFAULT_ROOTS[1]
+
+# ---------------------------------------------------------------- U5, the controls (design-T5.md "U5's details";
+# Blocked 135 (a), the user's, 2026-11-06; fixed before any U5 output). Described, with no rule.
+#: Mistral GPT-2 small: every checkpoint branch on disk (`HDD_1TB`), from checkpoint 0
+MISTRAL_STEPS = (0, 10, 20, 40, 60, 80, 100, 150, 200, 250, 350, 400, 450, 500, 550, 600, 700, 800, 900, 1000,
+                 1100, 1200, 1400, 1600, 1800, 2000, 2400, 2800, 3200, 3600, 4000, 6000, 8000, 12000, 16000)
+U5_SEEDS = tuple(range(1, 10))
+U5_TRAJ = {
+    **{f"pythia-410m-seed{k}": (f"EleutherAI/pythia-410m-seed{k}", STEPS, "neox") for k in U5_SEEDS},
+    "mistral-alias": ("stanford-crfm/alias-gpt2-small-x21", MISTRAL_STEPS + (20000,), "mistral"),
+    "mistral-battlestar": ("stanford-crfm/battlestar-gpt2-small-x49", MISTRAL_STEPS, "mistral"),
+}
+ALL_TRAJ = {**TRAJ, **U5_TRAJ}
+MISTRAL = ("mistral-alias", "mistral-battlestar")
+#: the GPT-2 BPE both runs train on, from alias's checkpoint 0 (battlestar's branches hold no tokenizer files)
+MISTRAL_TOKENIZER = ("stanford-crfm/alias-gpt2-small-x21", "checkpoint-0")
+U5_DIR = "trackT/t5u5/2026-11-06"
+#: the gate: seed 0 re-read against U2's records (all 18 steps), seeds 1–9 against U4a's floor records
+U2_DIR = "trackT/t5u2/2026-10-30"
+FLOOR_DIR = Path("/run/media/system/HDD_1TB/mets_data/trackT/t5u4/floor")
+FLOOR_STEPS = (4000, 143000)
+#: the Mistral load check: checkpoint 0's prompt loss within LOSS_INIT_TOL nats of ln(vocab); the last
+#: checkpoint's at least LOSS_DROP_MIN nats below checkpoint 0's (a mis-loaded model does not learn)
+LOSS_INIT_TOL = 1.0
+LOSS_DROP_MIN = 3.0
+#: the shape's early-peak window, (0, PEAK_MAX_STEP] (U2's peaks: 16–47 on Pythia and Dodecahedron, 100 on gpt-2-small)
+PEAK_MAX_STEP = 1000
 
 
 class T5cRefused(RuntimeError):
@@ -170,11 +203,42 @@ def load_gpt2(step: int, roots: Sequence[str], device):
 
 
 def load(traj: str, step: int, roots: Sequence[str], device):
-    repo = TRAJ[traj][0]
+    repo = ALL_TRAJ[traj][0]
     if traj == "gpt-2-small":
         return load_gpt2(step, roots, device)
-    m = t5.load_real(repo, f"step{step}", roots, device)
+    m = t5.load_real(repo, revision_of(traj, step), roots, device)
     return m, {"commit": t2.commit_of(m)}
+
+
+def revision_of(traj: str, step: int) -> str:
+    return f"checkpoint-{step}" if traj in MISTRAL else f"step{step}"
+
+
+def tokenizer_of(tk: str, roots: Sequence[str]):
+    """'neox' → Pythia's; 'mistral' → the GPT-2 BPE from alias's checkpoint 0 (no BOS added); else Dodecahedron's."""
+    if tk == "neox":
+        return t2.p_tokenizer()
+    if tk == "mistral":
+        from huggingface_hub import hf_hub_download
+        from transformers import AutoTokenizer
+        repo, rev = MISTRAL_TOKENIZER
+        vocab = hf_hub_download(repo, "vocab.json", revision=rev, cache_dir=t5.locate(repo, rev, roots))
+        return AutoTokenizer.from_pretrained(str(Path(vocab).parent))
+    return t2.tokenizer(tk)
+
+
+def prompt_loss(model, tok, device) -> List[float]:
+    """Mean next-token cross-entropy (nats) per v1 prompt, ≤ 512 tokens, as `c.states` tokenizes: the
+    Mistral load check, beside elsewhere."""
+    import torch
+    from core.config import PROMPTS
+    out = []
+    for p in V1:
+        enc = tok(PROMPTS[p], return_tensors="pt", truncation=True, max_length=c.MAX_TOKENS)
+        ids = enc["input_ids"].to(device)
+        with torch.no_grad():
+            out.append(float(model(input_ids=ids, labels=ids).loss))
+    return out
 
 
 def read_model(model, tok, device) -> dict:
@@ -236,18 +300,25 @@ def run(a) -> int:
     roots = a.hf_roots
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
-    meta = {"design": "trackT_timaeus/design-T5.md", "unit": "U2", "code": code_sha(), "prompts_hash": prompts_hash(),
+    u5 = a.unit == "U5"
+    meta = {"design": "trackT_timaeus/design-T5.md", "unit": a.unit, "code": code_sha(), "prompts_hash": prompts_hash(),
             "prompts": list(V1), "max_tokens": t2.MAX_TOKENS, "dtype": "float32", "tf32": False,
             "device": torch.cuda.get_device_name(0), "torch": torch.__version__,
             "transformers": transformers.__version__, "hf_roots": list(roots),
-            "trajectories": {k: {"repo": v[0], "steps": list(v[1]), "tokenizer": v[2]} for k, v in TRAJ.items()}}
+            "trajectories": {k: {"repo": v[0], "steps": list(v[1]), "tokenizer": v[2]} for k, v in ALL_TRAJ.items()
+                             if k in a.trajs}}
+    if (out / "meta.json").exists():                      # a later call into the same dir adds its trajectories
+        prev = _load(out / "meta.json")
+        if (prev["code"], prev["unit"]) != (meta["code"], meta["unit"]):
+            raise T5cRefused(f"{out}: meta.json is from code {prev['code']} {prev['unit']}, not {meta['code']} {a.unit}")
+        meta["trajectories"] = {**prev["trajectories"], **meta["trajectories"]}
     _write(out / "meta.json", meta)
     toks = {}
     t0 = time.time()
     for name in a.trajs:
-        repo, steps, tk = TRAJ[name]
+        repo, steps, tk = ALL_TRAJ[name]
         if tk not in toks:
-            toks[tk] = t2.p_tokenizer() if tk == "neox" else t2.tokenizer(tk)
+            toks[tk] = tokenizer_of(tk, roots)
         for s in (a.steps or steps):
             if s not in steps:
                 raise T5cRefused(f"{name}: step {s} is not on its frozen list")
@@ -256,6 +327,9 @@ def run(a) -> int:
                 continue
             m, info = load(name, s, roots, device)
             rec = read_model(m, toks[tk], device)
+            if u5:
+                rec["loss_per_prompt"] = prompt_loss(m, toks[tk], device)
+                rec["loss"] = float(np.mean(rec["loss_per_prompt"]))
             rec.update({"trajectory": name, "model": repo, "step": s, **info, "code": meta["code"],
                         "wall_s": round(time.time() - t0, 1)})
             _write(p, rec)
@@ -365,6 +439,153 @@ def read(a) -> int:
     return 0 if g["pass"] else 1
 
 
+# ---------------------------------------------------------------- U5's reader (described; no rule, no label)
+
+MISTRAL_VOCAB = 50257
+GATE_KEYS = ("rho", "rho_no0", "m", "m_no0", "n0")
+
+
+def u5_names() -> List[str]:
+    return ["pythia-410m", *(f"pythia-410m-seed{k}" for k in U5_SEEDS), *MISTRAL]
+
+
+def collect_u5(out: Path) -> dict:
+    recs = {}
+    for name in u5_names():
+        steps = ALL_TRAJ[name][1]
+        missing = [s for s in steps if not (out / name / f"step{s}.json").exists()]
+        if missing:
+            raise T5cRefused(f"{name}: {len(missing)} of {len(steps)} steps missing, e.g. {missing[:3]}")
+        recs[name] = [_load(out / name / f"step{s}.json") for s in steps]
+    codes = {r["code"] for v in recs.values() for r in v}
+    if len(codes) != 1:
+        raise T5cRefused(f"records from more than one code version: {codes}")
+    return {"recs": recs, "code": codes.pop()}
+
+
+def rec_diff(got: dict, ref: dict, keys: Sequence[str] = GATE_KEYS) -> float:
+    """max over the per-state arrays of |got − ref| / max(1, |ref|): absolute below 1 (ρ, m), relative above (n0)."""
+    d = 0.0
+    for k in keys:
+        a, b = np.asarray(got[k], np.float64), np.asarray(ref[k], np.float64)
+        if a.shape != b.shape or not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
+            return math.inf                 # a NaN would pass silently: max(d, nan) keeps d (CodeRabbit, #314)
+        d = max(d, float(np.max(np.abs(a - b) / np.maximum(1.0, np.abs(b)))))
+    return d
+
+
+def u5_gate(recs: Dict[str, List[dict]], u2_dir: Path, floor_dir: Path) -> dict:
+    """design-T5.md "U5's details": seed 0 against U2's records at the 18 steps; seeds 1–9 against U4a's
+    floor records at 4000 and 143000 (≤ KNOWN_TOL); the Mistral load check on the prompt loss."""
+    g = {}
+    d0 = {str(s): rec_diff(r, _load(u2_dir / "pythia-410m" / f"step{s}.json"))
+          for s, r in zip(STEPS, recs["pythia-410m"])}
+    g["seed0_vs_u2"] = {"max_diff": d0, "pass": max(d0.values()) <= KNOWN_TOL}
+    df = {}
+    for k in U5_SEEDS:
+        rs = recs[f"pythia-410m-seed{k}"]
+        for s in FLOOR_STEPS:
+            df[f"seed{k}@{s}"] = rec_diff(rs[STEPS.index(s)], _load(floor_dir / f"seed{k}_step{s}.json"))
+    g["seeds_vs_floor"] = {"max_diff": df, "pass": max(df.values()) <= KNOWN_TOL}
+    ln_v = math.log(MISTRAL_VOCAB)
+    lm = {}
+    for name in MISTRAL:
+        first, last = recs[name][0]["loss"], recs[name][-1]["loss"]
+        lm[name] = {"loss_first": first, "loss_last": last, "ln_vocab": ln_v,
+                    "pass": abs(first - ln_v) <= LOSS_INIT_TOL and last <= first - LOSS_DROP_MIN}
+    g["mistral_load"] = {**lm, "pass": all(v["pass"] for v in lm.values())}
+    g["pass"] = g["seed0_vs_u2"]["pass"] and g["seeds_vs_floor"]["pass"] and g["mistral_load"]["pass"]
+    return g
+
+
+def series_of(rs: List[dict]) -> Dict[str, list]:
+    out = {"step": [r["step"] for r in rs], "rho_mid": [r["rho_mid"] for r in rs],
+           "rho_mid_no0": [r["rho_mid_no0"] for r in rs], "rho_15": [r["rho_15"] for r in rs],
+           "m_mid": [float(np.median(r["m"][1:-1])) for r in rs],
+           "n0_mid": [float(np.median(r["n0"][1:-1])) for r in rs]}
+    if all("loss" in r for r in rs):
+        out["loss"] = [r["loss"] for r in rs]
+    return out
+
+
+def shape(steps: Sequence[int], series: Sequence[float]) -> dict:
+    """U2's shape, fixed: the early peak is the maximum over steps in (0, PEAK_MAX_STEP]; the trough the
+    minimum at or after it; the end the last step. Ties take the first step. If the trough is the last
+    step the series is still falling there, so the late rise is not measured: None, with
+    ``trough_is_last`` (added after output, `/challenge-pr` on #314, finding 4; no number changes)."""
+    t, s = np.asarray(steps), np.asarray(series, np.float64)
+    win = np.flatnonzero((t > 0) & (t <= PEAK_MAX_STEP))
+    if not len(win):
+        raise T5cRefused("no step in the early-peak window")
+    ip = int(win[np.argmax(s[win])])
+    it = ip + int(np.argmin(s[ip:]))
+    return {"first": float(s[0]), "first_step": int(t[0]), "peak": float(s[ip]), "peak_step": int(t[ip]),
+            "trough": float(s[it]), "trough_step": int(t[it]), "end": float(s[-1]), "end_step": int(t[-1]),
+            "fall": float(s[ip] - s[it]), "trough_is_last": it == len(s) - 1,
+            "late_rise": None if it == len(s) - 1 else float(s[-1] - s[it])}
+
+
+def seeds_table(series: Dict[str, Dict[str, list]], key: str = "rho_mid") -> dict:
+    """Per step over the ten 410m seeds (0 = `pythia-410m`): mean, SD (ddof 1), min, max, the seeds at
+    the ends, and seed 0's rank from the low end."""
+    names = ["pythia-410m", *(f"pythia-410m-seed{k}" for k in U5_SEEDS)]
+    X = np.asarray([series[n][key] for n in names], np.float64)          # (10, 18)
+    return {"key": key, "step": list(STEPS), "mean": X.mean(0).tolist(), "sd": X.std(0, ddof=1).tolist(),
+            "min": X.min(0).tolist(), "max": X.max(0).tolist(),
+            "argmin_seed": X.argmin(0).tolist(), "argmax_seed": X.argmax(0).tolist(),
+            "seed0_rank_from_low": [int((X[:, j] < X[0, j]).sum()) for j in range(X.shape[1])]}
+
+
+def describe_u5(recs: Dict[str, List[dict]]) -> dict:
+    series = {n: series_of(rs) for n, rs in recs.items()}
+    shapes = {n: {k: shape(v["step"], v[k]) for k in ("rho_mid", "rho_mid_no0", "rho_15")} for n, v in series.items()}
+    seeds = [n for n in u5_names() if n.startswith("pythia-410m")]
+    feats = ("first", "peak", "peak_step", "trough", "trough_step", "end", "fall", "late_rise")
+    if any(shapes[n]["rho_mid"]["trough_is_last"] for n in seeds):
+        raise T5cRefused("a 410m seed's trough is its last step: the late rise is not measured")
+    over_seeds = {f: {"min": min(shapes[n]["rho_mid"][f] for n in seeds),
+                      "max": max(shapes[n]["rho_mid"][f] for n in seeds),
+                      "per_seed": [shapes[n]["rho_mid"][f] for n in seeds]} for f in feats}
+    a, b = (dict(zip(series[n]["step"], series[n]["rho_mid"])) for n in MISTRAL)
+    common = sorted(set(a) & set(b))
+    diff = [abs(a[s] - b[s]) for s in common]
+    return {"series": series, "shapes": shapes,
+            "pythia_410m_seeds": {"rho_mid": seeds_table(series), "rho_mid_no0": seeds_table(series, "rho_mid_no0"),
+                                  "n0_mid": seeds_table(series, "n0_mid"), "shape_over_seeds": over_seeds},
+            "mistral_pair": {"common_steps": common, "abs_diff_rho_mid": diff, "max_abs_diff": max(diff),
+                             "at_step": common[int(np.argmax(diff))]}}
+
+
+def u5(a) -> int:
+    out = Path(a.out)
+    if a.seed0_only:                    # the known answer first (scripts/t5u5.sh), before the other 92 reads
+        d0 = {str(s): rec_diff(_load(out / "pythia-410m" / f"step{s}.json"),
+                               _load(Path(a.u2_dir) / "pythia-410m" / f"step{s}.json")) for s in STEPS}
+        ok = max(d0.values()) <= KNOWN_TOL
+        print(json.dumps({"seed0_vs_u2_max_diff": max(d0.values()), "pass": ok}))
+        return 0 if ok else 1
+    col = collect_u5(out)
+    g = u5_gate(col["recs"], Path(a.u2_dir), Path(a.floor_dir))
+    res = {"code": col["code"], "reader": code_sha(), "unit": "U5", "gate": g}
+    if g["pass"]:
+        res["description"] = describe_u5(col["recs"])
+    else:
+        res["refused"] = "the gate failed: no description (design-T5.md 'U5's details'; back to the user)"
+    (out / "u5.json").write_text(json.dumps(res, indent=1) + "\n")
+    show = {"gate": {"seed0_vs_u2": max(g["seed0_vs_u2"]["max_diff"].values()),
+                     "seeds_vs_floor": max(g["seeds_vs_floor"]["max_diff"].values()),
+                     "mistral_load": {k: (round(v["loss_first"], 3), round(v["loss_last"], 3))
+                                      for k, v in g["mistral_load"].items() if isinstance(v, dict)},
+                     "pass": g["pass"]}}
+    if g["pass"]:
+        d = res["description"]
+        show["shapes_rho_mid"] = {n: {k: (round(v, 3) if isinstance(v, float) else v) for k, v in s["rho_mid"].items()}
+                                  for n, s in d["shapes"].items()}
+        show["mistral_pair_max_abs_diff"] = (round(d["mistral_pair"]["max_abs_diff"], 4), d["mistral_pair"]["at_step"])
+    print(json.dumps(show, indent=1))
+    return 0 if g["pass"] else 1
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -374,15 +595,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     sp.add_argument("--hf-root", default=HDD_ROOT)
     sp = sub.add_parser("run")
     sp.add_argument("--out", required=True)
-    sp.add_argument("--trajs", nargs="+", default=list(TRAJ), choices=list(TRAJ))
+    sp.add_argument("--trajs", nargs="+", default=list(TRAJ), choices=list(ALL_TRAJ))
     sp.add_argument("--steps", nargs="*", type=int, default=None)
+    sp.add_argument("--unit", choices=("U2", "U5"), default="U2", help="U5 adds the prompt loss to each record")
     sp.add_argument("--hf-roots", nargs="+", default=list(DEFAULT_ROOTS))
     sp.add_argument("--force", action="store_true")
     sp = sub.add_parser("read")
     sp.add_argument("--out", required=True)
     sp.add_argument("--known-dir", default=str(DATA / t5.KNOWN_DIR))
+    sp = sub.add_parser("u5", help="U5's gate and description (no rule)")
+    sp.add_argument("--out", required=True)
+    sp.add_argument("--u2-dir", default=str(DATA / U2_DIR))
+    sp.add_argument("--floor-dir", default=str(FLOOR_DIR))
+    sp.add_argument("--seed0-only", action="store_true", help="only the known answer, seed 0 against U2")
     a = ap.parse_args(argv)
-    return {"fetch": fetch, "run": run, "read": read}[a.cmd](a)
+    return {"fetch": fetch, "run": run, "read": read, "u5": u5}[a.cmd](a)
 
 
 if __name__ == "__main__":
