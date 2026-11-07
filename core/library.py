@@ -4,7 +4,9 @@ core/library.py — the shared prompt library, loaded only through its pins.
 The library (`prompt_library/design-L.md`, built by `prompt_library/build_l1.py`) is 1024 single
 Pile documents per split, each cut to its first 512 GPT-NeoX tokens, in a seeded order. Its
 manifest, `prompt_library/library_v1.json`, is in git; the texts are not
-(`$METS_DATA/library/v1/{split}.jsonl`), and are rebuilt from the pinned source file.
+(`$METS_DATA/library/v1/{split}.jsonl`), and are rebuilt from the pinned source file by the
+manifest's rows and character ends (`build_l1.py --from-manifest`). The sealed split's texts are
+not kept on disk at all until a registry entry names it.
 
 A reader names a prefix k in its design and calls `load(split, k)`: the first k items in library
 order, each re-hashed against the manifest. It refuses (LibraryError) on a missing file, fewer
@@ -113,9 +115,9 @@ def load(split: str, k: int, *, allow_sealed: bool = False, context: str = "",
     _check_k(e, split, k)
     path = Path(data_dir or default_data_dir()) / f"{split}.jsonl"
     if not path.is_file():
-        raise LibraryError(f"{path} is missing: rebuild it with prompt_library/build_l1.py "
-                           "(it re-draws from the pinned source file and must reproduce the "
-                           "manifest's hashes)")
+        raise LibraryError(f"{path} is missing: rebuild it with `python "
+                           f"prompt_library/build_l1.py --from-manifest {split}` (slices the "
+                           "pinned source file at the manifest's rows and checks each hash)")
     out: List[Item] = []
     with open(path, encoding="utf-8") as f:
         for rank, line in zip(range(k), f):

@@ -61,8 +61,8 @@ against the manifest in git and refuses on a mismatch.
 | File | Feeds | Prompt set | Names its input | Refuses on drift | Status |
 |---|---|---|---|---|---|
 | `core/library.py` `load(split, k)` | every library reader | the first k items of `val`, in the seeded order | `library_hash(split, k)` | yes: sha256 and length per item; missing, empty, short | ✅ U1 |
-| `prompt_library/build_l1.py` | the library itself | draws `val` and `test` | writes the manifest | n/a (producer); reads both splits back through `load` | ✅ U1 |
-| `test`, the sealed split | nothing until a registry entry names it | 1024 items | — | `core/holdout.py` `refuse_sealed_split`; only the builder passes `allow_sealed=True` (`tests/test_library.py`) | ✅ sealed |
+| `prompt_library/build_l1.py` | the library itself | draws `val` and `test` | writes the manifest | n/a (producer); reads `val` back through `load`; `--from-manifest` rebuilds texts from the manifest alone | ✅ U1 |
+| `test`, the sealed split | nothing until a registry entry names it | 1024 items, hashed in the manifest; texts not on disk | — | `core/holdout.py` `refuse_sealed_split`; only the builder passes a non-`False` `allow_sealed` (`tests/test_library.py`) | ✅ sealed |
 
 No reader takes the library yet. The first is T5 U2's re-read (design-L.md U2); a reader moved to
 it records its 7-prompt value beside, once (design-L.md "Fixed now").

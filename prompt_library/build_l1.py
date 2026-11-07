@@ -10,7 +10,7 @@ same way and sealed (`core/holdout.py`). No model reads anything here: text and 
 Writes
   prompt_library/library_v1.json   the manifest (in git): pins, the rule, per item its row,
                                    Pile subset, character end, sha256 of its text, its token count
-  $METS_DATA/library/v1/{val,test}.jsonl   the item texts, one JSON line per item, in order
+  $METS_DATA/library/v1/val.jsonl          the item texts, one JSON line per item, in order
   $METS_DATA/library/v1/build_report.json  eligibility and mixture per subset, the checks
 
 The cut. Each item is the document's prefix up to the end character of its 512th token, from
@@ -24,6 +24,10 @@ re-tokenized whole, and every drawn item's cut is taken from its whole document.
     python prompt_library/build_l1.py --first      # item 0 of val only, printed; writes nothing
     python prompt_library/build_l1.py              # both splits, the manifest, the report
     python prompt_library/build_l1.py --data-dir D --manifest M   # a second build, to compare
+    python prompt_library/build_l1.py --from-manifest val          # texts from the manifest alone
+
+The sealed split's texts are not written: its manifest entries pin them, and
+`--from-manifest test --allow-sealed` rebuilds them once a registry entry names the split.
 """
 
 from __future__ import annotations
@@ -175,7 +179,7 @@ def draw(split, tok, first_only=False):
     for rank, r in enumerate(rows):
         item, end, ids = cut(tok, texts[r])
         re_ids = tok.encode(item, add_special_tokens=False).ids
-        if re_ids[:CUT_TOKENS] != ids:
+        if re_ids != ids:          # whole equality: a 513 with the right first 512 is not equal
             mismatch.append(rank)
         if not item.strip():
             raise SystemExit(f"REFUSE: {split} item {rank} (row {r}) is empty")
@@ -198,7 +202,7 @@ def draw(split, tok, first_only=False):
     ntok = np.asarray(ntok)
     report = {"n_rows": n_rows, "n_eligible": n_elig, "n_recounted_whole": n_recounted,
               "last_permuted_position_used": int(np.flatnonzero(np.isin(order, rows[-1:]))[0]),
-              "retokenized_prefix_matches_document": N_ITEMS - len(mismatch),
+              "retokenized_alone_equals_document_ids": N_ITEMS - len(mismatch),
               "mismatch_ranks": mismatch,
               "item_tokens_retokenized": {"min": int(ntok.min()), "max": int(ntok.max()),
                                           "n_not_512": int((ntok != CUT_TOKENS).sum())},
@@ -210,6 +214,33 @@ def draw(split, tok, first_only=False):
                       "sha256": SOURCE_FILES[split][2]},
              "columns": list(library.COLUMNS), "items": items}
     return entry, lines, report
+
+
+def tokenizers_version() -> str:
+    import tokenizers
+    return tokenizers.__version__
+
+
+def from_manifest(split: str, data_dir: Path, manifest_path: Path, allow_sealed: bool):
+    """Rebuild a split's texts by slicing the pinned file at the manifest's rows and char ends,
+    each checked against its sha256; no random stream and no tokenizer enter."""
+    from core.holdout import refuse_sealed_split
+    refuse_sealed_split(split, allow_sealed=allow_sealed, context="build_l1 --from-manifest")
+    e = library.manifest(manifest_path)["splits"][split]
+    texts, _ = read_rows(fetch(split))
+    if len(texts) != e["n_rows"]:
+        raise SystemExit(f"REFUSE: {len(texts)} rows, the manifest says {e['n_rows']}")
+    lines = []
+    for rank, (row, _, end, sha, _) in enumerate(e["items"]):
+        item = texts[row][:end]
+        if hashlib.sha256(item.encode()).hexdigest() != sha:
+            raise SystemExit(f"REFUSE: {split} item {rank} (row {row}) does not hash to the manifest")
+        lines.append(json.dumps({"rank": rank, "text": item}, ensure_ascii=False))
+    data_dir.mkdir(parents=True, exist_ok=True)
+    (data_dir / f"{split}.jsonl").write_text("\n".join(lines) + "\n")
+    n = len(library.load(split, len(lines), allow_sealed=allow_sealed, data_dir=data_dir,
+                         manifest_path=manifest_path, context="build_l1 --from-manifest"))
+    print(f"[{split}] {n} items rebuilt from the manifest into {data_dir}")
 
 
 def write_manifest(man: dict, path: Path):
@@ -233,8 +264,16 @@ def main():
     ap.add_argument("--first", action="store_true", help="item 0 of val only; writes nothing")
     ap.add_argument("--data-dir", type=Path, default=DATA / "library" / "v1")
     ap.add_argument("--manifest", type=Path, default=library.MANIFEST)
+    ap.add_argument("--from-manifest", metavar="SPLIT",
+                    help="rebuild SPLIT's texts from the manifest alone (row, char end, sha256): "
+                         "no random draw, no tokenizer")
+    ap.add_argument("--allow-sealed", action="store_true",
+                    help="with --from-manifest test: only once a registry entry names it")
     a = ap.parse_args()
 
+    if a.from_manifest:
+        from_manifest(a.from_manifest, a.data_dir, a.manifest, a.allow_sealed)
+        return
     tok, tok_pin = tokenizer()
     if a.first:
         draw("val", tok, first_only=True)
@@ -245,6 +284,8 @@ def main():
            "builder": "prompt_library/build_l1.py",
            "source": {"repo": SOURCE_REPO, "revision": SOURCE_REVISION},
            "tokenizer": tok_pin,
+           "environment": {"python": sys.version.split()[0], "numpy": np.__version__,
+                           "tokenizers": tokenizers_version()},
            "rule": {"seed": SEED, "order": "numpy default_rng(seed).permutation(n_rows), "
                     "then the first n_items rows with >= min_tokens tokens",
                     "min_tokens": CUT_TOKENS, "cut_tokens": CUT_TOKENS,
@@ -258,19 +299,29 @@ def main():
         entry, lines, report = draw(split, tok)
         man["splits"][split] = entry
         reports[split] = report
-        (a.data_dir / f"{split}.jsonl").write_text("\n".join(lines) + "\n")
-        print(f"[{split}] wrote {len(lines)} items; out of band: "
+        path = a.data_dir / f"{split}.jsonl"
+        if entry["sealed"]:
+            # The sealed split's texts are not kept: its manifest entries pin them, and
+            # --from-manifest test --allow-sealed rebuilds them once a registry entry names it.
+            if path.exists():
+                path.unlink()
+                print(f"[{split}] removed {path}: sealed texts are not kept on disk", flush=True)
+        else:
+            path.write_text("\n".join(lines) + "\n")
+        print(f"[{split}] {len(lines)} items{' (sealed, not written)' if entry['sealed'] else ''}; out of band: "
               f"{report['subsets_out_of_band']}; prefix mismatches: {len(report['mismatch_ranks'])}",
               flush=True)
     write_manifest(man, a.manifest)
 
     # Read back through the loader every reader uses: hashes, lengths, emptiness.
+    # The sealed split has no texts on disk to read back; `--from-manifest test --allow-sealed`
+    # into a scratch directory is its read-back (status-L.md "U1").
     for split in ("val", "test"):
-        got = library.load(split, N_ITEMS, allow_sealed=True, data_dir=a.data_dir,
-                           manifest_path=a.manifest, context="build_l1 read-back")
-        reports[split]["read_back"] = {"n": len(got),
-                                       "library_hash": library.library_hash(
-                                           split, N_ITEMS, manifest_path=a.manifest)}
+        rb = {"library_hash": library.library_hash(split, N_ITEMS, manifest_path=a.manifest)}
+        if not man["splits"][split]["sealed"]:
+            rb["n"] = len(library.load(split, N_ITEMS, data_dir=a.data_dir,
+                                       manifest_path=a.manifest, context="build_l1 read-back"))
+        reports[split]["read_back"] = rb
     (a.data_dir / "build_report.json").write_text(json.dumps(reports, indent=1) + "\n")
     print(json.dumps({s: {k: v for k, v in r.items() if k != "mixture"}
                       for s, r in reports.items()}, indent=1))

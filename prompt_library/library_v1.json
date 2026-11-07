@@ -17,6 +17,11 @@
   "add_special_tokens": false,
   "offsets": "ByteLevel post-processor with trim_offsets=False (ids unchanged)"
  },
+ "environment": {
+  "python": "3.10.20",
+  "numpy": "2.2.6",
+  "tokenizers": "0.19.1"
+ },
  "rule": {
   "seed": 20261107,
   "order": "numpy default_rng(seed).permutation(n_rows), then the first n_items rows with >= min_tokens tokens",

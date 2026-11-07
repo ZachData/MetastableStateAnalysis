@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -103,7 +104,8 @@ SEALED_ALLOWED = {"prompt_library/build_l1.py"}
 
 
 def test_only_the_builder_unseals():
-    pat = re.compile(r"allow_sealed\s*=\s*True")
+    # Any value but a literal False counts: `allow_sealed=a.allow_sealed` unseals too.
+    pat = re.compile(r"allow_sealed\s*=\s*(?!False\b)[\w.]")
     hits = {str(p.relative_to(REPO)) for d in SEALED_SCOPE
             for p in (REPO / d).rglob("*.py") if pat.search(p.read_text(errors="ignore"))}
     assert hits <= SEALED_ALLOWED, f"unseal the confirmation split: {sorted(hits - SEALED_ALLOWED)}"
@@ -125,5 +127,8 @@ def test_the_committed_manifest():
         # The cut is at the document's 512th token; re-tokenized alone, a prefix ending in a
         # whitespace run or inside a multi-byte character gives 511 or 513 (status-L.md "U1").
         assert all(it[2] > 0 and 511 <= it[4] <= 513 for it in e["items"])
-        assert sum(it[4] != 512 for it in e["items"]) <= 32
-        assert library.library_hash(split, 1024) == library.library_hash(split, 1024)
+    # As built 2026-11-07 (status-L.md "U1"): a change to any of these is a different library.
+    counts = {s: Counter(it[4] for it in e["items"]) for s, e in man["splits"].items()}
+    assert counts == {"val": {512: 1010, 511: 14}, "test": {512: 1008, 511: 14, 513: 2}}
+    assert library.library_hash("val", 1024).startswith("47feaa321fa0")
+    assert library.library_hash("test", 1024).startswith("538e14844925")
