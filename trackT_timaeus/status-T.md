@@ -37,7 +37,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-06 · body `3b0b19a07d`
+- **Reviewed:** 2026-11-06 · body `5dd9d10128`
 <!-- /phase-card -->
 
 ## Units
