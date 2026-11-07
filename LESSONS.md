@@ -1886,13 +1886,16 @@ saved locally in the same session and not grepped before the quote was written. 
 `/challenge-pr` on #304, finding 1. Rule: a quote taken from a fetch summary is grepped in the
 raw text, with its context, before it is written down.
 2026-11-07 (T5's close-out): U4's bar floor (0.2, Blocked 133) was placed on `pythia-410m`'s
-largest seed pair at 143000, seed 5 against seed 4, as if the ten seeds were exchangeable. The
-PolyPythias paper names 410m seeds 3 and 4 as its only two outlier runs, with loss spikes, and the
-repo had said so since 2026-10-02 (`p1d_cluster_ensemble/lit-1d.md` §10 row 1: "seeds 3 and 4 are
-outliers"). Neither U4a nor the freeze grepped for it; U5 found the two seeds by their loss, and
-the close-out read the paper. No arm's label moved; the floor's
-reading is Blocked 136. Rule: a noise floor built from released seeds is checked against the
-release's own account of those seeds before it is frozen.
+largest seed pair at 143000, seed 5 against seed 4. Blocked 133's options showed the split (seeds
+3 and 4 at 0.23, the eight at 0.39–0.43) but not why: the PolyPythias paper names those two as its
+only outlier runs, with loss spikes, the repo had said so since 2026-10-02
+(`p1d_cluster_ensemble/lit-1d.md` §10 row 1), and A5 had already decided the same question (its
+D7 (a): "outlier runs are the recipe too"). Neither was cited when 133 was put to the user; U5
+found the seeds again by their loss, and the close-out read the paper. The close-out's first draft
+then said the floor was placed "as if the seeds were exchangeable", which 133's own text
+contradicts (`/challenge-pr` on #315, finding 1). No label moved; Blocked 136. Rule: a decision
+about released seeds cites the release's account of them and the project's earlier decision on
+the same seeds before it is put to the user.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).

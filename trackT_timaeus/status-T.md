@@ -39,7 +39,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `7e3bae0437`
+- **Reviewed:** 2026-11-07 · body `c50dc02aff`
 <!-- /phase-card -->
 
 ## Units
@@ -80,7 +80,7 @@ which U5's Parked item named as its first step.
 | does Dodecahedron's cloud spread at any of the 53 checkpoints | **yes, on both models**: up to 1.00 by 30–47, down to 0.10–0.11 at 671–917, back to 0.90 by 9536 | "T5 U2" |
 | H1 at init | **partly**: the flat init concentrates the cloud in a Llama at every shape and in a GPT-NeoX at none; at 32m's shape removing it takes GPT-NeoX's parallel residual and ungated MLP together | "T5 U1", "T5 U1b", "T5 U4s" |
 | H1 through training (A2, Pythia's init) | **not supported at bar 0.2**, and at the floor 0.1 too (ΔL below both); its slower rise is within seed spread at equal loss | "T5 U4b: the arms" |
-| H2 (A1, biases) | **not supported at bar 0.2**; the bar's floor was placed on a pair with one of PolyPythias's two outlier runs (item 5), and at the floor without them A1 reads "partly" with the delay check not run: **Blocked 136, yours** | "T5 U4b: the arms", "T5 U5" |
+| H2 (A1, biases) | **not supported at bar 0.2**; the bar's floor was placed, with the split in view (Blocked 133), on a pair with one of what the PolyPythias paper calls its two outlier runs (item 5); at the floor without them A1 reads "partly" with the delay check not run: **Blocked 136, yours** | "T5 U4b: the arms", "T5 U5" |
 | A3 (both), the interaction | does not at bar 0.2 ("partly" at 0.1, as A1); no interaction seen | "T5 U4b: the arms" |
 
 **Established (tier 1):**
@@ -109,7 +109,11 @@ which U5's Parked item named as its first step.
    with "forks" (regressions to an earlier state) in their training maps; they "exit state 2
    prematurely" (§6). It states no cause (not data order, init or optimiser); its forks coincide with
    "a sharp decrease" in the spread of the weights' singular values, which it calls Godey et al.'s
-   "representation degeneration" (§5). Grepped in the raw HTML; Fig. 5's spike steps were not read.
+   "representation degeneration" (§5). It adds that "410M is less consistent, even when we do not
+   account for the outlier seeds" (§6). Grepped in the raw HTML; Fig. 5's spike steps were not read.
+   The split itself was known before any arm ran: Blocked 133's options showed seeds 3 and 4 at 0.23
+   against the eight at 0.39–0.43, and the floor 0.2 was chosen with it in view (133 (i) (d)); what is
+   new is the paper's label and U5's loss reading (`/challenge-pr` on #315, finding 1).
 
 **Not established:**
 
@@ -122,7 +126,9 @@ which U5's Parked item named as its first step.
 - Whether a sink or massive-activation onset leads the rise. The frozen half-rise lands late by
   construction (it measures toward the 4369 value while both still climb); post hoc, position 0's
   norm and the massive top grow before ρ does (the beside stage).
-- Why seeds 3 and 4 fail; the paper does not say, and their spike steps were not read.
+- Why seeds 3 and 4 fail; the paper does not say, and their spike steps were not read. Whether its
+  "representation degeneration" (a collapse in the weights' singular-value spread) bears on their
+  lower ρ_mid at 143000: anisotropy is what ρ measures, but the two were not compared.
 - Why the flat init concentrates the cloud at init (U1b's GeLU-mean candidate is untested).
 - Anything about C2's break as an init effect: T5 tested the late level; the break (128–512 on
   Pythia) sits in the early fall, which T5 described only. No date or V on Dodecahedron, so C2's F1
@@ -168,7 +174,7 @@ U4's second unit; U4 trained six arms to 4369, no continuation to 5970 (Blocked 
 | the uncentred count's sight of plant B lapses at 2340–2735 (U3's first read Parked 2) | U3 | **dropped**: no consumer left (the split ran without it) |
 | `c2_seeds.b_matched_tol`'s τ ≤ 1e-2 bound (U3's first read Parked 3) | U3 | **carried to ROADMAP C4**, beside C2 3c's Parked 0: C4 is the next unit to derive centred arms through `c2_seeds` |
 | whether T2 reopens on the trough or its early plateau (U2b Parked 2; U3's first read Parked 1) | U2b, U3 | **carried to ROADMAP §7b T2's row as a reopen candidate, not opened**: the counts pass only in the trough (491–917); the early plateau (1253–3738) sits on the re-concentration; the gate never ran at 35–308, where T1's windows for E₁'s break start and ρ_mid falls from 1.00 |
-| 410m seeds 3 and 4 inside the project's other nine-seed readings (1d's replication, A5's break bracket, C2's seeds) | found at close | **carried to ROADMAP §7b's carried list**: a check before the paper rewrite quotes a nine-seed 410m number; U5's seed SD ≤ 0.026 to 54000 says the early ρ readings are not moved by them, and the other statistics were not checked |
+| 410m seeds 3 and 4 inside the project's other nine-seed readings (1d's replication, A5's break bracket, C2's seeds) | found at close | **dropped** (`/challenge-pr` on #315, finding 3): each already names and handles them (1d: "seeds 3 and 4 are not apart"; A5's D7 (a): counted and flagged, "outlier runs are the recipe too"; C2's tally allows two seeds the other way) |
 | U4a's Parked 1–3; U1, U1b and U2's Parked | earlier | done (U4b; U1b, U4s, U2b) |
 
 **Blocked at close:** 122–135 all decided (`STATE.md`); 136 opened for the user.

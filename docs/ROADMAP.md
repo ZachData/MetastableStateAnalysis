@@ -318,9 +318,6 @@ deeper released model with a published curve, this replaces T3–T4. *T1 found n
 - `timaeus/gpt-2-small`: a Pythia-160m-shaped run checkpointed every 100 steps; its data and schedule are in a pickle not yet read.
 - `L4`'s one-head LLC curve (2507.21449) as a partial control, for T3 only if T4 goes per head.
 
-**Carried from T5's close-out** (2026-11-07; `trackT_timaeus/status-T.md` "T5 on one page"):
-- `pythia-410m` seeds 3 and 4 are the PolyPythias paper's two outlier runs (loss spikes; 2503.09543 §3, App. A). They sit inside every nine-seed 410m reading here (1d's replication, A5's break bracket, C2's seeds); check each nine-seed number the paper rewrite quotes with them left out (CPU, from the records). U5's ρ_mid seed SD ≤ 0.026 to 54000 says the early ρ readings are not moved; nothing else was checked.
-
 Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 passes; T5
 after T2's close, independent of T3–T4. Whether T opens, and where it sits against the other
 open rows, is §10 item 11; whether T5 opens is §10 item 12.
