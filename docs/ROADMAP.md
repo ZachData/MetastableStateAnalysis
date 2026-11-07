@@ -431,7 +431,11 @@ proposed, not decided.
     (Blocked 130 (a)) and done; U4's design frozen 2026-11-03 (`design-T5.md` "U4, the causal
     arm, designed"; Blocked 132, the user's: A3 added, U4 ≤ 4 GPU-days, U4s the screen at init
     first, three units, two beyond the budget). U4 and U5 done; **T5 closed 2026-11-07 at its
-    exit** (`status-T.md` "T5 on one page"), with Blocked 136 (the bar's floor) the user's.*
+    exit** (`status-T.md` "T5 on one page"); Blocked 136 (the bar's floor) decided (a), the
+    user's, 2026-11-07: labels kept, nothing carried.*
+13. **Which row opens after T5** (`STATE.md` Blocked 137, proposed 2026-11-07): §7b T5′, T5″,
+    T5‴, T3; §8 C4; B7′'s Blocked 115. Recommended: T5′ (inputs on disk, GPU minutes, the one
+    row on the paper's induction timeline), then C4 if the paper's F1 fence is to move.
 
 ## 11. What each phase gives the plan
 
