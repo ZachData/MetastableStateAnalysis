@@ -468,8 +468,8 @@ def rec_diff(got: dict, ref: dict, keys: Sequence[str] = GATE_KEYS) -> float:
     d = 0.0
     for k in keys:
         a, b = np.asarray(got[k], np.float64), np.asarray(ref[k], np.float64)
-        if a.shape != b.shape:
-            return math.inf
+        if a.shape != b.shape or not (np.all(np.isfinite(a)) and np.all(np.isfinite(b))):
+            return math.inf                 # a NaN would pass silently: max(d, nan) keeps d (CodeRabbit, #314)
         d = max(d, float(np.max(np.abs(a - b) / np.maximum(1.0, np.abs(b)))))
     return d
 

@@ -64,9 +64,9 @@
 **Blocked 135 decided (a), the user's, as recommended.** Rules fixed before any output
 (`design-T5.md` "U5's details", commit `31a0d17`); producer `trackT_timaeus/t5c.py` `43fc18a8b5e8`
 (`run --unit U5`, then `u5`); batch `scripts/t5u5.sh` via the runner (exit 0, 30 min on the 3080, no
-edits); records `data/trackT/t5u5/2026-11-06/` (main tree; `u5.json`, re-read with reader `b3afe9f69dbe`
-after `/challenge-pr` on #314, finding 4: a late rise is null where the trough is the last step; no number
-changed). **Input:** `pythia-410m` seeds 0–9
+edits); records `data/trackT/t5u5/2026-11-06/` (main tree; `u5.json`, re-read with reader `1b8816791bff`
+after `/challenge-pr` on #314, finding 4 (a late rise is null where the trough is the last step) and
+CodeRabbit's NaN check in the gate; gate passes again, no number changed). **Input:** `pythia-410m` seeds 0–9
 at C2's 18 steps; `stanford-crfm/alias-gpt2-small-x21` at 36 checkpoints (0 … 20000) and
 `battlestar-gpt2-small-x49` at 35 (0 … 16000), the GPT-2 BPE from alias's checkpoint 0 for both; the
 7 v1 prompts (`976b62d677bc`), ≤ 512 tokens, float32, eager, tf32 off.

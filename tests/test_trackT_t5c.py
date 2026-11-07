@@ -93,6 +93,10 @@ def test_rec_diff_absolute_below_one_relative_above():
     assert t5c.rec_diff(got, ref) == pytest.approx(3e-6)
     got["m"] = [0.5]
     assert t5c.rec_diff(got, ref) == float("inf")
+    got["m"] = [0.5, 0.5]
+    got["n0"] = [float("nan"), 1.0]
+    assert t5c.rec_diff(got, ref) == float("inf")                     # NaN refuses, not 0
+    assert t5c.rec_diff(ref, got) == float("inf")
 
 
 def _rec(step, rho_mid, loss=None):
