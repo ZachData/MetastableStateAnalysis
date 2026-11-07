@@ -72,3 +72,22 @@ depth-scaled init against Llama's flat 0.02 (HF's Llama init has no depth scalin
 published on Dodecahedron's or Timaeus's `gpt-2-small`'s geometry. So T5's comparison is new as
 a measurement, not as a mechanism, for H1 (Noci et al.'s mechanism). For H2 no published result
 contrasts linear biases with none on the shared direction; Sun et al.'s is a different bias.
+
+## 5. T5′'s scan (2026-11-07; web search, abstracts and summaries, not full texts)
+
+What bears on when induction, sinks and massive activations form against the cloud's late rise
+(`trackT_timaeus/design-T5p.md`).
+
+| work | what it says (abstract or summary level) | bears on |
+|---|---|---|
+| Olsson et al. 2022, 2209.11895 (cited in C2's paper) | induction heads form in a phase change seen as a bump in the loss; ICL score = loss at token 500 minus token 50; prefix-matching score on repeated random tokens | **I and ICL's definitions** (D1) |
+| Singh et al. 2024, 2404.07129 (ICML) | three interacting subcircuits drive the phase change; several induction heads form, additively; data properties shift its timing | the max head is one of several (I_top5 beside) |
+| Aoyama, Wilcox, Schneider 2025, 2511.16893 (ICML 2026) | a simple expression in batch and context size predicts when induction heads form, agnostic to model size; smaller batches form later in updates; bigram repetition and reliability set a boundary | the arms' 524k tokens a step against Pythia's 2M: "no induction by 4369" is a live row |
+| Tigges et al. 2024, 2407.10827 | across Pythia 70m–2.8B, induction heads (and later circuits) appear at a similar token count (summaries: 2–5B tokens) | the token arithmetic; 410m's E3 at 1000 is 2.1B tokens |
+| 2606.02378 (June 2026, three 1B-class models) | induction forms 10–20× earlier in tokens than the BOS-attractor sink transition in the DCLM-trained models (OLMo 23B against 264B tokens); Pythia's sink fraction ramps gradually; sinks only accumulate; the circuit at formation overlaps the final one by about a third | **D4's onset question has published precedent, at 1B scale:** sink and induction are separate transitions there. Not verified beyond the excerpts |
+| 2508.03616 (2025; Pythia 14M–12B, 150+ checkpoints) | massive activations' emergence over training fits a log-modulated decaying curve; middle layers rise roughly logarithmically, shallow and deep peak early; uses Sun et al.'s 100 / 1000 criterion | M's onset (D4); the arms never meet the 1000 ratio (`status-T.md` beside stage) |
+| Gu et al. 2024, 2410.10781; Sun et al. 2024, 2402.17762 (§4 above) | sinks after effective optimisation; massive activations as biases | S and M as `t5j` reads them |
+
+**Not found:** any reading of token-cloud anisotropy (mean cosine) beside induction formation along
+training; a summary search for "anisotropy … induction phase change" returned neither. So T5′'s
+pairing of ρ_mid's rise with I is new as a measurement; the sink-against-induction order is not.
