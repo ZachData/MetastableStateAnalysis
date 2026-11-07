@@ -1885,6 +1885,14 @@ over training in a retrained InceptionV1 (line 690, "the movement is local"). Th
 saved locally in the same session and not grepped before the quote was written. Found by
 `/challenge-pr` on #304, finding 1. Rule: a quote taken from a fetch summary is grepped in the
 raw text, with its context, before it is written down.
+2026-11-07 (T5's close-out): U4's bar floor (0.2, Blocked 133) was placed on `pythia-410m`'s
+largest seed pair at 143000, seed 5 against seed 4, as if the ten seeds were exchangeable. The
+PolyPythias paper names 410m seeds 3 and 4 as its only two outlier runs, with loss spikes, and the
+repo had said so since 2026-10-02 (`p1d_cluster_ensemble/lit-1d.md` §10 row 1: "seeds 3 and 4 are
+outliers"). Neither U4a nor the freeze grepped for it; U5 found the two seeds by their loss, and
+the close-out read the paper. No arm's label moved; the floor's
+reading is Blocked 136. Rule: a noise floor built from released seeds is checked against the
+release's own account of those seeds before it is frozen.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).

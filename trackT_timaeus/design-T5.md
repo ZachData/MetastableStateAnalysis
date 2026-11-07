@@ -616,6 +616,10 @@ GPU-days, **plus U1b** (extended on the record, Blocked 124 (a), 2026-10-30), **
 user's: one docs unit; U3 then runs in budget, its first read minutes of GPU). **plus U4s and U4's second unit** (Blocked 132, 2026-11-03, the user's: D6 (b), D7 (a); U4s, U4a, U4b, two beyond), **U4 ≤ 4 GPU-days** (D5 (b): A3 added with its budget). **No lean:** no step-0 cloud of 70m, 160m or `gpt-2-small` has been computed; the only
 clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 
+**Closed 2026-11-07 at the exit** (`status-T.md` "T5 on one page (closed 2026-11-07)"): the cloud
+spreads on both models; H1 at init partly; H1 through training and H2 not supported at bar 0.2;
+the bar's floor rests on a PolyPythias outlier pair, Blocked 136.
+
 ## Worth challenging (for the PR)
 
 - The bands (D2): 0.75 and 0.655 are judgement, not derived; a reviewer may prefer bands from a

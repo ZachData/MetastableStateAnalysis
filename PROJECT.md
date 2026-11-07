@@ -3031,6 +3031,26 @@ nine PolyPythias seeds, v1's 7 prompts; nothing scored.
 
 ---
 
+## 3.78 Track T's T5 closed: the Pythia counts fail on Dodecahedron where its cloud re-concentrates; neither biases nor Pythia's init removes that by the bar (2026-11-07)
+
+**`trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"** holds the numbers; this
+section says why it is project-wide. Tier 1, description; Dodecahedron `-32m`/`-67m`, six retrained
+arms of its recipe, `pythia-70m`/`-160m`/`-410m` (ten seeds), Mistral GPT-2 small, v1's 7 prompts.
+
+- The counts C2 dates on Pythia are not portable as built: on a Llama-style model they pass only
+  where its token cloud is spread and stop as it re-concentrates. A count's validity is a property
+  of the cloud it reads, so any new model family needs its gate run along training, not at two
+  steps (T2 read only the two ends).
+- The cloud's rise, fall and second rise appear in every family read (Pythia on ten seeds,
+  Dodecahedron, its retrained recipe, Mistral GPT-2 small's first two), at different heights; what
+  sets the late height is not biases or Pythia's init at the bar used. LR and the MLP's form are
+  the untested candidates (ROADMAP §7b T5″, T5‴).
+- `pythia-410m` seeds 3 and 4, PolyPythias's two outlier runs (loss spikes), sit in every
+  nine-seed 410m reading in the project; T5's bar floor was placed on one of them (Blocked 136).
+  A seed's spread is quoted with the outliers named.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
