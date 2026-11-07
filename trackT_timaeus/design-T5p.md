@@ -38,7 +38,7 @@ row of the outcome table, not an edge case. The released `-32m` runs to 9536 (D5
 | the six arms, 49 checkpoints each (0, 1–8, 10 … 4369; T2's grid ≤ 4369) | `HDD_1TB/mets_data/trackT/t5u4/{A0,A0p,A0pp,A1,A2,A3}/ckpt/step*.safetensors` | trained at `t5h` `66af413c31fe` (A0), `40289679fc36` (replicates), `81b2e03bdcf7` (arms) |
 | their ρ_mid and n0 per step | `…/t5u4/<arm>/read/step*.json` (U4's reads) | seen |
 | their S, M, n0 onset series | `…/t5u4/beside/<arm>/onset/` (the beside stage) | seen, post hoc 10 % values in `status-T.md` |
-| held-out text | `…/t5u4/data/tail.bin`: the continuation's 1601 × 256 sequences of 2048 tokens, **trained by no arm** (Blocked 134 (a): no continuation ran) | the first 64 sequences |
+| held-out text | `…/t5u4/data/tail.bin`: the continuation's 1601 × 256 sequences of 2048 tokens, **trained by no arm** (Blocked 134 (a): no continuation ran) | ~~the first 64 sequences~~ **sequences 64–1087 (1024)**: Blocked 139 (a), the user's, 2026-11-07, post hoc (N set from the noise after G6's ICL leg failed at 64, not from the effect; windows and bars unchanged; rows 0–63 were read by that gate, so not reused) |
 | released `timaeus/dodecahedron-32m`, 53 checkpoints 1 … 9536 | `HDD_1TB/mets_data/hf` (53 refs) | as U2 |
 | `pythia-410m` seed 0 at C2's 18 steps 0 … 143000 | `~/.cache/huggingface` (34 refs) | as C2 |
 
@@ -56,11 +56,11 @@ second half. Pythia draws from its own vocabulary under the same seed. Eager att
 | I_top5, argmax head | mean of the top 5 heads' net PM; which head is the max | beside |
 | P | max over heads of mean attention from q to q − 1 on the control sequences (E4's analogue) | dated, beside |
 | B | mean token loss on the repeated second half (positions T + 1 … 2T − 1) minus the same on the control | dated, beside (behaviour of I) |
-| ICL | mean token loss at positions 490–509 minus 40–59 over the 64 held-out sequences (Olsson et al.'s 500 − 50 with a 20-token window); Pythia reads the same text re-encoded in its tokenizer | dated, beside |
+| ICL | mean token loss at positions 490–509 minus 40–59 over the 1024 held-out sequences (64 until Blocked 139 (a); Olsson et al.'s 500 − 50 with a 20-token window); Pythia reads the same text re-encoded in its tokenizer | dated, beside |
 | ρ_mid, n0; S, M | as T5 (`design-T5.md`; `t5j`) | read from the records, not recomputed (G1 checks the path) |
 | **I_null** | I's formula with the "repeated" set replaced by a third independent draw `[r_1 … r_T, r″_1 … r″_T]` (no repeat), against the same control: the max over 96 heads of pure noise, at every step of every run | **the planted null** (`/challenge-pr` on #317, finding 1) |
 
-Bootstrap SEs over the R sequences (I, P, B) or the 64 (ICL), 1000 resamples, seed fixed: beside
+Bootstrap SEs over the R sequences (I, P, B) or the 1024 (ICL), 1000 resamples, seed fixed: beside
 each value, not a floor (finding 1: a 4 SE floor on a max over 96 heads, from the trough to the
 peak over 49 steps, is cleared by pure noise in 62 % of simulated series).
 
