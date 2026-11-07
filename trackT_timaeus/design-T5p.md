@@ -1,5 +1,5 @@
 <!-- trackT_timaeus/design-T5p.md -->
-# Track T — design: T5′, what forms with the rise, per U4 arm (proposed 2026-11-07)
+# Track T — design: T5′, what forms with the rise, per U4 arm (proposed 2026-11-07; revised after `/challenge-pr` on #317, findings 1–5)
 
 Opened 2026-11-07 by `STATE.md` Blocked 137 (a), the user's, as recommended: **Track T is not
 closed; it closes with T5′**, after which the user's order of 2026-11-02 puts Track N (N1) next.
@@ -58,36 +58,54 @@ second half. Pythia draws from its own vocabulary under the same seed. Eager att
 | B | mean token loss on the repeated second half (positions T + 1 … 2T − 1) minus the same on the control | dated, beside (behaviour of I) |
 | ICL | mean token loss at positions 490–509 minus 40–59 over the 64 held-out sequences (Olsson et al.'s 500 − 50 with a 20-token window); Pythia reads the same text re-encoded in its tokenizer | dated, beside |
 | ρ_mid, n0; S, M | as T5 (`design-T5.md`; `t5j`) | read from the records, not recomputed (G1 checks the path) |
+| **I_null** | I's formula with the "repeated" set replaced by a third independent draw `[r_1 … r_T, r″_1 … r″_T]` (no repeat), against the same control: the max over 96 heads of pure noise, at every step of every run | **the planted null** (`/challenge-pr` on #317, finding 1) |
 
-Bootstrap SEs over the R sequences (I, P, B) or the 64 (ICL), 1000 resamples, seed fixed.
+Bootstrap SEs over the R sequences (I, P, B) or the 64 (ICL), 1000 resamples, seed fixed: beside
+each value, not a floor (finding 1: a 4 SE floor on a max over 96 heads, from the trough to the
+peak over 49 steps, is cleared by pure noise in 62 % of simulated series).
 
-## The dating rule (D2 (a), fixed now)
+## The dating rule (D2 (a), revised after `/challenge-pr` on #317, findings 1–3)
 
 For a series x(s) on a run's grid, signed so formation is positive (B and ICL negated):
 t = the step of x's minimum before its maximum; peak = max x up to the run's end (4369 for the
 arms; 9536 and 4369 both for the released run; 4000 for 410m, as C2's locator). **on_f** = the
 first step after t with x(s) − x(t) ≥ f · (peak − x(t)), at **f = 0.1 (the onset) and 0.5 (the
-half-rise)**. Refused, "none formed", if peak − x(t) < 4 bootstrap SE (C2's locator's floor).
-**Still-rising flag:** the peak is the last step and x rose by ≥ 0.1 of the rise over the last grid
-step; the half-rise is then late by construction (`/challenge-pr` on #313, finding 2) and is stated
-so. ρ_mid's rise is dated by the same rule from its trough (seen: its half-rise 1713–2340 and post
-hoc 10 % 1253–1465 are in `status-T.md`).
+half-rise)**. **Refused, "none formed", if peak − x(t) < 0.1** in I's units (an absolute floor, a
+judgement fixed now: uniform causal attention puts about 0.003 on one key at these positions, an
+induction head 0.3 or more); G4 checks the floor against I_null on every run, G5 against a planted
+rise. For P, B, ICL (beside) the floor is 4 bootstrap SE, as C2's, with finding 1's caveat stated.
 
-## The outcome table (per arm; fixed now)
+**Censored** (finding 2): the peak is the run's last step and x rose by ≥ 0.1 of its rise over the
+last grid step. Then the true rise is larger than the measured one, so the true on_f is **at or
+after** the measured on_f: a censored date is a lower bound (as C2's paper treats its censored rows).
 
-d = the grid-index difference on_0.1(I) − on_0.1(ρ_mid); the half-rises are read the same way beside.
-One grid step near the rise is about +17 % in step (1253 → 1465 → 1713).
+**ρ_mid is dated in both phases** (finding 3), by the same rule: its **fall** (signed down, from its
+early peak, 1.00 at 30–47 on `-32m`, to the trough) and its **rise** (from the trough). Seen: the
+rise's half 1713–2340 and post hoc 10 % 1253–1465 are in `status-T.md`; the fall's dates are not
+written there, but the series are seen.
+
+## The outcome table (per arm; fixed now; revised after `/challenge-pr` on #317, findings 2–4)
+
+**Phase:** which part of the arm's ρ_mid trajectory on_0.1(I) and on_0.5(I) fall in: the early
+rise (before ρ's early peak), **the fall** (the peak to ρ's minimum t), the trough (t to
+on_0.1 of the rise), **the rise** (from there). Description: the phase carries no label. Reported for every run, 410m included against its own
+ρ_mid (U2's records; its induction at 1000 sits in its fall, 0.81 at 16 → trough 2000–4000).
+
+**Against the rise:** d = on_0.1(I) − on_0.1(ρ_mid's rise) in grid steps (one step near the rise is
+about +17 %: 1253 → 1465 → 1713). A label stands only if censoring cannot move it:
 
 | case | label |
 |---|---|
-| I refused (rise < 4 SE) | **no induction formed by 4369** |
-| d ≤ −2 | **induction leads the rise** |
-| −1 ≤ d ≤ 1 | **induction with the rise** |
-| d ≥ 2 | **induction after the rise** |
+| I refused (rise < 0.1) | **no induction formed by 4369** |
+| d ≤ −2, I not censored (ρ may be: its censoring only moves its onset later) | **induction leads the rise** (the phase says whether in the fall or the trough) |
+| −1 ≤ d ≤ 1, neither censored | **induction with the rise** |
+| d ≥ 2, ρ not censored (I may be: its censoring only moves it later) | **induction after the rise** |
+| any other case with a censored series | **censored, not ordered** |
 
-**Noise:** if the three A0 seeds' on_0.1(I) span ≥ 2 grid steps, A0's row reads "seed-dependent" and
-any arm's departure from the A0 range by less than that span is "not told apart". Across arms:
-description only (one run each). S, M, n0 (D4 (a)): dated by the same rule against ρ, no label.
+**Noise** (finding 4): on the **gap d**, not I's onset alone. If the three A0 seeds' d span ≥ 2 grid
+steps, A0's row reads "seed-dependent" and any arm's d inside A0's range widened by that span is
+"not told apart". Across arms: description only (one run each). S, M, n0 (D4 (a)): dated by the
+same rule against ρ, no label.
 
 ## Calibration gate (U1, before any reading)
 
@@ -96,12 +114,13 @@ description only (one run each). S, M, n0 (D4 (a)): dated by the same rule again
 | G1 | the producer's ρ_mid on A0 at 671 and 4369 and on released `-32m` 4369 equals the read records | ≤ 1e-6 |
 | G2 | eager against sdpa (the arms trained under sdpa): hidden states at A0 4369 | max relative ≤ 1e-4 |
 | G3 | the scorer on synthetic attention: one planted head at key j + 1 gives PM 1; uniform causal attention gives net I = 0 | exact to 1e-12 |
-| G4 | **null at init:** every run's first checkpoint (arms step 0, `-32m` step 1, 410m step 0) | I ≤ 0.05 |
-| G5 | **positive control:** 410m at 143000 | I ≥ 0.3; ICL below step 0's by ≥ 4 SE |
-| G6 | **the bridge (D3 (a)):** 410m's I half-rise on C2's grid (C2's locator, reference to 4000) | at 512, 1000 or 2000 (1000 ± one grid step) |
-| G7 | first output populated: A0 4369's record has I, P, B, ICL, the argmax head, non-null | all |
+| G4 | **planted null over the real checkpoints** (finding 1; replaces "I ≤ 0.05 at init", which could not fail): I_null on every run (six arms, `-32m`, 410m) | refused ("none formed") on all 8, and max I_null ≤ 0.05 at every step |
+| G5 | **planted effect over the real checkpoints:** each run's I_null series plus a logistic rise of height 0.2 (twice the floor) centred at each of 1072, 1465, 2002, 2735, 3738 (410m: 256, 512, 1000, 2000, 4000) | the rule dates on_0.5 within one grid step of the centre in ≥ 38 of 40, and never refuses |
+| G6 | **positive control:** 410m at 143000 | I ≥ 0.3; ICL below step 0's by ≥ 4 SE |
+| G7 | first output populated: A0 4369's record has I, I_null, P, B, ICL, the argmax head, non-null | all |
+| B | **the bridge (D3 (a), revised, finding 5): not a gate.** 410m's I half-rise on C2's grid (C2's locator, reference to 4000) | **at 1000**: the arms' dates sit beside C2's E3; elsewhere the comparison with C2's 1000 is refused and stated, **the arms' own tables still read** |
 
-A failure refuses the reading and goes back to the user.
+A G1–G7 failure refuses the reading and goes back to the user.
 
 ## Units, exit and budget
 
@@ -117,20 +136,26 @@ the table above, or refused by its gate. **Budget: U0 + U1 + close-out**, as the
 | # | choice | options | recommended, and why |
 |---|---|---|---|
 | D1 | the induction statistic | (a) I: the max head's net prefix matching on repeated random tokens, control subtracted; (b) each arm's top 2 heads at 4369, named, traced back (E3's shape); (c) the behavioural ICL score alone | **(a).** It selects no head from the end state, so a date is not pulled toward 4369; Olsson et al.'s and Singh et al.'s measure. (b) matches E3 but names its heads on the step the series ends at. (c) has no head choice but reads packed text with document breaks, so its signal is diluted; it stays beside |
-| D2 | the dating rule | (a) from the trough at f 0.1 (onset) and 0.5 (half), refusal at 4 SE, the still-rising flag; (b) C2's locator unchanged (from step 0, half only); (c) a fitted sigmoid's midpoint | **(a).** The question is whether something *leads*, which a half-rise toward a still-climbing end cannot say (#313, finding 2); 0.5 is kept for C2's bridge. (b) dates ρ, which falls first, from the wrong end. (c) adds a model the grid's 49 points may not support |
-| D3 | the bridge | (a) a gate: refuse if 410m's I half-rise is not at 512–2000; (b) read 410m beside, no refusal | **(a).** The row's reason is the bridge to C2's 1000 (E3, two named heads, natural text). If the max-head score on random repeats dates 410m elsewhere, the arms' dates measure another event and cannot sit beside C2's |
+| D2 | the dating rule (revised after `/challenge-pr` on #317, findings 1–3) | (a) from the trough at f 0.1 (onset) and 0.5 (half); an absolute floor 0.1 on I, checked by a planted null and a planted rise on every run's real checkpoints (G4, G5); censored dates as lower bounds, a label kept only where censoring cannot move it; ρ dated in its fall and its rise; (b) C2's locator unchanged (from step 0, half only, 4 SE floor); (c) a fitted sigmoid's midpoint | **(a).** The question is whether something *leads*, which a half-rise toward a still-climbing end cannot say (#313, finding 2); 0.5 is kept for C2's bridge. (b) dates ρ, which falls first, from the wrong end, and its 4 SE floor is cleared by noise on a max over heads (finding 1). (c) adds a model the grid's 49 points may not support |
+| D3 | the bridge (revised after `/challenge-pr` on #317, finding 5) | (a) not a gate: the comparison with C2's 1000 stands only if 410m's I half-rise is at 1000 exactly, else it is refused and stated, and the arms' own tables still read; (b) a gate refusing the whole reading unless 410m lands at 512–2000 (the first proposal) | **(a).** The arms' tables answer the row's first question on their own; only the sentence that sets them beside C2's E3 needs the bridge. (b) refused too much and passed too easily: 512–2000 holds three of C2's four most common dates |
 | D4 | S, M, n0 | (a) dated by D2's rule, described, no label; (b) labelled by the outcome table, as I | **(a).** Their series were read at the beside stage and their post hoc 10 % steps written down (671–1253, 917–1465), so any rule chosen now is chosen with them in view; I, P, B and ICL are the only unseen series |
 | D5 | released `-32m` | (a) all 53 checkpoints to 9536, dated to 9536 and to 4369; (b) arms only | **(a).** About 10 GPU-minutes; it reads induction past 4369, where the arms stop, and checks A0's timing against the run A0 reproduces (its fall and late level matched; its rise started earlier, `status-T.md` "T5 U4a") |
 
 ## Worth challenging (for the PR)
 
 - Max over heads is noisy at the bottom (the largest of 96 small values on the arms, 16 layers × 6 heads; 384 on 410m) and switches head
-  through training; the control subtraction and G4 bound it, I_top5 and the argmax head sit beside.
+  through training; I_null (G4) measures that noise on every run, I_top5 and the argmax head sit beside.
+- The floor 0.1 on I and the planted height 0.2 are judgements, fixed before output; G4 and G5 test
+  them on the real checkpoints but do not derive them.
 - f = 0.1 is a judgement; it is also the fraction the beside stage used post hoc on S and n0, so
   choosing it now is not blind for those (D4) though it is for I.
 - Random-token repeats are off-distribution; a head can match prefixes there and not on text. B and
   ICL are its behavioural checks, not gates.
-- G6 asks a different statistic to land at E3's date; if induction on random repeats forms a grid
-  step before E3's named heads on text, G6 still passes (±1 step), which is loose by design.
+- The bridge (B) asks a different statistic to land at E3's exact step; if random-repeat induction
+  forms one grid step before E3's named heads on text, the C2 comparison is refused though the two
+  may date one event. Revised from a refusing gate at 512–2000 (`/challenge-pr` on #317, finding 5).
+- Censoring keeps a label only where it cannot move (finding 2); with both I and ρ still rising at
+  4369, every arm may read "censored, not ordered", and D5's released run to 9536 is then the only
+  uncensored read.
 - Rejected: reading ICL on Dodecahedron's own data (unknown); `-67m` (its trajectory matches `-32m`'s, U2,
   and no arm has its shape); training anything.

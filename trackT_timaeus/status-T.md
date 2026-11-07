@@ -39,7 +39,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `9ae93a6da9`
+- **Reviewed:** 2026-11-07 · body `8cf6fefe42`
 <!-- /phase-card -->
 
 ## Units
@@ -82,6 +82,15 @@ and induction to be separate transitions, induction 10–20× earlier in tokens,
 question has precedent at 1B scale; nothing found reads token-cloud anisotropy beside induction
 formation. Aoyama et al. and Tigges et al. put induction's step under batch size and near 2–5B
 tokens, and the arms end at 2.29B, so "no induction by 4369" is a row of the outcome table.
+
+**`/challenge-pr` on #317: accept with changes, findings 1–5 taken** (design revised before any
+output): (1) the 4 SE floor was C2's locator's, not calibrated for a max over 96 heads from trough
+to peak (the reviewer's simulation: pure noise clears it in 62 % of series), and G4 at init could
+not fail: now an absolute floor 0.1, a planted null (I_null) and a planted rise on every run's real
+checkpoints; (2) a date still rising at the end is a lower bound, not "late": a label stands only
+where censoring cannot move it; (3) ρ dated in its fall too, and 410m read against its own ρ_mid,
+since its induction at 1000 sits in its fall; (4) the seed-noise floor on the gap d, not I's onset;
+(5) the bridge refuses only the comparison with C2's 1000, at 1000 exactly.
 
 **Parked:** none.
 
