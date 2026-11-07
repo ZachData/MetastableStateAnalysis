@@ -593,3 +593,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-07 | T5′ U0: Blocked 137 (a), design proposed, 138 put; /challenge-pr (accept with changes, 1-5 taken) · subagents: general-purpose opus-5-5 953k | 66 | 183k | 8.5M | 51k | #317 |
 | 2026-11-07 | T5′ U1 (gate): Blocked 138 all (a), design frozen; t5k written before output; gate refuses on G6's ICL leg (no power at 64); Blocked 139 put; /challenge-pr (accept with changes, 1-4, 7 taken) · subagents: general-purpose opus-5-5 1.5M | 62 | 175k | 6.9M | 36k | #318 |
 | 2026-11-07 | T5′ paused: Blocked 139 (a) committed unrun; I_text beside; prompt library next (the user's); /challenge-pr (accept with changes, 1-4 taken) · subagents: general-purpose opus-5-5 1.1M | 51 | 138k | 5.1M | 38k | #319 |
+| 2026-11-07 | Prompt library U0: design (D1-D5 Blocked 140), scan, sizing from T5 U2's records | 58 | 165k | 6.7M | 44k | #320 |

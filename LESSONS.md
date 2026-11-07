@@ -76,6 +76,11 @@ world moves, nobody updates the line, and the next session acts on it.
   never ran: a fix to the startup hook reaches a session only once the main tree is pulled.
   2026-11-07 (T5′ pause): again, the hook printed `STATE.md` at #300 (2026-11-01) with
   `origin/main` at #318 (2026-11-07); Blocked 139 was read from `git show origin/main:STATE.md`.
+  2026-11-07 (prompt library U0): again, #300 against #319, five sessions after #307's fix
+  merged. The main tree (clean but for untracked `data/`) was fast-forwarded this time, so the
+  fix runs from the next session. Rule: a session that finds the main tree behind and clean
+  fast-forwards it (`git merge --ff-only origin/main`) before work; "another session may use it"
+  is a reason to check it is clean, not to leave it stale.
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on
