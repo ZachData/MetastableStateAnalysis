@@ -1,5 +1,5 @@
 <!-- prompt_library/design-L.md -->
-# The prompt library — design (proposed 2026-11-07; revised after `/challenge-pr` on #320, findings 1–5; D1–D5 are Blocked 140)
+# The prompt library — design (proposed 2026-11-07; revised after `/challenge-pr` on #320, findings 1–5; **frozen 2026-11-07: D1–D5 decided all (a), Blocked 140, the user's**)
 
 Opened 2026-11-07 by `docs/ROADMAP.md` §10.14, the user's: build a larger shared library of real
 prompts now, with T5′ paused (`trackT_timaeus/design-T5p.md` "Blocked 139 decided, and T5′
@@ -83,7 +83,12 @@ a subset share outside its band is reported, not redrawn (a redraw is selection)
 miss is a code defect, fixed and re-gated in the same unit; a synthetic-gate miss at k = 1024 stops
 U2 and goes to the user.
 
-## Decisions (Blocked 140, yours)
+## Decisions (Blocked 140: decided all (a), 2026-11-07, the user's, as recommended)
+
+One addition in U1, to the cut's mechanics, not the rule: the offsets are taken with the ByteLevel
+post-processor's `trim_offsets` off, so each token's end is its own: trimming moves a span's
+edges inward past whitespace, which moves an end only for the 3 vocabulary tokens that end in
+whitespace after other characters (ids are unchanged; `status-L.md` "U1, the build").
 
 | # | choice | options | recommended, and why |
 |---|---|---|---|
