@@ -1023,6 +1023,15 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-07, T5′ U1 (a gate leg frozen without its SE estimated; caught by the gate, on its first
+  output, before the batch): G6 asked the held-out ICL score (20-token windows, 64 sequences) to
+  fall ≥ 4 SE on `pythia-410m` by 143000. Nobody estimated the SE before the freeze, though one
+  checkpoint's forward pass takes seconds: the per-sequence SD is 1.19 nats, so SE 0.14 against a
+  0.26 effect, and the same 4 SE floor would have refused ICL's dating on every run. Two review
+  passes (`/challenge-pr` on #317 and the freeze) read the floor's logic, not its size. Cost: one
+  refused gate, Blocked 139, seconds of GPU. Rule: **a gate leg or floor on a noisy statistic is
+  frozen with its expected SE written beside it, from one real checkpoint read before the freeze**
+  (the U4a rule below, applied to a SE).
 - 2026-11-03, T5 U4a (a frozen floor checked against data that was already on disk; caught by its
   own gate row before any arm): U4's bar floor 0.1 was frozen, and its check, 2·SD of ρ_mid over
   `pythia-410m`'s ten seeds, was put in the gate rather than read first, though the read takes

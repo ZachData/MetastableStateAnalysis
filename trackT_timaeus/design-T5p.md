@@ -1,11 +1,11 @@
 <!-- trackT_timaeus/design-T5p.md -->
-# Track T — design: T5′, what forms with the rise, per U4 arm (proposed 2026-11-07; revised after `/challenge-pr` on #317, findings 1–5)
+# Track T — design: T5′, what forms with the rise, per U4 arm (proposed 2026-11-07; revised after `/challenge-pr` on #317, findings 1–5; **frozen 2026-11-07**, Blocked 138: D1–D5 all (a), the user's)
 
 Opened 2026-11-07 by `STATE.md` Blocked 137 (a), the user's, as recommended: **Track T is not
 closed; it closes with T5′**, after which the user's order of 2026-11-02 puts Track N (N1) next.
 Row: `docs/ROADMAP.md` §7b T5′. Scan: `docs/lit-T.md` §5 (2026-11-07). Tier 1, description
-throughout, nothing registered. **Proposed, not frozen**: D1–D5 below are the user's (Blocked 138);
-no T5′ output exists.
+throughout, nothing registered. **Frozen 2026-11-07, before any T5′ output**: D1–D5 below decided
+(a), the user's (Blocked 138, "138: all (a)"); every "fixed now" in this file is fixed as written.
 
 ## What T5′ is for
 
@@ -131,7 +131,7 @@ the row text; no recorded row moves, none refused). **Close-out**, which also cl
 (Blocked 137 (a)). **Exit:** each arm's induction onset and half-rise read against its rise under
 the table above, or refused by its gate. **Budget: U0 + U1 + close-out**, as the ROADMAP row.
 
-## Decisions (each yours; recommendation first)
+## Decisions (decided 2026-11-07, all (a), the user's: Blocked 138)
 
 | # | choice | options | recommended, and why |
 |---|---|---|---|
