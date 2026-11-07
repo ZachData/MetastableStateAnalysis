@@ -3049,7 +3049,8 @@ arms of its recipe, `pythia-70m`/`-160m`/`-410m` (ten seeds), Mistral GPT-2 smal
   (ROADMAP §7b T5″, T5‴).
 - U4's bar floor was placed on a seed pair that includes `pythia-410m` seed 4, one of the
   PolyPythias paper's two outlier runs (loss spikes; the split was in view when the floor was
-  chosen): Blocked 136.
+  chosen): Blocked 136, decided (a) 2026-11-07, the user's: the labels kept, the 0.1 reading
+  beside as post hoc.
 
 ---
 
