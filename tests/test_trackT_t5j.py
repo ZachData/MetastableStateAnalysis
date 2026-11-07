@@ -67,3 +67,11 @@ def test_outcome_rows():
     assert t5j.outcome_row(none).startswith("neither")
     assert t5j.outcome_row({**none, "A0pp": True, "A1": True}).startswith("an A0 seed passes")
     assert t5j.outcome_row({**none, "A0": None, "A1": None}).startswith("neither")   # refused = not passing
+
+
+def test_outcome_row_names_refused():
+    """T5's Parked item, carried to T5′ U1: a refused run is named in the row text."""
+    none = {a: False for a in t5j.ARMS}
+    assert "refused" not in t5j.outcome_row(none)
+    row = t5j.outcome_row({**none, "A0": None, "A2": None})
+    assert row.startswith("neither") and row.endswith("(refused, counted as not passing: A0, A2)")

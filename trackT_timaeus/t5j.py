@@ -132,12 +132,15 @@ def held_from(flags: Dict[int, bool]) -> Optional[int]:
 
 def outcome_row(passes: Dict[str, Optional[bool]]) -> str:
     """The design's table, per count: any of A0, A0′, A0″ passes → row 3; else A1 passes → row 1;
-    else row 2. A refused step (None) counts as not passing."""
+    else row 2. A refused step (None) counts as not passing, and the row names it (T5's Parked
+    item, carried to T5′ U1: a refused run is not silently a fail)."""
+    refused = [a for a in ARMS if a in passes and passes[a] is None]
+    tail = f" (refused, counted as not passing: {', '.join(refused)})" if refused else ""
     if any(passes.get(a) for a in A0S):
-        return "an A0 seed passes: the count passes at A0's ρ in this recipe, unlike Dodecahedron at 0.81; ρ alone is not its stop"
+        return "an A0 seed passes: the count passes at A0's ρ in this recipe, unlike Dodecahedron at 0.81; ρ alone is not its stop" + tail
     if passes.get("A1"):
-        return "A1 passes, no A0 seed does: the stop goes with ρ (or with what biases change), not with step or loss"
-    return "neither A1 nor an A0 seed passes: not ρ alone at 0.66; step, loss or something the arms share"
+        return "A1 passes, no A0 seed does: the stop goes with ρ (or with what biases change), not with step or loss" + tail
+    return "neither A1 nor an A0 seed passes: not ρ alone at 0.66; step, loss or something the arms share" + tail
 
 
 # ---------------------------------------------------------------- models
