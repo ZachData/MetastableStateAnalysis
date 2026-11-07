@@ -53,3 +53,78 @@ def test_synthetic_small():
     planted = t5c.synthetic(0.0072, 0.15, rng, draws=40)
     flat = t5c.synthetic(0.0072, 0.0, rng, draws=40)
     assert planted["spreads"] >= 0.75 and flat["spreads"] == 0 and flat["does not spread"] == 1
+
+
+# ---------------------------------------------------------------- U5 (design-T5.md "U5's details"; pure)
+
+def test_u5_lists():
+    assert t5c.U5_SEEDS == tuple(range(1, 10))
+    assert all(t5c.U5_TRAJ[f"pythia-410m-seed{k}"][1] == t5c.STEPS for k in t5c.U5_SEEDS)
+    assert len(t5c.U5_TRAJ["mistral-alias"][1]) == 36 and t5c.U5_TRAJ["mistral-alias"][1][-1] == 20000
+    assert len(t5c.U5_TRAJ["mistral-battlestar"][1]) == 35 and t5c.MISTRAL_STEPS[0] == 0
+    assert list(t5c.MISTRAL_STEPS) == sorted(set(t5c.MISTRAL_STEPS))
+    assert t5c.revision_of("mistral-alias", 40) == "checkpoint-40"
+    assert t5c.revision_of("pythia-410m-seed3", 40) == "step40"
+    assert set(t5c.TRAJ) <= set(t5c.ALL_TRAJ) and not set(t5c.TRAJ) & set(t5c.U5_TRAJ)
+    assert (t5c.LOSS_INIT_TOL, t5c.LOSS_DROP_MIN, t5c.PEAK_MAX_STEP) == (1.0, 3.0, 1000)
+
+
+def test_shape_peak_window_and_trough_after_peak():
+    steps = [0, 2, 16, 512, 1000, 2000, 4000, 143000]
+    s = [0.46, 0.05, 0.81, 0.60, 0.40, 0.17, 0.20, 0.41]
+    r = t5c.shape(steps, s)
+    assert (r["peak_step"], r["trough_step"], r["end_step"]) == (16, 2000, 143000)
+    assert abs(r["fall"] - 0.64) < 1e-12 and abs(r["late_rise"] - 0.24) < 1e-12 and r["first"] == 0.46
+    r = t5c.shape(steps, [0.9, 0.1, 0.2, 0.3, 0.4, 0.95, 0.5, 0.6])     # the 2000 high is outside the window
+    assert r["peak_step"] == 1000 and r["trough_step"] == 1000 and r["late_rise"] == pytest.approx(0.2)
+    with pytest.raises(t5c.T5cRefused):
+        t5c.shape([0, 2000], [0.1, 0.2])
+
+
+def test_rec_diff_absolute_below_one_relative_above():
+    ref = {k: [0.5, 0.5] for k in t5c.GATE_KEYS}
+    ref["n0"] = [20.0, 1.0]
+    got = {k: list(v) for k, v in ref.items()}
+    got["n0"] = [20.0 + 2e-5, 1.0]
+    assert t5c.rec_diff(got, ref) == pytest.approx(1e-6)
+    got["rho"] = [0.5, 0.5 + 3e-6]
+    assert t5c.rec_diff(got, ref) == pytest.approx(3e-6)
+    got["m"] = [0.5]
+    assert t5c.rec_diff(got, ref) == float("inf")
+
+
+def _rec(step, rho_mid, loss=None):
+    r = {"step": step, "rho_mid": rho_mid, "rho_mid_no0": rho_mid, "rho_15": rho_mid,
+         "m": [0, 0.1, 0.2, 0], "n0": [1, 2.0, 3.0, 1], "rho": [0.1, rho_mid, rho_mid, 0.2],
+         "rho_no0": [0.1, rho_mid, rho_mid, 0.2], "m_no0": [0, 0.1, 0.2, 0]}
+    if loss is not None:
+        r["loss"] = loss
+    return r
+
+
+def test_describe_and_gate_on_fabricated_records(tmp_path):
+    recs = {}
+    for i, n in enumerate(t5c.u5_names()):
+        steps = t5c.ALL_TRAJ[n][1]
+        loss = n in t5c.MISTRAL
+        recs[n] = [_rec(s, 0.3 + 0.01 * i + (0.4 if 0 < s <= 32 else 0.0), (10.9 if s == 0 else 4.0) if loss else None)
+                   for s in steps]
+    u2, fl = tmp_path / "u2" / "pythia-410m", tmp_path / "floor"
+    u2.mkdir(parents=True)
+    fl.mkdir()
+    import json
+    for r in recs["pythia-410m"]:
+        (u2 / f"step{r['step']}.json").write_text(json.dumps(r))
+    for k in t5c.U5_SEEDS:
+        for s in t5c.FLOOR_STEPS:
+            (fl / f"seed{k}_step{s}.json").write_text(json.dumps(recs[f"pythia-410m-seed{k}"][t5c.STEPS.index(s)]))
+    g = t5c.u5_gate(recs, tmp_path / "u2", fl)
+    assert g["pass"] and g["seed0_vs_u2"]["pass"] and g["mistral_load"]["pass"]
+    d = t5c.describe_u5(recs)
+    t = d["pythia_410m_seeds"]["rho_mid"]
+    assert t["min"][0] == pytest.approx(0.30) and t["max"][0] == pytest.approx(0.39)
+    assert t["seed0_rank_from_low"][0] == 0 and t["argmax_seed"][0] == 9
+    assert d["shapes"]["pythia-410m"]["rho_mid"]["peak_step"] == 2
+    assert d["mistral_pair"]["max_abs_diff"] == pytest.approx(0.01) and len(d["mistral_pair"]["common_steps"]) == 35
+    recs["mistral-battlestar"][-1]["loss"] = 8.5                         # did not learn: the load check refuses
+    assert not t5c.u5_gate(recs, tmp_path / "u2", fl)["pass"]

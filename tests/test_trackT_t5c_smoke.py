@@ -21,3 +21,19 @@ def test_gpt2_checkpoint_loads():
     assert sum(p.numel() for p in m.parameters()) > 1e8
     o = m(input_ids=torch.arange(1, 12)[None], output_hidden_states=True)
     assert len(o.hidden_states) == 13 and torch.isfinite(o.hidden_states[-1]).all()
+
+
+def test_mistral_checkpoint_loads():
+    torch = pytest.importorskip("torch")
+    try:
+        m, info = t5c.load("mistral-battlestar", 0, t5c.DEFAULT_ROOTS, "cpu")
+        tok = t5c.tokenizer_of("mistral", t5c.DEFAULT_ROOTS)
+    except Exception as e:  # not cached here (CI)
+        if "in no cache" in str(e) or "LocalEntryNotFound" in type(e).__name__ or "offline" in str(e).lower():
+            pytest.skip(str(e))
+        raise
+    assert m.config.model_type == "gpt2" and next(m.parameters()).dtype == torch.float32
+    assert m.config._attn_implementation == "eager"
+    ids = tok("The quick brown fox", return_tensors="pt")["input_ids"]
+    o = m(input_ids=ids, output_hidden_states=True)
+    assert len(o.hidden_states) == 13 and torch.isfinite(o.hidden_states[-1]).all()
