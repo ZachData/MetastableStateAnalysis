@@ -618,7 +618,8 @@ clouds read are T2's (410m 0, 4000; Dodecahedron 1, 9536 and the re-inits).
 
 **Closed 2026-11-07 at the exit** (`status-T.md` "T5 on one page (closed 2026-11-07)"): the cloud
 spreads on both models; H1 at init partly; H1 through training and H2 not supported at bar 0.2;
-the bar's floor rests on a PolyPythias outlier pair, Blocked 136.
+the bar's floor rests on a PolyPythias outlier pair, Blocked 136 (decided (a), 2026-11-07: labels
+kept, nothing carried).
 
 ## Worth challenging (for the PR)
 
