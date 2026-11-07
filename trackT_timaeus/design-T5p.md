@@ -131,6 +131,18 @@ the row text; no recorded row moves, none refused). **Close-out**, which also cl
 (Blocked 137 (a)). **Exit:** each arm's induction onset and half-rise read against its rise under
 the table above, or refused by its gate. **Budget: U0 + U1 + close-out**, as the ROADMAP row.
 
+## Blocked 139 decided, and T5′ paused (2026-11-07, the user's; after G6's ICL leg failed, before any batch)
+
+| change | as | label |
+|---|---|---|
+| ICL's held-out set | tail rows 64–1087 (1024; rows 0–63 were read by the refused gate), windows and bars unchanged | post hoc (N from the noise, not the effect); committed `938eea3` before any output on it |
+| **I_text, beside** (the user's: "avoid synthetic data that we choose") | I's formula on repeated real text: `[x_1 … x_T, x_1 … x_T]` against `[x, x′]`, x and x′ distinct T = 256 windows of held-out FineWeb text (tail rows from 1088, or the prompt library's held-out split if it fixes one first), R as I; dated by D2's rule, no label | post hoc, description only; **I on random tokens stays the labelled statistic** (D1 (a) not moved after the gate showed A0's I 0.72). Not built yet; built and committed before T5′'s next output |
+| **T5′ paused** | the user chose to build a larger shared prompt library first (`docs/ROADMAP.md` §5 "Prompt library", §10.14); T5′ resumes on its frozen inputs with the gate under 139 (a) | nothing dated; the budget (U0 + U1 + close-out) is unchanged |
+
+Rejected for I's input: Markov-chain sequences (Edelman et al. 2024, cited from memory, not re-read;
+those papers *train* on chain samples, and as a probe the chain's parameters would be ours to
+choose); replacing I by I_text (moves D1 after output).
+
 ## Decisions (decided 2026-11-07, all (a), the user's: Blocked 138)
 
 | # | choice | options | recommended, and why |
