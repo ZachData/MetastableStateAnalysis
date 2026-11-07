@@ -6,9 +6,10 @@ Per checkpoint of each run (six arms × 49, released `-32m` × 53, `pythia-410m`
 random-token sequences (T = 256, seed 20261107, the model's ordinary vocabulary, no BOS):
     repeated  [r, r]     control  [r, r′]     null  [r, r″]
 per-head prefix matching PM_h (attention from query T + j to key j + 1, j = 0 … T − 2), the
-previous-token score on the control, the second half's token loss, and on the first 64 held-out
-sequences of `t5u4/data/tail.bin` (trained by no arm) the token loss at positions 490–509 minus
-40–59. I = max_h (PM_h(rep) − PM_h(ctrl)); I_null the same with the null set (the planted null).
+previous-token score on the control, the second half's token loss, and on 1024 held-out
+sequences of `t5u4/data/tail.bin` (64–1087, trained by no arm; Blocked 139 (a), post hoc: the first
+64, read by the 2026-11-07 gate, had no power) the token loss at positions 490–509 minus 40–59.
+I = max_h (PM_h(rep) − PM_h(ctrl)); I_null the same with the null set (the planted null).
 The dating rule, the outcome table, the gate and the bridge are the design's; written here before
 any output and tested on synthetic series (`tests/test_trackT_t5k.py`).
 
@@ -16,7 +17,7 @@ Implementation details fixed here before any output (the design leaves them open
 - P averages queries 1 … 2T − 1 of the control; B is the mean token loss predicting positions
   T + 1 … 2T − 1 (0-indexed), repeated minus control, per sequence pair.
 - Bootstrap: the R sequence pairs are resampled jointly (repeated, control and null share r_i);
-  ICL resamples its 64 sequences. 1000 resamples, seed 20261030.
+  ICL resamples its 1024 sequences. 1000 resamples, seed 20261030.
 - The 4 SE floor for P, B, ICL: rise < 4 × the paired bootstrap SE of x(peak) − x(base), both steps
   resampled on the same sequences (/challenge-pr on #318, finding 4; was sqrt(SE² + SE²), before
   any dating). S, M, n0: no floor.
@@ -51,7 +52,7 @@ from trackA_force.a1a import DATA, REPO
 
 R, T = 32, 256
 DRAW_SEED = 20261107
-N_HELD, HELD_LEN = 64, 510
+HELD_LO, N_HELD, HELD_LEN = 64, 1024, 510   # tail rows 64–1087 (Blocked 139 (a), post hoc; was rows 0–63)
 LATE, EARLY = (490, 510), (40, 60)       # positions 490–509 and 40–59 (half-open)
 N_BOOT, BOOT_SEED = 1000, 20261030
 F_ON, F_HALF = 0.1, 0.5
@@ -69,7 +70,7 @@ A0S = ("A0", "A0p", "A0pp")
 RELEASED, P410 = "dodecahedron-32m", "pythia-410m"
 RUNS = ARMS + (RELEASED, P410)
 END = {**{a: 4369 for a in ARMS}, RELEASED: 9536, P410: 4000}
-OUT = DATA / "trackT" / "t5k" / "2026-11-07"
+OUT = DATA / "trackT" / "t5k" / "2026-11-07-n1024"   # the refused 64-sequence gate stays in 2026-11-07/
 U2_DIR = "trackT/t5u2/2026-10-30"
 
 
@@ -279,7 +280,7 @@ def tokenizer_of(run: str):
 
 def held_out(run: str) -> np.ndarray:
     from trackT_timaeus import t2, t5h
-    tail = np.asarray(t5h.open_shard(t5h.ROOT)["tail"][:N_HELD]).astype(np.int64)
+    tail = np.asarray(t5h.open_shard(t5h.ROOT)["tail"][HELD_LO:HELD_LO + N_HELD]).astype(np.int64)
     if run != P410:
         return tail[:, :HELD_LEN]
     dt, pt = t2.tokenizer("32m"), t2.p_tokenizer()
@@ -290,6 +291,12 @@ def held_out(run: str) -> np.ndarray:
             raise T5kRefused(f"re-encoded held-out sequence has {len(ids)} < {HELD_LEN} tokens")
         out.append(ids[:HELD_LEN])
     return np.array(out, dtype=np.int64)
+
+
+def break_fraction(held: np.ndarray, eot: int, lo: int = EARLY[0], hi: int = LATE[1]) -> float:
+    """Share of held-out rows with an <|endoftext|> in positions lo … hi − 1 (beside the gate; a break
+    between the windows dilutes ICL, which more rows do not remove: /challenge-pr on #318, 6; #319, 2)."""
+    return float((np.asarray(held)[:, lo:hi] == eot).any(1).mean())
 
 
 def steps_of(run: str) -> tuple:
@@ -466,6 +473,9 @@ def gate(a) -> int:
     res["G6"] = {"I_143000": r_end["I"], "ICL_0": r_0["ICL"], "ICL_143000": r_end["ICL"], "se": se,
                  "argmax_lh": r_end["argmax_lh"],
                  "pass": r_end["I"] >= G6_I and r_0["ICL"] - r_end["ICL"] >= G6_SE * se}
+    eot = tok.convert_tokens_to_ids("<|endoftext|>")
+    res["ICL_breaks"] = {"rows": [HELD_LO, HELD_LO + N_HELD], "positions": [EARLY[0], LATE[1]],
+                         "fraction": break_fraction(inp.held, eot), "beside": "not a gate"}
     res["pass"] = all(res[g]["pass"] for g in ("G1", "G2", "G3", "G6", "G7"))
     _jdump(OUT / "gate.json", res)
     print(json.dumps({g: res[g]["pass"] for g in ("G1", "G2", "G3", "G6", "G7")} | {"pass": res["pass"]}))

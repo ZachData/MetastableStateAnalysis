@@ -74,6 +74,8 @@ world moves, nobody updates the line, and the next session acts on it.
   2026-11-06 (T5 U5): again, at #300 with `origin/main` at #313. #307's fix (the hook prints
   `origin/main`'s copy) is merged, but the hook runs from the main tree, still at #300, so the fix
   never ran: a fix to the startup hook reaches a session only once the main tree is pulled.
+  2026-11-07 (T5′ pause): again, the hook printed `STATE.md` at #300 (2026-11-01) with
+  `origin/main` at #318 (2026-11-07); Blocked 139 was read from `git show origin/main:STATE.md`.
 - 2026-10-10 (roadmap session): in conversation Claude proposed registering a confirmatory test
   on 410m's held-out prompts. The rung policy (`p8_scale_ladder/design-8.md`, quoted on the 7d
   and 7e cards) keeps 410m exploration-only, while `status-10.md`'s card holds 12 prompts out on

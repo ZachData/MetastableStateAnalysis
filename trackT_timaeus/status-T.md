@@ -35,11 +35,11 @@
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
   - What raises Dodecahedron's late level (not biases or Pythia's init at bar 0.2; LR and the MLP's form untested, rows T5″ and T5‴ of `docs/ROADMAP.md`) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
-  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refuses on G6's held-out ICL leg, no power at 64 sequences, nothing dated, Blocked 139; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ U1 (gate)"
+  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refused on G6's held-out ICL leg at 64 sequences; Blocked 139 decided (a), 1024, with a real-text I beside; **paused 2026-11-07 for the prompt library**, nothing dated; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ paused"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `2a1d7b12c5`
+- **Reviewed:** 2026-11-07 · body `345ed75b81`
 <!-- /phase-card -->
 
 ## Units
@@ -61,7 +61,29 @@
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
 | T5 U5. the controls (Blocked 135 (a)) | **done 2026-11-06**: gate passes (seed 0 = U2, seeds = U4a's floor, both 0.0; Mistral loss 10.9 → 3.9); described, no rule: the 410m shape holds on all ten seeds (peak 0.80–0.83 at 16, trough 0.16–0.19 at 2000–4000), the late level parts with the loss (0.39–0.43 on eight seeds; 0.23 on seeds 3, 4, whose loss rose after 54000; U4's bar floor rests on seed 4, carried to the close-out); Mistral GPT-2 small peaks at 0.98 at step 20 and is still falling at 16000–20000 (0.26–0.29) | "T5 U5" below; `design-T5.md` "U5's details" |
 | T5 close-out | **closed 2026-11-07 at its exit** (writing only; the PolyPythias paper read for U5's Parked item, no GPU); every Parked item carried or dropped; one item for the user, Blocked 136 (U4's bar floor and PolyPythias's outliers) | "T5 on one page" below |
-| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out. **Design frozen 2026-11-07** (Blocked 138: all (a), the user's). **U1's gate refuses on G6's ICL leg** (G1–G3, G7 and G6's I leg pass; no batch run); Blocked 139 | "T5′ U1 (gate)" below; "T5′ U0" below; `design-T5p.md` |
+| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out. **Design frozen 2026-11-07** (Blocked 138: all (a), the user's). **U1's gate refuses on G6's ICL leg** (G1–G3, G7 and G6's I leg pass; no batch run); Blocked 139 decided (a) 2026-11-07, the user's (1024 unseen held-out sequences, post hoc; I_text beside, post hoc); **paused 2026-11-07, the user's, for the prompt library** (`docs/ROADMAP.md` §10.14); resumes with the gate re-run under 139 (a) | "T5′ paused" below; "T5′ U1 (gate)" below; "T5′ U0" below; `design-T5p.md` |
+
+## T5′ paused: Blocked 139 decided (a), real-text I beside, the prompt library first (2026-11-07)
+
+Decided by the user, before any batch output: **139 (a)**, ICL's held-out set raised to 1024
+unseen tail sequences (rows 64–1087), post hoc, windows and bars unchanged; code committed
+(`938eea3`, `t5k.py`: `HELD_LO`, `N_HELD`; records to `data/trackT/t5k/2026-11-07-n1024/`, so the
+refused 64-sequence `gate.json` stays in `2026-11-07/`); **not run**. The user asked to avoid
+synthetic data chosen by us: I on random tokens stays the labelled statistic (D1 (a) is not moved
+after the gate's output), and **I_text** (I's formula on repeated held-out real text) is added
+beside, post hoc, not built yet (`design-T5p.md` "Blocked 139 decided, and T5′ paused"). Markov-chain
+probes were considered and rejected (those papers train on chain samples; as a probe the chain is
+still ours to choose). **Then the user paused T5′ to build a larger shared prompt library first**
+(more prompts, not longer ones: ρ_mid on Tracks A and T reads the 7 v1 prompts; the live battery is
+21, plus 9 long prompts): `docs/ROADMAP.md` §5 "Prompt library" and §10.14. T5′'s budget is
+unchanged (`938eea3`'s "U1b" is U1 continued); on resume: build I_text and its null (source fixed now:
+tail rows 1088–1183), `tests/`, re-run `gate`, then G4, G5, the batch, `read`. The pause is an
+exception to the close-out rule, the user's, recorded with T5′'s open list in `design-T5p.md`
+"Blocked 139 decided, and T5′ paused". **`/challenge-pr` on #319: accept with changes, findings 1–4
+taken:** (1) that exception and open list; (2) `gate.json` records ICL's document-break share beside
+(`t5k.break_fraction`; on the text alone rows 0–63 0.39, rows 64–1087 0.45: more rows cut the SE,
+not the dilution; Parked 1 stands), and the library row no longer cites ICL's power; (3) I_text's
+source, Pythia's reading and its null fixed now; (4) the budget answered.
 
 ## T5′ U1 (gate): G6's ICL leg has no power at 64 sequences (2026-11-07)
 

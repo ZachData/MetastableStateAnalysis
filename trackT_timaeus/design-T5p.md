@@ -38,7 +38,7 @@ row of the outcome table, not an edge case. The released `-32m` runs to 9536 (D5
 | the six arms, 49 checkpoints each (0, 1–8, 10 … 4369; T2's grid ≤ 4369) | `HDD_1TB/mets_data/trackT/t5u4/{A0,A0p,A0pp,A1,A2,A3}/ckpt/step*.safetensors` | trained at `t5h` `66af413c31fe` (A0), `40289679fc36` (replicates), `81b2e03bdcf7` (arms) |
 | their ρ_mid and n0 per step | `…/t5u4/<arm>/read/step*.json` (U4's reads) | seen |
 | their S, M, n0 onset series | `…/t5u4/beside/<arm>/onset/` (the beside stage) | seen, post hoc 10 % values in `status-T.md` |
-| held-out text | `…/t5u4/data/tail.bin`: the continuation's 1601 × 256 sequences of 2048 tokens, **trained by no arm** (Blocked 134 (a): no continuation ran) | the first 64 sequences |
+| held-out text | `…/t5u4/data/tail.bin`: the continuation's 1601 × 256 sequences of 2048 tokens, **trained by no arm** (Blocked 134 (a): no continuation ran) | ~~the first 64 sequences~~ **sequences 64–1087 (1024)**: Blocked 139 (a), the user's, 2026-11-07, post hoc (N set from the noise after G6's ICL leg failed at 64, not from the effect; windows and bars unchanged; rows 0–63 were read by that gate, so not reused) |
 | released `timaeus/dodecahedron-32m`, 53 checkpoints 1 … 9536 | `HDD_1TB/mets_data/hf` (53 refs) | as U2 |
 | `pythia-410m` seed 0 at C2's 18 steps 0 … 143000 | `~/.cache/huggingface` (34 refs) | as C2 |
 
@@ -56,11 +56,11 @@ second half. Pythia draws from its own vocabulary under the same seed. Eager att
 | I_top5, argmax head | mean of the top 5 heads' net PM; which head is the max | beside |
 | P | max over heads of mean attention from q to q − 1 on the control sequences (E4's analogue) | dated, beside |
 | B | mean token loss on the repeated second half (positions T + 1 … 2T − 1) minus the same on the control | dated, beside (behaviour of I) |
-| ICL | mean token loss at positions 490–509 minus 40–59 over the 64 held-out sequences (Olsson et al.'s 500 − 50 with a 20-token window); Pythia reads the same text re-encoded in its tokenizer | dated, beside |
+| ICL | mean token loss at positions 490–509 minus 40–59 over the 1024 held-out sequences (64 until Blocked 139 (a); Olsson et al.'s 500 − 50 with a 20-token window); Pythia reads the same text re-encoded in its tokenizer | dated, beside |
 | ρ_mid, n0; S, M | as T5 (`design-T5.md`; `t5j`) | read from the records, not recomputed (G1 checks the path) |
 | **I_null** | I's formula with the "repeated" set replaced by a third independent draw `[r_1 … r_T, r″_1 … r″_T]` (no repeat), against the same control: the max over 96 heads of pure noise, at every step of every run | **the planted null** (`/challenge-pr` on #317, finding 1) |
 
-Bootstrap SEs over the R sequences (I, P, B) or the 64 (ICL), 1000 resamples, seed fixed: beside
+Bootstrap SEs over the R sequences (I, P, B) or the 1024 (ICL), 1000 resamples, seed fixed: beside
 each value, not a floor (finding 1: a 4 SE floor on a max over 96 heads, from the trough to the
 peak over 49 steps, is cleared by pure noise in 62 % of simulated series).
 
@@ -130,6 +130,32 @@ outcome table; with it `t5j.outcome_row`'s refused-run flag (T5's Parked; a refu
 the row text; no recorded row moves, none refused). **Close-out**, which also closes Track T
 (Blocked 137 (a)). **Exit:** each arm's induction onset and half-rise read against its rise under
 the table above, or refused by its gate. **Budget: U0 + U1 + close-out**, as the ROADMAP row.
+
+## Blocked 139 decided, and T5′ paused (2026-11-07, the user's; after G6's ICL leg failed, before any batch)
+
+| change | as | label |
+|---|---|---|
+| ICL's held-out set | tail rows 64–1087 (1024; rows 0–63 were read by the refused gate), windows and bars unchanged | post hoc (N from the noise, not the effect); committed `938eea3` before any output on it |
+| ICL's document breaks, beside | `gate.json` records the share of held-out rows with an `<|endoftext|>` in positions 40–509 (`t5k.break_fraction`; not a gate). On the input text alone: rows 0–63 0.39 (Parked 1's 25 of 64), rows 64–1087 0.45. More rows cut the SE about 4×, not the dilution; ICL's definition is not changed now (`/challenge-pr` on #319, finding 2) | beside |
+| **I_text, beside** (the user's: "avoid synthetic data that we choose") | I's formula on repeated real text, **fixed now** (`/challenge-pr` on #319, finding 3): R = 32 tail rows each for x (rows 1088–1119), x′ (1120–1151) and x″ (1152–1183), each the row's first T = 256 tokens; repeated `[x, x]` against control `[x, x′]`; **I_text_null** `[x, x″]` against the same control (no repeat), at every step of every run, max ≤ 0.05 described beside, not a gate. Pythia reads each row decoded and re-encoded, its first 256 tokens (as ICL's text). Dated by D2's rule, no label. The prompt library does not move it | post hoc, description only; **I on random tokens stays the labelled statistic** (D1 (a) not moved after the gate showed A0's I 0.72). Not built yet; built and committed before T5′'s next output |
+| **T5′ paused** | the user chose to build a larger shared prompt library first (`docs/ROADMAP.md` §5 "Prompt library", §10.14); T5′ resumes on its frozen inputs with the gate under 139 (a) | nothing dated |
+
+**An exception to the close-out rule, on the record** (`/challenge-pr` on #319, finding 1): `CLAUDE.md`
+"Close out before the next opens" and `docs/ROADMAP.md` §3 say a new idea mid-phase goes to the
+ROADMAP and the phase finishes first. Here the user chose, on the record (§10.14), to pause T5′ and
+build the library first; the exception is the user's, not the rule's. **Open in T5′ on pause:** the
+gate re-run under 139 (a); I_text and its null built (code and tests, before output); G4, G5; the
+batch (≈ 420 forward passes); `read`; the outcome table; `t5j.outcome_row`'s refused-run flag; the
+close-out, which also closes Track T. Parked 1 (document breaks) stands. The library is not a fix
+for T5′: T5′ resumes on the inputs fixed in this file, whatever the library holds.
+
+**Budget** (finding 4): unchanged, U0 + U1 + close-out. `938eea3`'s "U1b" is U1 continued, not a new
+unit: 139 (a) as offered was "then G4, G5, the batch and the reading as frozen", inside U1; I_text
+adds code to U1. If U1 does not finish in one more session it goes back to the user as an extension.
+
+Rejected for I's input: Markov-chain sequences (Edelman et al. 2024, cited from memory, not re-read;
+those papers *train* on chain samples, and as a probe the chain's parameters would be ours to
+choose); replacing I by I_text (moves D1 after output).
 
 ## Decisions (decided 2026-11-07, all (a), the user's: Blocked 138)
 
