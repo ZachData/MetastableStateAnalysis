@@ -77,6 +77,8 @@ def test_shape_peak_window_and_trough_after_peak():
     assert abs(r["fall"] - 0.64) < 1e-12 and abs(r["late_rise"] - 0.24) < 1e-12 and r["first"] == 0.46
     r = t5c.shape(steps, [0.9, 0.1, 0.2, 0.3, 0.4, 0.95, 0.5, 0.6])     # the 2000 high is outside the window
     assert r["peak_step"] == 1000 and r["trough_step"] == 1000 and r["late_rise"] == pytest.approx(0.2)
+    r = t5c.shape([0, 20, 100, 1000, 20000], [0.42, 0.98, 0.5, 0.35, 0.26])  # still falling at the end
+    assert r["trough_is_last"] and r["late_rise"] is None and r["trough"] == r["end"]
     with pytest.raises(t5c.T5cRefused):
         t5c.shape([0, 2000], [0.1, 0.2])
 
@@ -126,5 +128,12 @@ def test_describe_and_gate_on_fabricated_records(tmp_path):
     assert t["seed0_rank_from_low"][0] == 0 and t["argmax_seed"][0] == 9
     assert d["shapes"]["pythia-410m"]["rho_mid"]["peak_step"] == 2
     assert d["mistral_pair"]["max_abs_diff"] == pytest.approx(0.01) and len(d["mistral_pair"]["common_steps"]) == 35
+    assert d["shapes"]["mistral-alias"]["rho_mid"]["late_rise"] == pytest.approx(0.0)
     recs["mistral-battlestar"][-1]["loss"] = 8.5                         # did not learn: the load check refuses
     assert not t5c.u5_gate(recs, tmp_path / "u2", fl)["pass"]
+    recs["mistral-battlestar"][-1]["loss"] = 4.0
+    bad = dict(recs["pythia-410m-seed4"][t5c.STEPS.index(143000)], n0=[1, 2.0, 3.0 + 1e-4, 1])
+    (fl / "seed4_step143000.json").write_text(json.dumps(bad))           # a floor record that differs: refuses
+    g = t5c.u5_gate(recs, tmp_path / "u2", fl)
+    assert not g["pass"] and not g["seeds_vs_floor"]["pass"] and g["seed0_vs_u2"]["pass"]
+    assert g["seeds_vs_floor"]["max_diff"]["seed4@143000"] == pytest.approx(1e-4 / (3.0 + 1e-4))  # relative to the floor record

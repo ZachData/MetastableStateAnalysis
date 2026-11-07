@@ -510,7 +510,9 @@ def series_of(rs: List[dict]) -> Dict[str, list]:
 
 def shape(steps: Sequence[int], series: Sequence[float]) -> dict:
     """U2's shape, fixed: the early peak is the maximum over steps in (0, PEAK_MAX_STEP]; the trough the
-    minimum at or after it; the end the last step. Ties take the first step."""
+    minimum at or after it; the end the last step. Ties take the first step. If the trough is the last
+    step the series is still falling there, so the late rise is not measured: None, with
+    ``trough_is_last`` (added after output, `/challenge-pr` on #314, finding 4; no number changes)."""
     t, s = np.asarray(steps), np.asarray(series, np.float64)
     win = np.flatnonzero((t > 0) & (t <= PEAK_MAX_STEP))
     if not len(win):
@@ -519,7 +521,8 @@ def shape(steps: Sequence[int], series: Sequence[float]) -> dict:
     it = ip + int(np.argmin(s[ip:]))
     return {"first": float(s[0]), "first_step": int(t[0]), "peak": float(s[ip]), "peak_step": int(t[ip]),
             "trough": float(s[it]), "trough_step": int(t[it]), "end": float(s[-1]), "end_step": int(t[-1]),
-            "fall": float(s[ip] - s[it]), "late_rise": float(s[-1] - s[it])}
+            "fall": float(s[ip] - s[it]), "trough_is_last": it == len(s) - 1,
+            "late_rise": None if it == len(s) - 1 else float(s[-1] - s[it])}
 
 
 def seeds_table(series: Dict[str, Dict[str, list]], key: str = "rho_mid") -> dict:
@@ -538,6 +541,8 @@ def describe_u5(recs: Dict[str, List[dict]]) -> dict:
     shapes = {n: {k: shape(v["step"], v[k]) for k in ("rho_mid", "rho_mid_no0", "rho_15")} for n, v in series.items()}
     seeds = [n for n in u5_names() if n.startswith("pythia-410m")]
     feats = ("first", "peak", "peak_step", "trough", "trough_step", "end", "fall", "late_rise")
+    if any(shapes[n]["rho_mid"]["trough_is_last"] for n in seeds):
+        raise T5cRefused("a 410m seed's trough is its last step: the late rise is not measured")
     over_seeds = {f: {"min": min(shapes[n]["rho_mid"][f] for n in seeds),
                       "max": max(shapes[n]["rho_mid"][f] for n in seeds),
                       "per_seed": [shapes[n]["rho_mid"][f] for n in seeds]} for f in feats}
