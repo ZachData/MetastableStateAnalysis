@@ -76,8 +76,23 @@ def test_censored():
 
 def test_se_floor():
     x = [0, 0, 0, 0, 0.1, 0.2, 0.3, 0.3]
-    assert t5k.date_series(STEPS, x, floor_se=[0.1] * 8)["refused"]          # 0.3 < 4·√2·0.1
-    assert not t5k.date_series(STEPS, x, floor_se=[0.01] * 8)["refused"]
+    seen = []
+    def se(i, j):
+        seen.append((i, j))
+        return 0.1
+    assert t5k.date_series(STEPS, x, rise_se=se)["refused"]                   # 0.3 < 4 · 0.1
+    assert seen == [(0, 6)]                                                    # base index, peak index
+    assert not t5k.date_series(STEPS, x, rise_se=lambda i, j: 0.01)["refused"]
+
+
+def test_paired_se_cancels_shared_noise():
+    rng = np.random.default_rng(1)
+    base = rng.normal(0, 1, 64)
+    a_i = {"icl_late": base, "icl_early": np.zeros(64)}
+    a_j = {"icl_late": base - 0.3, "icl_early": np.zeros(64)}
+    assert t5k.paired_se(t5k.BESIDE["ICL"], a_i, a_j, 64, n_boot=200) == pytest.approx(0.0, abs=1e-12)
+    a_k = {"icl_late": rng.normal(0, 1, 64), "icl_early": np.zeros(64)}
+    assert t5k.paired_se(t5k.BESIDE["ICL"], a_i, a_k, 64, n_boot=200) > 0.1
 
 
 def test_rho_dates():
@@ -107,7 +122,7 @@ def test_label_table():
     assert L(_i(10), rc, 0, 4369) == "censored, not ordered"
     assert L(_i(10, cens=True), rr, 2, 4369) == "induction after the rise"   # I's censoring only moves it later
     assert L(_i(10), rc, 2, 4369) == "censored, not ordered"
-    assert L(_i(10), rr, None, 4369) == "censored, not ordered"
+    assert L(_i(10), rr, None, 4369) == "not ordered: ρ's rise not dated"
 
 
 def test_gap_in_grid_steps():
@@ -118,7 +133,8 @@ def test_noise():
     n = t5k.noise({"A0": 0, "A0p": 2, "A0pp": 1, "A1": 4, "A2": 5, "A3": None})
     assert n["span"] == 2 and n["seed_dependent"] and n["range"] == [-2, 4]
     assert n["not_told_apart"] == {"A1": True, "A2": False, "A3": False}
-    assert t5k.noise({"A0": None, "A0p": 0, "A0pp": 0, "A1": 0, "A2": 0, "A3": 0})["span"] is None
+    n2 = t5k.noise({"A0": None, "A0p": 0, "A0pp": 0, "A1": 0, "A2": 0, "A3": 0})
+    assert n2["span"] is None and n2["not_run"].endswith(": A0")
 
 
 def test_plant_and_g5_on_a_clean_grid():

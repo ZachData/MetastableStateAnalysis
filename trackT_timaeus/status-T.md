@@ -39,7 +39,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `6f148ceb04`
+- **Reviewed:** 2026-11-07 · body `2a1d7b12c5`
 <!-- /phase-card -->
 
 ## Units
@@ -100,7 +100,28 @@ is frozen and does not move with it.
 **Re-run:** `HF_HOME=<HDD_1TB>/mets_data/hf HF_HUB_OFFLINE=1 METS_REPO=$PWD METS_DATA=<main>/data
 python -m trackT_timaeus.t5k gate` (conda `mets`, the GPU).
 
-**Parked:** none.
+**`/challenge-pr` on #318: accept with changes.** Taken: (1) a step's record was reused without
+checking its inputs or code hash, so option (a)'s re-run would have re-read the 64-sequence records:
+now reused only on matching hashes; (2) option (a) is a test, not only a power demonstration (N set
+from the noise, not the effect; the bar unmoved; at 1024 the true drop must be ≳ 0.15 to pass), and
+it should use unseen sequences 64–1087: Blocked 139 reworded; (3) option (b) as written would print
+ICL "refused" on every run (its dating floor ≈ 0.85 at N = 64), so "described only" needs ICL's floor
+removed: reworded; (4) the 4 SE dating floor took the two ends as independent though both are read on
+the same sequences: now the paired bootstrap SE of the rise (no G6 change: the per-sequence
+correlation between 410m's steps 0 and 143000 is −0.02, paired SE 0.147 against 0.146); (7) the
+noise rule now says when an A0 seed has no gap, and a gap that cannot be taken (ρ's rise undated)
+reads "not ordered: ρ's rise not dated", not "censored". The code changed after the gate's output, so
+every record is recomputed on the next run (the hash check). Answered: (5) 410m's ICL drop (−0.25
+nats per token) is smaller than A0's at 4369 (−0.56); the two are in different tokenizers' units
+(Pythia's 50k vocabulary against Dodecahedron's 16k, on re-encoded text), so ICL is read within a
+run, never across tokenizers; G6 compares 410m with itself. Parked: (6).
+
+**Parked:**
+1. *Document breaks dilute ICL* (`/challenge-pr` on #318, finding 6): 25 of the 64 held-out
+   sequences have an `<|endoftext|>` between positions 40 and 509; on the 39 without one, 410m's ICL
+   at 143000 is −0.37, not −0.25. Why: more sequences do not remove it, and filtering changes the
+   statistic. Cost: a per-sequence break flag in the records and a side figure, minutes. Decision it
+   could change: whether ICL's dates are read as "on text" or "on packed text" at the close-out.
 
 ## T5′ U0: the design and the scan (2026-11-07)
 

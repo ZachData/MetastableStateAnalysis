@@ -17,7 +17,10 @@ Implementation details fixed here before any output (the design leaves them open
   T + 1 … 2T − 1 (0-indexed), repeated minus control, per sequence pair.
 - Bootstrap: the R sequence pairs are resampled jointly (repeated, control and null share r_i);
   ICL resamples its 64 sequences. 1000 resamples, seed 20261030.
-- The 4 SE floor for P, B, ICL: rise < 4 · sqrt(SE(base)² + SE(peak)²) refuses. S, M, n0: no floor.
+- The 4 SE floor for P, B, ICL: rise < 4 × the paired bootstrap SE of x(peak) − x(base), both steps
+  resampled on the same sequences (/challenge-pr on #318, finding 4; was sqrt(SE² + SE²), before
+  any dating). S, M, n0: no floor.
+- A step's record is reused only if its inputs hash and code hash match (/challenge-pr on #318, 1).
 - ρ's early peak is its first maximum on the window; its trough the first minimum after it.
 - G2's measure: max over states of max|h_eager − h_sdpa| / max|h_eager| on the first 4 repeated
   sequences. G5's plant: 0.2 / (1 + exp(−(ln s − ln c) / 0.158)) (10 % → 90 % over a factor 2 in
@@ -40,7 +43,7 @@ import math
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Callable, Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -122,6 +125,24 @@ def summarize(a: Dict[str, np.ndarray], seed: int = BOOT_SEED, n_boot: int = N_B
                    "P": float(bs[:, 2].std(ddof=1)), "B": float(bs[:, 3].std(ddof=1)), "ICL": float(bi.std(ddof=1))}}
 
 
+#: the beside statistics as functions of the per-sequence arrays and a resample (for the paired SE)
+BESIDE = {"P": lambda a, ix: a["prev_ctrl"][ix].mean(0).max(),
+          "B": lambda a, ix: (a["loss_rep"][ix] - a["loss_ctrl"][ix]).mean(),
+          "ICL": lambda a, ix: (a["icl_late"][ix] - a["icl_early"][ix]).mean()}
+
+
+def paired_se(stat, a_i: Dict[str, np.ndarray], a_j: Dict[str, np.ndarray], n: int,
+              seed: int = BOOT_SEED, n_boot: int = N_BOOT) -> float:
+    """Bootstrap SE of stat(a_j) − stat(a_i), the same resampled sequences at both steps (they are
+    read on the same sequences; /challenge-pr on #318, finding 4)."""
+    rng = np.random.default_rng(seed)
+    d = []
+    for _ in range(n_boot):
+        ix = rng.integers(0, n, n)
+        d.append(stat(a_j, ix) - stat(a_i, ix))
+    return float(np.std(d, ddof=1))
+
+
 # ---------------------------------------------------------------- pure: the dating rule (D2 (a))
 
 def _first(xs: Sequence[float], lo: int, hi: int, key) -> int:
@@ -150,16 +171,17 @@ def date_from(steps: Sequence[int], x: Sequence[float], base: int, end: int, run
 
 
 def date_series(steps: Sequence[int], x: Sequence[float], floor: Optional[float] = None,
-                floor_se: Optional[Sequence[float]] = None) -> dict:
+                rise_se: Optional[Callable[[int, int], float]] = None) -> dict:
     """The generic rule: t = the minimum before the maximum, dated to the window's end. ``floor``
-    (absolute) or ``floor_se`` (SE per step, 4 SE of the base and the peak) refuses a small rise."""
+    (absolute) or ``rise_se`` (the paired bootstrap SE of x(peak) − x(t), from their indices; 4 SE)
+    refuses a small rise."""
     end = len(steps) - 1
     pk = _first(x, 0, end, lambda v: v)
     t = _first(x, 0, pk, lambda v: -v)
     r = date_from(steps, x, t, end)
     thr = floor
-    if floor_se is not None and r["peak"] is not None:
-        thr = SE_FLOOR * math.hypot(floor_se[t], floor_se[list(steps).index(r["peak"])])
+    if rise_se is not None and r["peak"] is not None:
+        thr = SE_FLOOR * rise_se(t, list(steps).index(r["peak"]))
     r["floor"] = thr
     r["refused"] = bool(thr is not None and r["rise"] < thr)
     return r
@@ -198,7 +220,7 @@ def label(i_dates: dict, rho_rise: dict, d: Optional[int], by: int) -> str:
     if i_dates["refused"] or i_dates["on_0.1"] is None:
         return f"no induction formed by {by}"
     if d is None:
-        return "censored, not ordered"
+        return "not ordered: ρ's rise not dated"
     ci, cr = i_dates["censored"], rho_rise["censored"]
     if d <= -2 and not ci:
         return "induction leads the rise"
@@ -213,7 +235,8 @@ def noise(d: Dict[str, Optional[int]]) -> dict:
     """On the gap d: A0 seeds' span; arms inside A0's range widened by the span are not told apart."""
     a0 = [d[a] for a in A0S]
     if any(v is None for v in a0):
-        return {"a0_d": a0, "span": None, "seed_dependent": None, "range": None, "not_told_apart": {}}
+        return {"a0_d": a0, "span": None, "seed_dependent": None, "range": None, "not_told_apart": {},
+                "not_run": f"A0 seed(s) without a gap: {', '.join(a for a in A0S if d[a] is None)}"}
     span = max(a0) - min(a0)
     lo, hi = min(a0) - span, max(a0) + span
     return {"a0_d": a0, "span": span, "seed_dependent": span >= 2, "range": [lo, hi],
@@ -344,7 +367,9 @@ def one_step(run: str, s: int, inp: Inputs, device, dcfg=None, force: bool = Fal
     d = OUT / run
     p = d / f"step{s}.json"
     if p.exists() and not force:
-        return json.loads(p.read_text())
+        rec = json.loads(p.read_text())
+        if rec.get("inputs_sha") == inp.sha and rec.get("code") == code_sha():
+            return rec                     # reused only on the same inputs and code (/challenge-pr on #318, 1)
     m, src = load(run, s, device, dcfg)
     a = forward(m, inp.sets, inp.held, device)
     d.mkdir(parents=True, exist_ok=True)
@@ -499,6 +524,14 @@ def _series(run: str) -> dict:
     return {"steps": list(steps), "series": ser, "se": se, "codes": sorted(codes), "inputs_sha": shas.pop()}
 
 
+def _pair(run: str, steps: Sequence[int], k: str) -> Callable[[int, int], float]:
+    def f(i: int, j: int) -> float:
+        a_i, a_j = (dict(np.load(OUT / run / f"step{steps[q]}.npz")) for q in (i, j))
+        n = len(a_i["icl_late"] if k == "ICL" else a_i["loss_rep"])
+        return paired_se(BESIDE[k], a_i, a_j, n)
+    return f
+
+
 def read_run(run: str, data: dict, end: int) -> dict:
     """Every dated series of one run on its window to ``end``, the phases, d and the label."""
     steps = [s for s in data["steps"] if s <= end]
@@ -509,9 +542,9 @@ def read_run(run: str, data: dict, end: int) -> dict:
     out = {"end": end, "rho": rd,
            "I": date_series(steps, x["I"], floor=I_FLOOR),
            "I_null": date_series(steps, x["I_null"], floor=I_FLOOR),
-           "P": date_series(steps, x["P"], floor_se=se["P"]),
-           "B": date_series(steps, [-v for v in x["B"]], floor_se=se["B"]),
-           "ICL": date_series(steps, [-v for v in x["ICL"]], floor_se=se["ICL"])}
+           "P": date_series(steps, x["P"], rise_se=_pair(run, steps, "P")),
+           "B": date_series(steps, [-v for v in x["B"]], rise_se=_pair(run, steps, "B")),
+           "ICL": date_series(steps, [-v for v in x["ICL"]], rise_se=_pair(run, steps, "ICL"))}
     for k in ("S", "M", "n0_mid"):
         if k in x:
             out[k] = date_series(steps, x[k])
