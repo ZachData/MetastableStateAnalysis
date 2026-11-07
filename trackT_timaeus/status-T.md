@@ -35,10 +35,11 @@
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
   - What raises Dodecahedron's late level (not biases or Pythia's init at bar 0.2; LR and the MLP's form untested, rows T5″ and T5‴ of `docs/ROADMAP.md`) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
+  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design proposed, D1–D5 are Blocked 138; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ U0"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `d93e19372b`
+- **Reviewed:** 2026-11-07 · body `8cf6fefe42`
 <!-- /phase-card -->
 
 ## Units
@@ -60,6 +61,38 @@
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
 | T5 U5. the controls (Blocked 135 (a)) | **done 2026-11-06**: gate passes (seed 0 = U2, seeds = U4a's floor, both 0.0; Mistral loss 10.9 → 3.9); described, no rule: the 410m shape holds on all ten seeds (peak 0.80–0.83 at 16, trough 0.16–0.19 at 2000–4000), the late level parts with the loss (0.39–0.43 on eight seeds; 0.23 on seeds 3, 4, whose loss rose after 54000; U4's bar floor rests on seed 4, carried to the close-out); Mistral GPT-2 small peaks at 0.98 at step 20 and is still falling at 16000–20000 (0.26–0.29) | "T5 U5" below; `design-T5.md` "U5's details" |
 | T5 close-out | **closed 2026-11-07 at its exit** (writing only; the PolyPythias paper read for U5's Parked item, no GPU); every Parked item carried or dropped; one item for the user, Blocked 136 (U4's bar floor and PolyPythias's outliers) | "T5 on one page" below |
+| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out | "T5′ U0" below; `design-T5p.md` |
+
+## T5′ U0: the design and the scan (2026-11-07)
+
+Opened by Blocked 137 (a), the user's: **Track T is not closed; it closes at T5′'s close-out**, and
+the order of 2026-11-02 then puts Track N (N1) next. Docs only, no forward pass. Design proposed:
+`trackT_timaeus/design-T5p.md` (statistics, dating rule, outcome table, gate G1–G7 and D1–D5, all
+before any T5′ output); scan `docs/lit-T.md` §5.
+
+**Inputs checked on disk** (CLAUDE.md start step 3): the six arms' 49 checkpoints each
+(`HDD_1TB/mets_data/trackT/t5u4/<arm>/ckpt/`); `t5u4/data/tail.bin` (1,678,770,176 bytes = 1601 ×
+256 × 2048 uint16 tokens; no arm trained on it, since no continuation ran); released
+`dodecahedron-32m` at 53 refs in `HDD_1TB/mets_data/hf`; `pythia-410m` seed 0's C2 steps among 34
+refs in `~/.cache/huggingface`. `-32m`'s config: 16 layers × 6 heads (2 KV heads), so I is a max
+over 96 heads.
+
+**What the scan changed:** a 2026 preprint (2606.02378, three 1B-class models) already finds sink
+and induction to be separate transitions, induction 10–20× earlier in tokens, so D4's onset
+question has precedent at 1B scale; nothing found reads token-cloud anisotropy beside induction
+formation. Aoyama et al. and Tigges et al. put induction's step under batch size and near 2–5B
+tokens, and the arms end at 2.29B, so "no induction by 4369" is a row of the outcome table.
+
+**`/challenge-pr` on #317: accept with changes, findings 1–5 taken** (design revised before any
+output): (1) the 4 SE floor was C2's locator's, not calibrated for a max over 96 heads from trough
+to peak (the reviewer's simulation: pure noise clears it in 62 % of series), and G4 at init could
+not fail: now an absolute floor 0.1, a planted null (I_null) and a planted rise on every run's real
+checkpoints; (2) a date still rising at the end is a lower bound, not "late": a label stands only
+where censoring cannot move it; (3) ρ dated in its fall too, and 410m read against its own ρ_mid,
+since its induction at 1000 sits in its fall; (4) the seed-noise floor on the gap d, not I's onset;
+(5) the bridge refuses only the comparison with C2's 1000, at 1000 exactly.
+
+**Parked:** none.
 
 ## T5 on one page (closed 2026-11-07)
 
