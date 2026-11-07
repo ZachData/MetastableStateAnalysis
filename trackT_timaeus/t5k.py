@@ -293,6 +293,12 @@ def held_out(run: str) -> np.ndarray:
     return np.array(out, dtype=np.int64)
 
 
+def break_fraction(held: np.ndarray, eot: int, lo: int = EARLY[0], hi: int = LATE[1]) -> float:
+    """Share of held-out rows with an <|endoftext|> in positions lo … hi − 1 (beside the gate; a break
+    between the windows dilutes ICL, which more rows do not remove: /challenge-pr on #318, 6; #319, 2)."""
+    return float((np.asarray(held)[:, lo:hi] == eot).any(1).mean())
+
+
 def steps_of(run: str) -> tuple:
     from trackA_force import a3
     from trackT_timaeus import t5c, t5h
@@ -467,6 +473,9 @@ def gate(a) -> int:
     res["G6"] = {"I_143000": r_end["I"], "ICL_0": r_0["ICL"], "ICL_143000": r_end["ICL"], "se": se,
                  "argmax_lh": r_end["argmax_lh"],
                  "pass": r_end["I"] >= G6_I and r_0["ICL"] - r_end["ICL"] >= G6_SE * se}
+    eot = tok.convert_tokens_to_ids("<|endoftext|>")
+    res["ICL_breaks"] = {"rows": [HELD_LO, HELD_LO + N_HELD], "positions": [EARLY[0], LATE[1]],
+                         "fraction": break_fraction(inp.held, eot), "beside": "not a gate"}
     res["pass"] = all(res[g]["pass"] for g in ("G1", "G2", "G3", "G6", "G7"))
     _jdump(OUT / "gate.json", res)
     print(json.dumps({g: res[g]["pass"] for g in ("G1", "G2", "G3", "G6", "G7")} | {"pass": res["pass"]}))

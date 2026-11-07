@@ -136,8 +136,22 @@ the table above, or refused by its gate. **Budget: U0 + U1 + close-out**, as the
 | change | as | label |
 |---|---|---|
 | ICL's held-out set | tail rows 64–1087 (1024; rows 0–63 were read by the refused gate), windows and bars unchanged | post hoc (N from the noise, not the effect); committed `938eea3` before any output on it |
-| **I_text, beside** (the user's: "avoid synthetic data that we choose") | I's formula on repeated real text: `[x_1 … x_T, x_1 … x_T]` against `[x, x′]`, x and x′ distinct T = 256 windows of held-out FineWeb text (tail rows from 1088, or the prompt library's held-out split if it fixes one first), R as I; dated by D2's rule, no label | post hoc, description only; **I on random tokens stays the labelled statistic** (D1 (a) not moved after the gate showed A0's I 0.72). Not built yet; built and committed before T5′'s next output |
-| **T5′ paused** | the user chose to build a larger shared prompt library first (`docs/ROADMAP.md` §5 "Prompt library", §10.14); T5′ resumes on its frozen inputs with the gate under 139 (a) | nothing dated; the budget (U0 + U1 + close-out) is unchanged |
+| ICL's document breaks, beside | `gate.json` records the share of held-out rows with an `<|endoftext|>` in positions 40–509 (`t5k.break_fraction`; not a gate). On the input text alone: rows 0–63 0.39 (Parked 1's 25 of 64), rows 64–1087 0.45. More rows cut the SE about 4×, not the dilution; ICL's definition is not changed now (`/challenge-pr` on #319, finding 2) | beside |
+| **I_text, beside** (the user's: "avoid synthetic data that we choose") | I's formula on repeated real text, **fixed now** (`/challenge-pr` on #319, finding 3): R = 32 tail rows each for x (rows 1088–1119), x′ (1120–1151) and x″ (1152–1183), each the row's first T = 256 tokens; repeated `[x, x]` against control `[x, x′]`; **I_text_null** `[x, x″]` against the same control (no repeat), at every step of every run, max ≤ 0.05 described beside, not a gate. Pythia reads each row decoded and re-encoded, its first 256 tokens (as ICL's text). Dated by D2's rule, no label. The prompt library does not move it | post hoc, description only; **I on random tokens stays the labelled statistic** (D1 (a) not moved after the gate showed A0's I 0.72). Not built yet; built and committed before T5′'s next output |
+| **T5′ paused** | the user chose to build a larger shared prompt library first (`docs/ROADMAP.md` §5 "Prompt library", §10.14); T5′ resumes on its frozen inputs with the gate under 139 (a) | nothing dated |
+
+**An exception to the close-out rule, on the record** (`/challenge-pr` on #319, finding 1): `CLAUDE.md`
+"Close out before the next opens" and `docs/ROADMAP.md` §3 say a new idea mid-phase goes to the
+ROADMAP and the phase finishes first. Here the user chose, on the record (§10.14), to pause T5′ and
+build the library first; the exception is the user's, not the rule's. **Open in T5′ on pause:** the
+gate re-run under 139 (a); I_text and its null built (code and tests, before output); G4, G5; the
+batch (≈ 420 forward passes); `read`; the outcome table; `t5j.outcome_row`'s refused-run flag; the
+close-out, which also closes Track T. Parked 1 (document breaks) stands. The library is not a fix
+for T5′: T5′ resumes on the inputs fixed in this file, whatever the library holds.
+
+**Budget** (finding 4): unchanged, U0 + U1 + close-out. `938eea3`'s "U1b" is U1 continued, not a new
+unit: 139 (a) as offered was "then G4, G5, the batch and the reading as frozen", inside U1; I_text
+adds code to U1. If U1 does not finish in one more session it goes back to the user as an extension.
 
 Rejected for I's input: Markov-chain sequences (Edelman et al. 2024, cited from memory, not re-read;
 those papers *train* on chain samples, and as a probe the chain's parameters would be ours to

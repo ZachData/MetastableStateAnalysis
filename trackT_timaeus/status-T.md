@@ -39,7 +39,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `7be79ecb38`
+- **Reviewed:** 2026-11-07 · body `345ed75b81`
 <!-- /phase-card -->
 
 ## Units
@@ -76,7 +76,14 @@ probes were considered and rejected (those papers train on chain samples; as a p
 still ours to choose). **Then the user paused T5′ to build a larger shared prompt library first**
 (more prompts, not longer ones: ρ_mid on Tracks A and T reads the 7 v1 prompts; the live battery is
 21, plus 9 long prompts): `docs/ROADMAP.md` §5 "Prompt library" and §10.14. T5′'s budget is
-unchanged; on resume: build I_text, `tests/`, re-run `gate`, then G4, G5, the batch, `read`.
+unchanged (`938eea3`'s "U1b" is U1 continued); on resume: build I_text and its null (source fixed now:
+tail rows 1088–1183), `tests/`, re-run `gate`, then G4, G5, the batch, `read`. The pause is an
+exception to the close-out rule, the user's, recorded with T5′'s open list in `design-T5p.md`
+"Blocked 139 decided, and T5′ paused". **`/challenge-pr` on #319: accept with changes, findings 1–4
+taken:** (1) that exception and open list; (2) `gate.json` records ICL's document-break share beside
+(`t5k.break_fraction`; on the text alone rows 0–63 0.39, rows 64–1087 0.45: more rows cut the SE,
+not the dilution; Parked 1 stands), and the library row no longer cites ICL's power; (3) I_text's
+source, Pythia's reading and its null fixed now; (4) the budget answered.
 
 ## T5′ U1 (gate): G6's ICL leg has no power at 64 sequences (2026-11-07)
 

@@ -149,3 +149,11 @@ def test_plant_and_g5_on_a_clean_grid():
     s410 = [s for s in a3.STEPS if s <= 4000]
     for c in t5k.PLANT_C["410m"]:
         assert t5k.g5_one(s410, [0.0] * len(s410), c)["pass"]
+
+
+def test_break_fraction():
+    held = np.ones((4, 520), dtype=np.int64)
+    held[0, 45] = 0          # inside 40–509
+    held[1, 20] = 0          # before the early window
+    held[2, 509] = 0         # last position read
+    assert t5k.break_fraction(held, 0) == pytest.approx(0.5)
