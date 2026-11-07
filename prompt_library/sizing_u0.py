@@ -5,7 +5,8 @@ Reads T5 U2's per-checkpoint records (`data/trackT/t5u2/2026-10-30/<trajectory>/
 written by `trackT_timaeus/t5c.py`, code `3d425b32db90`, the 7 v1 prompts, <= 512 tokens) and
 prints, per trajectory, the across-prompt SD of a per-prompt ρ_mid (the median of the prompt's own
 ρ_ℓ over the middle states 1 … L−1), its median and maximum over steps, the step of the maximum,
-and the standard error of a k-prompt mean at that maximum for k = 7, 256, 1024.
+and the standard error of a k-prompt mean at that maximum for k = 7, 256, 1024; and first, the same
+for Δ, the within-prompt statistic T5 U2 scored (added after `/challenge-pr` on #320, finding 1).
 
 What it does not give: the SD on real held-out documents. The 7 v1 prompts are hand-picked
 genres, so a random Pile draw may spread more or less; U1 re-measures on the library itself.
@@ -55,8 +56,30 @@ def trajectory_rows(traj: str) -> list[tuple[int, float, float]]:
     return sorted(rows)
 
 
+def delta_spread(traj: str) -> tuple[int, int, float, np.ndarray]:
+    """T5 U2's scored statistic, per prompt: Δ_i = m_i(first) − m_i(t*), with m_i the per-prompt
+    ρ_mid and t* the step where the prompts' mean is lowest (U2's argmin; its bootstrap retakes the
+    minimum in each resample, so this is the fixed-t* proxy). Returns (first step, t*, SD of Δ_i,
+    Δ_i in prompt order)."""
+    files = sorted(glob.glob(str(RECORDS / traj / "step*.json")))
+    recs = sorted((int(json.load(open(f))["step"]), per_prompt_mid(json.load(open(f)))) for f in files)
+    M = np.array([m for _, m in recs])                       # (steps, prompts)
+    j = int(np.argmin(M.mean(axis=1)))
+    d = M[0] - M[j]
+    return recs[0][0], recs[j][0], float(d.std(ddof=1)), d
+
+
 def main() -> None:
     print(f"records: {RECORDS}")
+    print("\nΔ, the statistic T5 U2 scored (per prompt, fixed t*):")
+    print("trajectory          first   t*   mean Δ  SD of Δ  " + "  ".join(f"SE(k={k})" for k in KS) +
+          "   Δ per prompt")
+    for traj in TRAJECTORIES:
+        s0, sj, sd, d = delta_spread(traj)
+        se = "  ".join(f"{sd / np.sqrt(k):8.4f}" for k in KS)
+        print(f"{traj:18s} {s0:5d} {sj:5d} {d.mean():7.3f} {sd:8.3f}  {se}   " +
+              " ".join(f"{x:.2f}" for x in d))
+    print("\nThe level, ρ_mid at one step:")
     print("trajectory          steps  SD median  SD max  at step  max|gap|  " +
           "  ".join(f"SE(k={k}) at max" for k in KS))
     for traj in TRAJECTORIES:

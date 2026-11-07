@@ -1,5 +1,5 @@
 <!-- prompt_library/design-L.md -->
-# The prompt library — design (proposed 2026-11-07; D1–D5 are Blocked 140)
+# The prompt library — design (proposed 2026-11-07; revised after `/challenge-pr` on #320, findings 1–5; D1–D5 are Blocked 140)
 
 Opened 2026-11-07 by `docs/ROADMAP.md` §10.14, the user's: build a larger shared library of real
 prompts now, with T5′ paused (`trackT_timaeus/design-T5p.md` "Blocked 139 decided, and T5′
@@ -9,27 +9,27 @@ tier 1; nothing is registered, and nothing here touches `claims/registry.json`.
 ## What it is for
 
 Every ρ_mid on Tracks A and T reads the 7 v1 prompts (`trackA_force/a1a.py` `V1`; `t5.state_stats`),
-hand-picked genres, ≤ 512 tokens each. Their spread across prompts is small at most steps and
-large exactly where the readings move (`prompt_library/sizing_u0.py`, on T5 U2's records):
+hand-picked genres, 242–562 tokens each, capped at 512. On T5 U2's records
+(`prompt_library/status-L.md` "U0, the design", producer `prompt_library/sizing_u0.py`) the 7 are
+**thin for a level and adequate in count for T5's scored Δ, but Δ depends on which text**:
 
-| trajectory | SD over the 7, median over steps | max | at step | SE of the mean at the max: k = 7 | 256 | 1024 |
-|---|---|---|---|---|---|---|
-| `pythia-70m` | 0.023 | 0.069 | 256 | 0.026 | 0.004 | 0.002 |
-| `pythia-160m` | 0.031 | 0.117 | 256 | 0.044 | 0.007 | 0.004 |
-| `pythia-410m` | 0.029 | 0.183 | 256 | 0.069 | 0.011 | 0.006 |
-| `dodecahedron-32m` | 0.033 | 0.228 | 88 | 0.086 | 0.014 | 0.007 |
-| `dodecahedron-67m` | 0.041 | 0.207 | 88 | 0.078 | 0.013 | 0.007 |
-| `gpt-2-small` | 0.028 | 0.092 | 1100 | 0.035 | 0.006 | 0.003 |
+- *a level* (ρ_mid at one step) spreads widely across the 7 in the transitions;
+- *Δ*, the within-prompt difference T5 U2 scored, spreads less, consistent with U2's own
+  bootstrap, so its SE at 7 is already well under T5's bar of 0.15;
+- but one kind of text sets each extreme: the French narrative (`camus_letranger`) is the lowest Δ
+  on every Pythia model and on `gpt-2-small`, and the code prompt (`hdbscan_code`) on both
+  Dodecahedron models. So what the 7 lack most is coverage of real text, not count.
 
-So at 7 prompts a transition's level is known to about ±0.07–0.09 (one SE), the size of the
-effects T5 labelled (its bar 0.15). The library is **more prompts, not longer ones**, drawn from
-real held-out text by a rule fixed before any model reads them (the user prefers real text to
-synthetic sets we choose, `design-T5p.md` "Blocked 139 decided").
+The library is **more prompts, not longer ones**, drawn from real held-out text by a rule fixed
+before any model reads them (the user prefers real text to synthetic sets we choose,
+`design-T5p.md` "Blocked 139 decided"), and its size is set by how many items each kind of text
+gets (D3), not by the SE of Δ. (Corrected after `/challenge-pr` on #320, finding 1: the first
+version sized it from the level's SE and called that the size of T5's effects.)
 
-**What it cannot do.** Make the 7-prompt results wrong or right on its own: a re-read is a new
-reading on new inputs, labelled by the old rule (D5). Make a library item "in distribution" for
-every model: one text set is off one family's training data (D1). Remove a document-length
-selection (D2). It is not a fix for T5′, which resumes on the inputs `design-T5p.md` fixes
+**What it cannot do.** Make the 7-prompt results wrong or right: a re-read is a reading of a
+different population of text, labelled by the old rule beside the old one (D5). Make a library item
+"in distribution" for every model: one text set is off one family's training data (D1). Guarantee
+an item unseen by a model trained on web crawls (D1). Remove a document-length selection (D2). It is not a fix for T5′, which resumes on the inputs `design-T5p.md` fixes
 (ROADMAP §5, `/challenge-pr` on #319, findings 1–2).
 
 ## Fixed now (no decision waits on these)
@@ -63,13 +63,16 @@ At the budget it closes at what it knows; under D5 (b) the exit drops U2 and the
 had them (`data/trackT/t5u2/2026-10-30/reading.json`, `"scored": false`). *Statistic and rule:* U2's, unchanged
 (`trackT_timaeus/t5c.py`): Δ = ρ_mid(first) − min_t ρ_mid(t); spreads if Δ ≥ 0.15 and the
 bootstrap 5th percentile > 0.05; does not spread if the 95th < 0.15; else not told apart; the
-bootstrap now resamples library items (k = 1024). *Gate, before any library output:* U2's own,
-with k: the known answer (the library path fed the 7 v1 texts reproduces U2's records at 410m
+bootstrap now resamples library items (k = 1024). *Gate, before any Δ is read on the library:*
+U2's own, with k: the known answer (the library path fed the 7 v1 texts reproduces U2's records at 410m
 0 and 4000 and 32m 1 and 9536 within 1e-6), the synthetic planted 0.15 at k = 1024 seen "spreads"
 ≥ 90 % and flat ≤ 5 %, with s set from the library's own spread at 9536 on `-32m` (U2 set it from
-the 7). *What counts:* a scored label that differs from U2's is a correction to T5 (one line under
-`trackT_timaeus/status-T.md` `## Corrections received`); the Pythia labels, the series, per-subset
-reads and the 7-prompt overlay are described beside, no rule. U2's labels, for the comparison
+the 7; that read enters no Δ). *What counts:* the three scored labels on the library, recorded
+**beside** T5 U2's in `trackT_timaeus/status-T.md` as a reading of a different population of text,
+not a correction: on the 7, Δ is set mostly by which kind of text (above), so a label that differs
+on Pile `val` says the 7's text and Pile's differ, not that U2 was wrong (`/challenge-pr` on
+#320, finding 2). The labels per Pile subset with ≥ 32 items, the Pythia labels, the series and
+the 7-prompt overlay are described beside, no rule. U2's labels, for the comparison
 (`reading.json`; Δ, bootstrap 5th–95th): scored, `-32m` spreads 0.736 (0.669–0.794), `-67m` spreads
 0.734 (0.672–0.778), `gpt-2-small` spreads 0.168 (0.153–0.182); beside, 410m spreads 0.298, 160m
 spreads 0.171 (5th 0.146), 70m does not 0.101. `gpt-2-small` and 160m sit nearest the bar.
@@ -84,11 +87,11 @@ U2 and goes to the user.
 
 | # | choice | options | recommended, and why |
 |---|---|---|---|
-| D1 | source | (a) **one shared set**: `pile-uncopyrighted` `val`, read by every model; each item carries its Pile subset, and the web subset (`Pile-CC`) is flagged, so a FineWeb-trained reader can drop it; (b) **per family**: Pile val for Pythia, the FineWeb `sample-10BT` tail for Dodecahedron and the arms; (c) Pile val, used for Pythia only | **(a).** Held out from Pythia by the Pile's split, and from Dodecahedron and T5's arms by source except where the same web page sits in both (Pile-CC is Common Crawl; FineWeb is Common Crawl), which the flag isolates. T5 compares the families; on one text set the comparison reads the same prompts. (b)'s FineWeb tail is held out from the arms only: FineWeb has no validation split and Dodecahedron's documents are not stated (`docs/lit-L.md` §1). Cost of (a): Pile text is off FineWeb's distribution, so Dodecahedron reads text it fits worse (Paloma; `lit-L.md` §2); per-subset reads beside show how much |
+| D1 | source | (a) **one shared set**: `pile-uncopyrighted` `val`, read by every model; each item carries its Pile subset, and the web subset (`Pile-CC`) is flagged, so a FineWeb-trained reader can drop it; (b) **per family**: Pile val for Pythia, the FineWeb `sample-10BT` tail for Dodecahedron and the arms; (c) Pile val, used for Pythia only | **(a).** Held out from Pythia by the Pile's split. **For no other model is it known held out:** FineWeb is filtered Common Crawl, and a crawl can hold the same Wikipedia, StackExchange, arXiv or PubMed page as a Pile subset, not only Pile-CC's; the flag marks the most likely overlap, it does not remove overlap (`/challenge-pr` on #320, finding 3). `gpt-2-small`'s training data are unknown (`trackT_timaeus/status-T.md` "T5 U0"), so nothing is known held out from it either. T5 compares the families; on one text set the comparison reads the same prompts. (b) does not do better: its FineWeb tail is held out from T5's arms only, since FineWeb has no validation split and Dodecahedron's documents are not stated (`docs/lit-L.md` §1). Cost of (a): Pile text is off FineWeb's distribution, so Dodecahedron reads text it fits worse (Paloma; `lit-L.md` §2); per-subset reads beside show how much |
 | D2 | an item | (a) **one document**, those with ≥ 512 GPT-NeoX tokens, cut to their first 512; (b) packed 512-token windows across documents (no length selection); (c) whole documents up to 512 tokens, lengths varying | **(a).** It keeps v1's shape (one text, ≤ 512 tokens, one cloud) and one length, so ρ is not read across lengths. (b) mixes documents inside one cloud (T5′'s ICL rows: 0.45 carry a break). (c) puts length into the spread. Cost of (a): short documents are excluded, a selection by length, so U1 reports the eligible share per subset |
-| D3 | size, order, mixture | (a) **1024 items in a fixed order**: the val rows permuted once (`default_rng(20261107)`), then the first 1024 that meet D2; the mixture is Pythia's own (proportional, in expectation); a reader names a prefix k (256 for per-item costly readers, 1024 otherwise); (b) 256 items; (c) stratified, an equal count per Pile subset (Paloma's per-domain design) | **(a).** At k = 1024 the transitions' SE falls to 0.006–0.007, at 256 to 0.011–0.014 (table above, from the 7's spread, which real draws may exceed). A prefix of a random permutation is itself a random draw, so every k is a sample of the same population and readers can differ in k without a second library. (c) answers "per domain" but weights rare subsets (EuroParl, Enron) as heavily as Pile-CC; per-subset reads stay possible under (a) where counts allow |
+| D3 | size, order, mixture | (a) **1024 items in a fixed order**: the val rows permuted once (`default_rng(20261107)`), then the first 1024 that meet D2; the mixture is Pythia's own (proportional, in expectation); a reader names a prefix k (256 for per-item costly readers, 1024 otherwise); (b) 256 items; (c) stratified, an equal count per Pile subset (Paloma's per-domain design) | **(a), re-argued after `/challenge-pr` on #320, finding 1.** The SE of Δ does not need 1024: on the 7's spread, 256 already gives a small fraction of the bar (`status-L.md` "U0, the design"; real draws may spread more). What sets the size is the per-subset reads that test text dependence: a subset with a 3 % share of the eligible documents gets about 31 items at 1024 and 8 at 256, so 1024 is what lets the larger subsets be read on their own (≥ 32 items). Drawing 1024 costs CPU minutes; a reader's cost is set by its own k. A prefix of a random permutation is itself a random draw, so every k is a sample of the same population. (b) is enough if no per-subset read is wanted. (c) answers "per domain" directly but weights rare subsets (EuroParl, Enron) as heavily as Pile-CC, so its pooled mean is no model's training mixture |
 | D4 | the confirmation split | (a) **`pile-uncopyrighted` `test`, the same rule and seed, 1024 items, drawn and hashed in U1 and sealed** (no model reads it until a registry entry names it, CLAUDE.md "Name the family"); (b) a reserved tail of val (rows after the library's); (c) none now | **(a).** A separate official split, held out from the library as well as from training; drawn now, while no reading exists to select it on; costs a download. (b) shares a file and an order with the library. (c) leaves the next confirmatory claim to build its held-out set after seeing exploration output |
-| D5 | first use, and re-reads | (a) **one re-read in U2**: T5 U2's three scored trajectories (three Pythia beside) under U2's frozen rule (above); no other reader moves now; new designs take the library by default (T5′ excepted, ROADMAP §5); (b) build only: no reader moves and nothing is re-read until a design asks; (c) re-read every ρ_mid result on Tracks A and T (A1a, A5, T5 U2–U5), one unit each | **(a).** The question that motivated the library is whether the 7-prompt ρ_mid readings hold; T5 U2 is the cheapest re-read with a frozen rule and recorded labels, and it uses the library end to end, which (b) never does before a real design depends on it. Each re-read is a correction to its phase if it changes a label (CLAUDE.md "Stop" step 2), so (c) re-opens closed phases one by one for readings no current question needs |
+| D5 | first use, and re-reads | (a) **one re-read in U2, recorded beside**: T5 U2's three scored trajectories (three Pythia beside) under U2's frozen rule, per Pile subset too; a differing label is a reading of other text, not a correction to T5 (above); no other reader moves now; new designs take the library by default (T5′ excepted, ROADMAP §5); (b) build only: no reader moves and nothing is re-read until a design asks; (c) as (a), but a differing label is a correction to T5 if it also holds on the English-prose subsets alone | **(a).** The question that motivated the library is whether the 7-prompt ρ_mid readings hold on real text; T5 U2 is the cheapest re-read with a frozen rule and recorded labels, and it uses the library end to end, which (b) never does before a real design depends on it. Recording it beside keeps a change of text from reading as a fix to T5 (`/challenge-pr` on #320, finding 2). (c) is the version that could correct T5, but "English prose" is a subset choice made now with the 7's per-prompt Δ in view, and `gpt-2-small` (Δ 0.168 against the bar 0.15) would turn on it |
 
 ## Other ways to answer the question (simplest first)
 
@@ -111,9 +114,9 @@ U2 and goes to the user.
   different count; a reader capped at 512 of its own tokens truncates or under-fills. Cutting by
   characters, or at the shortest count over named tokenizers, was rejected as more machinery
   than the per-item token counts that make it visible.
-- The sizing rests on the 7 v1 prompts' spread; random Pile documents (code, legal, mathematics)
-  may spread far more, which would favour (a)'s 1024 over 256.
+- D3's 1024 rests on per-subset reads, not on the SE of Δ (256 would do for that). If no
+  per-subset read is wanted, (b) 256 is enough.
 - Near-duplicates between the Pile's train and val/test were not checked. Pythia may have seen a
   val document's twin.
-- D5 (a) makes the library's first use a re-read of a closed track's result, which can re-open it
-  through a correction. (b) avoids that, and leaves the library unused until N1 or T5′'s successor.
+- D5 (a) records the re-read beside T5, so the library can never correct a T5 label on its own.
+  (c) would let it, at the price of a subset choice made with the 7's per-prompt Δ in view.
