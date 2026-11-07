@@ -3031,6 +3031,28 @@ nine PolyPythias seeds, v1's 7 prompts; nothing scored.
 
 ---
 
+## 3.78 Track T's T5 closed: the Pythia counts fail on Dodecahedron where its cloud re-concentrates; neither biases nor Pythia's init removes that by the bar (2026-11-07)
+
+**`trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"** holds the numbers; this
+section says why it is project-wide. Tier 1, description; Dodecahedron `-32m`/`-67m`, six retrained
+arms of its recipe, `pythia-70m`/`-160m`/`-410m` (ten seeds), Mistral GPT-2 small, v1's 7 prompts.
+
+- The counts C2 dates on Pythia did not carry over to `dodecahedron-32m` (the one Dodecahedron
+  model the counts were read on): they pass in its trough, where the token cloud is spread, and
+  stop passing with the late rise. What stops them (ρ, position 0's norm, the loss or the step) is
+  not told apart. So a new model's gate is read along training, not at two steps (T2 read only the
+  two ends).
+- Rise, fall and second rise: Pythia on ten seeds, Dodecahedron and its retrained recipe, at
+  different heights; Mistral GPT-2 small has the rise and the fall and no second rise by 5 % of its
+  run. Biases and Pythia's init are "not supported at bar 0.2" as what sets the late height
+  (biases held it 0.14 lower on one run, under the bar). LR and the MLP's form are untested
+  (ROADMAP §7b T5″, T5‴).
+- U4's bar floor was placed on a seed pair that includes `pythia-410m` seed 4, one of the
+  PolyPythias paper's two outlier runs (loss spikes; the split was in view when the floor was
+  chosen): Blocked 136.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
