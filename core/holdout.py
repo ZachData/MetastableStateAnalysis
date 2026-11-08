@@ -58,6 +58,9 @@ __all__ = [
     "held_out_reason",
     "refuse_held_out",
     "add_holdout_args",
+    "SEALED_LIBRARY_SPLITS",
+    "SealedSplitError",
+    "refuse_sealed_split",
 ]
 
 # The twelve v2 additions (core/config.py, "v2 extension, 2026-09-19").
@@ -205,6 +208,26 @@ def refuse_held_out(
               "n_dropped": len(hits) if drop else 0,
               "held_out_keys": sorted(HELD_OUT_PROMPT_KEYS)}
     return kept, record
+
+
+# The prompt library's confirmation split (prompt_library/design-L.md D4, the user's,
+# Blocked 140): drawn and hashed in U1, read by no model until a registry entry names it.
+# `core.library.load` calls this first; tests/test_library.py checks that no file under
+# tools/, trackA_force/, trackT_timaeus/ or prompt_library/ other than the builder passes
+# allow_sealed=True.
+SEALED_LIBRARY_SPLITS = frozenset({"test"})
+
+
+class SealedSplitError(HoldoutError):
+    """A library reader asked for the sealed confirmation split without `allow_sealed`."""
+
+
+def refuse_sealed_split(split: str, *, allow_sealed: bool = False, context: str = "") -> None:
+    if split in SEALED_LIBRARY_SPLITS and not allow_sealed:
+        raise SealedSplitError(
+            f"{context or 'reader'}: library split {split!r} is the sealed confirmation split "
+            "(prompt_library/design-L.md D4). No model reads it until a claims/registry.json "
+            "entry names it; that registration is the user's.")
 
 
 def add_holdout_args(ap) -> None:

@@ -1996,6 +1996,13 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   the first commit moved the hash (`a4b905cc3ed7`), so no commit produced the records. Re-run at a
   committed hash (`b9e5724ac9d2`, `d8927fb`): all equal, the shard's sha256s too. Rule: **commit
   the producer before the outputs it names, and run the lint before the run**, not after.
+- 2026-11-07 (prompt library U1): the design named `prompt_library/library_v1.json` as "a manifest
+  in git", and the whitelist `.gitignore` dropped it; `git status --short` showed it missing
+  before the first commit, so it was whitelisted then. A wait loop `until ! pgrep -f
+  'build_l1.py --data-dir'` matched its own command line and never exited (≈ 7 min, killed).
+  Rules: a design that names a new tracked non-`.py`/`.md` file whitelists it in the same unit;
+  `pgrep -f` in a wait loop uses a bracketed pattern (`'[b]uild_l1'`), as Blocked item 1 already
+  says for Stage 0.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
@@ -2533,6 +2540,15 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   #320 (finding 1) recomputed it from the same records. No run spent; D3's 1024 re-argued from
   per-subset reads, D5's re-read moved beside. Rule: a sizing computes the spread of the statistic
   the downstream rule scores, not of a quantity it is built from.
+- 2026-11-07, prompt library U1 (found by running the build): U0's done-when said every item is
+  "512 NeoX tokens each", and its own cut rule (the document's prefix to the end character of its
+  512th token) cannot give that in general: a cut inside a whitespace run re-tokenizes `Ċ` + `Ċ`
+  as one `ĊĊ`, so 14 of 1024 items per split are 511 tokens alone (test: 2 at 513). Neither the
+  author nor `/challenge-pr` on #320 ran the rule on one document. Kept as drawn (re-cutting after
+  seeing them is a rule change); put to the user in the PR. Same unit: the first stated reason for
+  turning `trim_offsets` off (an empty whitespace span) was wrong on a second test; corrected
+  before commit. Rule: a done-when that a rule's output must meet is tried on a handful of real
+  inputs before the design freezes.
 
 ## 12. Deleted, then needed
 
