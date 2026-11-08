@@ -27,7 +27,7 @@
   - T5 U4's beside stage at 4369 (Blocked 134 (a), the user's; gates pass): at one step and near-equal loss, the uncentred count is as on Pythia on A1 and A3 and on none of the three A0 seeds, its share falling with ρ over all six arms (post hoc; across recipes it does not: Dodecahedron 0.16 at 0.81, A0 0.54 at 0.80); T2's B-matched count passes on one A0 seed (ρ 0.755) and A3 (0.63) only, A1 and A0 both failing it, so it does not separate ρ from step or loss; ρ is not told from biases; biases write 0.06 of the shared component, Pythia's init cuts position 0's norm about 3×; whether a sink or massive-activation onset leads the rise is not determined by the frozen half-rise (post hoc, the massive top and position 0's norm grow first), and Sun et al.'s criterion is met nowhere — `trackT_timaeus/status-T.md` "T5 U4's beside stage at 4369"
   - T5 U5, the controls (Blocked 135 (a); gate passes, seed 0 and the floor seeds reproduced exactly): described with no rule, Pythia 410m's rise, fall and second rise hold on all ten seeds (peak 0.80–0.83 at step 16, trough 0.16–0.19 at 2000–4000, 0.45–0.49 at 32000–54000, seed SD ≤ 0.026 to 54000), but its late level does not: at 143000 the eight seeds whose loss keeps falling sit at 0.39–0.43 and seeds 3 and 4, whose loss rose after 54000, at 0.23 (U4's bar floor, 0.2, was placed on seed 4's pair; carried to the close-out); Mistral GPT-2 small (two runs, biases, flat init with depth-scaled outputs) starts at Pythia's level (0.42–0.43), peaks at 0.98 at step 20 as Dodecahedron does (on ρ_1:5 too: 0.93–0.94 against 0.94–0.96), and is still falling at its last checkpoint read (0.26–0.29 at 16000–20000, about 5 % of its run) — `trackT_timaeus/status-T.md` "T5 U5"
   - T5 closed 2026-11-07 at its exit (writing only): Dodecahedron's cloud spreads on both models; H1 at init partly; H1 through training and H2 not supported at bar 0.2; T2's counts failed because they were read at the two concentrated ends, and pass in the trough; the two 410m seeds whose late level parts are the PolyPythias paper's two outlier runs (loss spikes, cause unstated), so U4's bar floor rests on an outlier pair; the labels kept at bar 0.2, the 0.1 reading beside as post hoc (Blocked 136 (a), the user's, 2026-11-07) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
-  - T5′ U1 (design frozen on Blocked 138, ICL's set and I_text by Blocked 139 (a), post hoc; gate passes, G4 and G5 on all 8 runs): an induction head forms on every U4 arm, on all three A0 seeds and on released `dodecahedron-32m` at steps 491–574 (half-formed by 574–785), while the middle-state mean cosine is at its floor, 5–7 grid steps before its late rise starts, so every arm reads "induction leads the rise"; neither biases nor Pythia's init moves the induction onset (they delay the rise by a grid step); the same order on repeated real text (beside); 410m's forms at 1000 in its fall, beside C2's E3 — `trackT_timaeus/status-T.md` "T5′ U1, the batch and the reading"
+  - T5′ U1 (design frozen on Blocked 138, ICL's set and I_text by Blocked 139 (a), post hoc; gate passes, G4 and G5 on all 8 runs): an induction head forms on every U4 arm, on all three A0 seeds and on released `dodecahedron-32m` at steps 491–574 (half-formed by 574–785), while the middle-state mean cosine is at its floor, 5–7 grid steps before its late rise starts, so every arm reads "induction leads the rise" (equally, induction forms at the cosine's floor: its half-rise is 0–2 grid steps from the minimum); no difference between arms in either onset is resolved on the grid (each one-step shift sits within 0.01 of its threshold); the same order on repeated real text (beside); 410m's forms at 1000 in its fall, beside C2's E3 — `trackT_timaeus/status-T.md` "T5′ U1, the batch and the reading"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -40,7 +40,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-08 · body `2e10b87ef2`
+- **Reviewed:** 2026-11-08 · body `a6d2d3d582`
 <!-- /phase-card -->
 
 ## Units
@@ -100,19 +100,27 @@ grid steps; none censored):
 | 410m, to 4000 | 1000 | 1000 | 0.948 | 64 | 4000 | none | none | — | fall | (no label: its ρ has not risen by 4000) |
 
 **Noise:** the three A0 seeds' d are −5, −5, −5 (span 0), so A0's row is not seed-dependent and no
-arm is "not told apart" under the design's rule. Across arms, description only (one run each): every
-arm's I onset is at 491–574, as A0's; the arms' d are 1–2 grid steps more negative because their ρ
-rise starts one step later (1465 against 1253), not because induction moves.
+arm is "not told apart" under the design's rule. **That is the grid's coarseness, not low seed
+noise** (/challenge-pr on #325, finding 3): the one-step differences between runs are decided by
+margins under 0.01 at the threshold (below), so no across-arm difference is read. Across arms,
+description only (one run each): I's onset is 574 on A0's seeds, A2, A3 and 491 on A1 and `-32m`;
+ρ's rise onset is 1253 on A0's seeds and 1465 on A1–A3. Both one-step shifts sit on the threshold:
+A1's I is 0.090 at 491 against its 0.1 threshold 0.087; ρ's rise reaches 0.197 at 1072 on A0
+against 0.203, and 0.177 at 1253 on A1 against 0.182 (/challenge-pr on #325, finding 1).
 
 **Read plainly:** on every arm, on the released run and on all three A0 seeds, the induction score
 starts to rise at 491–574 and is half-formed by 574–785, while ρ_mid sits at its floor (A0: I 0.06 →
-0.74 over 491 → 917 at ρ 0.14–0.16); ρ's late rise starts 5–7 grid steps later (1253–1465). Neither
-biases nor Pythia's init moves the induction onset. In 410m induction forms at 1000 in its fall, and
-its ρ has no rise by 4000, as the design expected.
+0.74 over 491 → 917 at ρ 0.14–0.16); ρ's late rise starts 5–7 grid steps later (1253–1465). No
+difference between arms in either onset is resolved on this grid (above). In 410m induction forms at
+1000 in its fall, and its ρ has no rise by 4000, as the design expected.
 
-**Phase, a caveat:** each I onset falls in "the fall" by the rule, just before ρ's minimum (671–917).
-ρ is flat at 0.14–0.15 from 420 to 785 on A0, so where the minimum lands, and with it "fall" against
-"trough", is fragile. The label rests on d, which is not.
+**Phase, a caveat:** I's onset and half-rise both fall in "the fall" by the rule on every run. The
+half-rise is 0–2 grid steps from ρ's minimum on every arm and lands on the minimum's own step on A0,
+A1 and A2 (671, 671, 785), which the code counts as "fall"; ρ is flat at 0.14–0.15 from 420 to 785
+on A0. So "fall" against "trough" turns on where the argmin lands; the label rests on d, which does
+not. An equally fair description of the same records: **induction forms at ρ's floor**
+(/challenge-pr on #325, finding 4; which phrasing the close-out uses is the user's call, no label
+moves).
 
 **I_text, beside (Blocked 139 (a); D2's rule, no label):** onsets at 420–574, half-rises at 671–785,
 rises 0.40–0.54 (arms), 0.62 (`-32m`), 0.75 (410m, censored), d −5 to −8, all in the fall. On text
@@ -132,9 +140,11 @@ I_text's null 40 of 40 dated, none refused (beside, not a gate).
 | `-32m`, 9536 | 65 / 359 | 491 / 671 | 88 / 420 | — | — | 1072 (−2), cens. |
 | 410m, 4000 | 512 / 1000 | 1000 / 1000 | 256 / 1000 | — | — | 2000, cens. |
 
-The previous-token score forms first everywhere (88 on the arms), then ICL, then I with B (B is I's
-behaviour; its onset within one grid step of I's); S and M come with ρ's rise (d −3 to +1). A2 and A3 (Pythia's init)
-date ICL at steps 2–5, in the early rise; not looked into (description only).
+On A0's seeds, A1 and `-32m` the previous-token score forms first (65–88), then ICL (88–121), then I
+with B (B is I's behaviour; its onset within one grid step of I's). On A2, A3 (Pythia's init) and
+410m ICL dates before P (steps 2–5 against 88; 256 against 512), so there is no single order
+(/challenge-pr on #325, finding 2). A2's and A3's ICL at steps 2–5 is in the early rise; not looked
+into. S and M come with ρ's rise (d −3 to +1). Description only.
 
 **Stale docs found:** STATE's Blocked 142 and "T5′ U1 resumed" listed `t5j.outcome_row`'s refused-run
 flag as not done; it landed with U1's first commit (`02ecc4e`, with
@@ -193,7 +203,7 @@ planted rise on I_text's null is described beside in `read`, not a gate (I_text'
 bootstraps share a seed, so the same indices (harmless, the sets are unrelated; docstring).
 
 **Not done in this session** (the user's scope for it: I_text, then the gate): G4, G5, the batch,
-`read`, the outcome table, `t5j.outcome_row`'s refused-run flag, the close-out. `design-T5p.md` says
+`read`, the outcome table, `t5j.outcome_row`'s refused-run flag (wrong: already in, `02ecc4e`; LESSONS 1), the close-out. `design-T5p.md` says
 U1 goes back to the user as an extension if it does not finish in one more session: **Blocked 142**.
 
 **Re-run:** `HF_HOME=<HDD_1TB>/mets_data/hf HF_HUB_OFFLINE=1 METS_REPO=$PWD METS_DATA=<main>/data
