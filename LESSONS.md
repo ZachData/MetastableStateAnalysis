@@ -20,6 +20,10 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-11-08 (T5′ U1): STATE's Blocked 142, `status-T.md` "T5′ U1 resumed" and `design-T5p.md`
+  listed `t5j.outcome_row`'s refused-run flag as left in U1; it had landed with U1's first commit
+  (`02ecc4e`, with its test). Caught by grepping before writing it; no work repeated. Same rule:
+  check the tree before acting on a "not done".
 - 2026-10-29 (Track T, T1): #282 flagged a mismatch on Dodecahedron's card (40B tokens against
   9536 × 524k = 5.0B), and still built T2's token range (~1024–2048) on 524k; `/challenge-pr` on
   #282 then made "the three ranges do not overlap" a reason for T2 and merged it. The card's
