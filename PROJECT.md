@@ -3054,6 +3054,23 @@ arms of its recipe, `pythia-70m`/`-160m`/`-410m` (ten seeds), Mistral GPT-2 smal
 
 ---
 
+## 3.79 A shared library of real held-out prompts, pinned and sealed; T5 U2's labels stand on it (2026-11-07)
+
+**`prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"** holds the numbers;
+this section says why it is project-wide. Infrastructure, tier 1, nothing registered.
+
+- Until now every ρ_mid on Tracks A and T read the 7 hand-picked v1 prompts. The library is 1024
+  Pile `val` documents of ≥ 512 GPT-NeoX tokens, drawn by a seeded rule with no model in the loop,
+  each item hashed in a manifest in git and loaded only through `core/library.py`, which refuses
+  on drift; a 1024-item `test` split is sealed until a registry entry names it.
+- **New designs read the library by default** (T5′ excepted), naming k and the library hash; a
+  reader moved to it reports its 7-prompt value beside, once.
+- T5 U2's six labels stand on it, recorded beside T5, not as a correction. It is held out only
+  from Pythia, and not checked for near-duplicates against the Pile's train split; length against
+  text is not separated (both carried to `docs/ROADMAP.md` §5 "Library L′").
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this

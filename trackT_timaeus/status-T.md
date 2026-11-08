@@ -35,7 +35,7 @@
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
   - What raises Dodecahedron's late level (not biases or Pythia's init at bar 0.2; LR and the MLP's form untested, rows T5″ and T5‴ of `docs/ROADMAP.md`) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
-  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refused on G6's held-out ICL leg at 64 sequences; Blocked 139 decided (a), 1024, with a real-text I beside; **paused 2026-11-07 for the prompt library**, nothing dated; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ paused"
+  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refused on G6's held-out ICL leg at 64 sequences; Blocked 139 decided (a), 1024, with a real-text I beside; paused 2026-11-07 for the prompt library, nothing dated; **the library closed 2026-11-07, T5′ resumes: I_text built, then the gate re-run**; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ paused"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
