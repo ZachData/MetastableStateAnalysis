@@ -55,3 +55,12 @@ def test_check_tokenizer_refuses_a_start_token():
             return {"input_ids": ([1] if add_special_tokens else []) + ids}
     with pytest.raises(l2.L2Refused):
         l2.check_tokenizer(Tok(), "x")
+
+
+def test_gate_refuses_a_known_answer_from_other_code(tmp_path):
+    import json
+    p = tmp_path / "known.json"
+    p.write_text(json.dumps({"code": "aaaaaaaaaaaa", "pass": True, "max_diff": {}}))
+    rho = np.full((len(t5c.DODECA_STEPS), 8, 5), 0.5) + np.random.default_rng(0).normal(0, 0.01, (len(t5c.DODECA_STEPS), 8, 5))
+    recs = {"dodecahedron-32m": {"rho": rho}}
+    assert l2.gate(recs, p, 8, "bbbbbbbbbbbb")["known_answer"]["pass"] is False

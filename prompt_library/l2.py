@@ -283,9 +283,13 @@ def collect(out: Path, k: int) -> Dict[str, dict]:
     return recs
 
 
-def gate(recs: Dict[str, dict], known_path: Path, k: int) -> dict:
+def gate(recs: Dict[str, dict], known_path: Path, k: int, code: str) -> dict:
+    """``code``: the records' code; the known answer counts only if it ran on the same code
+    (`/challenge-pr` on #322, finding 3)."""
     g = {}
     kn = json.loads(known_path.read_text()) if known_path.exists() else {"pass": False, "missing": str(known_path)}
+    if kn.get("code") != code:
+        kn = {**kn, "pass": False, "refused": f"known.json is from code {kn.get('code')}, the records from {code}"}
     g["known_answer"] = kn
     s = item_spread(recs["dodecahedron-32m"]["rho"][t5c.DODECA_STEPS.index(t5c.SPREAD_STEP)])
     rng = np.random.default_rng(t5c.BOOT_SEED)
@@ -332,8 +336,9 @@ def reading(recs: Dict[str, dict], subsets: List[str], u2_reading: dict) -> dict
 def read(a) -> int:
     out = Path(a.out)
     recs = collect(out, a.k)
-    g = gate(recs, out / "known.json", a.k)
-    res = {"code": json.loads((out / "meta.json").read_text())["code"], "reader": code_sha(),
+    code = json.loads((out / "meta.json").read_text())["code"]
+    g = gate(recs, out / "known.json", a.k, code)
+    res = {"code": code, "reader": code_sha(),
            "library_hash": library.library_hash(SPLIT, a.k), "k": a.k, "gate": g}
     if g["pass"]:
         subsets = [e[1] for e in library.manifest()["splits"][SPLIT]["items"][:a.k]]

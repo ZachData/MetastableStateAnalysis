@@ -19,7 +19,7 @@
   - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–562): not told apart
 - **After Phase 10:**
   - near-duplicate check of the library against the Pile's train split *(free: CPU, an n-gram pass over one train shard)*
-- **Reviewed:** 2026-11-07 · body `97f32ddea9`
+- **Reviewed:** 2026-11-07 · body `e50b20f8a4`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -152,8 +152,14 @@ convention): it reads a shorter prefix of each document than Pythia does.
 
 **Gate: passes.** Known answer (the 7 v1 texts through `l2.py` at 410m 0, 4000 and `-32m` 1, 9536
 against U2's step records; every per-prompt ρ and ρ⁻⁰, the five means, the token counts):
-max 2.3e-15. Synthetic at 1024 items, s 0.0194 (`-32m` 9536's item spread on the library, U2's 7
-gave 0.0072): planted 0.15 "spreads" 92.4 % (≥ 90 %), flat 0.0 % (≤ 5 %).
+max 2.3e-15 (`read` checks that `known.json` ran on the records' code). Synthetic at 1024 items, s
+0.0194 (`-32m` 9536's item spread on the library, U2's 7 gave 0.0072): planted 0.15 "spreads"
+92.4 % (≥ 90 %), flat 0.0 % (≤ 5 %). **This synthetic cannot fail** (`/challenge-pr` on #322,
+finding 1, re-run here): at s 0.019, 0.1, 0.3 and 0.6 it gives planted 0.945, flat 0.0 (200
+draws each), since a planted draw misses only when the first step's noise falls below the
+minimum over the plant's 15-step floor (about 1 in 16). It checks the rule's arithmetic, not
+the labels' robustness to noise; the same holds for T5 U2's 94.5 % (`LESSONS.md` 6, a line in
+`status-T.md` "Corrections received").
 
 **Reading** (Δ = ρ_mid(first) − min, item bootstrap 5th–95th; T5 U2's on the 7 beside):
 
@@ -168,6 +174,7 @@ gave 0.0072): planted 0.15 "spreads" 92.4 % (≥ 90 %), flat 0.0 % (≤ 5 %).
 
 ρ_mid⁻⁰ gives the same label and minimum step on every trajectory (Δ within 0.002). The minimum's
 step moves only on `gpt-2-small` (4300, against 6000 on the 7).
+
 **Beside, no rule.**
 - *Per subset* (the 8 with ≥ 32 items): every subset gives each trajectory's label. Lowest Δ:
   on Dodecahedron DM Mathematics and Github (`-32m` 0.726, 0.728; `-67m` 0.725, 0.732; highest
@@ -187,8 +194,9 @@ step moves only on `gpt-2-small` (4300, against 6000 on the 7).
   step 0.82–0.90 (`-32m`), 0.44–0.48 (410m); at the trough 0.04–0.15 (`-32m`), 0.12–0.18 (410m).
 
 **What it says.** On 1024 random Pile documents, T5 U2's labels all stand, and Δ is a little
-larger on each trajectory. So U2's labels were not an artefact of its 7 prompts. Recorded
-**beside** T5 U2 (D5 (a)): a reading of another population of text, not a correction to it.
+larger on each trajectory. So U2's labels do not turn on which 7 texts it read. Both readings
+use the same 180 checkpoints, so neither tests checkpoint-to-checkpoint noise (finding 1).
+Recorded **beside** T5 U2 (D5 (a)): a reading of another population of text, not a correction to it.
 
 **Caveats.** The bootstrap resamples items only. Its narrow bands (±0.003) say nothing about
 checkpoint-to-checkpoint jitter, and Δ takes a minimum over 18–53 steps. `gpt-2-small`'s 0.174
@@ -201,4 +209,18 @@ training distribution (D1).
 
 **How to re-run.** `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m
 prompt_library.l2 known --out <dir>`, then `run --out <dir>` (≈ 77 min), then `read --out <dir>`
-(≈ 1 min, 18 CPU threads).
+(≈ 1 min, 18 CPU threads; reader `ada133458c71` after #322's fixes, labels unchanged).
+
+**`/challenge-pr` on #322** (accept with changes, at `b552906`; all four taken). (1) The
+synthetic cannot fail at any s (above; `LESSONS.md` 6). (2) Length against text: parked, below.
+(3) `read` refused nothing when `known.json` came from other code; it now requires the records'
+code (`tests/test_l2.py`). (4) `status-T.md`'s line no longer repeats this section's Δs.
+
+**Parked** (for the close-out to home).
+- *Length or text, and Dodecahedron's shorter prefix* (finding 2): both families are causal, so
+  the statistics on a forward pass's first n tokens equal those of the n-token text read alone.
+  Reading each item at the 7's lengths, or Pythia at the character span Dodecahedron's 512
+  tokens cover, needs no extra forward passes in principle, but these records keep only
+  whole-item statistics, so it costs one re-run (≈ 77 min, prefix statistics kept). It could
+  change: whether the library's lower fall is length or text, and how much of a
+  Pythia-against-Dodecahedron difference is prefix length.

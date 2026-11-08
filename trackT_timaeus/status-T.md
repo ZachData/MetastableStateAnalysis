@@ -39,7 +39,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-07 · body `fc459c4123`
+- **Reviewed:** 2026-11-07 · body `750fb979b7`
 <!-- /phase-card -->
 
 ## Units
@@ -1322,8 +1322,8 @@ init 0.335 < 0.75, as U1 found).
 
 **Beside, on the prompt library (2026-11-07; not a correction, `prompt_library/design-L.md` D5 (a)):**
 on 1024 Pile `val` documents under this rule, all six labels stand and Δ is larger on each
-trajectory (`-32m` 0.775, `-67m` 0.762, `gpt-2-small` 0.174); the numbers, per-subset reads and
-caveats: `prompt_library/status-L.md` "U2, T5 U2's labels on the library".
+trajectory; the numbers, per-subset reads and caveats: `prompt_library/status-L.md` "U2, T5 U2's
+labels on the library".
 
 **The shape** (ρ_mid; `reading.json` holds every series, with ρ_1:5, m and n0 at middle states):
 
@@ -1862,3 +1862,5 @@ curve named. Still a search result: unindexed or unpublished work is not ruled o
    if T4 goes per-head. Carried to ROADMAP §7b (T3).
 
 ## Corrections received
+
+- 2026-11-07, prompt library U2 (`/challenge-pr` on #322, finding 1): T5 U2's synthetic gate ("planted 0.15 spreads 94.5 %, flat 0 %" at s 0.0072) cannot fail at any s the data reach: the rate is about 15/16 at every s tried (0.019–0.6 at k 1024), set by the plant's 15-step floor, not by noise. It checks the rule's arithmetic and where the bar sits (its 0.10 / 0.20 rows), not the labels' robustness to noise; no T5 label or number moves — `LESSONS.md` 6 (2026-11-07), `prompt_library/status-L.md` "U2".
