@@ -467,12 +467,15 @@ proposed, not decided.
     closed by Blocked 146 (a)). The order of 2026-11-02 is spent (T, then N). Candidates, item
     13's list less what closed: §8 C4 (the schedule intervention), §7a S4 (the toy induction
     model), B7′'s Blocked 115 (its reserve unit), §7b T5‴, T5″, T3; §7c N2, N3 stay unscheduled.
-    Recommended: **C4, if the December paper is to carry F1's answer**; S4 if the paper goes out
-    with F1 fenced as now. C4's cost is an estimate, not measured: about 2 GPU-days an arm to
-    step 4000 (8.4B tokens at about half of `t5h`'s measured 104.8k tokens/s for a 32m model),
-    and fewer trained arms if its design takes the released `pythia-70m` as the ramp and C6's
-    `pythia-70m-warmup01` as the longer ramp. Its reading rule is registered by the user before
-    the first checkpoint is read.
+    First, the user's alone: does the December paper wait for F1? Recommended: **S4**, unless the
+    paper is to wait for a 70m-only F1 reading. C4 trains `pythia-70m`, so it answers F1 for 70m
+    and reaches 410m (the paper's model) only by inference; C6 already labelled 70m's centred
+    date, and V's gate refused on C6's 70m run. C4's cost is an estimate, not measured: about 2
+    GPU-days an arm to step 4000 (8.4B tokens at about half of `t5h`'s measured 104.8k tokens/s
+    for a 32m model), plus a harness check against the released `pythia-70m`, Pythia's data order
+    (about 17 GB, not on disk) and memory on the 10 GB card. Its reading rule is registered by
+    the user before the first checkpoint is read. (Moved from C4 by `/challenge-pr` on #330,
+    findings 3–4.)
 
 ## 11. What each phase gives the plan
 

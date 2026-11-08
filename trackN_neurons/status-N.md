@@ -4,7 +4,7 @@
 <!-- phase-card -->
 ## Card
 
-- **Question:** Before Track N reads what the MLP's neurons write across training: is it already answered on Pythia, what is a neuron's pole under GeLU, and can a rule tell a populated reading from a random row of the same size?
+- **Question:** What do the MLP's neurons write across training, and does a neuron's job form locally at C2's dated events? Only N1 ran (closed with the track, 2026-11-08): is it already answered on Pythia, what is a neuron's pole under GeLU, and can a rule tell a populated reading from a random row of the same size?
 - **Inputs:** `pythia-410m` step 143000, layer 0, on the prompt library's `val` (k = 1024, `library_hash` `47feaa321fa0…`, 524,274 tokens), float32 on the RTX 3080; code `trackN_neurons/n1_capture.py`; records `trackN_neurons/n1_gate_u1.json` and `trackN_neurons/n1_sizing_u1.json`; outside code read: `skydancerosel/neuron-lineage` `03ad1ab`, 2311.00863's `contextual-ngrams`
 - **Results:**
   - Scan and design: the companion paper is not out; the readings P+, P− and B defined under GeLU, the math checked (8 of 8) — `trackN_neurons/design-N1.md`, `trackN_neurons/status-N.md` "N1 U0, the scan and the design (2026-11-08)"
@@ -23,7 +23,7 @@
 - **After Phase 10:**
   - 23.417 (at 143000) and L3N669 (from step 3000) as natural controls for any neuron statistic (forward pass, 410m and 70m, GPU minutes)
   - neuron-lineage's instrument re-run on `pythia-410m` (not deduped) at C2's 512 and 1000, against a planted gate (forward pass, cached checkpoints, unmeasured)
-- **Reviewed:** 2026-11-08 · body `287638df30`
+- **Reviewed:** 2026-11-08 · body `f4eeb3a7b6`
 <!-- /phase-card -->
 
 What the MLP's neurons do across training (`docs/ROADMAP.md` §7c, the user's, 2026-11-02).
@@ -106,7 +106,7 @@ The script now refuses to run uncommitted and records its file hash (finding 4).
 | Q3′ | 2509.24198 **confirmed** for B | §3: "zeroing only their negative pre-activations immediately before the nonlinearity", a′ = max(a, 0): removes the output where z < 0, largest at z*; §6's negative-negative pairs (two inputs both pushed negative "to different degrees") are the only text near P−; dynamics on the second MLP block of 70M–12B, the ablation on 1.4B |
 | Q4 | confirmed (math check), the populated rule **refused by its gate** | above |
 | Q5 | **partly**: inputs confirmed, counts not run (the gate) | checkpoints on disk: `pythia-410m` 34 revisions cached (0 … 512, 1000 … 143000, C2's 18 among them); text: library `val`, 524,274 tokens; layer 0's gate 4 s, the capture's cost unmeasured |
-| Q6 | open: Blocked 145 | D3 (a)'s dated births are a replication on the steps neuron-lineage already reads (512, 1000), so D3 (c) gains, as design-N1 said it would |
+| Q6 | decided (a), Track N closed (Blocked 146, the user's, 2026-11-08; "Track N on one page") | D3 (a)'s dated births are a replication on the steps neuron-lineage already reads (512, 1000), so D3 (c) gains, as design-N1 said it would |
 
 ## Track N on one page (closed 2026-11-08)
 
@@ -133,13 +133,15 @@ possible, not a timeline.
 only); the essay's companion paper's method (not out).
 
 **For C2, cited context, not results here** (for the user's rewrite of `trackC_writeup/paper/`;
-sources `docs/lit-N.md` §2; neither re-run here): (1) neuron-lineage (a repository, no paper)
-reads neuron "births" on `pythia-410m-deduped`, not `pythia-410m`: high at 128, highest at
-1000–2000, its random basis also having births at 512 and 1000 (the neuron basis 1.5× and 1.25×
-over it). (2) 70m's German context neurons form as a group at step 512, "coinciding with the LR
-warm-up" in its authors' words (2311.00863); L3N669 detects German at F1 0.9 only by step 3000.
-Both sit at C2's dates and inside the warmup, so they bear on F1 (schedule or training) as more
-events on the same dates; neither is a mechanism for the break.
+sources `docs/lit-N.md` §2; neither re-run here): (1) 70m's German context neurons form as a
+group at step 512, "coinciding with the LR warm-up" in its authors' words (2311.00863); L3N669
+detects German at F1 0.9 only by step 3000. A dated event at C2's step inside the warmup, so it
+bears on F1 (schedule or training), and is not a mechanism for the break. (2) neuron-lineage (a
+repository, no paper) reads neuron "births" on `pythia-410m-deduped`, not `pythia-410m`, at every
+step of its five-point grid (L12: 303 at 128, 105 at 256, 203 at 512, 337 at 1000, 345 at 2000,
+past the warmup), its random basis also having births at 512 and 1000 (the neuron basis 1.5× and
+1.25× over it). That dates nothing: the match with C2's steps is the grid's (`/challenge-pr` on
+#330, finding 2). Cite it, if at all, as births through the whole early window.
 
 **Parked:** none (N1 parked none; this close-out raised none). **Units:** N1 U0, U1 and its
 close-out; this close-out, writing only. **Records:** `trackN_neurons/n1_gate_u1.json`,

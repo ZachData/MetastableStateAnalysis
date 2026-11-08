@@ -3091,7 +3091,7 @@ repeats (seed 20261107), held-out FineWeb tail rows (inputs `0aff7466c46f`, `2ec
   LLC was not attempted (T3, T4 never opened). Its candidate rows stay in `docs/ROADMAP.md` §7b,
   unscheduled; Track N (N1) is next.
 
-## 3.81 Track N closed after N1: no neuron read past layer 0; the instrument refused by its gate; the dating already read outside (2026-11-08)
+## 3.81 Track N closed after N1: no neuron read past layer 0; the instrument refused by its gate; births read outside, undated (2026-11-08)
 
 **`trackN_neurons/status-N.md` "N1 on one page" and "Track N on one page" (closed 2026-11-08)**
 hold the numbers; this section says why it is project-wide. Tier 1, description; `pythia-410m`
@@ -3101,11 +3101,12 @@ step 143000, layer 0, on the prompt library's `val` (`library_hash` `47feaa321fa
   (a pole's top-k standardised against random rows of matched norm) refused at its own gate,
   because at layer 0 every random row is a token detector too; N2, which would have to solve
   that, and N3 stay in `docs/ROADMAP.md` §7c, unscheduled (Blocked 146 (a), the user's).
-- What N3 would have dated is read outside on a neighbour model (neuron-lineage, on
-  `pythia-410m-deduped`): births at C2's 512 and 1000, with its random basis having births there
-  too. With 70m's German neurons forming at 512 "with the LR warm-up" (2311.00863), these are
-  cited context for C2's rewrite, on F1 (more events on the same dates, inside the warmup), not
-  results here.
+- Neuron births are read outside on a neighbour model (neuron-lineage, on
+  `pythia-410m-deduped`), but at every step of a five-point grid (128–2000), with its random
+  basis having births at 512 and 1000 too, so they date nothing; their match with C2's steps is
+  the grid's. The one dated neuron event at a C2 step is 70m's German neurons forming as a group
+  at 512, "coinciding with the LR warm-up" (2311.00863): cited context for C2's rewrite on F1,
+  not a result here.
 
 ---
 
