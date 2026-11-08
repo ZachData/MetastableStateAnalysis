@@ -16,11 +16,11 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–562), and how much of a Pythia-against-Dodecahedron difference on it is prefix length: not told apart; carried to `docs/ROADMAP.md` §5 "Library L′" — `prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"
+  - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–512 as Pythia read them in T5 U2, one capped from 562), and how much of a Pythia-against-Dodecahedron difference on it is prefix length: not told apart; carried to `docs/ROADMAP.md` §5 "Library L′" — `prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"
 - **After Phase 10:**
   - L′ (a): T5 U2's re-read with prefix statistics kept, length against text *(forward pass: ≈ 77 min on the 3080, 180 checkpoints)*
-  - L′ (b): near-duplicate check of `val` and `test` against the Pile's train split, before a registry entry names `test` *(free: CPU, an n-gram pass over one train shard, plus its download)*
-- **Reviewed:** 2026-11-07 · body `625f645f42`
+  - L′ (b): near-duplicate check of `val` and `test` against the Pile's train split, before a registry entry names `test`; clearing an item needs all 30 train shards (335 GB compressed, streamed one at a time), one shard only estimates a rate *(free: CPU hours, no forward pass)*
+- **Reviewed:** 2026-11-07 · body `2b97be00e8`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -65,7 +65,7 @@ at close.
 **Not established:**
 
 - Why the library sits below the 7 in the fall (up to 0.13): kind of text, or length (511–512
-  tokens against 242–562). Nor how much of a Pythia-against-Dodecahedron difference on the library
+  tokens against 242–512 as Pythia read the 7 in T5 U2). Nor how much of a Pythia-against-Dodecahedron difference on the library
   is prefix length. Carried (Parked 1).
 - That the library is held out from any model but Pythia (FineWeb is a crawl, `gpt-2-small`'s data
   are unknown; D1), or from Pythia at the level of near-duplicates: val and test were not checked
@@ -77,8 +77,11 @@ at close.
 **What it gives the plan.** New designs read the library by default (T5′ excepted, ROADMAP §5): a
 reader names its k and records `library_hash(split, k)`, and a reader moved to it reports its
 7-prompt value beside, once (`design-L.md` "Fixed now"; readers listed in
-`docs/battery_consumers.md` "The prompt library (not the battery)"). `test` stays sealed until a
-registry entry names it, which is the user's. T5′ resumes on the inputs `design-T5p.md` fixes.
+`docs/battery_consumers.md` "The prompt library (not the battery)"); a reader that compares model
+families on it keeps per-item statistics at named prefix lengths, so length can be told from text
+(same file; added at close after `/challenge-pr` on #323, finding 3). `test` stays sealed until a
+registry entry names it, which is the user's, and that entry first runs ROADMAP §5 "Library L′"
+(b) over the whole train split (#323, findings 1–2). T5′ resumes on the inputs `design-T5p.md` fixes.
 
 **Units at close:**
 
@@ -98,9 +101,11 @@ Blocked 140 and 141 are decided; none is open for the library.
    keeping prefix statistics (each item at the 7's lengths, and Pythia at the character span
    Dodecahedron's 512 tokens cover); unscheduled. Could change: whether the library's lower fall
    is text, and how much of a family difference read on the library is prefix length. Cheaper
-   path: a later library reader that compares families keeps prefix statistics itself.
+   path, now a reader convention (`docs/battery_consumers.md`): a later library reader that
+   compares families keeps prefix statistics itself.
 2. *Near-duplicates against the Pile's train split* (card, U1's caveats) → **carried to the same
-   row, (b)**, as a step before a registry entry names `test`. Could change: whether `test` is
+   row, (b)**, as a step before a registry entry names `test`: all 30 train shards (335 GB
+   compressed, streamed), since one shard estimates a rate and clears no item. Could change: whether `test` is
    held out from Pythia at the near-duplicate level.
 3. *The start-token question* (U1's Parked) → done in U2 (neither tokenizer adds one).
 
@@ -283,7 +288,7 @@ sits 0.024 above the bar; U2 already noted that its step-to-step jitter is about
 Dodecahedron reads shorter prefixes than Pythia (above), so a Pythia-against-Dodecahedron
 difference mixes model with text length; the 7 had the same mismatch (32m read 484 tokens of
 `hdbscan_code` against Pythia's 242). Why the library sits below the 7 in the fall is not told
-apart: kind of text, or length (511–512 tokens against 242–562). Pile text is off Dodecahedron's
+apart: kind of text, or length (511–512 tokens against 242–512 as Pythia read the 7). Pile text is off Dodecahedron's
 training distribution (D1).
 
 **How to re-run.** `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m
