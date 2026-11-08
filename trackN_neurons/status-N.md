@@ -49,18 +49,28 @@ trackN_neurons.n1_capture gate` (conda `mets`).
 | arm | result | numbers |
 |---|---|---|
 | checks | pass | the hook reads LN(embedding) at layer 0 exactly (max diff 0.0); a token's input is its id's alone (0.0) |
-| planted P+ | **fail**, 1 of 24 cells | `' ('` at k = 10: 4.60 vs threshold 4.70 (precision 1.0); all other cells pass |
-| planted P− | pass, at the edge | same token, k = 10: 4.60 vs 4.63 |
+| planted P+ | **fail**, 1 of 24 cells | `' ('` at k = 10: 4.64 vs threshold 4.70 (precision 1.0); all other cells pass |
+| planted P− | pass, at the edge; **not a separate arm** | same token, k = 10: 4.64 vs 4.63. P−'s plant is P+'s negated, so its statistic is P+'s exactly; only the threshold differs (a second draw of the same null) |
 | planted P± margin | | stat / threshold 0.99–1.73 for a perfect token indicator |
 | planted B | pass, **could not fail** | planted stat 0 (the token sits at z*), the maximum; null thresholds −20 to −29: Haar rows of median norm never come within ~20 MADs of z* at layer 0 |
-| held-out (512 Haar rows) | pass | populated rate P+ 4.3–5.1 %, P− 2.5–4.7 %, B 5.7–7.0 % (bar ≤ 10 %) |
+| held-out (512 Haar rows) | pass, **~5 % by construction** | populated rate P+ 4.3–5.1 %, P− 2.5–4.7 %, B 5.7–7.0 % (bar ≤ 10 %): the same distribution as the null, so a check of the code, not of power |
 
 **Read:** the rule is not powered where it was gated: a row that *is* a token detector clears the
 Haar null by 1.0–1.7×, because Haar projections of a token-structured stream already have heavy
 top tails (P± thresholds 4.3–4.7 MADs). B's null is degenerate: a random row of the neuron's norm
 barely moves z, so B "populated" mostly says the neuron reaches z* at all. This is design-N1's
 "Worth challenging" item 1 (random rows ignore the stream's large directions), measured. By the
-frozen rule a failed arm stops the counts: **Q5 not run**, nothing captured at steps 0 or 143000.
+frozen rule a failed arm stops the counts: **Q5's counts not run**, nothing captured at steps 0 or 143000.
+
+**After `/challenge-pr` on #328** (accept with changes, findings 1–5 taken; sizing post hoc, for
+Blocked 145, not a gate: `python -m trackN_neurons.n1_capture sizing`, record
+`trackN_neurons/n1_sizing_u1.json`, code `c0ea485`): the k = 10 Haar threshold over seeds 0, 2, 3, 4
+is 4.70, 4.55, 4.60, 4.57, so `' ('` (4.64) fails under seed 0 only: **the fail is the null's
+sampling noise, and the gate had one live arm (P+) sitting at that noise**. A covariance null (rows
+~ N(0, Cov X), top eigenvalue 25 % of the trace) puts the threshold at 8.51 at every k, above all
+eight plants (4.64–7.47): at layer 0 every row's top k is one token, so **the statistic, not the
+null, cannot separate a detector from a random row**. The covariance repair is dropped.
+The script now refuses to run uncommitted and records its file hash (finding 4).
 
 **Grades (design-N1's scale), at U1:**
 
@@ -71,7 +81,7 @@ frozen rule a failed arm stops the counts: **Q5 not run**, nothing captured at s
 | Q3 | 23.417 **confirmed** (2406.16254 text, §4, App. G); L3N669 **confirmed: "checkpoint 10" is step 512** | 2311.00863's code loads `checkpoint_index` through TransformerLens, whose Pythia list is 0, 1, 2 … 512, 1000 … 143000; its data has 154 indices (`contextual-ngrams` `data/checkpoint_ablation_data.csv`). Ablation loss rise: step 512 0.001, 1000 0.002, 10k 0.013, 20k 0.05, 90k 0.33 |
 | Q3′ | 2509.24198 **confirmed** for B | §3: "zeroing only their negative pre-activations immediately before the nonlinearity", a′ = max(a, 0): removes the output where z < 0, largest at z*; §6's negative-negative pairs (two inputs both pushed negative "to different degrees") are the only text near P−; dynamics on the second MLP block of 70M–12B, the ablation on 1.4B |
 | Q4 | confirmed (math check), the populated rule **refused by its gate** | above |
-| Q5 | **not run** (the gate) | wall time: layer 0's gate 4 s; the capture's cost unmeasured |
+| Q5 | **partly**: inputs confirmed, counts not run (the gate) | checkpoints on disk: `pythia-410m` 34 revisions cached (0 … 512, 1000 … 143000, C2's 18 among them); text: library `val`, 524,274 tokens; layer 0's gate 4 s, the capture's cost unmeasured |
 | Q6 | open: Blocked 145 | D3 (a)'s dated births are a replication on the steps neuron-lineage already reads (512, 1000), so D3 (c) gains, as design-N1 said it would |
 
 ## Corrections received

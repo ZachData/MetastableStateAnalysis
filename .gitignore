@@ -35,6 +35,8 @@
 !prompt_library/library_v1.json
 # N1 U1's gate record (trackN_neurons/n1_capture.py gate, 13 KB): the result STATE and status-N cite.
 !trackN_neurons/n1_gate_u1.json
+# Its post hoc sizing for Blocked 145 (n1_capture.py sizing, 3 KB).
+!trackN_neurons/n1_sizing_u1.json
 # C2's numbers table and figures (trackC_writeup/numbers.py): rendered from records, tracked so the draft renders on any checkout.
 !trackC_writeup/numbers.json
 !trackC_writeup/fig/*.svg
