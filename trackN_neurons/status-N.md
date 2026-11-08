@@ -1,8 +1,31 @@
 <!-- trackN_neurons/status-N.md -->
 # Track N — STATUS
 
+<!-- phase-card -->
+## Card
+
+- **Question:** Before Track N reads what the MLP's neurons write across training: is it already answered on Pythia, what is a neuron's pole under GeLU, and can a rule tell a populated reading from a random row of the same size?
+- **Inputs:** `pythia-410m` step 143000, layer 0, on the prompt library's `val` (k = 1024, `library_hash` `47feaa321fa0…`, 524,274 tokens), float32 on the RTX 3080; code `trackN_neurons/n1_capture.py`; records `trackN_neurons/n1_gate_u1.json` and `trackN_neurons/n1_sizing_u1.json`; outside code read: `skydancerosel/neuron-lineage` `03ad1ab`, 2311.00863's `contextual-ngrams`
+- **Results:**
+  - Scan and design: the companion paper is not out; the readings P+, P− and B defined under GeLU, the math checked (8 of 8) — `trackN_neurons/design-N1.md`, `trackN_neurons/status-N.md` "N1 U0, the scan and the design (2026-11-08)"
+  - The populated rule refused by its own gate at layer 0: a perfect token detector clears the Haar null by only 1.0–1.7×, a covariance null sits above every plant, and B's arm could not fail, so no counts — `trackN_neurons/status-N.md` "N1 U1, the reads and the gate (2026-11-08): the gate failed, no counts"
+  - neuron-lineage already reads births on `pythia-410m-deduped` at 512 and 1000, with its random basis having births there too (the only two random points recorded); 70m's German neurons form as a group at step 512 ("checkpoint 10"), L3N669 detects German at F1 0.9 by step 3000, and 410m's 23.417 is confirmed as a token-frequency neuron — `trackN_neurons/status-N.md` "N1 U1, the reads and the gate (2026-11-08): the gate failed, no counts"
+  - Closed at its budget (Blocked 145 (a), the user's), Q6 put to the user — `trackN_neurons/status-N.md` "N1 on one page (closed 2026-11-08)"
+- **Superseded / wrong:** none
+- **Registry:** none, because N1 is tier 1 description and registers nothing
+- **Depends on:** L@903ea500e7
+- **Feeds:** none
+- **Open threads:**
+  - A populated statistic that separates planted rows from random rows of matched norm, gated at a site where a random row is not already a token detector (at layer 0 every row is one), and a B statistic that can fail (carried to the ROADMAP's Track N row N2, no repair prescribed) — `docs/ROADMAP.md`
+  - Q6: what follows N1 (Blocked 146)
+  - Q5's counts and the cost of one step's capture; whether neuron births are basis-specific on 410m
+- **After Phase 10:**
+  - 23.417 (at 143000) and L3N669 (from step 3000) as natural controls for any neuron statistic (forward pass, 410m and 70m, GPU minutes)
+  - neuron-lineage's instrument re-run on `pythia-410m` (not deduped) at C2's 512 and 1000, against a planted gate (forward pass, cached checkpoints, unmeasured)
+- **Reviewed:** 2026-11-08 · body `04dd605ea5`
+<!-- /phase-card -->
+
 What the MLP's neurons do across training (`docs/ROADMAP.md` §7c, the user's, 2026-11-02).
-No card yet: the first result lands at N1 U1.
 
 ## N1 U0, the scan and the design (2026-11-08)
 
@@ -83,6 +106,57 @@ The script now refuses to run uncommitted and records its file hash (finding 4).
 | Q4 | confirmed (math check), the populated rule **refused by its gate** | above |
 | Q5 | **partly**: inputs confirmed, counts not run (the gate) | checkpoints on disk: `pythia-410m` 34 revisions cached (0 … 512, 1000 … 143000, C2's 18 among them); text: library `val`, 524,274 tokens; layer 0's gate 4 s, the capture's cost unmeasured |
 | Q6 | open: Blocked 145 | D3 (a)'s dated births are a replication on the steps neuron-lineage already reads (512, 1000), so D3 (c) gains, as design-N1 said it would |
+
+## N1 on one page (closed 2026-11-08)
+
+**Asked** (`design-N1.md`; ROADMAP §7c N1): Q1–Q6, the scan, the inventory and the unit that N2 and
+N3 would count. **Closed at its budget** (Blocked 145 (a), the user's, 2026-11-08): 2 units of 2
+spent, Q1–Q4 graded with sources, Q5 partly (the counts stopped by the frozen rule), Q6 put to the
+user (Blocked 146). Tier 1, description, nothing registered. Writing only at close.
+
+**Established (tier 1):**
+
+1. **What a pole is under GeLU**: three readings, P+ and P− on z and the write band B at
+   z* = −0.75179, with the closed-form facts checked (`tools/math_checks/n1_gelu_pole.py`, 8 of 8).
+   Ranking by h reverses z below z*, so "the negative pole" names two different readings.
+2. **The populated rule fails its own gate** at layer 0 of `pythia-410m` 143000. A perfect token
+   detector clears the Haar null by only 1.0–1.7×. The one fail (`' ('`, k = 10) is that null's
+   seed noise. A covariance null sits above all eight plants. B's arm could not fail. At layer 0
+   every row's top k is one token, so **the statistic cannot tell a detector from a random row
+   there** ("N1 U1", the gate and the sizing).
+3. **The dating is already done outside, on a neighbour model**: neuron-lineage reads
+   `pythia-410m-deduped` at 128, 256, 512, 1000, 2000 … 143000 (P+ by h only). At L12 births
+   are high at 128 (303), dip at 256 (105), and are highest at 1000–2000 (337, 345). **Its random
+   basis has births at 512 and 1000 too** (133, 269; the only two random points recorded here). At
+   those steps the neuron basis exceeds the random one by 1.5× and 1.25×. That excess is the one
+   neuron-specific signal in the numbers read. Neither basis is shown to have a date of its own (Q2).
+4. **Two natural controls exist on Pythia**, each with a primary source: 410m's 23.417 (token
+   frequency, read at 143000) and 70m's L3N669 (German). 70m's German neurons form as a group at
+   "checkpoint 10", which is **step 512**. L3N669 itself detects German at F1 0.9 only by
+   "checkpoint 13", which is **step 3000** (`docs/lit-N.md` §2). Its ablation cost is 0.001 at 512
+   and 0.33 by 90000 (Q3). So it is a control from 3000 on, not at C2's 512.
+
+**Not established:**
+
+- **Q5's counts**: how many readings are populated at 0 or 143000, on any layer, and the cost of
+  one step's capture. Unknown, by the frozen rule.
+- **Whether any rank-and-threshold statistic works past layer 0.** The gate stood at layer 0
+  because a planted detector is defined there, and that is also where every random row is a
+  token detector. Deeper layers were never read.
+- **Whether neuron births are specific to the neuron basis** on 410m beyond a count excess:
+  only two random-basis points were read, and neither basis was shown to have a date of its own.
+- **The companion paper's method** (not out, 2026-11-08).
+
+**Carried:** "a populated statistic that separates planted rows from random rows of matched norm,
+gated at a site where a random row is not already a token detector, and a B statistic that can
+fail" goes to ROADMAP §7c N2 as an open problem, with no repair prescribed. At layer 0 the problem
+may have no solution: every row there is a token detector, and the covariance null was sized and
+fails every plant. (`/challenge-pr` on #329, finding 1, reworded it.) **Parked:** none were raised. **Units:** U0 (scan, design, math
+check), U1 (reads, gate, sizing after `/challenge-pr` on #328), and this close-out, writing only.
+
+**Q6, put to the user (Blocked 146; options in `STATE.md`):** what follows N1. The options are
+close Track N, an N2 that builds the instrument with the two natural controls, or N3 on
+neuron-lineage's instrument, gated first.
 
 ## Corrections received
 

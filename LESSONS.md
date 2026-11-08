@@ -2589,6 +2589,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   turning `trim_offsets` off (an empty whitespace span) was wrong on a second test; corrected
   before commit. Rule: a done-when that a rule's output must meet is tried on a handful of real
   inputs before the design freezes.
+- 2026-11-08, N1 close-out (#329, `/challenge-pr` findings 1–3): the one page copied three
+  phrasings from Blocked 145's option text instead of from the records. It placed the carried
+  problem "at layer 0", where U1's own checks show every random row is a token detector. It called
+  L3N669 a control "at step 512", but 512 is when its German *group* forms; L3N669 reaches F1 0.9
+  only at step 3000 (`docs/lit-N.md` §2). And it said the random basis "peaks at the same steps"
+  from two recorded points, while 128's births (303) exceed 512's (203). The recommendation to
+  close Track N leaned on the third. All three fixed before merge; no run spent. Rule: a close-out's
+  findings are re-read from the status tables and the scan, not from the Blocked item's wording.
 
 ## 12. Deleted, then needed
 
