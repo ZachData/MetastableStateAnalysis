@@ -7,6 +7,7 @@
 - **Question:** How many real, held-out prompts does a token-cloud reading (ρ_mid on Tracks A and T, read today on 7 hand-picked v1 prompts) need, drawn from which source by which rule fixed before any model reads them, and pinned how, so that later readings name their exact input?
 - **Inputs:** U2 read T5 U2's six trajectories (`dodecahedron-32m`, `-67m` at 53 steps, `pythia-70m`, `-160m`, `-410m` at 18, `timaeus/gpt-2-small` at 20; 180 checkpoints) on `val` k = 1024 (`library_hash` `47feaa321fa0`), code `4d7962561795`, records `data/library/u2/2026-11-07/`. U1 drew the library from `monology/pile-uncopyrighted` at `3be90335b66f` (`val`, `test` by their LFS sha256) with `EleutherAI/pythia-410m`'s tokenizer at `9879c9b5f8be`; no model read it. U0 read T5 U2's records (`data/trackT/t5u2/2026-10-30/`, the 7 v1 prompts, code `3d425b32db90`) through `prompt_library/sizing_u0.py`, and the Hugging Face API listing of `monology/pile-uncopyrighted` at `3be90335b66f`
 - **Results:**
+  - Closed 2026-11-07 at its exit, in budget (3 units + close-out; writing only at close): a pinned library of 1024 real held-out Pile documents with a sealed 1024-item test split exists and refuses on drift, and T5 U2's six labels stand on it; why it sits below the 7 v1 prompts in the fall (text or length) and a near-duplicate check against the Pile's train split are carried to the roadmap's §5 row "Library L′" — `prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"
   - Re-read 2026-11-07 (U2; Blocked 141 (a), the user's): on 1024 Pile `val` documents of ≥ 512 tokens T5 U2's six labels all stand under its frozen rule (the three scored "spreads", Δ 0.775, 0.762, 0.174; 70m "does not spread", 160m and 410m "spreads"); Δ is larger than on the 7 v1 prompts on every trajectory (by 0.006–0.043), since the library's troughs are lower; every subset with ≥ 32 items gives each trajectory's label; recorded beside T5 U2, not as a correction to it — `prompt_library/status-L.md` "U2, T5 U2's labels on the library (2026-11-07)"
   - Built 2026-11-07 (U1; D1–D5 decided all (a), Blocked 140): 1024 `val` items and a sealed 1024-item `test`, each a single Pile document cut at its 512th GPT-NeoX token, pinned by `prompt_library/library_v1.json` and loadable only through `core/library.py`; a second build reproduced the manifest and texts byte for byte; no subset outside its 99 % band; 42 % of rows meet the length rule (PubMed Abstracts 3 %); 1010 `val` and 1008 `test` items re-tokenize alone to exactly the document's first 512 ids, the other 30 to 511 or 513 (Blocked 141) — `prompt_library/status-L.md` "U1, the build (2026-11-07)"
   - Opened 2026-11-07 by the user's order in the roadmap's decisions, item 14 (T5′ paused for it): on T5 U2's records the 7 prompts are thin for a level in the transitions but enough in count for T5's scored Δ, and Δ is set mostly by which kind of text (French narrative lowest on Pythia, code on Dodecahedron), so the library's case is coverage of real text, not count; a design proposed with a sealed confirmation split, 3 units + close-out, revised after `/challenge-pr` on #320; D1–D5 are Blocked 140 — `prompt_library/status-L.md` "U0, the design (2026-11-07)"
@@ -15,16 +16,98 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - the close-out (the budget's 3 units are spent): the one page, Parked homed (`prompt_library/design-L.md` "The units, exit and budget")
-  - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–562): not told apart
+  - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–512 as Pythia read them in T5 U2, one capped from 562), and how much of a Pythia-against-Dodecahedron difference on it is prefix length: not told apart; carried to `docs/ROADMAP.md` §5 "Library L′" — `prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"
 - **After Phase 10:**
-  - near-duplicate check of the library against the Pile's train split *(free: CPU, an n-gram pass over one train shard)*
-- **Reviewed:** 2026-11-07 · body `6fbcc45631`
+  - L′ (a): T5 U2's re-read with prefix statistics kept, length against text *(forward pass: ≈ 77 min on the 3080, 180 checkpoints)*
+  - L′ (b): near-duplicate check of `val` and `test` against the Pile's train split, before a registry entry names `test`; clearing an item needs all 30 train shards (335 GB compressed, streamed one at a time), one shard only estimates a rate *(free: CPU hours, no forward pass)*
+- **Reviewed:** 2026-11-07 · body `2b97be00e8`
 <!-- /phase-card -->
 
 ## Corrections received
 
 None.
+
+## The library on one page (closed 2026-11-07)
+
+**Asked** (`design-L.md`; `docs/ROADMAP.md` §5 "Prompt library" and §10.14, the user's, with T5′
+paused for it): every ρ_mid on Tracks A and T read the 7 hand-picked v1 prompts; build a shared set
+of real held-out prompts, drawn by a rule fixed before any model reads them and pinned so that a
+reading names its exact input, and (D5 (a)) re-read T5 U2's labels on it. **Closed at its exit, in
+budget** (U0, U1, U2 + this close-out). Infrastructure, tier 1, nothing registered. Writing only
+at close.
+
+**The exit, as read** (numbers in the units' sections; inputs on the card):
+
+| part of the exit | as read | where |
+|---|---|---|
+| built and pinned | 1024 `val` items and 1024 sealed `test` items, each one Pile document cut at its 512th GPT-NeoX token; the manifest in git; a second build byte-identical; texts rebuilt from the manifest alone | "U1, the build (2026-11-07)" |
+| loadable, refusing | `core/library.py` re-hashes every item and refuses on a mismatch, a missing, empty or short item; `test` refused to every caller but the builder (tested) | same |
+| T5 U2's labels read on it | **all six stand** under the frozen rule: the three scored spread (`-32m`, `-67m`, `gpt-2-small`); beside, 70m does not, 160m and 410m spread | "U2, T5 U2's labels on the library (2026-11-07)" |
+
+**Established (tier 1):**
+
+1. **A pinned library of real held-out text exists, drawn with no model in the loop.** Its
+   subsets' shares match the eligible documents' (none of 17 outside its 99 % band). It is a
+   sample of *long* documents, not of the Pile: 42 % of rows meet the length rule, from 3 %
+   (PubMed Abstracts) to 100 % (DM Mathematics, Gutenberg).
+2. **T5 U2's labels hold on this population of text.** Δ is larger than on the 7 on every
+   trajectory (the library's troughs are lower); every subset with ≥ 32 items gives each label,
+   and so does the library without Pile-CC. Recorded beside T5 U2, not as a correction (D5 (a)).
+3. **The 7's text dependence recurs, in part.** Code and mathematics spread least on Dodecahedron,
+   as the 7's code prompt did; DM Mathematics least on Pythia and `gpt-2-small`. No subset stands
+   in for the 7's French narrative (EuroParl drew 0 items).
+4. **The reading conventions are checked**: neither tokenizer adds a start or end token;
+   Dodecahedron's BPE cuts every item at 512 of its own tokens, a shorter prefix than Pythia's.
+5. **T5 U2's synthetic gate (and U2's here) cannot fail at any s**: it checks the rule's
+   arithmetic, not the labels' robustness (`LESSONS.md` 6; a line in `status-T.md` "Corrections
+   received"; no T5 label moves).
+
+**Not established:**
+
+- Why the library sits below the 7 in the fall (up to 0.13): kind of text, or length (511–512
+  tokens against 242–512 as Pythia read the 7 in T5 U2). Nor how much of a Pythia-against-Dodecahedron difference on the library
+  is prefix length. Carried (Parked 1).
+- That the library is held out from any model but Pythia (FineWeb is a crawl, `gpt-2-small`'s data
+  are unknown; D1), or from Pythia at the level of near-duplicates: val and test were not checked
+  against the Pile's train split. Carried (Parked 2).
+- Checkpoint-to-checkpoint noise: both readings use the same 180 checkpoints and the bootstrap
+  resamples items only; `gpt-2-small`'s 0.174 sits 0.024 above the bar, about its step jitter.
+- Anything about short documents (58 % of rows excluded by D2), or about lengths other than 512.
+
+**What it gives the plan.** New designs read the library by default (T5′ excepted, ROADMAP §5): a
+reader names its k and records `library_hash(split, k)`, and a reader moved to it reports its
+7-prompt value beside, once (`design-L.md` "Fixed now"; readers listed in
+`docs/battery_consumers.md` "The prompt library (not the battery)"); a reader that compares model
+families on it keeps per-item statistics at named prefix lengths, so length can be told from text
+(same file; added at close after `/challenge-pr` on #323, finding 3). `test` stays sealed until a
+registry entry names it, which is the user's, and that entry first runs ROADMAP §5 "Library L′"
+(b) over the whole train split (#323, findings 1–2). T5′ resumes on the inputs `design-T5p.md` fixes.
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| U0, design and scan | #320 | proposed; D1–D5 decided all (a), Blocked 140, the user's |
+| U1, the build | #321 | built and sealed; the 30 items not 512 alone kept, Blocked 141 (a), the user's |
+| U2, T5 U2's labels re-read | #322 | all six stand; the synthetic gate shown unable to fail |
+| close-out | this PR | writing only |
+
+Blocked 140 and 141 are decided; none is open for the library.
+
+**Parked at close** (every item carried or done):
+
+1. *Length or text, and Dodecahedron's shorter prefix* (U2, `/challenge-pr` on #322, finding 2) →
+   **carried to `docs/ROADMAP.md` §5 "Library L′", (a)**: one ≈ 77 min re-run of `l2.py run`
+   keeping prefix statistics (each item at the 7's lengths, and Pythia at the character span
+   Dodecahedron's 512 tokens cover); unscheduled. Could change: whether the library's lower fall
+   is text, and how much of a family difference read on the library is prefix length. Cheaper
+   path, now a reader convention (`docs/battery_consumers.md`): a later library reader that
+   compares families keeps prefix statistics itself.
+2. *Near-duplicates against the Pile's train split* (card, U1's caveats) → **carried to the same
+   row, (b)**, as a step before a registry entry names `test`: all 30 train shards (335 GB
+   compressed, streamed), since one shard estimates a rate and clears no item. Could change: whether `test` is
+   held out from Pythia at the near-duplicate level.
+3. *The start-token question* (U1's Parked) → done in U2 (neither tokenizer adds one).
 
 ## U0, the design (2026-11-07)
 
@@ -205,7 +288,7 @@ sits 0.024 above the bar; U2 already noted that its step-to-step jitter is about
 Dodecahedron reads shorter prefixes than Pythia (above), so a Pythia-against-Dodecahedron
 difference mixes model with text length; the 7 had the same mismatch (32m read 484 tokens of
 `hdbscan_code` against Pythia's 242). Why the library sits below the 7 in the fall is not told
-apart: kind of text, or length (511–512 tokens against 242–562). Pile text is off Dodecahedron's
+apart: kind of text, or length (511–512 tokens against 242–512 as Pythia read the 7). Pile text is off Dodecahedron's
 training distribution (D1).
 
 **How to re-run.** `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m
@@ -219,7 +302,8 @@ synthetic cannot fail at any s (above; `LESSONS.md` 6). (2) Length against text:
 (3) `read` refused nothing when `known.json` came from other code; it now requires the records'
 code (`tests/test_l2.py`). (4) `status-T.md`'s line no longer repeats this section's Δs.
 
-**Parked** (for the close-out to home).
+**Parked** (homed at the close-out: carried to `docs/ROADMAP.md` §5 "Library L′" (a); "The library
+on one page (closed 2026-11-07)").
 - *Length or text, and Dodecahedron's shorter prefix* (finding 2): both families are causal, so
   the statistics on a forward pass's first n tokens equal those of the n-token text read alone.
   Reading each item at the 7's lengths, or Pythia at the character span Dodecahedron's 512

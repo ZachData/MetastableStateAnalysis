@@ -399,6 +399,13 @@ had been sent to unit 3b, which never picked it up. Found by `/challenge-pr` on 
 close-out sweeps for every deferral form (`grep -n "close-out\|carried to\|Parked"` over the
 phase's files) and checks that each item sent to a unit was closed there.
 
+2026-11-07: **`docs/battery_consumers.md` said "No reader takes the library yet" after U2 had read
+it** (the prompt library's close-out). U1 wrote the line as a forecast ("the first is T5 U2's
+re-read"); U2 built the reader and updated its status, STATE and the roadmap, not the consumers
+table that design-L.md's "Fixed now" names as the reader list. Found by the close-out's read of
+the file. Rule: a unit that adds a reader of a shared input adds its row to that input's consumer
+table in the same commit; a forecast line ("no X yet; the first is Y") is a line Y must edit.
+
 2026-10-30: **the startup hook printed a `STATE.md` nine days and ten merges old.** The hook reads
 the main tree's file, and the main tree sat at `f22cf52` (2026-10-20) while `origin/main` was at
 `0c3a0d4` (2026-10-29): work happens in `../Mets-work`, the user merges on GitHub, and nothing

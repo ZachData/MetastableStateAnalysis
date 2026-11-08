@@ -62,10 +62,15 @@ against the manifest in git and refuses on a mismatch.
 |---|---|---|---|---|---|
 | `core/library.py` `load(split, k)` | every library reader | the first k items of `val`, in the seeded order | `library_hash(split, k)` | yes: sha256 and length per item; missing, empty, short | ✅ U1 |
 | `prompt_library/build_l1.py` | the library itself | draws `val` and `test` | writes the manifest | n/a (producer); reads `val` back through `load`; `--from-manifest` rebuilds texts from the manifest alone | ✅ U1 |
-| `test`, the sealed split | nothing until a registry entry names it | 1024 items, hashed in the manifest; texts not on disk | — | `core/holdout.py` `refuse_sealed_split`; only the builder passes a non-`False` `allow_sealed` (`tests/test_library.py`) | ✅ sealed |
+| `test`, the sealed split | nothing until a registry entry names it, and that entry first runs the near-duplicate check over the Pile's whole train split (`docs/ROADMAP.md` §5 "Library L′" (b)) | 1024 items, hashed in the manifest; texts not on disk | — | `core/holdout.py` `refuse_sealed_split`; only the builder passes a non-`False` `allow_sealed` (`tests/test_library.py`) | ✅ sealed |
+| `prompt_library/l2.py` | T5 U2's labels re-read (`prompt_library/status-L.md` "U2") | `val`, k = 1024 | `library_hash("val", 1024)` in every record's meta | yes: through `load`; `read` refuses records on another library hash, k or code, and a `known.json` from other code | ✅ U2 |
 
-No reader takes the library yet. The first is T5 U2's re-read (design-L.md U2); a reader moved to
-it records its 7-prompt value beside, once (design-L.md "Fixed now").
+The one reader so far is `l2.py` (corrected at the library's close-out, 2026-11-07: this line still
+said "no reader takes the library yet" after U2). A reader moved to the library records its
+7-prompt value beside, once (design-L.md "Fixed now"). **A reader that compares model families on
+the library keeps per-item statistics at named prefix lengths** (at least the 7's, and the
+character span the other family's 512 tokens cover), so length can be told from text without
+a re-run (the library's close-out, `/challenge-pr` on #323, finding 3; ROADMAP §5 "Library L′" (a)).
 
 **Parked** (discoveries, not followed):
 - `p1_io._load_tokens` and `core/artifacts.py`'s `tokens` spec say
