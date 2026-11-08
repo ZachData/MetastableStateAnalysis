@@ -397,8 +397,12 @@ def sizing(a):
         sv, m_, s_ = null_sorted(X, haar(X.shape[1], N_NULL, seed, device))
         rec["haar_thr_P+_by_seed"][seed] = null_pm(sv, m_, s_)[0].tolist()
         del sv
-    Xc = X - X.mean(0)
-    C = (Xc.T.double() @ Xc.double()) / (X.shape[0] - 1)
+    mu = X.double().mean(0)
+    C = torch.zeros(X.shape[1], X.shape[1], dtype=torch.float64, device=device)
+    for c in range(0, X.shape[0], 65536):
+        xc = X[c:c + 65536].double() - mu
+        C += xc.T @ xc
+    C /= X.shape[0] - 1
     ev, V = torch.linalg.eigh(C)
     gen = torch.Generator().manual_seed(7)
     Gs = torch.randn(N_NULL, X.shape[1], generator=gen, dtype=torch.float64).to(device)
