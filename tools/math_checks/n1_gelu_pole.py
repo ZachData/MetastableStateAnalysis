@@ -17,12 +17,13 @@ G4  Ranking by h does not rank the negative side by z: for z1 < z2 <= z*, h(z1) 
 G5  SwiGLU for comparison: SiLU(g) = g sigma(g) has its minimum -0.27846 at g = -1.27846; the
     product SiLU(g) v is unbounded in both signs, and g < 0, v < 0 gives h > 0 with
     h <= 0.27846 |v| (the essay's "double negative").
-G6  The tanh approximation (which GeLU Pythia trained with is design-N1.md Q4, not read here) differs from the exact form by at
+G6  The tanh approximation (dropped from design-N1.md's questions on this bound) differs from the exact form by at
     most about 4.7e-4 on a fine grid, and its minimum is within 1e-3 of G1's in place and value.
 
-NOT proved: that a pole read at the most negative z carries a job (2509.24198 reports that
-negative pre-activations matter on Pythia 1.4B; U1 counts populated poles on 410m); which
-GeLU Pythia was trained with (G6 bounds the difference only); anything about LayerNorm, the
+NOT proved: that a pole read at the most negative z carries a job (2509.24198's ablation
+removes the output where z < 0, which is largest at z*, so it bears on the band, G1 and G3;
+U1 counts populated readings on 410m); which GeLU Pythia was trained with (G6 bounds the
+difference only); anything about LayerNorm, the
 parallel residual or the bias, which set z's scale per neuron.
 
 Run: python3 tools/math_checks/n1_gelu_pole.py
