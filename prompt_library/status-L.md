@@ -14,13 +14,13 @@
 - **Superseded / wrong:** none
 - **Registry:** none, because the library is an input set; D4's sealed split is held for a later registration, which is the user's
 - **Depends on:** none
-- **Feeds:** none
+- **Feeds:** N
 - **Open threads:**
   - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–512 as Pythia read them in T5 U2, one capped from 562), and how much of a Pythia-against-Dodecahedron difference on it is prefix length: not told apart; carried to `docs/ROADMAP.md` §5 "Library L′" — `prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"
 - **After Phase 10:**
   - L′ (a): T5 U2's re-read with prefix statistics kept, length against text *(forward pass: ≈ 77 min on the 3080, 180 checkpoints)*
   - L′ (b): near-duplicate check of `val` and `test` against the Pile's train split, before a registry entry names `test`; clearing an item needs all 30 train shards (335 GB compressed, streamed one at a time), one shard only estimates a rate *(free: CPU hours, no forward pass)*
-- **Reviewed:** 2026-11-07 · body `2b97be00e8`
+- **Reviewed:** 2026-11-08 · body `2b97be00e8`
 <!-- /phase-card -->
 
 ## Corrections received
