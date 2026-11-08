@@ -40,7 +40,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-08 · body `a6d2d3d582`
+- **Reviewed:** 2026-11-08 · body `f6c2d90d7b`
 <!-- /phase-card -->
 
 ## Units
@@ -81,8 +81,8 @@ code and inputs), 365 records, 67 min on the 3080 (runner, no edits; conda `mets
 
 **G5 tests the rule's mechanics, not its power:** the null's noise (≤ 0.0009) is about 200× below
 the plant (0.2), so with this null it could fail only through a bug in the dating, not through
-noise. No rise here is near the floor (the smallest is 0.72), so the floor's power is not what the
-labels rest on.
+noise. G4 the same (the null is ~100× below the floor; /challenge-pr on #325). No rise here is near
+the floor (the smallest is 0.72), so the floor's power is not what the labels rest on.
 
 **The outcome table** (design "The outcome table"; I on random tokens, the labelled statistic;
 grid steps; none censored):
