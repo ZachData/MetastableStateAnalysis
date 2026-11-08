@@ -145,7 +145,7 @@ the table above, or refused by its gate. **Budget: U0 + U1 + close-out**, as the
 ROADMAP and the phase finishes first. Here the user chose, on the record (§10.14), to pause T5′ and
 build the library first; the exception is the user's, not the rule's. **Open in T5′ on pause:** the
 gate re-run under 139 (a); I_text and its null built (code and tests, before output); G4, G5; the
-batch (≈ 420 forward passes); `read`; the outcome table; `t5j.outcome_row`'s refused-run flag; the
+batch (≈ 420 forward passes); `read`; the outcome table; `t5j.outcome_row`'s refused-run flag (wrong: already in, `02ecc4e`; found 2026-11-08); the
 close-out, which also closes Track T. Parked 1 (document breaks) stands. The library is not a fix
 for T5′: T5′ resumes on the inputs fixed in this file, whatever the library holds.
 
