@@ -30,6 +30,9 @@ Writing only, no forward pass. Branch `claude/n1-design`.
   after #327"): the populated rule standardised and gated against random rows, planted P+, P−
   and B at layer 0; 2509.24198 re-cited to the band; the training-GeLU question dropped; Q2
   reads neuron-lineage's checkpoint list before D3.
+- **Blocked 144 decided 2026-11-08** (the user's, as recommended): D1 (d) P+, P− and B all
+  counted under the gated rule; D2 (a) 2 units; D3 (a) extend, provisional until Q2's checkpoint
+  list is read. `design-N1.md` frozen before any N1 output.
 
 ## Corrections received
 

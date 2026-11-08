@@ -1,7 +1,8 @@
 <!-- trackN_neurons/design-N1.md -->
 # Track N — design: N1, the scan, the inventory and the unit
 
-**Proposed 2026-11-08, not frozen** (Blocked 144, the user's); revised the same day after
+**Frozen 2026-11-08** (Blocked 144 decided D1 (d), D2 (a), D3 (a), the user's, as recommended;
+before any N1 output). Proposed 2026-11-08; revised the same day after
 `/challenge-pr` on #327 (findings 1–5 taken, "Revised after #327" below). Row:
 `docs/ROADMAP.md` §7c N1. Opened by the order of 2026-11-02 (the user's: "add the motions to
 analyse the MLP after part T"); Track T closed 2026-11-08, so N1 is next. The scan before it:
@@ -36,7 +37,7 @@ GeLU(z) = z Φ(z) in transformers, which every reader here uses. Checked in
 - Ranking by h reverses z below z* (G4): the most negative h are a band at z*, not the
   strongest negative votes.
 
-**Three readings per neuron** (D1 (d), recommended):
+**Three readings per neuron** (D1 (d), decided):
 
 - **P+**: contexts ranked by z from the top (the same ranking as h, since h rises in z above z*).
 - **P−**: contexts ranked by z from the bottom: the inputs that close the gate hardest, which
@@ -59,7 +60,7 @@ the neuron's ‖W_in,i‖, with its own bias b_in,i (neuron-lineage's null, made
 step-0 count is reported beside, not used as the floor. k = 10, 20, 50 are all reported, none
 picked.
 
-## U1 (if D2 (a))
+## U1 (D2 (a), decided)
 
 1. Q1–Q3: read neuron-lineage's code (Q2's list first: checkpoints, sign), 2509.24198's Pythia
    sections, Stolfo's appendices F–H, 2311.00863's checkpoint index (its code; a question to
@@ -84,7 +85,7 @@ and the gated rule; Q6's options for N3 are written for the user. **Budget (D2):
 (this: scan, design, math check) and U1 (the readings, the gate, the capture), the close-out
 inside U1 if nothing is Parked. At the budget N1 closes at what it has, the rest marked unknown.
 
-## Decisions (Blocked 144)
+## Decisions (Blocked 144; decided 2026-11-08, the user's: D1 (d), D2 (a), D3 (a), as recommended)
 
 | | options | recommended |
 |---|---|---|
