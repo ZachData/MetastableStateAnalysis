@@ -1834,6 +1834,15 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   without it beside; an arm with no such contrast is a plant check, not a test of the rule**. And
   Blocked 115 shipped with 114's option text pasted on its end (two "Recommended" lines on one
   decision): **re-read the Blocked row you write as the user will, end to end**.
+- 2026-11-07 (prompt library U2, found by `/challenge-pr` on #322): T5 U2's synthetic gate
+  ("planted 0.15 spreads ≥ 90 %, flat ≤ 5 %, at s from the real spread") cannot fail at any noise
+  level its own s reaches. The plant sits at its floor for the last 15 of 53 steps, so with the
+  plateau noise small against 0.15 a planted draw misses only when the first step's noise falls
+  below the plateau's minimum, about 1 in 16, whatever s is (`l2.synthetic`: 0.945 planted, 0.0
+  flat at s 0.019, 0.1, 0.3, 0.6, k 1024). U2's 94.5 % at 7 prompts was the same constant. The gate
+  checks where the bar sits (its beside rows: plant 0.10 → 0 %, 0.20 → 100 %), not noise. Rule:
+  **a gate whose pass rate is set "from the data's own spread" is first run at several spreads; if
+  the rate does not move, it is a check of the rule's arithmetic, and is named so**.
 
 ## 7. Literature found after the construction was built
 
