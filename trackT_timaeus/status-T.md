@@ -29,7 +29,7 @@
   - T5 closed 2026-11-07 at its exit (writing only): Dodecahedron's cloud spreads on both models; H1 at init partly; H1 through training and H2 not supported at bar 0.2; T2's counts failed because they were read at the two concentrated ends, and pass in the trough; the two 410m seeds whose late level parts are the PolyPythias paper's two outlier runs (loss spikes, cause unstated), so U4's bar floor rests on an outlier pair; the labels kept at bar 0.2, the 0.1 reading beside as post hoc (Blocked 136 (a), the user's, 2026-11-07) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
   - T5′ U1 (design frozen on Blocked 138, ICL's set and I_text by Blocked 139 (a), post hoc; gate passes, G4 and G5 on all 8 runs): an induction head forms on every U4 arm, on all three A0 seeds and on released `dodecahedron-32m` at steps 491–574 (half-formed by 574–785), while the middle-state mean cosine is at its floor, 5–7 grid steps before its late rise starts, so every arm reads "induction leads the rise" (equally, induction forms at the cosine's floor: its half-rise is 0–2 grid steps from the minimum); no difference between arms in either onset is resolved on the grid (each one-step shift sits within 0.01 of its threshold); the same order on repeated real text (beside); 410m's forms at 1000 in its fall, beside C2's E3 — `trackT_timaeus/status-T.md` "T5′ U1, the batch and the reading"
   - T5′ closed 2026-11-08 at its exit (writing only; Blocked 143 (a), the user's): headline "induction leads the rise" on every arm, with "induction forms at ρ's floor" beside as the sharper description of the same records and the phase marked fragile; cause, arm differences and the sink's lead not established — `trackT_timaeus/status-T.md` "T5′ on one page (closed 2026-11-08)"
-  - Track T closed 2026-11-08 with T5′ (Blocked 137 (a)): no fourth schedule for C2's break and no LLC curve (T3, T4 never opened); established that a Pythia-calibrated count is gated along a new model's training, that the cloud's rise, fall and second rise recur across families at different heights, and that induction forms at the fall's floor — `trackT_timaeus/status-T.md` "Track T on one page (closed 2026-11-08)"
+  - Track T closed 2026-11-08 with T5′ (Blocked 137 (a)): no fourth schedule for C2's break obtained, and the LLC not attempted (T3, T4 never opened); established that a Pythia-calibrated count is gated along a new model's training, that the cloud's rise, fall and second rise recur across families at different heights, and that on Dodecahedron's recipe induction leads the second rise, forming at the fall's floor (in 410m while ρ still falls) — `trackT_timaeus/status-T.md` "Track T on one page (closed 2026-11-08)"
 - **Superseded / wrong:**
   - The ROADMAP's T2 windows (from #282) read the card's per-GPU batch as the global one and used seed 0's break bracket, not A5's nine-seed (128, 512]; re-derived in T1 — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
 - **Registry:** none, because Track T is tier 1
@@ -42,7 +42,7 @@
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-08 · body `bc693bd0bb`
+- **Reviewed:** 2026-11-08 · body `11050efcea`
 <!-- /phase-card -->
 
 ## Units
@@ -74,14 +74,16 @@ Timaeus's released checkpoints and the LLC give C2's energy break a fourth sched
 degeneracy curve to sit beside it? **Closed with T5′** (Blocked 137 (a), the user's: "T closes with
 T5′, then N1"). Tier 1 throughout, nothing registered. Writing only at close.
 
-**The answer: no, on both halves.** No fourth schedule: T2 gave no date, and T5 showed why a date on
-Dodecahedron would sit on its cloud's re-concentration. No LLC curve: T3 and T4 were never opened;
-T1 found no released model deeper than 2 layers with a published whole-model curve, and the
-track's units went to T5 and T5′ by the user's order (Blocked 122 (a), 137 (a)).
+**The answer: no fourth schedule obtained, and the LLC half not attempted.** No fourth schedule: T2
+gave no date, and T5 showed why a date on Dodecahedron would sit on its cloud's re-concentration
+(T2's reopen in the trough is still a candidate, so "none obtained", not "none possible"). No LLC
+was estimated: T3 and T4 were never opened. T1 found, leaning, no released model deeper than 2
+layers with a published whole-model curve, and the track's units went to T5 and T5′ by the user's
+order (Blocked 122 (a), 137 (a)) (`/challenge-pr` on #326, finding 3).
 
 | row | outcome | where |
 |---|---|---|
-| T1, the inventory | done (1 unit): settings and provenance read; no deeper model with a published LLC curve | "T1, the inventory" |
+| T1, the inventory | done (1 unit): settings and provenance read; no deeper model with a published LLC curve (leaning) | "T1, the inventory" |
 | T2, V and E_β on Dodecahedron | closed at unit 1, no date: both counts fail their gates | "T2 on one page" |
 | T5, why the counts fail | closed at its exit: read at the cloud's two concentrated ends, they pass in its trough; H1 at init partly; H1 through training and H2 not supported at bar 0.2 | "T5 on one page" |
 | T5′, what forms with the rise | closed at its exit: induction leads the rise on every arm, forming at ρ's floor | "T5′ on one page" |
@@ -95,8 +97,9 @@ track's units went to T5 and T5′ by the user's order (Blocked 122 (a), 137 (a)
    and on its retrained recipe, at different heights; Mistral GPT-2 small has the rise and the fall
    and no second rise by 5 % of its run. Neither biases nor Pythia's init sets Dodecahedron's late
    height by the bar (T5).
-3. Induction forms at the floor of that fall on every run of Dodecahedron's recipe, 5–7 grid steps
-   before the second rise, and in 410m's fall at C2's step 1000 by the same instrument (T5′).
+3. Induction leads the second rise on every run of Dodecahedron's recipe by 5–7 grid steps, forming
+   at the fall's floor (the phase fragile); in 410m the same instrument dates it at C2's step 1000,
+   while ρ is still falling (T5′).
 
 **Not established:** any LLC value; a fourth schedule for C2's F1; what raises Dodecahedron's late
 level (LR and the MLP's form untested); why the flat init concentrates the cloud at init; whether
@@ -127,9 +130,9 @@ trough depends on where the argmin lands. The label rests on d, which does not d
 
 | question | answer | where |
 |---|---|---|
-| induction against the rise, per arm | **leads** on all 8 Dodecahedron runs (6 arms; `-32m` to 9536 and to 4369): I onset 491–574, half-rise 574–785, rise 0.72–0.87; ρ's rise onset 1253 (A0's seeds) or 1465 (A1–A3, `-32m`); nothing censored | "T5′ U1, the batch and the reading" |
+| induction against the rise, per arm | **leads** on all 7 Dodecahedron runs (6 arms and released `-32m`, read to 9536 and to 4369): I onset 491–574, half-rise 574–785, rise 0.72–0.87; ρ's rise onset 1253 (A0's seeds) or 1465 (A1–A3, `-32m`); nothing censored | "T5′ U1, the batch and the reading" |
 | differences between arms | **none resolved on the grid**: A0's seeds span 0 grid steps (the grid's coarseness); each one-step shift (A1's I; ρ's rise on A0 against A1–A3) sits within 0.01 of its threshold | same |
-| a sink, massive or n0 onset before the rise (described) | S and M come with the rise (d −3 to +1; censored on most runs); n0's dated onset is earlier (d −2 to −21; −20, −21 under Pythia's init), censored on 3 of 7, where a date is a lower bound and the lead is not settled | same, "Beside" |
+| a sink, massive or n0 onset before the rise (described) | S and M come with the rise (d −3 to +1; censored on most runs). n0's dated onset is earlier on A0's seeds and A1 (d −5 to −8; censored on A0 and A0″, where a date is a lower bound and the lead is not settled) and on `-32m` (d −2, censored). On A2 and A3 n0 dates at 55–65, inside ρ's early fall (its half at 55), so d −20, −21 says nothing about the late rise (`/challenge-pr` on #326, finding 5) | same, "Beside" |
 | the bridge to C2's E3 | **stands**: 410m's I by C2's locator at 1000 | same |
 
 **Established (tier 1):**
@@ -140,17 +143,19 @@ trough depends on where the argmin lands. The label rests on d, which does not d
    I with its behaviour B (491–574). Under Pythia's init ICL dates at steps 2–5, so there is no
    single order.
 2. **The same order on repeated real text** (I_text, beside, post hoc: d −5 to −8).
-3. **In 410m, induction forms in ρ's fall too** (1000, by the instrument that dates C2's E3), long
-   before its second rise (U5: 0.45–0.49 by 32000–54000). On both families induction forms while the
-   cloud is spreading, not with its second concentration.
+3. **In 410m, induction forms while ρ is still falling, not at its floor** (at 1000, by the
+   instrument that dates C2's E3). Read at close from U2's records, post hoc: ρ is 73 % of the way
+   from its peak 0.81 to its 4000 value 0.17 at 512, and 89 % at 1000. On `-32m`, 98–99 % of the fall
+   is done at 491–574. The two families differ there. In neither does induction come with the
+   second concentration (410m's: 0.45–0.49 by 32000–54000, U5) (`/challenge-pr` on #326, finding 1).
 
 **Not established:**
 
 - **Cause.** No arm intervenes on induction, so whether its formation ends the fall is not tested.
 - **Differences between arms.** One run each, and every shift sits within one grid step on its
   threshold.
-- **Whether a sink or massive onset leads the rise.** S and M come with it. n0 is dated earlier, but
-  its date is censored on 3 runs.
+- **Whether a sink or massive onset leads the rise.** S and M come with it. n0 is dated earlier on
+  four runs, censored on two of them; on A2 and A3 its date falls in the early fall.
 - **ICL on text.** ICL's dates are on packed text: 0.45 of the held-out rows carry a document break
   in positions 40–509 (Parked 1, below).
 - **Induction on `-67m`, and on the arms past 4369.** `-32m` read to 9536 gives the same label as
@@ -185,6 +190,13 @@ Budget at close: U0 + U1 + close-out, with U1 extended on the record by one sess
 
 **Blocked at close:** 137–139, 142 and 143 are all decided; none opened. Track T closes with this
 section ("Track T on one page", above).
+
+**`/challenge-pr` on #326: accept with changes, findings 1–5 taken.** (1) "On both families
+induction forms while the cloud spreads" was wrong for Dodecahedron (98–99 % of ρ's fall done at
+I's onset); now Established 3, with 410m's 73–89 %. (2) `PROJECT.md` §3.80 led with "at the floor",
+option (b); it now leads with the frozen label and says "fragile". (3) Track T's LLC half reads
+"not attempted", and T1's "leaning" is kept. (4) 7 Dodecahedron runs, not 8. (5) A2's and A3's n0
+dates sit in the early fall, so they are not leads on the late rise.
 
 ## T5′ U1, the batch and the reading: induction leads the rise on every arm (2026-11-08)
 
