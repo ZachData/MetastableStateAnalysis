@@ -3071,6 +3071,28 @@ this section says why it is project-wide. Infrastructure, tier 1, nothing regist
 
 ---
 
+## 3.80 Track T closed with T5′: on Dodecahedron's recipe induction leads the token cloud's second rise; no fourth schedule obtained, the LLC not attempted (2026-11-08)
+
+**`trackT_timaeus/status-T.md` "T5′ on one page" and "Track T on one page" (closed 2026-11-08)**
+hold the numbers; this section says why it is project-wide. Tier 1, description; the six U4 arms
+(49 steps each), released `dodecahedron-32m` (53), `pythia-410m` seed 0 (C2's 18); random-token
+repeats (seed 20261107), held-out FineWeb tail rows (inputs `0aff7466c46f`, `2ecad99d91fb`).
+
+- **Induction leads the rise** (the frozen label, Blocked 143 (a), the user's): on every run of
+  Dodecahedron's recipe (with or without biases, under either init) an induction head forms at
+  491–574, 5–7 grid steps before the middle-state cloud's second rise. Beside it, as the sharper
+  description: it forms at the floor of the cloud's fall. That phase is fragile, since ρ is flat
+  there and "fall" against "trough" turns on where the minimum lands. Co-occurrence: nothing
+  intervenes on induction.
+- The same instrument dates 410m's induction at C2's 1000 (E3), but there ρ is still falling (73–89 %
+  of the way down, post hoc), not at its floor. In neither family does induction come with the
+  second concentration.
+- On Track T's own question: no fourth schedule for C2's break was obtained (T2, no date), and the
+  LLC was not attempted (T3, T4 never opened). Its candidate rows stay in `docs/ROADMAP.md` §7b,
+  unscheduled; Track N (N1) is next.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
