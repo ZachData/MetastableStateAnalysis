@@ -35,11 +35,11 @@
 - **Open threads:**
   - Which seed of `tetrahedron-3m` the paper's curve is from, and why `-og`'s checkpoint spacing differs from the `icl` sweep's — `trackT_timaeus/status-T.md` "T1, the inventory (2026-10-29)"
   - What raises Dodecahedron's late level (not biases or Pythia's init at bar 0.2; LR and the MLP's form untested, rows T5″ and T5‴ of `docs/ROADMAP.md`) — `trackT_timaeus/status-T.md` "T5 on one page (closed 2026-11-07)"
-  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refused on G6's held-out ICL leg at 64 sequences; Blocked 139 decided (a), 1024, with a real-text I beside; paused 2026-11-07 for the prompt library, which closed 2026-11-07; resumed 2026-11-08: I_text built before output and the gate passes under 139 (a), nothing dated; the batch, G4, G5 and the reading wait on Blocked 142, U1's extension; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ U1 resumed"
+  - T5′, what forms with the rise per U4 arm (opened 2026-11-07, Blocked 137 (a); design frozen on Blocked 138, all (a); U1's gate refused on G6's held-out ICL leg at 64 sequences; Blocked 139 decided (a), 1024, with a real-text I beside; paused 2026-11-07 for the prompt library, which closed 2026-11-07; resumed 2026-11-08: I_text built before output and G1–G3, G6, G7 pass under 139 (a) (G4, G5 need the batch), nothing dated; the batch, G4, G5 and the reading wait on Blocked 142, U1's extension; Track T closes with it) — `trackT_timaeus/status-T.md` "T5′ U1 resumed"
 - **After Phase 10:**
   - The `L0`–`L6` attention-only depth series at constant LR with no warmup, as a schedule without the warmup confound *(forward pass, small models)*
   - `gpt-2-small` as a Pythia-160m-shaped run checkpointed every 100 steps *(forward pass; its data and schedule unread)*
-- **Reviewed:** 2026-11-08 · body `464cd10a5d`
+- **Reviewed:** 2026-11-08 · body `1e9085fed1`
 <!-- /phase-card -->
 
 ## Units
@@ -61,20 +61,26 @@
 | T5 U4a. the loop, the shard, θ, the noise floor, A0 | **preparation done 2026-11-03; no arm run**: known answer exact (1.7e-9); the loop exact in float64 (1e-14), not at the frozen float32 1e-5 (rounding, 2.4e-4); θ 104.8k tokens/s (all five arms and continuations fit); **the 410m noise floor refuses** (2·SD 0.153 at 143000, bar 0.1; 0.021 at 4000). **Blocked 133 decided 2026-11-03, the user's: (i) (d), floor 0.2 and A0″; (ii) the float64 gate.** Floor at 0.2 placed from its own data and reproduced (not a pass that could fail; /challenge-pr on #310, finding 1). **Done 2026-11-04: A0 passes its positive control** (T 0.137 at 671, L 0.794 ≥ 0.60, R 0.657; Dodecahedron 0.111, 0.788); its rise starts earlier than Dodecahedron's (0.31 against 0.13 at 1253, post hoc; Parked 1 to U4b) | "T5 U4a: Blocked 133 decided; A0" and "T5 U4a, before A0" below; `design-T5.md` "U4a's details" |
 | T5 U5. the controls (Blocked 135 (a)) | **done 2026-11-06**: gate passes (seed 0 = U2, seeds = U4a's floor, both 0.0; Mistral loss 10.9 → 3.9); described, no rule: the 410m shape holds on all ten seeds (peak 0.80–0.83 at 16, trough 0.16–0.19 at 2000–4000), the late level parts with the loss (0.39–0.43 on eight seeds; 0.23 on seeds 3, 4, whose loss rose after 54000; U4's bar floor rests on seed 4, carried to the close-out); Mistral GPT-2 small peaks at 0.98 at step 20 and is still falling at 16000–20000 (0.26–0.29) | "T5 U5" below; `design-T5.md` "U5's details" |
 | T5 close-out | **closed 2026-11-07 at its exit** (writing only; the PolyPythias paper read for U5's Parked item, no GPU); every Parked item carried or dropped; one item for the user, Blocked 136 (U4's bar floor and PolyPythias's outliers) | "T5 on one page" below |
-| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out. **Design frozen 2026-11-07** (Blocked 138: all (a), the user's). **U1's gate refuses on G6's ICL leg** (G1–G3, G7 and G6's I leg pass; no batch run); Blocked 139 decided (a) 2026-11-07, the user's (1024 unseen held-out sequences, post hoc; I_text beside, post hoc); paused 2026-11-07, the user's, for the prompt library (`docs/ROADMAP.md` §10.14); the library closed 2026-11-07, so T5′ resumed. **2026-11-08: I_text and its null built (`8f639ad`, before output); the gate passes under 139 (a)** (G6's ICL leg: drop 0.332 against 4 SE 0.152); nothing dated; the batch, G4, G5 and `read` not run: Blocked 142 (U1's extension) | "T5′ U1 resumed" below; "T5′ paused" below; "T5′ U1 (gate)" below; "T5′ U0" below; `design-T5p.md` |
+| T5′. what forms with the rise, per U4 arm | **opened 2026-11-07** (Blocked 137 (a), the user's: Track T not closed, it closes with T5′, then N1). U0 done: design proposed, scan; D1–D5 are Blocked 138. Budget U0 + U1 + close-out. **Design frozen 2026-11-07** (Blocked 138: all (a), the user's). **U1's gate refuses on G6's ICL leg** (G1–G3, G7 and G6's I leg pass; no batch run); Blocked 139 decided (a) 2026-11-07, the user's (1024 unseen held-out sequences, post hoc; I_text beside, post hoc); paused 2026-11-07, the user's, for the prompt library (`docs/ROADMAP.md` §10.14); the library closed 2026-11-07, so T5′ resumed. **2026-11-08: I_text and its null built (`8f639ad`, before output); G1–G3, G6, G7 pass under 139 (a)** (G6's ICL leg: drop 0.332 against 4 SE 0.152); nothing dated; the batch, G4, G5 (which need it) and `read` not run: Blocked 142 (U1's extension) | "T5′ U1 resumed" below; "T5′ paused" below; "T5′ U1 (gate)" below; "T5′ U0" below; `design-T5p.md` |
 
-## T5′ U1 resumed: I_text built, the gate passes under 139 (a) (2026-11-08)
+## T5′ U1 resumed: I_text built; G1–G3, G6, G7 pass under 139 (a) (2026-11-08)
+
+**G4 and G5 (the planted null and the planted effect over the real checkpoints) have not run:**
+they read the batch's series and run inside `read`. "The gate passes" below means `gate.json`'s
+legs, G1–G3, G6, G7 (/challenge-pr on #324, finding 1).
 
 **I_text and its null built and committed before any I_text output** (`8f639ad`, `t5k.py`; spec as
 fixed on #319, `design-T5p.md` "Blocked 139 decided"; the details the spec left open fixed in the
 docstring: Pythia re-encodes the whole row then cuts 256, rows kept with their `<|endoftext|>`, its
 own bootstrap generator so I's SEs do not move, G7 also requires I_text populated). Tests
-`tests/test_trackT_t5k.py` (20 pass; `forward` on a fake LM, the conftest stubs transformers:
+`tests/test_trackT_t5k.py` (21 pass after the review; `forward` on a fake LM, the conftest stubs transformers:
 `LESSONS.md` 4). **Input:** random sets as before (seed 20261107); text x, x′, x″ = tail rows
 1088–1119, 1120–1151, 1152–1183, first 256 tokens; held-out rows 64–1087 (positions 0–509).
-Inputs hash `0aff7466c46f` (Dodecahedron), `2ecad99d91fb` (Pythia); code `1b2b15d3998d`. Run on the
-3080, conda `mets` (transformers 4.44.2). Records `data/trackT/t5k/2026-11-07-n1024/` (main tree):
-`gate.json`, `A0/step4369.*`, `pythia-410m/step{0,143000}.*`.
+Inputs hash `0aff7466c46f` (Dodecahedron), `2ecad99d91fb` (Pythia); code `1b2b15d3998d` (`8f639ad`),
+then re-run on `bc2d54b` (code `f0f08d8e915e`, after the review's code changes, which touch `read`
+only): every field of `gate.json` equal but the code hash. Run on the 3080, conda `mets`
+(transformers 4.44.2). Records `data/trackT/t5k/2026-11-07-n1024/` (main tree): `gate.json`,
+`A0/step4369.*`, `pythia-410m/step{0,143000}.*`.
 
 | gate | value | bar | |
 |---|---|---|---|
@@ -90,9 +96,17 @@ first 256 tokens: 0.25 (Dodecahedron), 0.28 (Pythia). I_text at the three steps 
 A0 4369 0.396 (0.032), I_text_top5 0.181; 410m 143000 0.786 (0.024), top5 0.638; 410m step 0 4e-5.
 Its argmax head is I's on both models at their end (L9H3; L10H9). Nothing is dated.
 
-**Cost, measured:** 410m took ≈ 50–60 s a step at N 1024 (from the records' times), not "GPU
-minutes" for the batch as `design-T5p.md` "Units" estimated at N 64; Dodecahedron's steps not timed
-alone. The batch (6 × 49 + 53 + 18 steps) is roughly 1–2.5 GPU-hours (estimate).
+**Cost, from the second run's times:** launch to A0 4369's record 12 s (imports, G1's three loads
+and reads, G2, the inputs, the step), so a Dodecahedron step is a few seconds; 410m 49–59 s a step
+(load included). The batch (6 × 49 + 53 Dodecahedron steps, 18 of 410m) is ≈ 0.5–1 GPU-hour, not
+the "GPU minutes" `design-T5p.md` "Units" estimated at N 64 (/challenge-pr on #324, finding 3).
+
+**`/challenge-pr` on #324: accept with changes, findings 1–5 taken.** (1) "the gate passes" said
+of G1–G3, G6, G7 only; G4, G5 need the batch (above; STATE's Blocked 142 reworded). (2) G5's
+planted rise on I_text's null is described beside in `read`, not a gate (I_text's SE at A0 4369 is
+3× I's). (3) the cost above. (4) a test that `text_rows` and `held_out` read rows 1088–1183 and
+64–1087. (5) the PR's text: Pythia's coarser BPE covers *more* source text in 256 tokens; the two
+bootstraps share a seed, so the same indices (harmless, the sets are unrelated; docstring).
 
 **Not done in this session** (the user's scope for it: I_text, then the gate): G4, G5, the batch,
 `read`, the outcome table, `t5j.outcome_row`'s refused-run flag, the close-out. `design-T5p.md` says
