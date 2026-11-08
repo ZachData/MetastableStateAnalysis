@@ -38,8 +38,11 @@ Implementation details fixed here before any output (the design leaves them open
   row decoded and re-encoded, its first 256 tokens (as ICL's text; refused if shorter). Rows are
   kept as they are, `<|endoftext|>` included (real packed text; the share of x rows with one in
   their first 256 tokens is recorded in `gate.json`, beside). Its bootstrap resamples the 32 text
-  triples jointly, from its own generator (seed 20261030), so I's SEs are unchanged by it. Beside
-  it, its top-5 mean and argmax head. G7 also requires I_text and I_text_null populated.
+  triples jointly, from a second generator on the same seed (20261030), so I's SEs are unchanged by
+  it and the two draw the same indices (unrelated sequence sets; harmless). Beside it, its top-5
+  mean and argmax head. G7 also requires I_text and I_text_null populated. In `read`, G5's planted
+  rise on I_text_null is described beside, not a gate (/challenge-pr on #324, finding 2; added before
+  any batch output).
 
 Tier 1, description (nothing here is registered).
     E="HF_HOME=<HDD_1TB>/mets_data/hf HF_HUB_OFFLINE=1 METS_DATA=<main>/data"
@@ -663,6 +666,16 @@ def read(a) -> int:
               "max_all_steps": float(max(data[r]["series"]["I_text_null"]))} for r in RUNS}
     res["I_text_null_beside"] = {"runs": tn, "all_within": all(v["refused"] and v["max_all_steps"] <= NULL_MAX
                                                                for v in tn.values()), "gate": False}
+    # G5's planted rise on I_text's null, beside (/challenge-pr on #324, finding 2): I_text's noise is
+    # larger than I's, so the rule's dating on it is described; not a gate, gates nothing
+    tp = []
+    for r in RUNS:
+        steps = [s for s in data[r]["steps"] if s <= END[r]]
+        xn = data[r]["series"]["I_text_null"][:len(steps)]
+        for c in PLANT_C["410m" if r == P410 else "dodeca"]:
+            tp.append({"run": r, **g5_one(steps, xn, c)})
+    res["I_text_planted_beside"] = {"cells": tp, "n_pass": sum(v["pass"] for v in tp), "n": len(tp),
+                                    "n_refused": sum(v["refused"] for v in tp), "gate": False}
     # G5: a planted rise on each run's I_null
     g5 = []
     for r in RUNS:
@@ -705,6 +718,9 @@ def _print(res: dict) -> None:
                   f"{str(o['phase']['I']['on_0.1']):9s} {o.get('label', '')}")
     if res["outcome"]:
         print(json.dumps(res["outcome"]["noise"]))
+    tp = res["I_text_planted_beside"]
+    print(f"I_text's planted rise (beside, not a gate): {tp['n_pass']}/{tp['n']} dated within a step, "
+          f"{tp['n_refused']} refused")
     print("I_text, beside (no label): run  end  on.1  on.5  cens  rise  phase.1  d  | max I_text_null")
     for r, ends in res["runs"].items():
         for e, o in ends.items():

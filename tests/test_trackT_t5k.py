@@ -248,3 +248,21 @@ def test_read_run_dates_text_beside(monkeypatch):
     assert o["I_text_null"]["refused"] and o["max_I_text_null"] == pytest.approx(0.002)
     assert o["phase"]["I_text"]["on_0.1"] == "fall" and o["d"]["I_text"] == -1
     assert "label" in o and o["label"] == t5k.label(o["I"], o["rho"]["rise"], o["d"]["I"], 70)
+
+
+def test_text_rows_read_the_tail_rows(monkeypatch):
+    """`text_rows` and `held_out` read tail rows 1088–1183 and 64–1087 (/challenge-pr on #324, finding 4):
+    a fake tail whose row i holds i throughout."""
+    from trackT_timaeus import t5h
+    tail = np.repeat(np.arange(1300, dtype=np.uint16)[:, None], 600, 1)
+    monkeypatch.setattr(t5h, "open_shard", lambda root: {"tail": tail})
+    tx = t5k.text_rows("A0")
+    assert tx.shape == (3 * t5k.R, t5k.T) and list(tx[:, 0]) == list(range(1088, 1184))
+    s = t5k.text_sets(tx)
+    assert set(s["ctrl_text"][:, t5k.T]) == set(range(1120, 1152)) and set(s["null_text"][:, t5k.T]) == set(range(1152, 1184))
+    ho = t5k.held_out("A0")
+    assert ho.shape == (t5k.N_HELD, t5k.HELD_LEN) and ho[0, 0] == 64 and ho[-1, 0] == 1087
+    assert not set(tx[:, 0]) & set(ho[:, 0])
+    monkeypatch.setattr(t5h, "open_shard", lambda root: {"tail": tail[:1100]})
+    with pytest.raises(t5k.T5kRefused):
+        t5k.text_rows("A0")
