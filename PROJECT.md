@@ -3091,6 +3091,23 @@ repeats (seed 20261107), held-out FineWeb tail rows (inputs `0aff7466c46f`, `2ec
   LLC was not attempted (T3, T4 never opened). Its candidate rows stay in `docs/ROADMAP.md` §7b,
   unscheduled; Track N (N1) is next.
 
+## 3.81 Track N closed after N1: no neuron read past layer 0; the instrument refused by its gate; births read outside, undated (2026-11-08)
+
+**`trackN_neurons/status-N.md` "N1 on one page" and "Track N on one page" (closed 2026-11-08)**
+hold the numbers; this section says why it is project-wide. Tier 1, description; `pythia-410m`
+step 143000, layer 0, on the prompt library's `val` (`library_hash` `47feaa321fa0…`).
+
+- The project has no reading of what an MLP neuron does at any step. N1's populated rule
+  (a pole's top-k standardised against random rows of matched norm) refused at its own gate,
+  because at layer 0 every random row is a token detector too; N2, which would have to solve
+  that, and N3 stay in `docs/ROADMAP.md` §7c, unscheduled (Blocked 146 (a), the user's).
+- Neuron births are read outside on a neighbour model (neuron-lineage, on
+  `pythia-410m-deduped`), but at every step of a five-point grid (128–2000), with its random
+  basis having births at 512 and 1000 too, so they date nothing; their match with C2's steps is
+  the grid's. The one dated neuron event at a C2 step is 70m's German neurons forming as a group
+  at 512, "coinciding with the LR warm-up" (2311.00863): cited context for C2's rewrite on F1,
+  not a result here.
+
 ---
 
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)

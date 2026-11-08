@@ -2597,6 +2597,16 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   from two recorded points, while 128's births (303) exceed 512's (203). The recommendation to
   close Track N leaned on the third. All three fixed before merge; no run spent. Rule: a close-out's
   findings are re-read from the status tables and the scan, not from the Blocked item's wording.
+- 2026-11-08, Track N close-out (#330, `/challenge-pr` findings 1–3), the same day as the rule
+  above, so a repeat. The cited context for C2 again took Blocked 146's wording, "births at 512
+  and 1000", although status-N's Q2 row, two screens up, has births at every step of a five-point
+  grid. So "at C2's dates" was the grid's doing. 147's recommendation of C4 took status-C's card
+  line "separates them on 410m", although ROADMAP §8 has C4 training `pythia-70m`. That
+  recommendation moved to S4 once C4's scope was read. Separately, an Edit that swapped only a
+  Blocked item's prefix (`146. **What follows N1**`) left the old one-line item's body on the end
+  of 147's line. All fixed before merge; no run spent. Rule (adds to the one above): a
+  recommendation's premises are read from the row that owns them (the ROADMAP row, the status
+  table), and a one-line item is replaced whole, never by its prefix.
 
 ## 12. Deleted, then needed
 

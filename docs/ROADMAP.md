@@ -329,7 +329,7 @@ Order inside T: T1 first; T2 and T3 can run beside each other; T4 only after T3 
 after T2's close, independent of T3–T4. Whether T opens, and where it sits against the other
 open rows, is §10 item 11; whether T5 opens is §10 item 12.
 
-## 7c. Track N: what the MLP's neurons do across training (added 2026-11-02, the user's; after Track T)
+## 7c. Track N: what the MLP's neurons do across training (added 2026-11-02, the user's; after Track T; N1 closed 2026-11-08; **Track N closed 2026-11-08**)
 
 From the user (2026-11-02), after reading Cammarata, "Neural Networks Are Already Clean"
 (Goodfire, 2026-10-15; local copy `docs/readings/goodfire_already_clean_2026-10-15.txt`, never
@@ -364,7 +364,11 @@ already reads 512 and 1000; L3N669's "checkpoint 10" is step 512); the populated
 at layer 0 the statistic cannot separate a detector from a random row), so no counts. **N1 closed
 2026-11-08 at its budget** (Blocked 145 (a), the user's; writing only at close):
 `trackN_neurons/status-N.md` "N1 on one page (closed 2026-11-08)"; the open problem carried to N2
-above; nothing Parked. What follows N1 (design-N1's Q6, D3 re-posed) is Blocked 146.
+above; nothing Parked. **Track N closed 2026-11-08 after N1** (Blocked 146 (a), the user's;
+design-N1's D3 (c); writing only): `trackN_neurons/status-N.md` "Track N on one page (closed
+2026-11-08)". N2 and N3 stay above as candidates, unscheduled; N2 carries the open problem, and
+opening either is a new decision under §3. neuron-lineage's births and 70m's German group at 512
+went to C2's rewrite as cited context (that page). Which row opens next is §10 item 15.
 
 ## 8. Track C: write-ups
 
@@ -459,6 +463,19 @@ proposed, not decided.
     library"; `trackT_timaeus/status-T.md` "T5′ paused"). Order: the library's design, its
     build, then T5′ resumes, then N1.* *Done: the library closed 2026-11-07 at its exit
     (`prompt_library/status-L.md` "The library on one page (closed 2026-11-07)"); T5′ resumes.*
+15. **Which row opens after Track N** (`STATE.md` Blocked 147, proposed 2026-11-08; Track N
+    closed by Blocked 146 (a)). The order of 2026-11-02 is spent (T, then N). Candidates, item
+    13's list less what closed: §8 C4 (the schedule intervention), §7a S4 (the toy induction
+    model), B7′'s Blocked 115 (its reserve unit), §7b T5‴, T5″, T3; §7c N2, N3 stay unscheduled.
+    First, the user's alone: does the December paper wait for F1? Recommended: **S4**, unless the
+    paper is to wait for a 70m-only F1 reading. C4 trains `pythia-70m`, so it answers F1 for 70m
+    and reaches 410m (the paper's model) only by inference; C6 already labelled 70m's centred
+    date, and V's gate refused on C6's 70m run. C4's cost is an estimate, not measured: about 2
+    GPU-days an arm to step 4000 (8.4B tokens at about half of `t5h`'s measured 104.8k tokens/s
+    for a 32m model), plus a harness check against the released `pythia-70m`, Pythia's data order
+    (about 17 GB, not on disk) and memory on the 10 GB card. Its reading rule is registered by
+    the user before the first checkpoint is read. (Moved from C4 by `/challenge-pr` on #330,
+    findings 3–4.)
 
 ## 11. What each phase gives the plan
 
