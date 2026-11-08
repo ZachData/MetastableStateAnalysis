@@ -18,6 +18,44 @@ def test_draws_share_first_half():
     assert not (d["ctrl"][:, 8:] == d["null"][:, 8:]).all()
 
 
+def test_text_sets_rows_and_halves():
+    """I_text (Blocked 139 (a)): x, x′, x″ are rows 0–r−1, r–2r−1, 2r–3r−1, each cut to t tokens."""
+    r, t = 3, 4
+    rows = np.arange(3 * r * 10).reshape(3 * r, 10)
+    d = t5k.text_sets(rows, r=r, t=t)
+    x, x1, x2 = rows[:r, :t], rows[r:2 * r, :t], rows[2 * r:, :t]
+    assert (d["rep_text"] == np.concatenate([x, x], 1)).all()
+    assert (d["ctrl_text"] == np.concatenate([x, x1], 1)).all()
+    assert (d["null_text"] == np.concatenate([x, x2], 1)).all()
+    with pytest.raises(t5k.T5kRefused):
+        t5k.text_sets(rows[:-1], r=r, t=t)
+    with pytest.raises(t5k.T5kRefused):
+        t5k.text_sets(rows[:, :3], r=r, t=t)
+
+
+def test_text_rows_are_unseen():
+    """I_text's rows follow ICL's held-out rows without overlap (and the 64 the refused gate read)."""
+    assert t5k.TEXT_LO == t5k.HELD_LO + t5k.N_HELD == 1088
+    assert t5k.TEXT_LO + 3 * t5k.R == 1184
+
+
+def test_summarize_text_beside():
+    rng = np.random.default_rng(2)
+    ctrl = rng.uniform(0, 0.01, (32, 6))
+    base = {"pm_rep": ctrl, "pm_ctrl": ctrl, "pm_null": ctrl, "prev_ctrl": ctrl, "loss_rep": np.ones(32),
+            "loss_ctrl": np.ones(32), "icl_late": np.ones(64), "icl_early": np.ones(64)}
+    s0 = t5k.summarize(base, n_boot=50)
+    assert "I_text" not in s0                                        # absent unless its arrays are
+    tc = rng.uniform(0, 0.01, (32, 6))
+    tr = tc.copy()
+    tr[:, 2] += 0.3
+    s = t5k.summarize({**base, "pm_rep_text": tr, "pm_ctrl_text": tc, "pm_null_text": tc + 0.002}, n_boot=50)
+    assert s["I_text"] == pytest.approx(0.3) and s["argmax_text"] == 2
+    assert s["I_text_null"] == pytest.approx(0.002)
+    assert s["I"] == pytest.approx(0.0) and s["se"]["I"] == s0["se"]["I"]   # I's SEs untouched by I_text
+    assert s["se"]["I_text"] >= 0 and "I_text_null" in s["se"]
+
+
 def test_g3_scorer():
     assert t5k.g3()["pass"]
 
@@ -157,3 +195,56 @@ def test_break_fraction():
     held[1, 20] = 0          # before the early window
     held[2, 509] = 0         # last position read
     assert t5k.break_fraction(held, 0) == pytest.approx(0.5)
+
+
+class _FakeLM:
+    """A stand-in causal LM (real torch, no transformers: conftest stubs it): seeded causal softmax
+    attention per layer and head, random logits."""
+
+    def __init__(self, torch, layers=2, heads=2, vocab=64):
+        from types import SimpleNamespace
+        self.torch, self.config, self.vocab = torch, SimpleNamespace(num_hidden_layers=layers,
+                                                                    num_attention_heads=heads), vocab
+
+    def __call__(self, input_ids, output_attentions=False):
+        from types import SimpleNamespace
+        t = self.torch
+        b, n = input_ids.shape
+        g = t.Generator().manual_seed(int(input_ids.sum()))
+        mask = t.ones(n, n, dtype=t.bool).tril()
+        att = tuple(t.softmax(t.randn(b, self.config.num_attention_heads, n, n, generator=g)
+                              .masked_fill(~mask, float("-inf")), -1) for _ in range(self.config.num_hidden_layers))
+        return SimpleNamespace(attentions=att if output_attentions else (),
+                               logits=t.randn(b, n, self.vocab, generator=g))
+
+
+def test_forward_returns_text_arrays():
+    """`forward` on a fake LM: I_text's PM arrays present, per layer × head, per sequence."""
+    torch = pytest.importorskip("torch")
+    if not hasattr(torch, "softmax") or type(torch).__name__ == "MagicMock":
+        pytest.skip("torch is stubbed")
+    r = 2
+    sets = {**t5k.draws(np.arange(1, 64), seed=3, r=r),
+            **t5k.text_sets(np.random.default_rng(4).integers(1, 64, (3 * r, t5k.T + 7)), r=r)}
+    held = np.random.default_rng(5).integers(1, 64, (2, t5k.HELD_LEN))
+    a = t5k.forward(_FakeLM(torch), sets, held, "cpu", bs=2)
+    for k in ("pm_rep_text", "pm_ctrl_text", "pm_null_text", "pm_rep", "pm_ctrl", "pm_null"):
+        assert a[k].shape == (r, 4) and np.isfinite(a[k]).all()
+    assert not np.allclose(a["pm_rep_text"], a["pm_rep"])          # the text sets are read, not the draws
+    s = t5k.summarize(a, n_boot=20)
+    assert np.isfinite(s["I_text"]) and np.isfinite(s["I_text_null"]) and 0 <= s["argmax_text"] < 4
+
+
+def test_read_run_dates_text_beside(monkeypatch):
+    monkeypatch.setattr(t5k, "_pair", lambda run, steps, k: (lambda i, j: 0.0))
+    n = len(STEPS)
+    rise = [0, 0, 0, 0, 0.1, 0.3, 0.4, 0.4]
+    data = {"steps": STEPS, "series": {"I": rise, "I_null": [0.001] * n, "P": rise, "B": [-v for v in rise],
+                                       "ICL": [-v for v in rise], "I_text": [0, 0, 0, 0.02, 0.3, 0.35, 0.36, 0.36],
+                                       "I_text_null": [0.002] * n, "rho_mid": [0.5, 1.0, 0.7, 0.2, 0.1, 0.4, 0.8, 0.8]},
+            "se": {}}
+    o = t5k.read_run("A0", data, 70)
+    assert o["I_text"]["on_0.1"] == 40 and not o["I_text"]["refused"]
+    assert o["I_text_null"]["refused"] and o["max_I_text_null"] == pytest.approx(0.002)
+    assert o["phase"]["I_text"]["on_0.1"] == "fall" and o["d"]["I_text"] == -1
+    assert "label" in o and o["label"] == t5k.label(o["I"], o["rho"]["rise"], o["d"]["I"], 70)
