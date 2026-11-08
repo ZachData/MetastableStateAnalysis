@@ -357,8 +357,11 @@ as particles (features are directions: the user's view, 2026-10-18).
 
 Opened after Track T closed (the user's words, 2026-11-02: "add the motions to analyse the MLP
 after part T"), under §3. **N1 opened 2026-11-08:** scan `docs/lit-N.md`, design
-`trackN_neurons/design-N1.md` proposed (2 units, Blocked 144), status `trackN_neurons/status-N.md`.
-Nothing downloaded or run.
+`trackN_neurons/design-N1.md` frozen (2 units; Blocked 144 decided D1 (d), D2 (a), D3 (a), the user's),
+status `trackN_neurons/status-N.md`. U1 done 2026-11-08: reads graded (neuron-lineage
+already reads 512 and 1000; L3N669's "checkpoint 10" is step 512); the populated rule's gate failed
+(planted P+ at the Haar null's noise; B's arm could not fail; a covariance null fails every plant:
+at layer 0 the statistic cannot separate a detector from a random row), so no counts; Blocked 145 (close at budget, extend, or close Track N).
 
 ## 8. Track C: write-ups
 

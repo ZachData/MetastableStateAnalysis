@@ -1046,6 +1046,21 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-08, N1 U1 (a gate arm that could not fail, and a null never sized; caught by the gate's
+  first output, before any count): design-N1 planted B by setting a token's z to z* exactly, so its
+  statistic (closeness to z*) sat at its maximum by construction, and the Haar null it was compared
+  with was never sized: at layer 0 random rows of the neuron's norm stay 20–29 MADs from z*. The
+  P± arms were sized by nobody either: a perfect token indicator clears the Haar null by 1.0–1.7×,
+  and one cell failed by less than the threshold's own seed-to-seed spread (4.64 vs 4.70; 4.55–4.70
+  over four seeds). P−'s plant was P+'s negated (the same statistic) and the held-out rows came from
+  the null's own distribution (~5 % by construction), so of four arms one was live (`/challenge-pr`
+  on #328 found both). Both were readable from one layer-0 matmul (4 s) before the freeze; the
+  design's own "Worth challenging" named the cause (random rows ignore the stream's large
+  directions) and `/challenge-pr` on #327 put the gate in without asking its margin. Cost: N1's
+  last unit ends without Q5, Blocked 145. Rule: **before a gate freezes, compute each planted
+  arm's statistic and the null's threshold once on real data, write the margin beside the arm,
+  and drop an arm whose plant sits at the statistic's maximum by construction or repeats another arm's
+  statistic** (the T5′ U1 rule below, applied to a margin).
 - 2026-11-07, T5′ U1 (a gate leg frozen without its SE estimated; caught by the gate, on its first
   output, before the batch): G6 asked the held-out ICL score (20-token windows, 64 sequences) to
   fall ≥ 4 SE on `pythia-410m` by 143000. Nobody estimated the SE before the freeze, though one
