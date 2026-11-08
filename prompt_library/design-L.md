@@ -77,6 +77,20 @@ the 7-prompt overlay are described beside, no rule. U2's labels, for the compari
 0.734 (0.672–0.778), `gpt-2-small` spreads 0.168 (0.153–0.182); beside, 410m spreads 0.298, 160m
 spreads 0.171 (5th 0.146), 70m does not 0.101. `gpt-2-small` and 160m sit nearest the bar.
 
+**U2's details (fixed and pushed 2026-11-07, before any library output; nothing in them reads
+a model on the library).** Producer `prompt_library/l2.py`, tests `tests/test_l2.py`.
+
+| item | fixed as |
+|---|---|
+| input | `core.library.load("val", 1024)`, `library_hash("val", 1024)` = `47feaa321fa0…` in every record's meta; Blocked 141 decided (a), the user's: the 30 items kept as drawn |
+| reading | T5 U2's loaders, steps and tokenizers (`t5c.TRAJ`, `t5c.load`, `t5c.tokenizer_of`); one item per forward pass as `c2_aniso.states` reads a prompt: the model's own tokenizer, truncated at 512 of its own tokens, float32, eager, TF32 off; per state and item ρ, ρ⁻⁰, m, m⁻⁰, n0 by `t5.state_stats`'s formulas, on the GPU in float64 (median as numpy's) |
+| the start-token question (U1's Parked) | answered in code: `check_tokenizer` refuses a tokenizer whose default call adds a token (Pythia's and Dodecahedron's add none, `t2.tokenizer`); each record keeps every item's token count and whether its own tokenizer had to cut it (Dodecahedron's BPE can give > 512 for a 512-NeoX-token item) |
+| the bootstrap | T5 U2's (`t5c.spread`: 1000 resamples of items, seed `20261030` per trajectory, one resample used at every step), its item mean taken as a count-weighted mean (`l2.count_spread`; equal to `t5c.spread` within 1e-12 on the same draws, and the synthetic's labels equal `t5c.synthetic`'s at 7, `tests/test_l2.py`); `t5c.spread` itself would hold 53 × 1000 × 1024 × 17 float64 |
+| the known answer | `l2.py known`: the 7 v1 texts through this reader at 410m 0, 4000 and `-32m` 1, 9536 against U2's step records (`data/trackT/t5u2/2026-10-30/`): every per-prompt ρ and ρ⁻⁰, the prompt means of all five statistics, and the token counts, ≤ 1e-6. Run before this table was pushed (it reads no library text): max 2.3e-15, code `4d7962561795`; re-run if the code hash changes |
+| the synthetic | `t5c.synthetic`'s plant, steps and draws at 1024 items i.i.d., s = SD over items of each item's middle-state median at `-32m` 9536 (`t5c.prompt_spread` on the library) |
+| beside, no rule | per Pile subset with ≥ 32 items (8 in `val`) under the same rule and seed; all items but Pile-CC (D1's flag); ρ_mid⁻⁰'s label; per step the 10th, 50th, 90th percentiles over items of each item's middle-state median; the 7-prompt series from U2's `reading.json`; m and n0 at middle states |
+| records | `data/library/u2/2026-11-07/` (main tree): per checkpoint an `.npz` (five statistics per item and state, token counts, cut flags) and a `.json` (commit, code, library hash, read time); `known.json`; `reading.json` |
+
 **Pre-authorised fallbacks.** U1: a download whose sha256 differs from the pinned one refuses (no
 fallback: the pin is the point); a missing `pile_set_name` becomes the stratum "unknown", counted;
 a subset share outside its band is reported, not redrawn (a redraw is selection). U2: a known-answer
