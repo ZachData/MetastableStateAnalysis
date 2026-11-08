@@ -227,12 +227,16 @@ def run(a) -> int:
             "library_hash": library.library_hash(SPLIT, a.k), "max_tokens": MAX_TOKENS, "dtype": "float32",
             "stats_dtype": "float64", "tf32": False, "device": torch.cuda.get_device_name(0),
             "torch": torch.__version__, "transformers": transformers.__version__, "hf_roots": list(a.hf_roots)}
+    same = ("code", "library_hash", "k", "device", "torch", "transformers")   # a resume keeps one environment
     if (out / "meta.json").exists():
         prev = json.loads((out / "meta.json").read_text())
-        if {k: prev[k] for k in ("code", "library_hash", "k")} != {k: meta[k] for k in ("code", "library_hash", "k")}:
-            raise L2Refused(f"{out}: meta.json is from code {prev['code']} / library {prev['library_hash'][:12]}")
+        diff = {k: (prev.get(k), meta[k]) for k in same if prev.get(k) != meta[k]}
+        if diff:
+            raise L2Refused(f"{out}: meta.json differs from this run in {diff}")
     out.mkdir(parents=True, exist_ok=True)
-    (out / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
+    tmp = out / "meta.json.tmp"                     # atomic: a cut write leaves the old meta.json
+    tmp.write_text(json.dumps(meta, indent=1) + "\n")
+    tmp.replace(out / "meta.json")
     t0 = time.time()
     toks = {}
     for name in a.trajs:
@@ -244,8 +248,8 @@ def run(a) -> int:
             if s not in steps:
                 raise L2Refused(f"{name}: step {s} is not on U2's list")
             p = out / name / f"step{s}.npz"
-            if p.exists() and not a.force:
-                continue
+            if p.exists() and p.with_suffix(".json").exists() and not a.force:
+                continue                            # both files, or the step is re-read
             m, info = t5c.load(name, s, a.hf_roots, device)
             t1 = time.time()
             rec = read_texts(m, toks[tk], texts, device)

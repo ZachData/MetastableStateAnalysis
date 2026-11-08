@@ -7,7 +7,7 @@
 - **Question:** How many real, held-out prompts does a token-cloud reading (ρ_mid on Tracks A and T, read today on 7 hand-picked v1 prompts) need, drawn from which source by which rule fixed before any model reads them, and pinned how, so that later readings name their exact input?
 - **Inputs:** U2 read T5 U2's six trajectories (`dodecahedron-32m`, `-67m` at 53 steps, `pythia-70m`, `-160m`, `-410m` at 18, `timaeus/gpt-2-small` at 20; 180 checkpoints) on `val` k = 1024 (`library_hash` `47feaa321fa0`), code `4d7962561795`, records `data/library/u2/2026-11-07/`. U1 drew the library from `monology/pile-uncopyrighted` at `3be90335b66f` (`val`, `test` by their LFS sha256) with `EleutherAI/pythia-410m`'s tokenizer at `9879c9b5f8be`; no model read it. U0 read T5 U2's records (`data/trackT/t5u2/2026-10-30/`, the 7 v1 prompts, code `3d425b32db90`) through `prompt_library/sizing_u0.py`, and the Hugging Face API listing of `monology/pile-uncopyrighted` at `3be90335b66f`
 - **Results:**
-  - Re-read 2026-11-07 (U2; Blocked 141 (a), the user's): on 1024 Pile `val` documents T5 U2's six labels all stand under its frozen rule (the three scored "spreads", Δ 0.775, 0.762, 0.174; 70m "does not spread", 160m and 410m "spreads"); Δ is larger than on the 7 v1 prompts on every trajectory (by 0.006–0.043), since the library's troughs are lower; every subset with ≥ 32 items gives each trajectory's label; recorded beside T5 U2, not as a correction to it — `prompt_library/status-L.md` "U2, T5 U2's labels on the library (2026-11-07)"
+  - Re-read 2026-11-07 (U2; Blocked 141 (a), the user's): on 1024 Pile `val` documents of ≥ 512 tokens T5 U2's six labels all stand under its frozen rule (the three scored "spreads", Δ 0.775, 0.762, 0.174; 70m "does not spread", 160m and 410m "spreads"); Δ is larger than on the 7 v1 prompts on every trajectory (by 0.006–0.043), since the library's troughs are lower; every subset with ≥ 32 items gives each trajectory's label; recorded beside T5 U2, not as a correction to it — `prompt_library/status-L.md` "U2, T5 U2's labels on the library (2026-11-07)"
   - Built 2026-11-07 (U1; D1–D5 decided all (a), Blocked 140): 1024 `val` items and a sealed 1024-item `test`, each a single Pile document cut at its 512th GPT-NeoX token, pinned by `prompt_library/library_v1.json` and loadable only through `core/library.py`; a second build reproduced the manifest and texts byte for byte; no subset outside its 99 % band; 42 % of rows meet the length rule (PubMed Abstracts 3 %); 1010 `val` and 1008 `test` items re-tokenize alone to exactly the document's first 512 ids, the other 30 to 511 or 513 (Blocked 141) — `prompt_library/status-L.md` "U1, the build (2026-11-07)"
   - Opened 2026-11-07 by the user's order in the roadmap's decisions, item 14 (T5′ paused for it): on T5 U2's records the 7 prompts are thin for a level in the transitions but enough in count for T5's scored Δ, and Δ is set mostly by which kind of text (French narrative lowest on Pythia, code on Dodecahedron), so the library's case is coverage of real text, not count; a design proposed with a sealed confirmation split, 3 units + close-out, revised after `/challenge-pr` on #320; D1–D5 are Blocked 140 — `prompt_library/status-L.md` "U0, the design (2026-11-07)"
 - **Superseded / wrong:** none
@@ -19,7 +19,7 @@
   - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–562): not told apart
 - **After Phase 10:**
   - near-duplicate check of the library against the Pile's train split *(free: CPU, an n-gram pass over one train shard)*
-- **Reviewed:** 2026-11-07 · body `e50b20f8a4`
+- **Reviewed:** 2026-11-07 · body `6fbcc45631`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -193,8 +193,9 @@ step moves only on `gpt-2-small` (4300, against 6000 on the 7).
 - *Across items* (10th, 50th, 90th percentiles of each item's middle-state median): at the first
   step 0.82–0.90 (`-32m`), 0.44–0.48 (410m); at the trough 0.04–0.15 (`-32m`), 0.12–0.18 (410m).
 
-**What it says.** On 1024 random Pile documents, T5 U2's labels all stand, and Δ is a little
-larger on each trajectory. So U2's labels do not turn on which 7 texts it read. Both readings
+**What it says.** On 1024 random Pile `val` documents of ≥ 512 NeoX tokens (42 % of rows, the
+share varying by subset, U1), T5 U2's labels all stand, and Δ is a little larger on each
+trajectory. So the labels hold on this population of real text as well as on the 7. Both readings
 use the same 180 checkpoints, so neither tests checkpoint-to-checkpoint noise (finding 1).
 Recorded **beside** T5 U2 (D5 (a)): a reading of another population of text, not a correction to it.
 
@@ -209,7 +210,9 @@ training distribution (D1).
 
 **How to re-run.** `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m
 prompt_library.l2 known --out <dir>`, then `run --out <dir>` (≈ 77 min), then `read --out <dir>`
-(≈ 1 min, 18 CPU threads; reader `ada133458c71` after #322's fixes, labels unchanged).
+(≈ 1 min, 18 CPU threads; reader `4c65dd7f647a` after #322's review fixes, labels unchanged; CodeRabbit's four taken: `meta.json`
+written atomically, a resume refuses another device / torch / transformers, a step resumes only with
+both its files, the population named as eligible documents).
 
 **`/challenge-pr` on #322** (accept with changes, at `b552906`; all four taken). (1) The
 synthetic cannot fail at any s (above; `LESSONS.md` 6). (2) Length against text: parked, below.
