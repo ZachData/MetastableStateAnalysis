@@ -5,8 +5,9 @@
 ## Card
 
 - **Question:** How many real, held-out prompts does a token-cloud reading (ρ_mid on Tracks A and T, read today on 7 hand-picked v1 prompts) need, drawn from which source by which rule fixed before any model reads them, and pinned how, so that later readings name their exact input?
-- **Inputs:** U1 drew the library from `monology/pile-uncopyrighted` at `3be90335b66f` (`val`, `test` by their LFS sha256) with `EleutherAI/pythia-410m`'s tokenizer at `9879c9b5f8be`; no model read it. U0 read T5 U2's records (`data/trackT/t5u2/2026-10-30/`, the 7 v1 prompts, code `3d425b32db90`) through `prompt_library/sizing_u0.py`, and the Hugging Face API listing of `monology/pile-uncopyrighted` at `3be90335b66f`
+- **Inputs:** U2 read T5 U2's six trajectories (`dodecahedron-32m`, `-67m` at 53 steps, `pythia-70m`, `-160m`, `-410m` at 18, `timaeus/gpt-2-small` at 20; 180 checkpoints) on `val` k = 1024 (`library_hash` `47feaa321fa0`), code `4d7962561795`, records `data/library/u2/2026-11-07/`. U1 drew the library from `monology/pile-uncopyrighted` at `3be90335b66f` (`val`, `test` by their LFS sha256) with `EleutherAI/pythia-410m`'s tokenizer at `9879c9b5f8be`; no model read it. U0 read T5 U2's records (`data/trackT/t5u2/2026-10-30/`, the 7 v1 prompts, code `3d425b32db90`) through `prompt_library/sizing_u0.py`, and the Hugging Face API listing of `monology/pile-uncopyrighted` at `3be90335b66f`
 - **Results:**
+  - Re-read 2026-11-07 (U2; Blocked 141 (a), the user's): on 1024 Pile `val` documents T5 U2's six labels all stand under its frozen rule (the three scored "spreads", Δ 0.775, 0.762, 0.174; 70m "does not spread", 160m and 410m "spreads"); Δ is larger than on the 7 v1 prompts on every trajectory (by 0.006–0.043), since the library's troughs are lower; every subset with ≥ 32 items gives each trajectory's label; recorded beside T5 U2, not as a correction to it — `prompt_library/status-L.md` "U2, T5 U2's labels on the library (2026-11-07)"
   - Built 2026-11-07 (U1; D1–D5 decided all (a), Blocked 140): 1024 `val` items and a sealed 1024-item `test`, each a single Pile document cut at its 512th GPT-NeoX token, pinned by `prompt_library/library_v1.json` and loadable only through `core/library.py`; a second build reproduced the manifest and texts byte for byte; no subset outside its 99 % band; 42 % of rows meet the length rule (PubMed Abstracts 3 %); 1010 `val` and 1008 `test` items re-tokenize alone to exactly the document's first 512 ids, the other 30 to 511 or 513 (Blocked 141) — `prompt_library/status-L.md` "U1, the build (2026-11-07)"
   - Opened 2026-11-07 by the user's order in the roadmap's decisions, item 14 (T5′ paused for it): on T5 U2's records the 7 prompts are thin for a level in the transitions but enough in count for T5's scored Δ, and Δ is set mostly by which kind of text (French narrative lowest on Pythia, code on Dodecahedron), so the library's case is coverage of real text, not count; a design proposed with a sealed confirmation split, 3 units + close-out, revised after `/challenge-pr` on #320; D1–D5 are Blocked 140 — `prompt_library/status-L.md` "U0, the design (2026-11-07)"
 - **Superseded / wrong:** none
@@ -14,11 +15,11 @@
 - **Depends on:** none
 - **Feeds:** none
 - **Open threads:**
-  - U2, the first use: T5 U2's labels re-read on `val` k = 1024 under U2's rule, beside T5 (`prompt_library/design-L.md` "The units, exit and budget")
-  - whether random Pile documents spread more than the 7 v1 prompts (U2 measures it; U1 read no model)
+  - the close-out (the budget's 3 units are spent): the one page, Parked homed (`prompt_library/design-L.md` "The units, exit and budget")
+  - why the library sits below the 7 in the fall (kind of text, or each item's 511–512 tokens against the 7's 242–562): not told apart
 - **After Phase 10:**
   - near-duplicate check of the library against the Pile's train split *(free: CPU, an n-gram pass over one train shard)*
-- **Reviewed:** 2026-11-07 · body `384032271c`
+- **Reviewed:** 2026-11-07 · body `97f32ddea9`
 <!-- /phase-card -->
 
 ## Corrections received
@@ -132,4 +133,72 @@ threads, 3.3 GB RAM; `--first` prints item 0 and writes nothing). A second build
   slots (`t5c.py` tokenizes with the HF defaults and `max_length=512`; Pythia adds none,
   Dodecahedron's not checked here). If so, every item loses its last token at read time, which
   matters more than the 30 above (`/challenge-pr` on #321, question). U2's gate states each
-  tokenizer's convention and per-item count.
+  tokenizer's convention and per-item count. *Done in U2:* neither adds one (below).
+
+## U2, T5 U2's labels on the library (2026-11-07)
+
+Branch `claude/prompt-library-u2`. **Blocked 141 decided (a), the user's:** the 30 items are kept as
+drawn. Rule and gate: T5 U2's, frozen (`design-L.md` "U2, fixed now"); the reading's details fixed
+and pushed before any library output (`2b5294f`, `design-L.md` "U2's details"). Producer
+`prompt_library/l2.py` (code `4d7962561795`), tests `tests/test_l2.py`; records
+`data/library/u2/2026-11-07/` (main tree; 180 checkpoints, 4605 s on the RTX 3080, runner).
+**Input:** `val` k = 1024, `library_hash` `47feaa321fa0…`; T5 U2's six trajectories at its steps
+(`t5c.TRAJ`), one item per forward pass, float32, eager, TF32 off, statistics in float64 on the GPU.
+
+**Tokens.** Neither tokenizer adds a start or end token (`check_tokenizer`). Pythia and
+`gpt-2-small` read every item at 511–512 NeoX tokens, none cut. **Dodecahedron's BPE gives more
+than 512 tokens for every item, so all 1024 are cut at 512 of its own tokens** (U2's ≤ 512
+convention): it reads a shorter prefix of each document than Pythia does.
+
+**Gate: passes.** Known answer (the 7 v1 texts through `l2.py` at 410m 0, 4000 and `-32m` 1, 9536
+against U2's step records; every per-prompt ρ and ρ⁻⁰, the five means, the token counts):
+max 2.3e-15. Synthetic at 1024 items, s 0.0194 (`-32m` 9536's item spread on the library, U2's 7
+gave 0.0072): planted 0.15 "spreads" 92.4 % (≥ 90 %), flat 0.0 % (≤ 5 %).
+
+**Reading** (Δ = ρ_mid(first) − min, item bootstrap 5th–95th; T5 U2's on the 7 beside):
+
+| trajectory | first | min (step) | last | Δ library | 5–95 % | label | Δ on the 7 | U2's label |
+|---|---|---|---|---|---|---|---|---|
+| **`dodecahedron-32m`** (scored) | 0.859 | 0.084 (917) | 0.898 | **0.775** | 0.772–0.778 | **spreads** | 0.736 | spreads |
+| **`dodecahedron-67m`** (scored) | 0.836 | 0.074 (671) | 0.910 | **0.762** | 0.758–0.766 | **spreads** | 0.734 | spreads |
+| **`gpt-2-small`** (scored) | 0.328 | 0.154 (4300) | 0.169 | **0.174** | 0.173–0.175 | **spreads** | 0.168 | spreads |
+| `pythia-70m` (beside) | 0.299 | 0.169 (2000) | 0.339 | 0.130 | 0.128–0.131 | does not spread | 0.101 | does not spread |
+| `pythia-160m` (beside) | 0.386 | 0.172 (2000) | 0.370 | 0.214 | 0.212–0.216 | spreads | 0.171 | spreads |
+| `pythia-410m` (beside) | 0.458 | 0.151 (4000) | 0.368 | 0.308 | 0.306–0.309 | spreads | 0.298 | spreads |
+
+ρ_mid⁻⁰ gives the same label and minimum step on every trajectory (Δ within 0.002). The minimum's
+step moves only on `gpt-2-small` (4300, against 6000 on the 7).
+**Beside, no rule.**
+- *Per subset* (the 8 with ≥ 32 items): every subset gives each trajectory's label. Lowest Δ:
+  on Dodecahedron DM Mathematics and Github (`-32m` 0.726, 0.728; `-67m` 0.725, 0.732; highest
+  Wikipedia, Pile-CC and USPTO, 0.79–0.81); on Pythia and `gpt-2-small` DM Mathematics (70m 0.091, 160m
+  0.154, 410m 0.272, `gpt-2-small` 0.155) and USPTO. So code and mathematics spread least on
+  Dodecahedron, as the 7's code prompt did; no subset stands in for the 7's French narrative
+  (EuroParl drew 0 items). The two nearest the bar: `gpt-2-small` on DM Mathematics (0.155, 5th 0.145)
+  and 160m on DM Mathematics (0.154, 5th 0.144), both "spreads", n 36.
+- *Without Pile-CC* (673 items, D1's flag): `-32m` 0.763, `-67m` 0.750, `gpt-2-small` 0.172, all
+  "spreads"; Pythia's labels unchanged.
+- *Against the 7:* the library's series has the 7's shape on every trajectory (the early peak
+  at the same step, `-67m` one step earlier; the trough at the same step but on `gpt-2-small`; the
+  late rise). Firsts agree within 0.012. In the fall the library sits lower, by up to 0.10–0.13 (at
+  most 0.05 on 70m); at the minimum lower by 0.013–0.033; at the last step lower by 0.004–0.067
+  (160m most). Dodecahedron's early rise is the one place it sits higher (by ≤ 0.04).
+- *Across items* (10th, 50th, 90th percentiles of each item's middle-state median): at the first
+  step 0.82–0.90 (`-32m`), 0.44–0.48 (410m); at the trough 0.04–0.15 (`-32m`), 0.12–0.18 (410m).
+
+**What it says.** On 1024 random Pile documents, T5 U2's labels all stand, and Δ is a little
+larger on each trajectory. So U2's labels were not an artefact of its 7 prompts. Recorded
+**beside** T5 U2 (D5 (a)): a reading of another population of text, not a correction to it.
+
+**Caveats.** The bootstrap resamples items only. Its narrow bands (±0.003) say nothing about
+checkpoint-to-checkpoint jitter, and Δ takes a minimum over 18–53 steps. `gpt-2-small`'s 0.174
+sits 0.024 above the bar; U2 already noted that its step-to-step jitter is about that size.
+Dodecahedron reads shorter prefixes than Pythia (above), so a Pythia-against-Dodecahedron
+difference mixes model with text length; the 7 had the same mismatch (32m read 484 tokens of
+`hdbscan_code` against Pythia's 242). Why the library sits below the 7 in the fall is not told
+apart: kind of text, or length (511–512 tokens against 242–562). Pile text is off Dodecahedron's
+training distribution (D1).
+
+**How to re-run.** `HF_HOME=<HDD_1TB>/mets_data/hf METS_DATA=<main>/data python -m
+prompt_library.l2 known --out <dir>`, then `run --out <dir>` (≈ 77 min), then `read --out <dir>`
+(≈ 1 min, 18 CPU threads).
