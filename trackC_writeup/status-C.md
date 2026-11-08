@@ -41,6 +41,7 @@
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
+  - Cited context for the rewrite from Track N's close (2026-11-08; not results, neither re-run): neuron births on `pythia-410m-deduped` at 512 and 1000 with random-basis births there too (neuron-lineage), and 70m's German context neurons forming at 512 "coinciding with the LR warm-up" (2311.00863); both bear on F1 — `trackN_neurons/status-N.md` "Track N on one page (closed 2026-11-08)"
 - **After Phase 10:**
   - none
 - **Reviewed:** 2026-11-01 · body `bbea1c9245`

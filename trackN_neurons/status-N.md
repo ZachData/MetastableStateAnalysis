@@ -11,18 +11,19 @@
   - The populated rule refused by its own gate at layer 0: a perfect token detector clears the Haar null by only 1.0–1.7×, a covariance null sits above every plant, and B's arm could not fail, so no counts — `trackN_neurons/status-N.md` "N1 U1, the reads and the gate (2026-11-08): the gate failed, no counts"
   - neuron-lineage already reads births on `pythia-410m-deduped` at 512 and 1000, with its random basis having births there too (the only two random points recorded); 70m's German neurons form as a group at step 512 ("checkpoint 10"), L3N669 detects German at F1 0.9 by step 3000, and 410m's 23.417 is confirmed as a token-frequency neuron — `trackN_neurons/status-N.md` "N1 U1, the reads and the gate (2026-11-08): the gate failed, no counts"
   - Closed at its budget (Blocked 145 (a), the user's), Q6 put to the user — `trackN_neurons/status-N.md` "N1 on one page (closed 2026-11-08)"
+  - **Track N closed 2026-11-08 after N1** (Blocked 146 (a), the user's): no neuron read past layer 0 of 143000; N2 and N3 unscheduled in the ROADMAP; neuron-lineage's births and 70m's German group at 512 handed to C2's rewrite as cited context — `trackN_neurons/status-N.md` "Track N on one page (closed 2026-11-08)"
 - **Superseded / wrong:** none
 - **Registry:** none, because N1 is tier 1 description and registers nothing
 - **Depends on:** L@903ea500e7
 - **Feeds:** none
 - **Open threads:**
   - A populated statistic that separates planted rows from random rows of matched norm, gated at a site where a random row is not already a token detector (at layer 0 every row is one), and a B statistic that can fail (carried to the ROADMAP's Track N row N2, no repair prescribed) — `docs/ROADMAP.md`
-  - Q6: what follows N1 (Blocked 146)
+  - Q6, what follows N1: decided (a), close Track N (Blocked 146, the user's, 2026-11-08); N2 and N3 stay in the ROADMAP's Track N table, unscheduled — `docs/ROADMAP.md`
   - Q5's counts and the cost of one step's capture; whether neuron births are basis-specific on 410m
 - **After Phase 10:**
   - 23.417 (at 143000) and L3N669 (from step 3000) as natural controls for any neuron statistic (forward pass, 410m and 70m, GPU minutes)
   - neuron-lineage's instrument re-run on `pythia-410m` (not deduped) at C2's 512 and 1000, against a planted gate (forward pass, cached checkpoints, unmeasured)
-- **Reviewed:** 2026-11-08 · body `04dd605ea5`
+- **Reviewed:** 2026-11-08 · body `287638df30`
 <!-- /phase-card -->
 
 What the MLP's neurons do across training (`docs/ROADMAP.md` §7c, the user's, 2026-11-02).
@@ -107,6 +108,43 @@ The script now refuses to run uncommitted and records its file hash (finding 4).
 | Q5 | **partly**: inputs confirmed, counts not run (the gate) | checkpoints on disk: `pythia-410m` 34 revisions cached (0 … 512, 1000 … 143000, C2's 18 among them); text: library `val`, 524,274 tokens; layer 0's gate 4 s, the capture's cost unmeasured |
 | Q6 | open: Blocked 145 | D3 (a)'s dated births are a replication on the steps neuron-lineage already reads (512, 1000), so D3 (c) gains, as design-N1 said it would |
 
+## Track N on one page (closed 2026-11-08)
+
+**Asked** (ROADMAP §7c, the user's, 2026-11-02, after Cammarata's essay): what the MLP's neurons
+write across training, and whether a neuron's job forms locally at C2's dated events (512, 1000).
+**Closed after N1** (Blocked 146 (a), the user's, 2026-11-08: design-N1's D3 (c)). Tier 1, nothing
+registered. Writing only at close.
+
+**The answer: not read here.** No neuron was read past layer 0 of `pythia-410m` 143000. The
+track's one row found the question partly answered outside, on a neighbour model, and its own
+instrument refused by its gate. So the track gave a unit and the reason a count is not yet
+possible, not a timeline.
+
+| row | outcome | where |
+|---|---|---|
+| N1, scan, inventory and the unit | closed at its budget (2 units + close-out): a pole under GeLU defined (P+, P−, B) and checked; the populated rule refused at layer 0, so no counts; births already read outside on 410m-deduped | "N1 on one page" |
+| N2, the positive control | not opened; carries N1's open problem (a statistic that separates planted from random rows where a random row is not already a token detector, and a B that can fail) | ROADMAP §7c |
+| N3, poles at C2's 18 steps | not opened; its direction would be decided at N2's close | ROADMAP §7c |
+
+**Established (tier 1):** N1's four findings ("N1 on one page" below); nothing beyond them.
+
+**Not established:** any neuron's job at any step; whether jobs grow locally at 512 or 1000 on
+410m; whether neuron births are specific to the neuron basis (outside, two random-basis points
+only); the essay's companion paper's method (not out).
+
+**For C2, cited context, not results here** (for the user's rewrite of `trackC_writeup/paper/`;
+sources `docs/lit-N.md` §2; neither re-run here): (1) neuron-lineage (a repository, no paper)
+reads neuron "births" on `pythia-410m-deduped`, not `pythia-410m`: high at 128, highest at
+1000–2000, its random basis also having births at 512 and 1000 (the neuron basis 1.5× and 1.25×
+over it). (2) 70m's German context neurons form as a group at step 512, "coinciding with the LR
+warm-up" in its authors' words (2311.00863); L3N669 detects German at F1 0.9 only by step 3000.
+Both sit at C2's dates and inside the warmup, so they bear on F1 (schedule or training) as more
+events on the same dates; neither is a mechanism for the break.
+
+**Parked:** none (N1 parked none; this close-out raised none). **Units:** N1 U0, U1 and its
+close-out; this close-out, writing only. **Records:** `trackN_neurons/n1_gate_u1.json`,
+`trackN_neurons/n1_sizing_u1.json` (tracked); nothing under `data/`.
+
 ## N1 on one page (closed 2026-11-08)
 
 **Asked** (`design-N1.md`; ROADMAP §7c N1): Q1–Q6, the scan, the inventory and the unit that N2 and
@@ -156,7 +194,8 @@ check), U1 (reads, gate, sizing after `/challenge-pr` on #328), and this close-o
 
 **Q6, put to the user (Blocked 146; options in `STATE.md`):** what follows N1. The options are
 close Track N, an N2 that builds the instrument with the two natural controls, or N3 on
-neuron-lineage's instrument, gated first.
+neuron-lineage's instrument, gated first. *Decided (a), 2026-11-08, the user's: Track N closed
+("Track N on one page" above).*
 
 ## Corrections received
 
