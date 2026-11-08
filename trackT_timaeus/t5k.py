@@ -10,6 +10,12 @@ previous-token score on the control, the second half's token loss, and on 1024 h
 sequences of `t5u4/data/tail.bin` (64–1087, trained by no arm; Blocked 139 (a), post hoc: the first
 64, read by the 2026-11-07 gate, had no power) the token loss at positions 490–509 minus 40–59.
 I = max_h (PM_h(rep) − PM_h(ctrl)); I_null the same with the null set (the planted null).
+**I_text, beside** (Blocked 139 (a), the user's; post hoc, description only; fixed in
+`design-T5p.md` "Blocked 139 decided" before it was built): I's formula on real text, R = 32 tail
+rows each for x (1088–1119), x′ (1120–1151), x″ (1152–1183), each row's first T = 256 tokens:
+    repeated  [x, x]     control  [x, x′]     null  [x, x″]
+I_text_null is its planted null (max ≤ 0.05 described beside, not a gate). Dated by D2's rule
+(floor 0.1), no label; I on random tokens stays the labelled statistic (D1 (a)).
 The dating rule, the outcome table, the gate and the bridge are the design's; written here before
 any output and tested on synthetic series (`tests/test_trackT_t5k.py`).
 
@@ -28,6 +34,15 @@ Implementation details fixed here before any output (the design leaves them open
   step), 0 at step 0. G6's SE: sqrt(SE(0)² + SE(143000)²).
 - The noise rule's widened range [min − span, max + span] of the A0 seeds' d is applied at any span.
 - Pythia's held-out text: each sequence decoded in Dodecahedron's tokenizer, re-encoded in Pythia's.
+- I_text (fixed 2026-11-08, before any I_text output): Pythia's x, x′, x″ are the whole 2048-token
+  row decoded and re-encoded, its first 256 tokens (as ICL's text; refused if shorter). Rows are
+  kept as they are, `<|endoftext|>` included (real packed text; the share of x rows with one in
+  their first 256 tokens is recorded in `gate.json`, beside). Its bootstrap resamples the 32 text
+  triples jointly, from a second generator on the same seed (20261030), so I's SEs are unchanged by
+  it and the two draw the same indices (unrelated sequence sets; harmless). Beside it, its top-5
+  mean and argmax head. G7 also requires I_text and I_text_null populated. In `read`, G5's planted
+  rise on I_text_null is described beside, not a gate (/challenge-pr on #324, finding 2; added before
+  any batch output).
 
 Tier 1, description (nothing here is registered).
     E="HF_HOME=<HDD_1TB>/mets_data/hf HF_HUB_OFFLINE=1 METS_DATA=<main>/data"
@@ -53,6 +68,7 @@ from trackA_force.a1a import DATA, REPO
 R, T = 32, 256
 DRAW_SEED = 20261107
 HELD_LO, N_HELD, HELD_LEN = 64, 1024, 510   # tail rows 64–1087 (Blocked 139 (a), post hoc; was rows 0–63)
+TEXT_LO = 1088                           # I_text: tail rows 1088–1119 (x), 1120–1151 (x′), 1152–1183 (x″)
 LATE, EARLY = (490, 510), (40, 60)       # positions 490–509 and 40–59 (half-open)
 N_BOOT, BOOT_SEED = 1000, 20261030
 F_ON, F_HALF = 0.1, 0.5
@@ -94,6 +110,22 @@ def draws(ordinary: np.ndarray, seed: int = DRAW_SEED, r: int = R, t: int = T) -
     return {"rep": np.concatenate([a, a], 1), "ctrl": np.concatenate([a, b], 1), "null": np.concatenate([a, c], 1)}
 
 
+def text_sets(rows: np.ndarray, r: int = R, t: int = T) -> Dict[str, np.ndarray]:
+    """I_text's sets from 3r token rows (each ≥ t long, in order x, x′, x″): [x, x], [x, x′], [x, x″]."""
+    rows = np.asarray(rows)
+    if rows.shape[0] != 3 * r or rows.shape[1] < t:
+        raise T5kRefused(f"I_text needs {3 * r} rows of ≥ {t} tokens, got {rows.shape}")
+    x, x1, x2 = (rows[k * r:(k + 1) * r, :t] for k in range(3))
+    return {"rep_text": np.concatenate([x, x], 1), "ctrl_text": np.concatenate([x, x1], 1),
+            "null_text": np.concatenate([x, x2], 1)}
+
+
+def _net(rep: np.ndarray, ctrl: np.ndarray, null: np.ndarray, ix) -> tuple:
+    """I and its null on the sequences ``ix``: max over heads of mean PM(rep) − PM(ctrl), and of null − ctrl."""
+    c = ctrl[ix].mean(0)
+    return (rep[ix].mean(0) - c).max(), (null[ix].mean(0) - c).max()
+
+
 def pm_of(att, t: int = T):
     """Per (batch, head) prefix matching from attention (…, 2t, 2t): mean over j = 0 … t − 2 of the
     weight from query t + j to key j + 1 (torch or numpy-like tensors with ``diagonal``)."""
@@ -120,10 +152,21 @@ def summarize(a: Dict[str, np.ndarray], seed: int = BOOT_SEED, n_boot: int = N_B
     bs = np.array([stat(rng.integers(0, len(rep), len(rep))) for _ in range(n_boot)])
     bi = np.array([icl[rng.integers(0, len(icl), len(icl))].mean() for _ in range(n_boot)])
     h = int(np.argmax(net))
-    return {"I": float(I), "I_null": float(In), "P": float(P), "B": float(B), "ICL": float(icl.mean()),
-            "I_top5": float(np.sort(net)[-5:].mean()), "argmax": h,
-            "se": {"I": float(bs[:, 0].std(ddof=1)), "I_null": float(bs[:, 1].std(ddof=1)),
-                   "P": float(bs[:, 2].std(ddof=1)), "B": float(bs[:, 3].std(ddof=1)), "ICL": float(bi.std(ddof=1))}}
+    out = {"I": float(I), "I_null": float(In), "P": float(P), "B": float(B), "ICL": float(icl.mean()),
+           "I_top5": float(np.sort(net)[-5:].mean()), "argmax": h,
+           "se": {"I": float(bs[:, 0].std(ddof=1)), "I_null": float(bs[:, 1].std(ddof=1)),
+                  "P": float(bs[:, 2].std(ddof=1)), "B": float(bs[:, 3].std(ddof=1)), "ICL": float(bi.std(ddof=1))}}
+    if "pm_rep_text" in a:                 # I_text, beside (Blocked 139 (a)); its own generator
+        tr, tc, tn = (np.asarray(a[f"pm_{k}_text"], float) for k in ("rep", "ctrl", "null"))
+        n = len(tr)
+        It, Itn = _net(tr, tc, tn, np.arange(n))
+        rt = np.random.default_rng(seed)
+        bt = np.array([_net(tr, tc, tn, rt.integers(0, n, n)) for _ in range(n_boot)])
+        nt = tr.mean(0) - tc.mean(0)
+        out.update({"I_text": float(It), "I_text_null": float(Itn), "I_text_top5": float(np.sort(nt)[-5:].mean()),
+                    "argmax_text": int(np.argmax(nt))})
+        out["se"].update({"I_text": float(bt[:, 0].std(ddof=1)), "I_text_null": float(bt[:, 1].std(ddof=1))})
+    return out
 
 
 #: the beside statistics as functions of the per-sequence arrays and a resample (for the paired SE)
@@ -278,19 +321,32 @@ def tokenizer_of(run: str):
     return t2.p_tokenizer() if run == P410 else t2.tokenizer("32m")
 
 
-def held_out(run: str) -> np.ndarray:
+def _tail_rows(run: str, lo: int, n: int, length: int, what: str) -> np.ndarray:
+    """Tail rows lo … lo + n − 1, their first ``length`` tokens; Pythia's decoded in Dodecahedron's
+    tokenizer and re-encoded in its own (refused if a row re-encodes shorter)."""
     from trackT_timaeus import t2, t5h
-    tail = np.asarray(t5h.open_shard(t5h.ROOT)["tail"][HELD_LO:HELD_LO + N_HELD]).astype(np.int64)
+    tail = np.asarray(t5h.open_shard(t5h.ROOT)["tail"][lo:lo + n]).astype(np.int64)
+    if len(tail) != n:
+        raise T5kRefused(f"{what}: tail has {len(tail)} of rows {lo}–{lo + n - 1}")
     if run != P410:
-        return tail[:, :HELD_LEN]
+        return tail[:, :length]
     dt, pt = t2.tokenizer("32m"), t2.p_tokenizer()
     out = []
     for row in tail:
         ids = pt(dt.decode(row.tolist()))["input_ids"]
-        if len(ids) < HELD_LEN:
-            raise T5kRefused(f"re-encoded held-out sequence has {len(ids)} < {HELD_LEN} tokens")
-        out.append(ids[:HELD_LEN])
+        if len(ids) < length:
+            raise T5kRefused(f"re-encoded {what} sequence has {len(ids)} < {length} tokens")
+        out.append(ids[:length])
     return np.array(out, dtype=np.int64)
+
+
+def held_out(run: str) -> np.ndarray:
+    return _tail_rows(run, HELD_LO, N_HELD, HELD_LEN, "held-out")
+
+
+def text_rows(run: str) -> np.ndarray:
+    """I_text's 96 rows (x, x′, x″), each its first T tokens (Blocked 139 (a))."""
+    return _tail_rows(run, TEXT_LO, 3 * R, T, "I_text")
 
 
 def break_fraction(held: np.ndarray, eot: int, lo: int = EARLY[0], hi: int = LATE[1]) -> float:
@@ -324,6 +380,18 @@ def forward(model, sets: Dict[str, np.ndarray], held: np.ndarray, device, bs: in
     import torch
     import torch.nn.functional as F
     out: Dict[str, List] = {}
+    for name in ("rep_text", "ctrl_text", "null_text"):          # I_text: PM only
+        if name not in sets:
+            continue
+        pm = []
+        for ch in torch.from_numpy(sets[name]).split(bs):
+            with torch.no_grad():
+                o = model(input_ids=ch.to(device), output_attentions=True)
+            if len(o.attentions) != model.config.num_hidden_layers or o.attentions[0] is None:
+                raise T5kRefused("attentions not returned (eager attention required)")
+            pm.append(torch.cat([pm_of(a.float()) for a in o.attentions], 1).cpu().numpy())
+            del o
+        out[f"pm_{name}"] = np.concatenate(pm)
     for name in ("rep", "ctrl", "null"):
         pm, pv, ls = [], [], []
         for ch in torch.from_numpy(sets[name]).split(bs):
@@ -363,8 +431,9 @@ class Inputs:
     def __init__(self, run: str):
         tok = tokenizer_of(run)
         self.ordinary = ordinary_ids(tok)
-        self.sets = draws(self.ordinary)
+        self.sets = {**draws(self.ordinary), **text_sets(text_rows(run))}
         self.held = held_out(run)
+        self.eot = int(tok.convert_tokens_to_ids("<|endoftext|>"))
         self.sha = hashlib.sha256(b"".join(np.ascontiguousarray(v).tobytes() for v in
                                            (*self.sets.values(), self.held))).hexdigest()[:12]
 
@@ -462,8 +531,8 @@ def gate(a) -> int:
     res["G3"] = g3()
     # G7: the first output
     r0 = one_step("A0", 4369, inp, device, dcfg, force=a.force)
-    keys = ("I", "I_null", "P", "B", "ICL", "argmax")
-    res["G7"] = {"record": {k: r0[k] for k in keys}, "inputs_sha": r0["inputs_sha"],
+    keys = ("I", "I_null", "P", "B", "ICL", "argmax", "I_text", "I_text_null", "argmax_text")
+    res["G7"] = {"record": {k: r0.get(k) for k in keys}, "inputs_sha": r0["inputs_sha"],
                  "pass": all(r0.get(k) is not None and np.isfinite(r0[k]) for k in keys)}
     # G6: the positive control
     inp_p = Inputs(P410)
@@ -476,6 +545,10 @@ def gate(a) -> int:
     eot = tok.convert_tokens_to_ids("<|endoftext|>")
     res["ICL_breaks"] = {"rows": [HELD_LO, HELD_LO + N_HELD], "positions": [EARLY[0], LATE[1]],
                          "fraction": break_fraction(inp.held, eot), "beside": "not a gate"}
+    res["I_text_breaks"] = {"rows": [TEXT_LO, TEXT_LO + R], "positions": [0, T],
+                            "fraction": {r: break_fraction(i.sets["rep_text"][:, :T], i.eot, 0, T)
+                                         for r, i in (("dodecahedron", inp), (P410, inp_p))},
+                            "beside": "share of x rows with <|endoftext|> in their first T tokens; not a gate"}
     res["pass"] = all(res[g]["pass"] for g in ("G1", "G2", "G3", "G6", "G7"))
     _jdump(OUT / "gate.json", res)
     print(json.dumps({g: res[g]["pass"] for g in ("G1", "G2", "G3", "G6", "G7")} | {"pass": res["pass"]}))
@@ -502,6 +575,7 @@ def run(a) -> int:
     for s in steps_of(a.run):
         r = one_step(a.run, s, inp, device, dcfg, force=a.force)
         print(json.dumps({"run": a.run, "step": s, "I": round(r["I"], 4), "I_null": round(r["I_null"], 4),
+                          "I_text": round(r["I_text"], 4), "I_text_null": round(r["I_text_null"], 4),
                           "P": round(r["P"], 3), "B": round(r["B"], 3), "ICL": round(r["ICL"], 3),
                           "t": round(time.time() - t0)}), flush=True)
     return 0
@@ -525,12 +599,14 @@ def _series(run: str) -> dict:
         u2 = DATA / U2_DIR / run
         reads = {s: json.loads((u2 / f"step{s}.json").read_text()) for s in steps}
         extra = {}
-    ser = {k: [recs[s][k] for s in steps] for k in ("I", "I_null", "P", "B", "ICL", "I_top5")}
-    se = {k: [recs[s]["se"][k] for s in steps] for k in ("I", "I_null", "P", "B", "ICL")}
+    ser = {k: [recs[s][k] for s in steps] for k in ("I", "I_null", "P", "B", "ICL", "I_top5",
+                                                     "I_text", "I_text_null", "I_text_top5")}
+    se = {k: [recs[s]["se"][k] for s in steps] for k in ("I", "I_null", "P", "B", "ICL", "I_text", "I_text_null")}
     ser.update(extra)
     ser["rho_mid"] = [reads[s]["rho_mid"] for s in steps]
     ser["n0_mid"] = [float(np.median(reads[s]["n0"][1:-1])) for s in steps]
     ser["argmax_lh"] = [recs[s]["argmax_lh"] for s in steps]
+    ser["argmax_text"] = [recs[s]["argmax_text"] for s in steps]
     return {"steps": list(steps), "series": ser, "se": se, "codes": sorted(codes), "inputs_sha": shas.pop()}
 
 
@@ -554,16 +630,20 @@ def read_run(run: str, data: dict, end: int) -> dict:
            "I_null": date_series(steps, x["I_null"], floor=I_FLOOR),
            "P": date_series(steps, x["P"], rise_se=_pair(run, steps, "P")),
            "B": date_series(steps, [-v for v in x["B"]], rise_se=_pair(run, steps, "B")),
-           "ICL": date_series(steps, [-v for v in x["ICL"]], rise_se=_pair(run, steps, "ICL"))}
+           "ICL": date_series(steps, [-v for v in x["ICL"]], rise_se=_pair(run, steps, "ICL")),
+           # I_text, beside (Blocked 139 (a)): D2's rule and floor, no label
+           "I_text": date_series(steps, x["I_text"], floor=I_FLOOR),
+           "I_text_null": date_series(steps, x["I_text_null"], floor=I_FLOOR)}
     for k in ("S", "M", "n0_mid"):
         if k in x:
             out[k] = date_series(steps, x[k])
     out["phase"] = {k: {"on_0.1": phase(out[k]["on_0.1"], rd), "on_0.5": phase(out[k]["on_0.5"], rd)}
-                    for k in ("I", "P", "B", "ICL", "S", "M", "n0_mid") if k in out}
+                    for k in ("I", "P", "B", "ICL", "I_text", "S", "M", "n0_mid") if k in out}
     out["d"] = {k: gap(steps, out[k]["on_0.1"], rd["rise"]["on_0.1"]) for k in out["phase"]}
     if run != P410:
         out["label"] = label(out["I"], rd["rise"], out["d"]["I"], end)
     out["max_I_null"] = float(max(x["I_null"]))
+    out["max_I_text_null"] = float(max(x["I_text_null"]))
     return out
 
 
@@ -581,6 +661,21 @@ def read(a) -> int:
     g4 = {r: {"refused": res["runs"][r][str(END[r])]["I_null"]["refused"],
               "max_all_steps": float(max(data[r]["series"]["I_null"]))} for r in RUNS}
     res["G4"] = {"runs": g4, "pass": all(v["refused"] and v["max_all_steps"] <= NULL_MAX for v in g4.values())}
+    # I_text's null, beside (Blocked 139 (a)): described, not a gate, and gates nothing
+    tn = {r: {"refused": res["runs"][r][str(END[r])]["I_text_null"]["refused"],
+              "max_all_steps": float(max(data[r]["series"]["I_text_null"]))} for r in RUNS}
+    res["I_text_null_beside"] = {"runs": tn, "all_within": all(v["refused"] and v["max_all_steps"] <= NULL_MAX
+                                                               for v in tn.values()), "gate": False}
+    # G5's planted rise on I_text's null, beside (/challenge-pr on #324, finding 2): I_text's noise is
+    # larger than I's, so the rule's dating on it is described; not a gate, gates nothing
+    tp = []
+    for r in RUNS:
+        steps = [s for s in data[r]["steps"] if s <= END[r]]
+        xn = data[r]["series"]["I_text_null"][:len(steps)]
+        for c in PLANT_C["410m" if r == P410 else "dodeca"]:
+            tp.append({"run": r, **g5_one(steps, xn, c)})
+    res["I_text_planted_beside"] = {"cells": tp, "n_pass": sum(v["pass"] for v in tp), "n": len(tp),
+                                    "n_refused": sum(v["refused"] for v in tp), "gate": False}
     # G5: a planted rise on each run's I_null
     g5 = []
     for r in RUNS:
@@ -623,6 +718,16 @@ def _print(res: dict) -> None:
                   f"{str(o['phase']['I']['on_0.1']):9s} {o.get('label', '')}")
     if res["outcome"]:
         print(json.dumps(res["outcome"]["noise"]))
+    tp = res["I_text_planted_beside"]
+    print(f"I_text's planted rise (beside, not a gate): {tp['n_pass']}/{tp['n']} dated within a step, "
+          f"{tp['n_refused']} refused")
+    print("I_text, beside (no label): run  end  on.1  on.5  cens  rise  phase.1  d  | max I_text_null")
+    for r, ends in res["runs"].items():
+        for e, o in ends.items():
+            i = o["I_text"]
+            print(f"  {r:12s} {e:>5s} {str(i['on_0.1']):>6s} {str(i['on_0.5']):>6s} {str(i['censored'])[0]:>4s} "
+                  f"{i['rise']:.3f} {'refused' if i['refused'] else '':7s} {str(o['phase']['I_text']['on_0.1']):9s} "
+                  f"{str(o['d']['I_text']):>3s} | {o['max_I_text_null']:.4f}")
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
