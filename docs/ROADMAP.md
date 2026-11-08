@@ -281,6 +281,13 @@ as its controls in all 9 cells; structured edits move the stream further than ra
 same weight norm, so the displacement guard is description. Carried: to S3, arm a's and the
 selected pairs' displacement at 143000; to C2, `lit-S2.md` Parked 1 and G3′'s reach.
 
+**S4 opened 2026-11-08** (Blocked 147 (b), the user's; `trackS_subspace/lit-S4.md`,
+`design-S4.md` proposed, Blocked 148). What the scan changed from the row above: the untied arm
+is released at depths 2–6 (`timaeus/L2`–`L6`, constant LR, no warmup; T1's Parked 1, until now in
+§7b), and HAPAX's Pythia-1b-shaped pair (2511.05743) trained with and without the loss on
+induction-predictable tokens is released. So U1 reads released arms before anything is trained.
+The MLP arm is dropped under D4 (a) and stays here, unscheduled.
+
 Order inside S: the preflight tool (§5; **built 2026-10-20**) before S1's design freezes; S1, then S2 (C2 needs it);
 S4 can start beside S1; S3 and S5 after S1.
 
@@ -475,7 +482,8 @@ proposed, not decided.
     for a 32m model), plus a harness check against the released `pythia-70m`, Pythia's data order
     (about 17 GB, not on disk) and memory on the 10 GB card. Its reading rule is registered by
     the user before the first checkpoint is read. (Moved from C4 by `/challenge-pr` on #330,
-    findings 3–4.)
+    findings 3–4.) *Decided (b), 2026-11-08, the user's: S4 opened with a scan and a design
+    (`trackS_subspace/design-S4.md`, proposed; Blocked 148).*
 
 ## 11. What each phase gives the plan
 
