@@ -251,11 +251,16 @@ def capture_inputs(model, ids, layers, device):
 
 
 def code_sha():
-    try:
-        return subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True,
-                              text=True, check=True).stdout.strip()
-    except Exception:
-        return "unknown"
+    """HEAD, refusing when this file differs from it (`/challenge-pr` on #328, finding 4)."""
+    import hashlib
+    me = Path(__file__).resolve()
+    dirty = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain", "--", str(me)],
+                           capture_output=True, text=True).stdout.strip()
+    if dirty:
+        raise Refused(f"refusing: {me.name} is uncommitted; commit it so the record names its code")
+    head = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True,
+                          text=True, check=True).stdout.strip()
+    return f"{head} sha256:{hashlib.sha256(me.read_bytes()).hexdigest()[:16]}"
 
 
 def meta(torch, lib_hash):
@@ -366,6 +371,49 @@ def gate(a):
     return 0 if rec["passed"] else 1
 
 
+def sizing(a):
+    """Post hoc, for Blocked 145 (`/challenge-pr` on #328, finding 3), not a gate and no count:
+    the gate's planted P+ rows against (i) the Haar null with 4 seeds, to size the threshold's
+    sampling spread, and (ii) a covariance null, rows ~ N(0, Cov(X)) normalised, the repair
+    proposed for N2. Layer 0, step 143000, as the gate."""
+    torch, device = torch_setup()
+    tok, ids, lib_hash = library_tokens()
+    g = json.loads((Path(a.out) / "gate.json").read_text())
+    model = load_model(GATE_STEP, device)
+    X = capture_inputs(model, ids, [GATE_LAYER], device)[GATE_LAYER].to(device)
+    del model
+    torch.cuda.empty_cache()
+    flat = torch.tensor([i for t in ids for i in t], device=device)
+    uniq, inv = torch.unique(flat, return_inverse=True)
+    first = torch.full((len(uniq),), X.shape[0], device=device).scatter_reduce_(
+        0, inv, torch.arange(X.shape[0], device=device), "amin")
+    U = torch.stack([X[first[(uniq == t).nonzero()[0, 0]]] for t in g["tokens"]])
+    U = U / U.norm(dim=1, keepdim=True)
+    planted = row_stats(X, U, torch.zeros(len(U), device=device), want_rows=False)["stat"][0]
+    rec = {**meta(torch, lib_hash), "kind": "post hoc sizing for Blocked 145; not a gate",
+           "tokens": g["tokens"], "planted_P+": planted.T.tolist()}
+    rec["haar_thr_P+_by_seed"] = {}
+    for seed in (0, 2, 3, 4):
+        sv, m_, s_ = null_sorted(X, haar(X.shape[1], N_NULL, seed, device))
+        rec["haar_thr_P+_by_seed"][seed] = null_pm(sv, m_, s_)[0].tolist()
+        del sv
+    Xc = X - X.mean(0)
+    C = (Xc.T.double() @ Xc.double()) / (X.shape[0] - 1)
+    ev, V = torch.linalg.eigh(C)
+    gen = torch.Generator().manual_seed(7)
+    Gs = torch.randn(N_NULL, X.shape[1], generator=gen, dtype=torch.float64).to(device)
+    R = (Gs * ev.clamp(min=0).sqrt()) @ V.T
+    R = (R / R.norm(dim=1, keepdim=True)).float()
+    sv, m_, s_ = null_sorted(X, R)
+    rec["cov_thr_P+"] = null_pm(sv, m_, s_)[0].tolist()
+    rec["top_eig_share"] = float(ev[-1] / ev.sum())
+    out = Path(a.out) / "sizing.json"
+    out.write_text(json.dumps(rec, indent=1) + "\n")
+    print(json.dumps({k: rec[k] for k in ("planted_P+", "haar_thr_P+_by_seed", "cov_thr_P+",
+                                          "top_eig_share")}, indent=0))
+    return 0
+
+
 # ------------------------------------------------------------------ capture
 
 def capture(a):
@@ -444,13 +492,13 @@ def capture(a):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    p.add_argument("stage", choices=["gate", "capture"])
+    p.add_argument("stage", choices=["gate", "capture", "sizing"])
     p.add_argument("--out", default=str(Path(os.environ.get("METS_DATA", REPO / "data"))
                                         / "trackN" / "n1"))
     p.add_argument("--steps", type=int, nargs="+", default=list(CAPTURE_STEPS))
     a = p.parse_args(argv)
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
-    return gate(a) if a.stage == "gate" else capture(a)
+    return {"gate": gate, "capture": capture, "sizing": sizing}[a.stage](a)
 
 
 if __name__ == "__main__":
