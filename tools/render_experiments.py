@@ -109,6 +109,9 @@ PHASES_WITHOUT_PREDICTIONS = {
     "T": "Track T, Timaeus's checkpoints and the LLC; tier 1 and deliberately "
          "unregistered: T1 opened 2026-10-29 as an inventory, nothing run, no `P-*` id "
          "(`trackT_timaeus/status-T.md`).",
+    "N": "Track N, the MLP's neurons across training; tier 1 and deliberately "
+         "unregistered: N1 opened 2026-11-08 as a scan and design, nothing run, no `P-*` id "
+         "(`trackN_neurons/status-N.md`).",
 }
 
 #: Which `claims/audits/*.json` is a known-answer dry run, as opposed to a
