@@ -941,6 +941,11 @@ not fixed).
   cannot run the repo (no `hdbscan`, torch import fails), so the smoke tests ran on 4.44 only;
   the nightly covers 4.57. Rule added: a test that builds a model asserts it is real (a layer
   count) before asserting anything about it, so a stub fails instead of passing.
+- 2026-11-08, T5′ U1 (I_text's tests): the third time. A tiny Llama for `t5k.forward` was built after
+  `pytest.importorskip("transformers")`, which returns the conftest's MagicMock rather than
+  skipping; caught because `forward` refuses a model whose attentions are not returned. Replaced by a
+  fake LM in plain torch (real attention tensors, no transformers). Rule as above, plus:
+  **`importorskip` does not detect the stub**; a test that needs real transformers is `smoke`.
 - 2026-10-11: the nightly went red on its first night with `test_p10_ov1s_sign_smoke.py`
   (`test_hook_output_is_the_map[norep]`). Since 4.5x, transformers takes GPT-NeoX's eager softmax in
   float32, so in a float64 tiny model P's rows sum to 1 only to ~1e-7, and the test's `want` added
