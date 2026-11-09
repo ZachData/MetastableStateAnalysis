@@ -885,6 +885,11 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   (the refusal worked; cost: one check that no `reg.*` key moved). A PR that edits a `repo:`
   record of `numbers.py` re-runs `produce` in the same PR; CI now recomputes every key from the
   `repo:` records and fails if a value moved (`test_keys_from_tracked_records_match_the_table`).
+- 2026-11-09, S4 U2: the design took C2's 512-Pythia-token cut as safe for the toys because the 7 v1
+  prompts retokenize to 503–842 toy tokens. On the library's `val`, 4 of 64 items retokenize to
+  1028–1299, past the toys' 1024-position context. The first run stopped on a shape error, so
+  nothing was read wrong (cost: one rerun). Those items are now set beside, like the ¼ bar, and not
+  cut. A range measured on one prompt set is not a bound on another.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a
@@ -1900,6 +1905,15 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   reported as a formation date. Rules: **a number in a write-up has a committed producer and a record
   before the PR**, and **a half-rise date is read only where the series has a transition; on a ramp
   the rule's crossing is set by the window**.
+- 2026-11-09, S4 U2: Blocked 150 recommended more prompts because "the binding limit is the unit
+  count". U1's record already showed plant B at 1 of 7 units at 6876, flat across doses, and split
+  by transition it would have shown why: layer 0 is never turned at dose ≤ 1 (fresh inits
+  included), and layer 1 is saturated at V's plateau. The 64-prompt check failed exactly that way
+  (0.03), and the first write-up's cause ("the dose, not the structure", then a structural reason)
+  contradicted itself until `/challenge-pr` on #334 split the record. Cost: one unit spent
+  confirming what the record held. Rule: **when a positive control fails, split its share by unit
+  kind (transition, layer, prompt) before proposing more units or doses; a pooled share can hide a
+  kind that cannot be turned, and a kind that is already saturated**.
 
 ## 7. Literature found after the construction was built
 

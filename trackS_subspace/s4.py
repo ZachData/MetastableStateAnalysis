@@ -29,6 +29,7 @@ Tier 1, description (nothing here is registered).
     python -m trackS_subspace.s4 induction --arm R2 --out <dir>             # induction's date (toys only)
     HF_HOME=… python -m trackS_subspace.s4 gate --arm R2 --out <dir>        # (ii) the gate at two steps
     python -m trackS_subspace.s4 read --out <dir>                           # (iii) every date
+    HF_HOME=… python -m trackS_subspace.s4 calib --out <dir>                # U2 step 1: the opening check (R2)
 """
 from __future__ import annotations
 
@@ -178,6 +179,43 @@ def gate_steps(ind_step: Optional[int], g: Sequence[int], win: Sequence[int]) ->
     lo = [s for s in g if s <= ind_step / 2]
     hi = [s for s in g if s >= 2 * ind_step]
     return (lo[-1] if lo else g[0]), (hi[0] if hi else g[-1])
+
+
+def med3(v: Sequence[float]) -> np.ndarray:
+    """The running median of 3 over grid steps; at each end, the median of the 2 there are."""
+    v = np.asarray(v, float)
+    return np.array([np.median(v[max(0, i - 1):i + 2]) for i in range(len(v))])
+
+
+def rise_fall(v: Sequence[float], g: Sequence[int]) -> dict:
+    """U2's rule (design-S4 "U2 after Blocked 150 (a)"), exploration on R2: P = max m₃; the rise is
+    the first grid step with m₃ ≥ P/2, the fall the first after argmax m₃ with m₃ < P/2. "No rise"
+    if P = 0 or the rise is the first grid step; "no fall" if no such step."""
+    m = med3(v)
+    g = list(g)
+    P = float(m.max()) if len(m) else 0.0
+    if P <= 0:
+        return {"peak": P, "rise": None, "fall": None, "no_rise": True, "no_fall": True, "peak_step": None}
+    k = int(np.argmax(m))
+    i = int(np.argmax(m >= P / 2))
+    after = [j for j in range(k + 1, len(m)) if m[j] < P / 2]
+    return {"peak": P, "peak_step": g[k], "rise": None if i == 0 else g[i], "no_rise": i == 0,
+            "fall": g[after[0]] if after else None, "no_fall": not after}
+
+
+def b_ceiling_seen(base_rate: float, shares: Dict[str, float], null_rate: float,
+                   dose_max: float, need: float, null_max: float) -> dict:
+    """U2 step 1's rule on one step: the re-inits' uncentred rate ≤ ``null_max`` and plant B's
+    uncentred share ≥ ``need`` at some dose ≤ ``dose_max`` (keys other than doses are ignored)."""
+    def dose(k: str) -> Optional[float]:
+        try:
+            return float(k)
+        except ValueError:
+            return None                 # "ceiling" and any other non-dose key
+    seen = sorted(x for k, s in shares.items()
+                  if (x := dose(k)) is not None and 0 < x <= dose_max and s >= need)
+    return {"null_ok": null_rate <= null_max, "dose_seen": seen[0] if seen else None,
+            "pass": null_rate <= null_max and bool(seen), "base_rate": base_rate}
 
 
 # ---------------------------------------------------------------- prompts
@@ -330,7 +368,7 @@ def toy_forward(w: Dict[str, "object"], ids, shortformer: bool = True):
 
 
 def toy_ids(tok, texts: Dict[str, str]) -> Dict[str, List[int]]:
-    return {p: tok.encode(texts[p], add_special_tokens=False).ids for p in V1}
+    return {p: tok.encode(texts[p], add_special_tokens=False).ids for p in texts}
 
 
 def toy_states(w, ids: List[int], device, shortformer: bool = True):
@@ -444,7 +482,7 @@ class Reader:
         if arm.startswith("H_"):
             self.tok = p_tokenizer()
             self.tok_sha = None
-            self.ids = {p: self.tok(texts[p], add_special_tokens=False)["input_ids"] for p in V1}
+            self.ids = {p: self.tok(texts[p], add_special_tokens=False)["input_ids"] for p in texts}
         else:
             self.tok, self.tok_sha = toy_tokenizer(arm)
             self.ids = toy_ids(self.tok, texts)
@@ -462,7 +500,7 @@ class Reader:
                 m = reinit_model(cfg, init_seed).to(self.device)
             else:
                 m = h_load(self.arm, step, self.device)
-            for p in V1:
+            for p in self.texts:
                 hs, ids = h_states(m, self.tok, self.texts[p], self.device)
                 if ids != self.ids[p]:
                     raise S4Refused(f"{p}: H's ids differ from the tokenizer's")
@@ -472,7 +510,7 @@ class Reader:
             return out, losses, None
         w = toy_init(self.arm, init_seed, self.device) if init_seed is not None else \
             toy_load(self.arm, step, self.device)[0]
-        for p in V1:
+        for p in self.texts:
             hs, logits, x = toy_states(w, self.ids[p], self.device, self.shortformer)
             out[p] = (hs, self.ids[p])
             losses[p] = toy_loss(logits, x)
@@ -895,14 +933,120 @@ def read(a) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- U2 (Blocked 150 (a)): the calibration
+
+#: Fixed in design-S4 "U2 after Blocked 150 (a)" before any U2 output.
+U2_K = 64                           # the library's `val`, its first 64 items
+U2_STEPS = (6876, 29101)            # U1's gate steps on R2 (from induction's 14146), kept
+U2_DOSES = (0.01, 0.02, 0.05, 0.1, 0.25, 0.5, 1.0)   # plant B's gate range, ceiling 1
+U2_DOSE_MAX = 1.0
+U2_BESIDE = (2.0, 4.0)              # beside, with the ceiling (a pure Gaussian later state)
+TOY_CTX = 1024                      # the toys' n_ctx (W_pos rows)
+
+
+def library_texts(k: int = U2_K) -> Tuple[Dict[str, str], str]:
+    from core.library import library_hash, load
+    items = load("val", k, context="S4 U2 (design-S4 'U2 after Blocked 150 (a)')")
+    return {it.key: it.text for it in items}, library_hash("val", k)
+
+
+def b_units(hs: Sequence[np.ndarray], doses: Sequence[float], rng: np.random.Generator) -> dict:
+    """Plant B per transition on the later state, read uncentred: the relative drop per dose, the
+    ceiling (the later state replaced by a pure Gaussian cloud), and the layer's own displacement
+    (median token ‖h_{t+1} − h_t‖ over the later state's median norm, the dose's unit)."""
+    base = [c._e(h, "u") for h in hs]
+    T = len(hs) - 1
+    out = {f"{x:g}": [(base[t] - c._e(c.plant_spread(hs[t + 1], x, rng), "u")) / abs(base[t])
+                      for t in range(T)] for x in doses}
+    out["ceiling"] = [(base[t] - c._e(rng.standard_normal(hs[t + 1].shape), "u")) / abs(base[t])
+                      for t in range(T)]
+    move = [float(np.median(np.linalg.norm(np.asarray(hs[t + 1], np.float64) - hs[t], axis=1))
+                  / np.median(np.linalg.norm(hs[t + 1], axis=1))) for t in range(T)]
+    return {"plants": out, "move": move}
+
+
+def calib(a) -> int:
+    """U2 step 1, the opening check on R2: per population (3 fresh inits, R2 at U2_STEPS), on the
+    library's 64 `val` items (primary) and the 7 v1 prompts (beside), the uncentred base rate,
+    plant B's share per dose and at the ceiling, and the layers' displacement; the rule per step."""
+    arm = "R2"
+    torch, device = _dev()
+    out = Path(a.out)
+    (out / arm).mkdir(parents=True, exist_ok=True)
+    lib, lhash = library_texts()
+    sets = {"val64": lib, "v1": prompt_texts()}
+    doses = (*U2_DOSES, *U2_BESIDE)
+    names = [f"reinit:{k}" for k in range(N_REINIT)] + [f"step{s}" for s in U2_STEPS]
+    res = {"code": code_sha(), "design": "trackS_subspace/design-S4.md 'U2 after Blocked 150 (a)'",
+           "library_hash": lhash, "steps": list(U2_STEPS), "doses": list(doses), "dose_max": U2_DOSE_MAX,
+           "need": d.B_SEEN_U, "null_max": cs.NULL_RATE, "rel_tol": REL_TOL, "sets": {}}
+    units_out = {}
+    for sname, texts in sets.items():
+        r = Reader(arm, texts, device, True)
+        shares = {p: top_share(r.ids[p]) for p in texts}
+        # beside, as the ¼ bar: an item longer than the toy's context (1024), not cut (placed
+        # before output, after the first run stopped on a 1030-token item)
+        prompts = [p for p in texts if shares[p] <= SHARE_BAR and len(r.ids[p]) <= TOY_CTX]
+        r.texts = {p: texts[p] for p in prompts}
+        rng = np.random.default_rng(GATE_SEED)
+        pops = {}
+        for name in names:
+            if name.startswith("reinit"):
+                st, _, _ = r.states_at(None, init_seed=int(name.split(":")[1]))
+            else:
+                st, _, _ = r.states_at(int(name[4:]))
+            pops[name] = {}
+            for p in prompts:
+                hs = st[p][0]
+                if not all(np.isfinite(h).all() for h in hs):
+                    raise S4Refused(f"{sname} {name} {p}: a non-finite state")
+                pops[name][p] = {"base": cs._drops(hs)["u"], **b_units(hs, doses, rng)}
+            print(f"{sname} {name} done", flush=True)
+
+        def flat(n, key=None):
+            return [x for p in prompts for x in (pops[n][p]["base"] if key is None else pops[n][p]["plants"][key])]
+
+        reinits = [n for n in names if n.startswith("reinit")]
+        null = [x for n in reinits for x in flat(n)]
+        null_rate = cs.rate(null, REL_TOL)
+        per = {}
+        for n in names:
+            base = cs.rate(flat(n), REL_TOL)
+            sh = {k: cs.share(cs.rate(flat(n, k), REL_TOL), base) for k in [*(f"{x:g}" for x in doses), "ceiling"]}
+            mv = [m for p in prompts for m in pops[n][p]["move"]]
+            per[n] = {"units": len(flat(n)), "base_rate": base, "B_share": sh,
+                      "move_median": float(np.median(mv)), "move_by_transition":
+                          [float(np.median([pops[n][p]["move"][t] for p in prompts])) for t in range(n_layers(arm))]}
+            if not n.startswith("reinit"):
+                per[n]["rule"] = b_ceiling_seen(base, sh, null_rate, U2_DOSE_MAX, d.B_SEEN_U, cs.NULL_RATE)
+        res["sets"][sname] = {"n_items": len(texts), "prompts": prompts,
+                              "beside_top_share": [p for p in texts if shares[p] > SHARE_BAR],
+                              "beside_too_long": [p for p in texts if len(r.ids[p]) > TOY_CTX],
+                              "n_tokens": {p: len(r.ids[p]) for p in texts}, "top_share": shares,
+                              "null_rate": null_rate, "per_population": per,
+                              "pass": all(per[f"step{s}"]["rule"]["pass"] for s in U2_STEPS)}
+        units_out[sname] = pops
+    res["pass"] = res["sets"]["val64"]["pass"]
+    res["meta"] = {"device": torch.cuda.get_device_name(0), "torch": torch.__version__, "dtype": "float32",
+                   "tf32": False, "texts_hash_v1": texts_hash(sets["v1"])}
+    (out / arm / "calib.json").write_text(json.dumps(res, indent=1) + "\n")
+    (out / arm / "calib_units.json").write_text(json.dumps(units_out) + "\n")
+    for sname, x in res["sets"].items():
+        print(sname, "items", x["n_items"], "in", len(x["prompts"]), "null", round(x["null_rate"], 3), "pass", x["pass"])
+        for n, v in x["per_population"].items():
+            print(" ", n, "units", v["units"], "base", round(v["base_rate"], 3), "move", round(v["move_median"], 3),
+                  {k: round(s, 2) for k, s in v["B_share"].items()}, v.get("rule", ""))
+    return 0
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    ap.add_argument("cmd", choices=("fetch", "check", "run", "induction", "gate", "read", "heldout"))
+    ap.add_argument("cmd", choices=("fetch", "check", "run", "induction", "gate", "read", "heldout", "calib"))
     ap.add_argument("--arm", nargs="+", default=list(ARMS), choices=ARMS)
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
     return {"fetch": fetch, "check": check, "run": run, "induction": induction, "gate": gate,
-            "read": read, "heldout": heldout}[a.cmd](a)
+            "read": read, "heldout": heldout, "calib": calib}[a.cmd](a)
 
 
 if __name__ == "__main__":

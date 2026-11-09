@@ -7,6 +7,7 @@
 - **Question:** Do the 384 heads of `pythia-410m` share directions of the residual stream, per subspace family (OV write / read, QK query / key, OV's negative / positive / complex invariant subspaces), beyond a random arrangement of the same subspaces, how does that change over training, and what do the attention layers do inside the shared space (push, rotate, collapse)?
 - **Inputs:** `pythia-410m` weights at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 (and 8000 off the grid for the preflight and the gate); tokens only for unit 3's residual check (v1's 7 scored prompts, `trackB_circuit/b0_gate.py` `V1_SCORED`); code `trackS_subspace/s1.py`; records `data/trackS/s1/` (main tree) — `trackS_subspace/design-S1.md` "Objects, fixed here". S2: the same weights at 0, 256, 512, 1000, 2000, 4000, 143000 (8000 for the preflight) under a per-head OV hook, v1's 7 prompts for V and 7d's 16 repeated-random-token sequences for G; code `trackS_subspace/s2.py`; records `data/trackS/s2/` (main tree) — `trackS_subspace/design-S2.md` "Steps and readouts"
 - **Results:**
+  - S4 unit 2 (Blocked 150 (a), the user's): the toy instrument's calibration fails its opening check, so S4 closes as Blocked 150 (c) under the frozen rule. On 64 library `val` items (116 units a step) plant B is seen by the uncentred count at R2's step 6876 at 0.03 at dose 1 (0.4 needed; 0.05 at dose 2), though at 29101 it passes at dose 1 (0.44) and the null holds. The limit is neither the unit count nor the dose ceiling: plant B at dose ≤ 1 never turns layer 0 (embedding → layer 0 rises steeply from init on), and layer 1 already drops on 56 of 58 units at V's plateau, so the check could not pass at any plateau step (corrected after `/challenge-pr` on #334). Whether S4 closes or is extended with a per-transition count is Blocked 151 — `trackS_subspace/status-S.md` "S4 unit 2, the toy instrument's calibration: the opening check fails (2026-11-09)"
   - S4 unit 1, Blocked 149 applied ((i) (a), (ii) (a), the user's): no released toy carries a gated date. On the late window (18540, 38140, 75000) R2's induction dates 14146, and its gate refuses at 6876 and 29101: plant B is seen by the uncentred count at 0.14–0.17 at dose 0.5 (0.4 needed), as at steps 1–2; doses up to 4 do not pass it either (7–12 units a step). R2's V (description, read after the refusal) rises at ~900 and is gone by 16942, so the late plateau is 0 (946 on U1's window). R3–R6 are description only. What next is Blocked 150 — `trackS_subspace/status-S.md` "S4 unit 1, Blocked 149 applied: R2's gate refuses (2026-11-08)"
   - S4 unit 1 (Blocked 148: D1 (a′), D2–D5 (a), the user's): on HAPAX's pair, removing induction's training pressure removes the paper's induction transition (vanilla's at about 800; Hapax's mean ramps), while both energy counts rise alike: within 5 counts of each other through step 800, half their plateaus at 600–800 on both sides. One seed a side, description; the dated one-step differences are single counts at the bar and are not read. The released toys answer nothing yet: the depth-3 to depth-6 runs get worse on held-out text from about step 2100 (unstable or overfit, not told apart), R1's recipe is unreadable, and on R2 and R3 induction forms at about 9,000–22,000, after the frozen window. No toy's V has been read (Blocked 149) — `trackS_subspace/status-S.md` "S4 unit 1, the released arms (2026-11-08)"
   - S4 opened 2026-11-08 (Blocked 147 (b), the user's): a scan and a proposed design (Blocked 148, D1–D5). The untied toy arm is already released at depths 2–6 (`timaeus/L2`–`L6`: constant LR, no warmup, 451 checkpoints each). So is a Pythia-1b-shaped pair trained with and without the loss on induction-predictable tokens (HAPAX, 2511.05743). U1 reads those before any training — `trackS_subspace/status-S.md` "S4 unit 0, the scan and the design (2026-11-08)"
@@ -31,7 +32,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-11-08 · body `3580c3277c`
+- **Reviewed:** 2026-11-09 · body `8338ff3e04`
 <!-- /phase-card -->
 
 ## Units
@@ -52,6 +53,7 @@
 | S4 0. scan, design (Blocked 147 (b), the user's) | **done 2026-11-08: frozen on Blocked 148 (D1 (a′), D2–D5 (a), the user's)** | `lit-S4.md`, `design-S4.md`; "S4 unit 0" below |
 | S4 1. the released arms | **H read: both energy counts rise alike (within 5 counts through 800) with and without the paper's induction transition (description). Toys: R1 refused (recipe unreadable); R3–R6's held-out loss rises from ~2100; induction forms after the frozen window on every toy; no toy's V read; Blocked 149** | "S4 unit 1" below; `s4.py`, `s4_hapax_fig.py` |
 | S4 1b. Blocked 149 applied | **R2's gate refuses at its late steps (plant B unseen, as at steps 1–2); R3–R6 description; no toy dated; Blocked 150** | "S4 unit 1, Blocked 149 applied" below |
+| S4 2. the toy instrument's calibration (Blocked 150 (a)) | **opening check fails: plant B unseen at R2's 6876 at doses ≤ 1 on 116 units (0.03); S4 closes as 150 (c); close-out next, U3 not run** | "S4 unit 2" below; `s4.py calib` |
 
 ## Corrections received
 
@@ -63,6 +65,65 @@
   measured: on a leave-the-layer-out S they read as before from 512, so the bias moves none of
   S1's readings there; before 512 `ov_neg`'s and `ov_pos`'s outside-Haar `share` layers (up to 11)
   were the bias (0–2 on S₋ₗ). "S2 unit 3" below.
+
+## S4 unit 2, the toy instrument's calibration: the opening check fails (2026-11-09)
+
+Blocked 150 decided (a), the user's. U2's design (`design-S4.md` "U2 after Blocked 150 (a)") was
+frozen and pushed in `d53bfda` before any U2 output. Code `16bd243e0669` (`s4.py calib`); record
+`HDD_1TB/mets_data/trackS/s4/2026-11-09-u2/R2/calib.json` (sha256 `506b507cf4c7`), per-unit drops
+in `calib_units.json`, log `calib_R2.log`. Input: the library's `val`, k = 64 (`library_hash`
+`2e76b7c7bde5`), retokenized by R2's tokenizer, and the 7 v1 prompts beside. Float32, GPU, 66 s.
+**Placed before output** (the first run stopped on it, nothing read): an item longer than the toys'
+1024-position context is set beside, like the ¼ bar, and not cut. 6 of the 64 items are beside
+(5 over the share bar, 4 over the length, 3 over both), so 58 items give 116 units a population.
+
+**The check fails, so S4 closes as Blocked 150 (c)** (the frozen rule; the close-out is the next
+unit, and U3 does not run). Plant B's uncentred share at 1e-3 (the units not already violating that
+the plant turns), 58 items:
+
+| population | base rate | 0.25 | 0.5 | **1** | 2 | 4 | ceiling | layer move | rule |
+|---|---|---|---|---|---|---|---|---|---|
+| re-inits (3, each) | 0 | 0 | 0 | 0.47–0.49 | 0.50 | 0.78–0.83 | 1.0 | 0.94 | null rate 0 ≤ 5 % |
+| R2 at 6876 | 0.48 | 0.02 | 0.03 | **0.03** | 0.05 | 0.73 | 1.0 | 0.94 | **fails** |
+| R2 at 29101 | 0.05 | 0.03 | 0.17 | **0.44** | 0.71 | 1.0 | 1.0 | 0.83 | passes at 1 |
+
+The 7 v1 prompts (12 units) read alike: 0.14 at 6876 and 0.33 at 29101 at dose 1. U1's 0.14 at 6876
+was one unit of 7. More units did not raise it; the share at 6876 is lower on 116 units.
+
+**Why (description, per transition, from `calib_units.json`; corrected after `/challenge-pr` on
+#334, finding 1).** The share mixes two transitions that behave differently, and neither can be
+turned at V's plateau:
+
+| population | layer 0: median rise, open, turned at dose 1 | layer 1: median rise, open, turned at dose 1 |
+|---|---|---|
+| re-inits (3) | 0.59–0.61, 58, **0** | 0.41–0.44, 58, 54–57 |
+| R2 at 6876 | 0.86, 58, **0** | 0.03, **2**, 2 |
+| R2 at 29101 | 0.21, 58, 1 | 0.12, 52, 47 |
+
+"Open" counts the units not already violating; the median rise is theirs. Layer 0 (embedding →
+after layer 0) raises E₁ steeply in every population, fresh inits included. So this is the toy's
+architecture, not training, and plant B at dose ≤ 1 almost never turns a layer-0 unit (0 of 174 at
+init, 0 of 58 at 6876, 1 of 58 at 29101). It does turn the layer-1 units wherever any are open (90–100 %). At 6876, V's plateau,
+layer 1 already drops on 56 of 58 units, so 58 of the share's 60 units are layer 0's and the share
+is 2/60 = 0.03. **The check could not pass at any step where V is on its plateau, whatever the
+dose ceiling or the unit count.** The ceiling (1.0) shows only that a pure-noise state would turn
+layer 0 too. Each layer moves the tokens about as far as their own norm (0.83–0.94).
+
+**What U2 established:** on R2 the uncentred count's positive control fails at V's plateau because
+layer 0 is never turnable at dose ≤ 1 (from init on) and layer 1 is saturated there. V on this toy
+is a count of layer 1's drops, so R2's transient (U1, Parked 4) is layer 1's drop rate going from 0
+to ~1 and back. That transient is a one-seed lean this gate cannot test, since no planted
+violation can show on a transition that already violates. Blocked 150's recommendation took the
+unit count as the limit, and it was not. U1's "1 of 7, flat across doses" already showed the
+pattern (`LESSONS.md` 6).
+
+**Parked** (why / cost / which decision it could change):
+6. A per-transition instrument: count layer 1's drops alone and gate it at its own unsaturated
+   steps (fresh inits: 54–57 of 58 turned at dose 1; 29101: 47 of 52). It would date the rise and
+   the fall of layer 1's drop rate, but at the plateau itself the gate has nothing to turn, by
+   construction. Deeper healthy toys (R3–R6 lose held-out loss) might leave unsaturated middle
+   transitions. Cost: a new design, post hoc on R2. It could change whether a toy instrument
+   exists at all. Carried to the close-out (S4′ in ROADMAP), or to an extension: Blocked 151.
 
 ## S4 unit 1, Blocked 149 applied: R2's gate refuses (2026-11-08)
 
