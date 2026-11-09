@@ -43,7 +43,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); since Blocked 152 (d) (2026-11-09, the user's) the project's next item, with no new row before it and F1 still open (posting before F1 is the user's); after it, C7 (i), then C4's design (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `2a48dd7caa`
+- **Reviewed:** 2026-11-09 · body `8df1f1c895`
 <!-- /phase-card -->
 
 ## Units
@@ -502,8 +502,9 @@ a per-cell OV table, the substitution on more seeds).
 **For the user's rewrite.** *It is the next item (STATE Blocked 152 (d), 2026-11-09, the
 user's): no new row opens before it, so the rewrite proceeds with F1 open as §7 words it;
 whether the paper is posted before F1 is read stays the user's (Blocked 40, 103). After it,
-C7 (i), Isobe et al.'s depth profile on 410m, opens first; its reading may enter §8 before
-you post. C4's design follows it (STATE Blocked 153, revised 2026-11-09).*
+C7 (i), Isobe et al.'s depth profile on 410m with attention's spectral gap per layer, opens
+first; its reading may enter §8 before you post. C4's design follows it (STATE Blocked 153,
+revised 2026-11-09; the order assumes posting before C4 reads F1).*
 If the Overleaf copy has been edited since #268, carry over this
 close-out's edits: the diff of `trackC_writeup/paper/` from `7d9cfe6` (#268's merge) to this PR's merge.
 Re-run as in "C2p unit 2" below. The 28-page build is `pdflatex main && bibtex main` and then
