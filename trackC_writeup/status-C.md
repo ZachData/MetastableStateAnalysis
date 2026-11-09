@@ -45,7 +45,7 @@
   - Isobe et al.'s three phases on 410m (C7 (i)): design proposed, Blocked 154; U1 and the close-out to come — `trackC_writeup/design-C7.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `8359fab5b9`
+- **Reviewed:** 2026-11-09 · body `da05807b68`
 <!-- /phase-card -->
 
 ## Units
@@ -85,7 +85,9 @@
 
 Opened by STATE Blocked 153 as revised (#340), at the user's word that the rewrite of `paper/`
 is done. Writing only; nothing ran. **Input:** 2605.07772 v2 (2026-10-16), the PDF's text
-extracted locally (the HTML is a 404), plus six web searches. Nothing is read from `data/`.
+extracted locally (the HTML is a 404), plus six web searches. From `data/`, only the stored
+files' shapes were checked; no value was read. Revised after `/challenge-pr` on #341 (accept
+with changes, findings 1–6 taken; the answers are on the PR).
 
 - **What the paper gives a measurement** (`lit-C7.md` §1): the three phases; the energy
   E_{ε,A} (clustering lowers it); Assumption 3.1 (A = QᵀK positive definite, simple λ₁); the
@@ -95,18 +97,22 @@ extracted locally (the HTML is a 404), plus six web searches. Nothing is read fr
 - **Two corrections to C7 (i)'s wording in ROADMAP and STATE (#340, finding 3).** (1) The gap is
   the weight matrix QᵀK's, not the attention pattern's. A causal pattern is lower triangular, so
   its eigenvalues are its diagonal and its eigen-gap is empty; the pattern's singular-value gap
-  (2410.07799) goes beside as a different mechanism. (2) The terminal escape's rate is R_ρ(g_ℓ),
-  the loss gradient's Rayleigh quotient, so "the gap against the escape's rate" is not read.
+  (2410.07799) is a different mechanism (parked, for scope). (2) The terminal escape's rate is
+  R_ρ(g_ℓ), the loss gradient's Rayleigh quotient, so "the gap against the escape's rate" is not
+  read.
 - **What is new for a reading:** Pythia-410m is parallel-residual (`use_parallel_residual`
   true, `rotary_pct` 0.25, checked in the config), so each block's FFN update is exact from the
-  stored input state. That makes the paper's Phase 3 mechanism ("the FFN dominates attention in
-  the final layers") a per-block ratio of tangential speeds.
+  stored input state. That makes the paper's Phase 3 mechanism ("the FFN moves the tokens out of
+  the cluster in the final layers") a signed, per-block split of Δ‖m‖².
 - **Pretrained models:** no test of the three phases found. A ViT paper (2511.21635) reports a
   three-phase depth profile of similarity whose plateau grows with depth. Parked for the
   close-out.
-- **Design** (`design-C7.md`): P, F, Q, J on seed 0's 18 steps × 7 prompts, step 0 the no-train
-  control, gate G0–G2 before any label, leans written down. Budget 3 units. **Blocked 154** (D1–D4,
-  all (a) recommended).
+- **Design** (`design-C7.md`): P, F (signed: each part's first-order share of Δ‖m‖²) and Q on
+  seed 0's 18 steps × 7 prompts, step 0 the no-train control, gate G0–G2 before any label, leans
+  written down (1e U2's MLP split among them). J was dropped: Assumption 3.1 very likely fails
+  (the reviewer's look at Q's inputs, disclosed on #341: the summed form's positive share is
+  0.57–0.63 at three layers at 32000). Budget 3 units. **Blocked 154** (D1–D4, all (a)
+  recommended).
 - **Parked** (`lit-C7.md`): 2511.21635's figures; Wendler et al. and Shibata et al.'s final-layer
   shifts. Both are for the close-out's §8 sentence and the email.
 

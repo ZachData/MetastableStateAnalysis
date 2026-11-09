@@ -36,13 +36,16 @@ M7, `trackS_subspace/lit-S4.md` (2506.13688).
    interaction matrix (Assumption 3.1). It is read off the checkpoints' weights, with no forward
    pass. On a causal model the pattern's own eigen-gap is empty anyway. The pattern P is lower
    triangular, so its eigenvalues are its diagonal (each token's self-weight), with P₁₁ = 1. The
-   pattern's singular-value gap (2410.07799's object, below) can be read from `attentions.npz` as
-   a different mechanism, rank collapse, and goes beside.
+   pattern's singular-value gap (2410.07799's object, below) can be read from `attentions.npz`.
+   It belongs to a different mechanism, rank collapse, and is parked (cut for scope, `/challenge-pr` on #341).
 2. **The escape's rate is not the gap.** In the paper the gap sets the plateau's persistence and
    depth (rate a; Figure 4's λ₂ sweep). The terminal lift's rate is R_ρ(g_ℓ), a property of the
    loss at the clustered state, and R_ρ has no analogue we can read. So C7 (i) can ask two
    things: whether the gap goes with the plateau, and whether the FFN takes over in the final
-   blocks. It cannot ask whether the gap sets the escape's rate.
+   blocks. It cannot ask whether the gap sets the escape's rate. *(Revised after `/challenge-pr`
+   on #341: the first question is dropped too. The gap means something only under Assumption
+   3.1, which very likely fails on Pythia, and the plateau it governs is E_A's, not E₁'s. So
+   what is read is how far each layer is from 3.1.)*
 
 ## 2. Pretrained models: has anyone looked for the three phases?
 
@@ -74,8 +77,11 @@ M7, `trackS_subspace/lit-S4.md` (2506.13688).
    in profile then has a stated reason, not a refutation.
 3. **Phase 3's mechanism is read directly.** Pythia's blocks are parallel-residual
    (x_{ℓ+1} = x_ℓ + attn(LN₁x_ℓ) + mlp(LN₂x_ℓ)), so each block's FFN update is a function of the
-   stored state alone, and attention's is the remainder. The paper's claim that "the FFN
-   dominates attention in the final layers" becomes a per-block ratio of tangential speeds.
+   stored state alone, and attention's is the remainder. The paper's claim that the FFN moves
+   the tokens out of the cluster in the final layers becomes, per block, each part's signed
+   first-order share of Δ‖m‖² (signed after `/challenge-pr` on #341: a speed ratio cannot tell an
+   escape from more clustering). 1e U2's attention arm made a related split on the same runs,
+   against the field's cosine (`p1e_energy_field/status-1e.md` "U2's attention arm").
 4. **The escape's rate against the gap is not read** (§1, correction 2).
 
 ## Parked
