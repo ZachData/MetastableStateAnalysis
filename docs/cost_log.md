@@ -565,6 +565,14 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   matched itself never exited), and the reading revised after its calibration on the seeds'
   real profiles failed, which re-opened the code, tests and design. Fetching the checkpoints in a
   separate session before the design would have saved the waiting calls.
+| 2026-11-01 | CLAIM-C closed (n=20 calibration refuses by design; withdrawn; Stage 0 + CLAIM-C data deleted, 47 -> 315 GB free; ROADMAP C7); same session: the morning's disk cleanup and the Isobe/scale discussion; before /challenge-pr | 166 | 297k | 29.5M | 79k | #296 |
+  Over 2× the median (7.6M), ~3.9×: three units in one session as the user's questions led
+  (the disk survey and first deletions, a discussion of clustering scale and 2605.07772 with
+  outreach advice, then this close-out), and the SessionStart hook printed the main tree's 98 KB
+  STATE.md, which was stale (the tree lagged `origin/main`), so the right one was read again.
+  A fresh session after the cleanup would have cut it by about a third.
+| 2026-11-01 | CLAIM-C closed; after /challenge-pr (accept with changes; findings 1-5 taken: the correction clamped to the exact null's floor, the LESSONS rule restated, order and curve hash in the record, a withdrawn column, a shared fixture) · subagents: general-purpose opus-5-5 1.5M | 190 | 319k | 36.9M | 83k | #296 |
+  ~4.9× the median: the row above, plus the review round in the same session.
 | 2026-11-01 | C6 U1: Blocked 127 (a) frozen, the run's gate refused (V's plant B 0.38/0.33 < 0.4), a vacuous known-answer check fixed, Blocked 128; after /challenge-pr (accept with changes; findings 1-3, 5 taken) · subagents: general-purpose opus-5-5 1.3M, runner haiku-5-5 93k · runner batches, main calls: 4 (haiku-5-5) | 69 | 197k | 8.8M | 58k | #297 |
 | 2026-11-01 | C6 U1b: Blocked 128 (a) frozen, the centred count alone reads consistent with cumulative (2000 vs 512-1000), V not read, Blocked 129; after /challenge-pr (accept with changes; findings 1-2 taken, 3 partly) · subagents: general-purpose opus-5-5 934k, runner haiku-5-5 109k · runner batches, main calls: 4 (haiku-5-5) | 73 | 142k | 7.2M | 34k | #298 |
 | 2026-11-01 | C6 close-out (Blocked 129 (a)): U1b's label in paper/ (abstract, §1, §7), scoped to the centred count; C6 closed at its exit; after /challenge-pr (accept with changes; findings 1-5 taken) · subagents: general-purpose opus-5-5 2.6M | 102 | 200k | 13.8M | 56k | #299 |
@@ -611,3 +619,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-09 | S4 U2: Blocked 150 (a); the toy instrument's calibration, design frozen before output (d53bfda); s4.py calib on 64 val items: plant B unseen at R2 6876 at dose <= 1 (0.03), so S4 closes as 150 (c) by the frozen rule; /challenge-pr answered (1, 3, 5 taken: cause split by transition; Blocked 151) · subagents: general-purpose opus-5-5 1.1M | 61 | 197k | 9.1M | 55k | #334 |
 | 2026-11-09 | S4 close-out: Blocked 151 (a); S4 on one page, Parked carried/dropped, S4' row in ROADMAP §7a, H to C2's rewrite, PROJECT §3.82, Blocked 152 (next row); /challenge-pr answered (1-5 taken; C6's refusal is warmup01's); the 8 Nov overview page updated and published · subagents: general-purpose opus-5-5 1.7M | 55 | 175k | 6.6M | 54k | #335 |
 | 2026-11-09 | Blocked 152 (d) recorded: nothing new before the paper; STATE, ROADMAP §10 item 16, status-C "For the user's rewrite"; /challenge-pr answered (1-3 taken: posting before F1 stays the user's; Now's B7′ row relabelled; C4's "when") · subagents: general-purpose opus-5-5 1.1M | 32 | 105k | 2.5M | 26k | #336 |
+| 2026-11-09 | Repair: ROADMAP C7, a lesson-6 instance and #296's cost rows restored (lost in 9388a24's merge); a3 test flake fixed (writing + one test) | 30 | 90k | 2.2M | 17k | #338 |
