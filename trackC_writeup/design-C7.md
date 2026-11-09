@@ -91,9 +91,10 @@ layer's energy at the paper's first order (Remark 3.11: each head contributes �
 these add). From its eigenvalues λ₁ ≥ λ₂ ≥ … we read:
 - **g_s = 1 − λ₂/λ₁**, the paper's gap factor, if λ₁ > 0 (else "not read");
 - the positive share Σλ₊/Σ|λ| (B2's C3), which is 1 exactly when Assumption 3.1's
-  positive-definiteness holds up to its null space;
-- λ₁ in the unit-LN₁ frame (λ₁ · r̄_s², with r̄_s the tokens' median ‖LN₁(x)‖), for the
-  paper's λ₁e^{−λ₁} factor.
+  positive-definiteness holds up to its null space.
+
+All of Q is read on the raw weights (the LN₁ gains not folded in). λ₁ in the unit-LN₁ frame is
+parked, below (`/challenge-pr` on #342, finding 4: the first wording both read it and parked it).
 
 Beside: the per-head medians of g and the positive share. The pattern's eigen-gap is not read:
 the causal pattern is lower triangular, so its eigenvalues are its diagonal (`lit-C7.md` §1,

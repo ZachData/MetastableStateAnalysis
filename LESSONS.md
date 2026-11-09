@@ -1937,10 +1937,12 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   kind (transition, layer, prompt) before proposing more units or doses; a pooled share can hide a
   kind that cannot be turned, and a kind that is already saturated**.
 - 2026-11-09, C7 (i) U1: F's frozen label was a first-order split of Δ‖m‖², and G2 checked it
-  only on a 1e-3 plant. On the real blocks at 32000–143000, the remainder is as large as Δ itself
-  in blocks 20–22, so the frozen label is not readable there. Only the exact Shapley split, added
-  beside at the freeze, can be read. The gate's plant was far smaller than the real updates, so it
-  could not have seen this. Rule: **a linearised statistic's gate plants at the real update's
+  only on a 1e-3 plant. On the real blocks 20–22, the remainder exceeds half of Δ on most
+  block × prompt cases at steps 0–8 (the no-train control) and from 8000 on, and from 4000 on
+  the first-order sign is opposite to the exact one on up to 13 of 21. So the frozen label is
+  unreadable at 9 of 18 steps. Only the exact Shapley split, added beside at the freeze, can be
+  read. The first write-up said "late only", and `/challenge-pr` on #342 recounted it. The gate's
+  plant was far smaller than the real updates, so it could not have seen this. Rule: **a linearised statistic's gate plants at the real update's
   size (here ‖Δx‖/‖x‖ read from the stored states), and the exact form, where one exists, is the
   primary**.
 

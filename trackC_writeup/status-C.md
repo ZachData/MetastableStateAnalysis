@@ -33,7 +33,7 @@
   - C6 unit 1b (2026-11-01; Blocked 128 (a), the user's, one unit beyond the budget; frozen after U1's gate output, before any output on the run's grid): the centred count alone, plant B at 3b's 0.5, V not read. Gate: 9.61e-5, 1e-4, 3e-4 gated (4.78e-3 not, B 0.39 at 20 000), equal to U1's top-dose arms. **The centred count reads "consistent with cumulative"**: dated 2000 on all three arms against 70m's 512–1000 over ten seeds; step excluded (its band 512–1000), instantaneous excluded (the run is already at 16–18 at 2000, a step its early set holds); in the in-sample calibration that label came only from cumulative plants (2 of 10, none from the 20 others). So on 70m the centred date comes later than a fixed step allows, compatible with the summed rate; the grid places the shift at a factor of about 1 to 3.9 against seed 0 (`/challenge-pr` on #298, finding 1). V not read (its profile on disk and seen: a lean, finding 2); one count's three near-equal arms — `trackC_writeup/status-C.md` "C6 unit 1b"
   - **C6 closed 2026-11-01 at its exit** (U0, U1, U1b + close-out; Blocked 128 (a) extended it by one unit; 129 (a), the user's; writing only): V refused by its gate on the run; the centred count "consistent with cumulative", written into `paper/` scoped to that count (the abstract's schedule sentence scoped to 410m, §1, a §7 paragraph, "compatible with" the summed rate; 17 `c6.*` keys, 4 claims, `paper_check` 0, 35 pages; `/challenge-pr` on #299: accept with changes, findings 1–5 taken); F1 narrowed for 70m's centred date only (a fixed count of updates excluded there); V's date, the shift's size and 410m not established; U0's Parked 1 dropped, V on the run carried to ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
-  - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps; E₁ and ‖m‖² at block 23's input sit above the interior plateau on 7 of 7 prompts everywhere, and through 8000 they are highest there. The FFN is the larger mover in nearly every block, but it does not move the tokens out at the end by the frozen label at any step (by the exact split, on 1–2 of 7 at 32000–54000). Each layer's summed QᵀK is indefinite (positive share 0.43–0.67, 0.50 to step 128), so the theorem's Assumption 3.1 fails everywhere. Block 23's own output is not seen — `trackC_writeup/status-C.md` "C7 (i) unit 1"
+  - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps, through block 23's own output (computed post hoc by a hooked pass); E₁ at the end of the stack sits above the interior plateau on 7 of 7 prompts everywhere, and through 8000 it is highest there. By the exact split, the FFN moves the tokens out on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only; the frozen first-order label is unreadable at 9 of 18 steps. Each head's symmetrised QᵀK is indefinite by construction, and each layer's sum is indefinite too (positive share 0.43–0.67), so the theorem's Assumption 3.1 fails everywhere — `trackC_writeup/status-C.md` "C7 (i) unit 1"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -46,7 +46,7 @@
   - Isobe et al.'s three phases on 410m (C7 (i)): U1 read (no terminal escape; 3.1 fails); the close-out (§8 sentence, the email's paragraph) to come — `trackC_writeup/status-C.md` "C7 (i) unit 1"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `1d6cb6ae5e`
+- **Reviewed:** 2026-11-09 · body `98e635063f`
 <!-- /phase-card -->
 
 ## Units
@@ -81,7 +81,7 @@
 | C6 1b. the centred count alone (Blocked 128 (a), the user's; beyond the budget) | **done 2026-11-01: frozen before output on the run's grid (`fd18085`); 3 arms gated, equal to U1's top-dose arms; "consistent with cumulative" (dated 2000; step and instantaneous excluded); V not read** | `c6_warmup.py gate --centred-only`; "C6 unit 1b" below |
 | C6 close-out (Blocked 129 (a), the user's) | **done 2026-11-01: writing only; the label in `paper/` (abstract, §1, a §7 paragraph), scoped to the centred count; 17 `c6.*` keys from three records, 4 claims; `paper_check` 0, 35 pages; F1 narrowed for 70m's centred date; exit met; revised after `/challenge-pr` on #299 (findings 1–5 taken)** | "C6 on one page" below |
 | C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed, revised after `/challenge-pr` on #341; frozen on Blocked 154 all (a) (Claude, on the user's delegation)** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
-| C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23); F's label 0 of 7 at every step; Assumption 3.1 fails at every layer and step** | `c7_profile.py`; "C7 (i) unit 1" below |
+| C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23, and through block 23's output, post hoc); by the exact split the FFN moves the tokens out on blocks 20–22 on 1–2 of 7 at 32000–54000 only (the frozen first-order label unreadable at 9 of 18 steps); Assumption 3.1 fails at every layer and step; revised after `/challenge-pr` on #342** | `c7_profile.py`; "C7 (i) unit 1" below |
 
 ## C7 (i) unit 1, the read (2026-11-09)
 
@@ -123,14 +123,30 @@ Re-run: `python -m trackC_writeup.c7_profile gate`, then `run`, then `report`, w
   at 32000 and 54000 (median ratio 0.17, 0.18). It does so on 0 of 7 at every other step,
   143000 included (median −0.03). That fall mixes block 23 with the readout's normaliser, which is
   why it is not in the profile (D1 (a)).
+- **Block 23's own output** (post hoc, after `/challenge-pr` on #342, finding 2:
+  `c7_profile.py b23`, a hooked pass per prompt and step on the stored tokens, records
+  `records_b23/`; the pass reproduces the stored states to ≤ 1.9e-7, and E₁ at state 23 matches
+  `energies.json` to 1e-6). Before the final LN, **E₁ after block 23 is still above U1's interior
+  plateau on 7 of 7 prompts at all 18 steps** (median ratio −0.12 at 143000, −0.31 and −0.32 at
+  54000 and 32000). ‖m‖² is the same. On the extended states 0–24 the criterion's terminal part
+  passes on 0 of 7 everywhere, and on 1–24 on 1 of 7 at 143000. So the post-LN fall at 32000 and
+  54000 belongs to the final LayerNorm, not to block 23. In block 23 itself, the exact split has the
+  FFN lowering ‖m‖² more than attention on 5 of 7 prompts at 143000, 1 of 7 at 32000 and 54000,
+  and 0 elsewhere. It moves the tokens out at the very end late in training, but not below the
+  plateau.
 
 **F, which part moves the tokens out, blocks 20–22.**
-- **The frozen label ("δ_u < 0 and |δ_u| > |δ_a| on each of 20–22") holds on 0 of 7 prompts at
-  every step**, and on the prompt mean at none.
-- The exact Shapley form, beside, holds on 2 of 7 at 32000, 1 of 7 at 54000, and 0 elsewhere.
-- **First order fails late:** at 143000 the remainder is as large as Δ‖m‖² itself in all three
-  blocks (for example block 20: Δ −3.8e-2, remainder −4.7e-2). So from 32000 on, read the Shapley
-  form, not the frozen one.
+*Revised after `/challenge-pr` on #342, finding 1:* the frozen first-order label cannot be read
+at most steps, so the exact Shapley form (declared beside at the freeze) leads.
+- **By the exact split, the FFN moves the tokens out at the end (σ_u < 0 and |σ_u| > |σ_a| on
+  each of blocks 20–22) on 2 of 7 prompts at 32000, 1 of 7 at 54000, and 0 of 7 at the other 16
+  steps**, step 0 included.
+- **The frozen first-order label is unreadable at 9 of 18 steps.** It reads 0 of 7 everywhere,
+  but over blocks 20–22 × 7 prompts its remainder exceeds half of Δ‖m‖² on 19 of 21 cases at
+  steps 0–4, 8 at step 8, and 13–21 from 8000 on. From 4000 on, its δ_u has the opposite sign to
+  the exact σ_u on 5–13 of 21. It is close to exact only at 16–2000 (remainder above half on ≤ 1
+  of 21), and there it agrees with the Shapley label (0 of 7). The first draft said "fails late";
+  it fails at the no-train control too (LESSONS 6).
 - On the prompt mean at 143000 (Shapley), the FFN lowers ‖m‖² at block 20 (−4.0e-2, attention
   +2.5e-3), raises it at 21 (+3.3e-2), and lowers it at 22 by less than attention does (−9.5e-3
   against −2.1e-2). At 32000 the FFN lowers ‖m‖² at all three blocks, but not more than attention
@@ -145,14 +161,24 @@ from step 0 to 128, which is what a random form gives. It spreads to 0.43–0.67
 never comes near 1. **Assumption 3.1 fails at every layer and step.** The median interior gap
 (blocks 10–13) is 0.015 to 128, 0.17 at 512, 0.42 at 2000, and then 0.16–0.26. The per-head
 medians are in the records. By the design, g is the gap of an indefinite form, which the theory
-does not cover.
+does not cover. *Added after `/challenge-pr` on #342, finding 3:* **for a single head the failure
+is structural, not empirical.** sym(W_QᵀW_K) = ½[A B]J[A B]ᵀ with J = [[0, I₆₄], [I₆₄, 0]], so by
+Sylvester's law of inertia each full-rank head has exactly 64 positive and 64 negative
+eigenvalues (the per-head share is therefore not a finding). Only the sum over 16 heads could have
+been positive definite. That it is not (0.43–0.67) is the empirical part, and the 0.50 up to step
+128 is this structure on random weights. *Finding 4:* Q is read on the raw weights, with the LN₁
+gains not folded in. The reviewer on #341 found that folding them in moves g by ≤ 0.01 at three
+layers at 32000, so "fails" is unaffected; the numbers above are the raw frame's.
 
-**What it means for the email (description, one seed):** on Pythia-410m the energy rises toward
-the last stored layer at every checkpoint; no terminal escape is seen before the final LayerNorm.
-The FFN is the larger mover in nearly every block. The layer's QᵀK is indefinite, so the theorem's
-hypotheses do not hold there. **Not established:** whether block 23 itself escapes (its output
-exists only after the LN); any seed but 0; the escape's rate; anything about the paper's model,
-which this cannot refute.
+**What it means for the email (description, one seed):** on Pythia-410m, by the paper's own
+criterion, there is no terminal escape at any of 18 checkpoints through block 23's output. The
+energy at the last block is above the interior plateau, and through step 8000 it is highest at
+the end. Late in training the last block's FFN does lower ‖m‖² more than attention (5 of 7 prompts
+at 143000), but only the final LayerNorm takes the energy below the plateau, and only at 32000
+and 54000. The FFN is the larger mover in nearly every block. Each head's symmetrised QᵀK is
+indefinite by construction (inertia 64/64), and the layer's sum is indefinite too, so the
+theorem's Assumption 3.1 does not hold. **Not established:** any seed but 0; the escape's rate;
+anything about the paper's model, which this cannot refute.
 
 ## C7 (i) unit 0, the scan and design (2026-11-09)
 
