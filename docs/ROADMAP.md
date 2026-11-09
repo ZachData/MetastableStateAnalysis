@@ -510,7 +510,10 @@ proposed, not decided.
     410m (the paper's model) by inference. Alternatives: S4′'s design (the toy route to Q2–Q3);
     B7′'s Blocked 115; nothing new before the paper (your rewrite of `trackC_writeup/paper/`
     first). (Corrected after `/challenge-pr` on #335, finding 1: the first wording put C6's
-    refusal on `pythia-70m` itself.)
+    refusal on `pythia-70m` itself.) *Decided (d), 2026-11-09, the user's, over the recommended
+    C4: nothing new opens before the paper; the user's rewrite of `trackC_writeup/paper/` is
+    next, with F1 left open as `paper/` §7 words it. Every candidate above stays unscheduled; the
+    next row is chosen after the rewrite.*
 
 ## 11. What each phase gives the plan
 
