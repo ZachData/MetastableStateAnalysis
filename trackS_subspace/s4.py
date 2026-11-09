@@ -535,6 +535,10 @@ def check(a) -> int:
             diff = max(diffs) if diffs else None
             rep["final_vs_safetensors"] = {"max_abs_diff": diff,
                                            "unmatched": [k for k, v in keymap.items() if len(v) != 1]}
+            if diff is None or diff > 0 or rep["final_vs_safetensors"]["unmatched"]:
+                (out / arm).mkdir(parents=True, exist_ok=True)
+                (out / arm / "check.json").write_text(json.dumps(rep, indent=1) + "\n")
+                raise S4Refused(f"{arm}: the last checkpoint is not model.safetensors: {rep['final_vs_safetensors']}")
             rep["param_groups"] = info["param_groups"]
         if arm == "R1":
             rep["param_groups"] = toy_load(arm, g[-1], "cpu")[1]["param_groups"]
@@ -547,6 +551,64 @@ def check(a) -> int:
             if k in rep:
                 print(arm, k, "loss", rep[k]["loss_mean"], "prefix_max", rep[k].get("prefix_max"),
                       "prev_max", rep[k].get("prev_max"))
+    return 0
+
+
+#: Held-out text for the toys' loss (placed after the loss on C2's texts rose on R3–R6): the first
+#: 16 Pile-CC documents over 4000 characters in A3's validation corpus, first 4000 characters, at
+#: most 1024 toy tokens.
+HELDOUT_CORPUS = "trackA/a3/corpus/val.jsonl.zst"
+HELDOUT_N, HELDOUT_CHARS = 16, 4000
+HELDOUT_STEPS = (526, 2100, 9012, 26592, 75000)
+
+
+def heldout_docs(data: Path) -> Tuple[List[str], str]:
+    import io
+    import subprocess
+    path = data / HELDOUT_CORPUS
+    proc = subprocess.Popen(["zstd", "-dc", str(path)], stdout=subprocess.PIPE)
+    docs = []
+    for line in io.TextIOWrapper(proc.stdout, encoding="utf-8"):
+        row = json.loads(line)
+        if (row.get("meta") or {}).get("pile_set_name") == "Pile-CC" and len(row["text"]) > HELDOUT_CHARS:
+            docs.append(row["text"][:HELDOUT_CHARS])
+        if len(docs) == HELDOUT_N:
+            break
+    proc.kill()
+    if len(docs) < HELDOUT_N:
+        raise S4Refused(f"only {len(docs)} held-out documents in {path}")
+    h = hashlib.sha256("\0".join(docs).encode()).hexdigest()[:12]
+    return docs, h
+
+
+def heldout(a) -> int:
+    """Each toy's mean loss on the held-out documents at HELDOUT_STEPS (description: does the run
+    keep learning text it was not trained on?)."""
+    import torch
+    from trackA_force.a1a import DATA
+    torch_, device = _dev()
+    docs, h = heldout_docs(DATA)
+    out = Path(a.out)
+    rows = {}
+    for arm in a.arm:
+        if arm not in TOYS:
+            raise S4Refused(f"{arm}: heldout reads the L-series toys only")
+        tok, _ = toy_tokenizer(arm)
+        ids = [tok.encode(t, add_special_tokens=False).ids[:1024] for t in docs]
+        rows[arm] = {}
+        for s in HELDOUT_STEPS:
+            w, _ = toy_load(arm, s, device)
+            ls = []
+            for x in ids:
+                xt = torch.tensor([x], device=device)
+                with torch.no_grad():
+                    _, _, lg = toy_forward(w, xt)
+                ls.append(float(torch.nn.functional.cross_entropy(lg[0, :-1], xt[0, 1:])))
+            rows[arm][str(s)] = float(np.mean(ls))
+        print(arm, {k: round(v, 2) for k, v in rows[arm].items()}, flush=True)
+    rec = {"code": code_sha(), "corpus": HELDOUT_CORPUS, "docs_sha": h, "n_docs": HELDOUT_N,
+           "chars": HELDOUT_CHARS, "max_tokens": 1024, "uniform": math.log(5000), "loss": rows}
+    (out / "heldout.json").write_text(json.dumps(rec, indent=1) + "\n")
     return 0
 
 
@@ -637,8 +699,9 @@ def induction(a) -> int:
 #: H's induction dates (D1 (a′)): D4 (a) on HAPAX's published mean prefix-matching curve
 #: (2511.05743v3, `prefix_induction_comparison_1b-triple_mean_visible.png`, sha256 41afea2f9e95…),
 #: digitised by `s4_hapax_fig.py` at about 64 steps a pixel. Vanilla crosses in (721, 785]: 800.
-#: Hapax crosses in (1172, 1236], which straddles 1200: 1200 or 1300, entered as the later. The
-#: gate's steps on H use vanilla's date for both sides.
+#: Hapax's mean is a ramp with no transition; its crossing in (1172, 1236] is set by the window and
+#: is not a formation date (`/challenge-pr` on #332), kept only as the record's entry. The gate's
+#: steps on H use vanilla's date for both sides.
 H_INDUCTION_PUBLISHED: Dict[str, Optional[int]] = {"H_vanilla": 800, "H_hapax": 1300}
 
 
@@ -788,12 +851,12 @@ def read(a) -> int:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[1])
-    ap.add_argument("cmd", choices=("fetch", "check", "run", "induction", "gate", "read"))
+    ap.add_argument("cmd", choices=("fetch", "check", "run", "induction", "gate", "read", "heldout"))
     ap.add_argument("--arm", nargs="+", default=list(ARMS), choices=ARMS)
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
     return {"fetch": fetch, "check": check, "run": run, "induction": induction, "gate": gate,
-            "read": read}[a.cmd](a)
+            "read": read, "heldout": heldout}[a.cmd](a)
 
 
 if __name__ == "__main__":

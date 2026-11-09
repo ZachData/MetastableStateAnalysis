@@ -286,7 +286,7 @@ selected pairs' displacement at 143000; to C2, `lit-S2.md` Parked 1 and G3′'s 
 is released at depths 2–6 (`timaeus/L2`–`L6`, constant LR, no warmup; T1's Parked 1, until now in
 §7b), and HAPAX's Pythia-1b-shaped pair (2511.05743) trained with and without the loss on
 induction-predictable tokens is released. So U1 reads released arms before anything is trained. **U1 done 2026-11-08** (`status-S.md` "S4
-unit 1"): H read (description); the released toys are Blocked 149 (R3–R6 degenerate, R1 refused,
+unit 1"): H read (description); the released toys are Blocked 149 (R3–R6's held-out loss rises from ~2100, R1 refused,
 induction after the frozen window).
 The MLP arm is dropped under D4 (a) (taken) and stays here, unscheduled (Parked: an MLP member of
 the series, if one is found or trained; it could change whether S4's answer holds beyond

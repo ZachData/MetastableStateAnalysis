@@ -7,7 +7,7 @@
 - **Question:** Do the 384 heads of `pythia-410m` share directions of the residual stream, per subspace family (OV write / read, QK query / key, OV's negative / positive / complex invariant subspaces), beyond a random arrangement of the same subspaces, how does that change over training, and what do the attention layers do inside the shared space (push, rotate, collapse)?
 - **Inputs:** `pythia-410m` weights at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 (and 8000 off the grid for the preflight and the gate); tokens only for unit 3's residual check (v1's 7 scored prompts, `trackB_circuit/b0_gate.py` `V1_SCORED`); code `trackS_subspace/s1.py`; records `data/trackS/s1/` (main tree) — `trackS_subspace/design-S1.md` "Objects, fixed here". S2: the same weights at 0, 256, 512, 1000, 2000, 4000, 143000 (8000 for the preflight) under a per-head OV hook, v1's 7 prompts for V and 7d's 16 repeated-random-token sequences for G; code `trackS_subspace/s2.py`; records `data/trackS/s2/` (main tree) — `trackS_subspace/design-S2.md` "Steps and readouts"
 - **Results:**
-  - S4 unit 1 (Blocked 148: D1 (a′), D2–D5 (a), the user's): on HAPAX's pair, suppressing induction's training pressure moves induction by about 400–500 steps on the paper's curve, while the centred count's date stays at 800 on both sides and V's moves one grid step (600 → 700). One seed a side, description. The released toys answer nothing yet: the depth-3 to depth-6 runs degenerate (held-out loss rising from about step 2100), R1's recipe is unreadable, and on R2 and R3 induction forms at about 9,000–22,000, after the frozen window. No toy's V has been read (Blocked 149) — `trackS_subspace/status-S.md` "S4 unit 1, the released arms (2026-11-08)"
+  - S4 unit 1 (Blocked 148: D1 (a′), D2–D5 (a), the user's): on HAPAX's pair, removing induction's training pressure removes the paper's induction transition (vanilla's at about 800; Hapax's mean ramps), while both energy counts rise alike: within 5 counts of each other through step 800, half their plateaus at 600–800 on both sides. One seed a side, description; the dated one-step differences are single counts at the bar and are not read. The released toys answer nothing yet: the depth-3 to depth-6 runs get worse on held-out text from about step 2100 (unstable or overfit, not told apart), R1's recipe is unreadable, and on R2 and R3 induction forms at about 9,000–22,000, after the frozen window. No toy's V has been read (Blocked 149) — `trackS_subspace/status-S.md` "S4 unit 1, the released arms (2026-11-08)"
   - S4 opened 2026-11-08 (Blocked 147 (b), the user's): a scan and a proposed design (Blocked 148, D1–D5). The untied toy arm is already released at depths 2–6 (`timaeus/L2`–`L6`: constant LR, no warmup, 451 checkpoints each). So is a Pythia-1b-shaped pair trained with and without the loss on induction-predictable tokens (HAPAX, 2511.05743). U1 reads those before any training — `trackS_subspace/status-S.md` "S4 unit 0, the scan and the design (2026-11-08)"
   - Opened 2026-10-20 with a scan, a `sympy` check and a design frozen as written (3 units + close-out); the rotation null, the norm-matched random draw and step 0 are one law for the mean projector, and the preflight refused per-unit verdicts against it, so S1 was designed to read counts — `trackS_subspace/design-S1.md` "Preflight (`tools/design_preflight.py`, step 8000, off the grid)"
   - Unit 1's gate: the instrument and its null pass (G0, G1, G1iii, G2: the three nulls are one law, step 0 reads no shared direction, the rotation null reads none at any step); the count fails its planted effect on the real pool in all 7 families, because at a trained step the mean projector's spectrum is dense at the null's edge, where each planted direction raises the count only about half the time; N refused by the frozen fallback (Blocked 82); the heads use nearly every dimension but unevenly (participation ratio 344–729 against 880), which alone explains a count near the edge, not the top eigenvalues — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
@@ -30,7 +30,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-11-08 · body `560bb2fc8b`
+- **Reviewed:** 2026-11-08 · body `3ec3cf02e2`
 <!-- /phase-card -->
 
 ## Units
@@ -49,7 +49,7 @@
 | S2 4. the matched R3, description (Blocked 90 (b), the user's) | **done 2026-10-22: as its controls in all 9 cells (V 0 of 5, G 0 of 4 read *lower*); R3's G1 0 of 9; 3.4–5.0 % of pairs above their head's write-space q99** | "S2 unit 4" below; `s2.py r3m-select`, `r3m`, `r3m-read` |
 | S2 close-out | **done 2026-10-22** (writing only; 90 (b)) | "S2 on one page" below |
 | S4 0. scan, design (Blocked 147 (b), the user's) | **done 2026-11-08: frozen on Blocked 148 (D1 (a′), D2–D5 (a), the user's)** | `lit-S4.md`, `design-S4.md`; "S4 unit 0" below |
-| S4 1. the released arms | **H read: V 600 / 700, centred 800 / 800, published induction 800 / 1200–1300 (description). Toys: R1 refused (step counter 2×); R3–R6 degenerate (held-out loss rising from ~2100); induction forms after the frozen window on every toy; no toy's V read; Blocked 149** | "S4 unit 1" below; `s4.py`, `s4_hapax_fig.py` |
+| S4 1. the released arms | **H read: both energy counts rise alike (within 5 counts through 800) with and without the paper's induction transition (description). Toys: R1 refused (recipe unreadable); R3–R6's held-out loss rises from ~2100; induction forms after the frozen window on every toy; no toy's V read; Blocked 149** | "S4 unit 1" below; `s4.py`, `s4_hapax_fig.py` |
 
 ## Corrections received
 
@@ -68,7 +68,9 @@ Design frozen on Blocked 148 (D1 (a′), D2–D5 (a), the user's) in `7324ac2`, 
 read. Code `trackS_subspace/s4.py` (records made at the code of `meta.json`; reading at
 `570bf145a5c0`), `s4_hapax_fig.py`; tests `tests/test_s4.py` (the date rule equals `a3.d4a` on 200
 series on Pythia's grid). Records `HDD_1TB/mets_data/trackS/s4/2026-11-08-u1/` (per arm:
-`records/`, `induction/`, `meta.json`, `gate.json`; `reading.json` sha256 `f9daea51d762`).
+`records/`, `induction/`, `meta.json`, `gate.json`, `check.json`; `reading.json` sha256 `f9daea51d762`;
+`heldout.json` from `s4.py heldout`; `tl_check.json` from `s4_tl_check.py`, run in a venv with
+TransformerLens).
 Checkpoints in `HDD_1TB/mets_data/hf` (toys ~31 GB, H ~83 GB). Input: C2's 7 v1 prompts as text
 (`texts_hash` in each `meta.json`), retokenized per model; float32, GPU, no TF32.
 
@@ -76,22 +78,24 @@ Checkpoints in `HDD_1TB/mets_data/hf` (toys ~31 GB, H ~83 GB). Input: C2's 7 v1 
 
 | choice | what | why |
 |---|---|---|
-| toy forward pass | TransformerLens 2.16.1's attention-only Shortformer block, re-implemented (`toy_forward`); no BOS, as C2 | TL is not in the env. **Checked against TL itself** in a scratch venv: max \|Δlogit\| 2e-4 on R2 at 75000 and R4 at 1035 and 75000; each repo's final checkpoint equals its `model.safetensors` (Δ 0.0, R2–R6) |
+| toy forward pass | TransformerLens 2.16.1's attention-only Shortformer block, re-implemented (`toy_forward`); no BOS, as C2 | TL is not in the env. **Checked against TL itself** (`tl_check.json`): max \|Δlogit\| ≤ 2.2e-4 on R2–R6 at 75000 and R4 at 1035; each repo's final checkpoint equals its `model.safetensors` (Δ 0.0, R2–R6, `check.json`; `check` now refuses otherwise) |
 | toy tokenizer | each repo's `tokenizer.json`, merges rewritten as strings for tokenizers 0.19 (refuses if a merge part holds a space or `ignore_merges` is set) | the env's tokenizers is older than the file's format |
 | step check | a checkpoint's optimizer step must equal its file's step | how R1 was caught |
 | the toys' window | the log-grid steps nearest 525, 1050, 2100: **526, 1035, 2100** (a tie goes to the later); grid 117 steps (1–26, every second log-grid step, the window, 75000) | design "Dates" |
 | induction probe | 16 sequences of 128 tokens uniform on 0–4998 (4999 is `<|endoftext|>`), repeated; **beside, the 7 texts' first 128 tokens repeated** | added after R2's last step scored 0.08 on random tokens and 0.48 (L1H6) on repeated text, before any induction date was read |
 | gate | plant-B dose and the null- and B-matched τ from the two steps pooled; each step gated on its own; the uncentred count gated on its own (re-init rate ≤ 5 %, plant B seen ≥ 0.4), the centred τ arms as C2 3b; gate steps: the last grid step ≤ ½ induction's date and the first ≥ 2× | the design names two steps but not how they combine |
 | H's re-inits | `arch_null.reinit_model` (Pythia's init law, float16-valued) on H's config | H has Pythia's recipe |
-| H's induction (D1 (a′)) | D4 (a) on HAPAX's published mean prefix-matching curve, digitised (`s4_hapax_fig.py`, figure sha256 `41afea2f9e95…`, ~64 steps a pixel): vanilla crosses in (721, 785] → **800**; hapax in (1172, 1236] → **1200–1300** (entered as 1300) | no induction score of ours on H. The paper's text gives no step for seed 1234; its Appendix G steps are other seeds'. The panel is a mean over heads, not the toys' max |
+| H's induction (D1 (a′)) | D4 (a) on HAPAX's published mean prefix-matching curve, digitised (`s4_hapax_fig.py`, figure sha256 `41afea2f9e95…`, ~64 steps a pixel): vanilla crosses in (721, 785] → **800**; hapax's mean is a ramp with no transition (0.052 at ~980, 0.133 at 2010, 0.197 at 4000), which crosses half its window's median in (1172, 1236], **not a formation date** (`/challenge-pr` on #332, finding 1) | no induction score of ours on H. The paper's text gives no step for seed 1234; its Appendix G steps are other seeds'. The panel is a mean over 128 heads, not the toys' max, so it cannot date Hapax's 1–2 induction heads |
 
 **(i) Populated.** Every arm's first records are finite and vary across states. **R1 refuses:** its
 file `checkpoint_0049990.pth` stores optimizer step 24,990, so its file numbers are 2× its
-optimizer steps. With its data, batch and position type also unknown, its recipe cannot be read
-from its files (design "Fences"), so R1 is not read.
+optimizer steps (gradient accumulation of 2 would do it). The refusal rests on what is unknown:
+its data, batch, tokenizer and position type cannot be read from its files (design "Fences"), so
+R1 is not read.
 
-**Discovery: the released depth-3 to depth-6 runs degenerate.** Mean loss on 16 Pile-CC validation
-documents (`data/trackA/a3/corpus/val.jsonl.zst`, first 1024 toy tokens):
+**Discovery: the released depth-3 to depth-6 runs get worse on held-out text from about step
+2100.** Mean loss on 16 Pile-CC validation documents (`data/trackA/a3/corpus/val.jsonl.zst`, first
+1024 toy tokens; `heldout.json`):
 
 | step | 526 | 2100 | 9012 | 26592 | 75000 |
 |---|---|---|---|---|---|
@@ -103,9 +107,12 @@ documents (`data/trackA/a3/corpus/val.jsonl.zst`, first 1024 toy tokens):
 
 Uniform over the vocabulary is ln 5000 = 8.52. The same holds on C2's 7 texts (R5 ends at 6.6–9.4 a
 prompt) and under TransformerLens itself, so it is the released weights. The recipes are identical
-(`training.yaml`: AdamW 1e-3 constant, no warmup, clip 1.0, seed 42). R2 is the only healthy
-trained toy. 2507.21449 is said to study `L4` (Track T, leaning); whether its `L4` is these weights
-is not checked.
+(`training.yaml`: AdamW 1e-3 constant, no warmup, clip 1.0, seed 42). **Instability and overfitting
+are not told apart** (`/challenge-pr` on #332, finding 3): the training corpus `pile13m` is private
+and its size is not stated (`data.yaml` names only the task), 75,000 × 32 × 1024 tokens is 2.5B,
+and overconfident memorisation also drives held-out loss past uniform. Either way R2 is the only
+toy that keeps learning text it was not trained on. 2507.21449 is said to study `L4` (Track T,
+leaning); whether its `L4` is these weights is not checked.
 
 **Induction on the toys** (not V; the max over heads):
 
@@ -126,24 +133,40 @@ prompts × 16 transitions, 336 re-init units):
 
 | | uncentred gate | centred arms passing | V date (plateau) | per-prompt V dates | centred date, gated arms | induction (published) |
 |---|---|---|---|---|---|---|
-| vanilla | pass (null 0; B 0.88, 0.75) | 3.11e-4, 3e-4, B-matched 3.43e-3 (1e-4 fails) | **600** (32) | 500–900 | **800**, 800, 1500 | 800 |
-| hapax | pass (null 0; B 0.87, 0.69) | 3.11e-4, 3e-4, B-matched 3.69e-3 (1e-4 fails) | **700** (27) | 500–800 | **800**, 800, no change | 1200–1300 |
+| vanilla | pass (null 0; B 0.88, 0.75) | 3.11e-4, 3e-4, B-matched 3.43e-3 (1e-4 fails) | 600 (32) | 500–900 | 800, 800, 1500 | a transition at ~800 |
+| hapax | pass (null 0; B 0.87, 0.69) | 3.11e-4, 3e-4, B-matched 3.69e-3 (1e-4 fails) | 700 (27) | 500–800 | 800, 800, no change | no transition (a ramp) |
+
+The series behind those dates, steps 100–900 (V, then the centred count at 3.11e-4):
+
+| step | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 |
+|---|---|---|---|---|---|---|---|---|---|
+| V vanilla | 0 | 0 | 0 | 0 | 8 | 16 | 18 | 18 | 26 |
+| V hapax | 0 | 0 | 2 | 3 | 6 | 11 | 19 | 21 | 21 |
+| centred vanilla | 2 | 4 | 5 | 5 | 6 | 12 | 17 | 28 | 34 |
+| centred hapax | 0 | 0 | 0 | 1 | 6 | 8 | 16 | 25 | 23 |
+
+The dates turn on single counts at the bar (`/challenge-pr` on #332, finding 2): vanilla's V is
+exactly 16 against its bar of 16 at 600 (one count less dates it 700, as hapax), and its centred
+count is 17 against 17.5 at 700. The two agreeing centred τ (3.11e-4 and 3e-4) are 4 % apart, so
+they are one reading, not two.
 
 The B-matched arms carry almost nothing (plateau 2 on vanilla, whose 1500 rests on it; 0 on
 hapax), so the two lower arms are the centred reading. V on both sides is not flat at the window's
 end (about 50 at 4000, against 26–32 at 2000), and vanilla's dips at 1500–1700 (12–17).
 
-**What H shows (description; one seed a side, no noise floor, no label):** suppressing induction's
-training pressure moves induction by about 400–500 steps on HAPAX's curve, while the centred date
-stays at 800 on both sides. That is vanilla's induction step, but not tied to it in Hapax. V's
-half-rise moves one grid step (600 → 700), inside both sides' per-prompt spread. Both V dates
-precede published induction. Fences: 1B, not 410m; Hapax weakens induction rather than removing it;
+**What H shows (description; one seed a side, no noise floor, no label):** removing induction's
+training pressure removes the paper's induction transition (vanilla's mean prefix-matching jumps
+at about 750–800; Hapax's ramps with none), while both energy counts rise alike: through step 800
+the two sides' V and centred series are within 5 counts of each other (plateaus 27–43), and both
+reach half their plateaus at 600–800. The dated differences (V 600 → 700) are one count at the bar
+and are not read. So on this pair the energy's rise does not need induction's transition; it says
+nothing about Hapax's 1–2 induction heads, which the mean cannot date. Fences: 1B, not 410m; Hapax weakens induction rather than removing it;
 H's schedule and data order are unread (the paper says only "Pythia's configuration"); no step 0;
 induction's dates come from a figure, at a mean over heads.
 
 **Parked** (why / cost / which decision it could change):
 1. H's own noise floor: `pythia-1b`'s checkpoints are the only one, and they stay closed while
-   `design-8.md`'s reserve holds. Cost: about 15 GB of reads. It could change whether 600 → 700 is
+   `design-8.md`'s reserve holds. Cost: about 15 GB of reads. It could change whether the 5-count gaps are
    a difference at all. Yours, with the reserve (Blocked 7).
 2. HAPAX's two extra seeds (bf16, to 18,000; Appendix G): unreleased as far as the scan found.
    They would give H a second seed.

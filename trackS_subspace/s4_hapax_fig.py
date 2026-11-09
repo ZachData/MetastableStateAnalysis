@@ -43,6 +43,8 @@ def digitise(a: np.ndarray) -> dict:
             ys = [y for y in range(95, Y1) if np.abs(a[y, x] - c).sum() < 40]
             if ys:
                 pts.append((round(step(x)), round(float(value(np.mean(ys))), 3)))
+        if len(pts) < 200:              # the panel has 338 columns; a colour seen in few is not the curve
+            raise SystemExit(f"REFUSE: {k}'s colour found in {len(pts)} columns only")
         out[k] = pts
     return out
 
