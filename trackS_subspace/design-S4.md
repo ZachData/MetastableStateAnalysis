@@ -1,9 +1,10 @@
 <!-- trackS_subspace/design-S4.md -->
 # Track S — design: S4, the toy induction model
 
-**Proposed 2026-11-08** (Blocked 148, the user's: D1–D5 below). Revised the same day after
-`/challenge-pr` on #331 (findings 1–5 taken, "Revised after #331" below). Not frozen; nothing has
-been read on any arm. Row: `docs/ROADMAP.md` §7a S4. Opened by Blocked 147 (b), the user's. The scan before
+**Frozen 2026-11-08** on Blocked 148, the user's: **D1 (a′), D2–D5 (a)**, as recommended
+("Decisions" below), before any arm was read. Proposed the same day and revised after
+`/challenge-pr` on #331 (findings 1–5 taken, "Revised after #331" below). Choices U1's code places
+where this text leaves one are recorded in `status-S.md` "S4 U1" as fixed before output. Row: `docs/ROADMAP.md` §7a S4. Opened by Blocked 147 (b), the user's. The scan before
 it: `trackS_subspace/lit-S4.md` (this unit). Tier 1: S4 registers nothing and scores nothing.
 
 ## What S4 answers (fixed before reading)
@@ -136,6 +137,12 @@ No closed-form claim is made here, so there is no `sympy` check. The Hapax mask'
 data is measured in U2 against the paper's 31.7 %.
 
 ## Decisions (Blocked 148, the user's)
+
+**Decided 2026-11-08, the user's: D1 (a′), D2 (a), D3 (a), D4 (a), D5 (a).** So: H is read in U1
+for the energy counts only, and no induction score of ours runs on `vanilla_1b` or `hapax_1b`
+(H's induction dates are HAPAX's published ones); the trained arms use Hapax's mask with R1
+beside; the tied arm is one block shared across 4 layers; the MLP arm is Parked to ROADMAP S4;
+4 units, the close-out inside U3.
 
 | | options | recommended |
 |---|---|---|

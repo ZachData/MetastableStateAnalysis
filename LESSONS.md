@@ -1874,6 +1874,22 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   checks where the bar sits (its beside rows: plant 0.10 → 0 %, 0.20 → 100 %), not noise. Rule:
   **a gate whose pass rate is set "from the data's own spread" is first run at several spreads; if
   the rate does not move, it is a check of the rule's arithmetic, and is named so**.
+- 2026-11-08 (S4 U1): `design-S4.md` fixed the toys' dating window at steps 525, 1050 and 2100
+  (Pythia's 1000–4000 scaled by run length) and froze it, and the gate's steps were derived from
+  induction's date under that window. On the released toys, induction forms at about 9,000–22,000
+  on R2 and R3 and never on R4–R6, so the window lies before it on every arm; the frozen rule
+  dated induction at step 1 and the gate ran at steps 1 and 2. And the released depth-3 to depth-6
+  runs get worse on held-out text from about step 2100 (to 7.0–9.0 nats), which no one had checked
+  before building an arm on them. Both were readable before the freeze: one checkpoint's induction
+  curve and held-out loss per arm, minutes of GPU and no V. The "Worth challenging" line named the
+  first risk and nothing tested it. Rule: **before a design freezes on released checkpoints, read
+  each arm's loss on held-out text and the timing of the event a window is placed against (not the
+  scored statistic); a window derived by scaling from another model is checked against the arm**. Same unit, from `/challenge-pr` on #332:
+  three checks in the write-up (the held-out table, TL equivalence, R3–R6 against their safetensors)
+  were run in scratch with no producer or record; and a half-rise on a slow ramp (Hapax's mean) was
+  reported as a formation date. Rules: **a number in a write-up has a committed producer and a record
+  before the PR**, and **a half-rise date is read only where the series has a transition; on a ramp
+  the rule's crossing is set by the window**.
 
 ## 7. Literature found after the construction was built
 
