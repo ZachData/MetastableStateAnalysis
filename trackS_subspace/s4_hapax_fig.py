@@ -25,6 +25,8 @@ X0, X1, Y0, Y1 = 1138, 1476, 27, 238
 XLIM = (100 - 0.05 * 19800, 19900 + 0.05 * 19800)
 COLOURS = {"vanilla": (0, 114, 178), "hapax": (230, 159, 0)}
 WINDOW = (1000, 2000, 4000)
+#: The pixel frame above fits this file only (CodeRabbit on #332): any other image is refused.
+FIGURE_SHA256 = "41afea2f9e958691391bbc083c274f31ffcbaf5e148d80f504f8950ca7db300b"
 
 
 def step(x: float) -> float:
@@ -61,9 +63,12 @@ def date(pts) -> dict:
 def main(path: str) -> int:
     from PIL import Image
     raw = open(path, "rb").read()
+    sha = hashlib.sha256(raw).hexdigest()
+    if sha != FIGURE_SHA256:
+        raise SystemExit(f"REFUSE: {path} has sha256 {sha[:12]}…, not the published figure's {FIGURE_SHA256[:12]}…")
     a = np.asarray(Image.open(path).convert("RGB")).astype(int)
     pts = digitise(a)
-    res = {"figure_sha256": hashlib.sha256(raw).hexdigest(), "points": pts,
+    res = {"figure_sha256": sha, "points": pts,
            "dates": {k: date(p) for k, p in pts.items()}}
     print(json.dumps(res["dates"], indent=1))
     with open(path + ".digitised.json", "w") as f:

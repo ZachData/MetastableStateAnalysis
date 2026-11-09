@@ -82,10 +82,10 @@ Checkpoints in `HDD_1TB/mets_data/hf` (toys ~31 GB, H ~83 GB). Input: C2's 7 v1 
 | toy tokenizer | each repo's `tokenizer.json`, merges rewritten as strings for tokenizers 0.19 (refuses if a merge part holds a space or `ignore_merges` is set) | the env's tokenizers is older than the file's format |
 | step check | a checkpoint's optimizer step must equal its file's step | how R1 was caught |
 | the toys' window | the log-grid steps nearest 525, 1050, 2100: **526, 1035, 2100** (a tie goes to the later); grid 117 steps (1–26, every second log-grid step, the window, 75000) | design "Dates" |
-| induction probe | 16 sequences of 128 tokens uniform on 0–4998 (4999 is `<|endoftext|>`), repeated; **beside, the 7 texts' first 128 tokens repeated** | added after R2's last step scored 0.08 on random tokens and 0.48 (L1H6) on repeated text, before any induction date was read |
+| induction probe | 16 sequences of 128 tokens uniform on 0–4998 (4999 is `<\|endoftext\|>`), repeated; **beside, the 7 texts' first 128 tokens repeated** | added after R2's last step scored 0.08 on random tokens and 0.48 (L1H6) on repeated text, before any induction date was read |
 | gate | plant-B dose and the null- and B-matched τ from the two steps pooled; each step gated on its own; the uncentred count gated on its own (re-init rate ≤ 5 %, plant B seen ≥ 0.4), the centred τ arms as C2 3b; gate steps: the last grid step ≤ ½ induction's date and the first ≥ 2× | the design names two steps but not how they combine |
 | H's re-inits | `arch_null.reinit_model` (Pythia's init law, float16-valued) on H's config | H has Pythia's recipe |
-| H's induction (D1 (a′)) | D4 (a) on HAPAX's published mean prefix-matching curve, digitised (`s4_hapax_fig.py`, figure sha256 `41afea2f9e95…`, ~64 steps a pixel): vanilla crosses in (721, 785] → **800**; hapax's mean is a ramp with no transition (0.052 at ~980, 0.133 at 2010, 0.197 at 4000), which crosses half its window's median in (1172, 1236], **not a formation date** (`/challenge-pr` on #332, finding 1) | no induction score of ours on H. The paper's text gives no step for seed 1234; its Appendix G steps are other seeds'. The panel is a mean over 128 heads, not the toys' max, so it cannot date Hapax's 1–2 induction heads |
+| H's induction (D1 (a′)) | D4 (a) on HAPAX's published mean prefix-matching curve, digitised (`s4_hapax_fig.py`, figure sha256 `41afea2f9e95…`, ~64 steps a pixel): vanilla crosses in (721, 785] → **800**; hapax's mean is a ramp with no transition (0.052 at ~980, 0.133 at 2010, 0.197 at 4000), which crosses half its window's median in (1172, 1236], **not a formation date** (`/challenge-pr` on #332, finding 1). Before ~980 hapax's line is hidden under Thresholded-Hapax's, which reads 0.017–0.038 at steps 77–914, so the crossing is the first *observed* one, but no hidden earlier jump fits under that line (CodeRabbit on #332) | no induction score of ours on H. The paper's text gives no step for seed 1234; its Appendix G steps are other seeds'. The panel is a mean over 128 heads, not the toys' max, so it cannot date Hapax's 1–2 induction heads |
 
 **(i) Populated.** Every arm's first records are finite and vary across states. **R1 refuses:** its
 file `checkpoint_0049990.pth` stores optimizer step 24,990, so its file numbers are 2× its
@@ -151,7 +151,9 @@ count is 17 against 17.5 at 700. The two agreeing centred τ (3.11e-4 and 3e-4) 
 they are one reading, not two.
 
 The B-matched arms carry almost nothing (plateau 2 on vanilla, whose 1500 rests on it; 0 on
-hapax), so the two lower arms are the centred reading. V on both sides is not flat at the window's
+hapax), so the two lower arms are taken as the centred reading. That choice was made after seeing
+the dates, and the B-matched arm passed its gate, dating vanilla 1500 and hapax "no change"; so
+no centred date (800 / 800 included) is robust across the passing arms (CodeRabbit on #332). V on both sides is not flat at the window's
 end (about 50 at 4000, against 26–32 at 2000), and vanilla's dips at 1500–1700 (12–17).
 
 **What H shows (description; one seed a side, no noise floor, no label):** removing induction's

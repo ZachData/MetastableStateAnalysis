@@ -152,6 +152,20 @@ beside; the tied arm is one block shared across 4 layers; the MLP arm is Parked 
 | D4 the MLP arm (ROADMAP's "and one with MLPs") | (a) dropped from S4, Parked to ROADMAP S4; (b) a fifth trained arm in U2 | **(a)**: the circuit is known in attention-only models, and no released MLP member of the series was found |
 | D5 budget | (a) 4 units, close-out inside U3; (b) 3 units: U1, then U2 and U3 merged into one, Tt only | **(a)** |
 
+## Decided after U1's released arms (Blocked 149, the user's, 2026-11-08)
+
+Placed before any toy's V was read (U1 found the frozen window before induction on every toy, and
+R3–R6's held-out loss rising from ~2100: status-S "S4 unit 1").
+
+| | decided |
+|---|---|
+| (i) R3–R6 | **(a) description only**: V's series, induction and held-out loss recorded, labelled "held-out loss rising"; no gate, no date, no outcome row (`s4.DATED_TOYS`) |
+| (ii) the toys' window | **(a) a late fixed window**: the log-grid steps nearest 18,750, 37,500 and 75,000 (¼, ½ and all of the run), **18540, 38140, 75000**, the same on every toy, for V, the centred count and induction alike. Placed after seeing induction's and held-out loss's curves, no V. The gate's steps follow from R2's induction date on this window by the frozen rule (≤ ½, ≥ 2×) |
+| (iii) U2 | inherits R2 as the only healthy released toy; nothing decided now |
+
+This replaces "The toys' plateau window is fixed at 525, 1050, 2100" below for the toys' reading;
+U1's window is kept in code as `TOY_WINDOW_U1`.
+
 ## Revised after #331
 
 `/challenge-pr` on #331: accept with changes; all five findings taken.

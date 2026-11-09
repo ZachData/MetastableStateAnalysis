@@ -91,7 +91,15 @@ def _toy_grid() -> Tuple[int, ...]:
 
 
 TOY_GRID = _toy_grid()
-TOY_WINDOW = tuple(nearest(t, sorted(set(range(1, 27)) | set(LOG_GRID) | {2100})) for t in TOY_TARGETS)
+#: U1's frozen window (526, 1035, 2100): it lies before induction on every toy (status-S "S4 unit 1").
+TOY_WINDOW_U1 = tuple(nearest(t, sorted(set(range(1, 27)) | set(LOG_GRID) | {2100})) for t in TOY_TARGETS)
+#: Blocked 149 (ii) (a), the user's: a late fixed window, the log-grid steps nearest ¼, ½ and all of
+#: the run, the same on every toy; placed after seeing induction's and loss's curves, no V read.
+TOY_TARGETS_LATE = (18750, 37500, 75000)
+TOY_WINDOW = tuple(nearest(t, LOG_GRID) for t in TOY_TARGETS_LATE)
+#: Blocked 149 (i) (a): R3–R6 (held-out loss rising from ~2100) are description only: their series
+#: are recorded, no gate, no date, no outcome row. R2 alone is dated.
+DATED_TOYS = ("R2",)
 #: R1 saves every 10 steps from 0 to 50,000: the toy grid at its nearest saved step, and step 0.
 R1_WINDOW = tuple(nearest(t, range(0, 50001, 10)) for t in TOY_TARGETS)
 R1_GRID = tuple(sorted({0} | set(R1_WINDOW) | {nearest(s, range(0, 50001, 10)) for s in TOY_GRID if s <= 50000}))
@@ -718,10 +726,12 @@ def gate(a) -> int:
     """(ii) C2 unit 3b's preflight on one arm at two steps: 3 fresh inits and the two steps; the
     plant-B dose, the null-matched and B-matched arms derived on the two steps pooled; each step
     gated on its own with those arms; the arm passes if both do."""
+    arm = a.arm[0]
+    if arm in TOYS and arm not in DATED_TOYS:
+        raise S4Refused(f"{arm}: description only (Blocked 149 (i) (a)); no gate")
     torch, device = _dev()
     texts = prompt_texts()
     out = Path(a.out)
-    arm = a.arm[0]
     g, win = grid(arm), window(arm)
     if arm == "R1":
         ind_step = None                 # one layer: no induction to date; the window's ends
@@ -826,10 +836,28 @@ def arm_reading(out: Path, arm: str) -> dict:
             "beside_series": {p: series(recs, "e1", REL_TOL, g, [p]).tolist() for p in beside}}
 
 
+def arm_description(out: Path, arm: str) -> dict:
+    """Blocked 149 (i) (a): a toy read as description only. V's series (uncentred, REL_TOL, the
+    prompts in V), induction's reading and the held-out loss, labelled; no gate, no date."""
+    g = grid(arm)
+    recs = load_recs(out, arm)
+    prompts = prompts_in(out, arm)
+    ho = out / "heldout.json"
+    return {"arm": arm, "label": "held-out loss rising", "description_only": True,
+            "prompts": prompts, "grid": list(g),
+            "uncentred_series": series(recs, "e1", REL_TOL, g, prompts).tolist(),
+            "induction": json.loads((out / arm / "induction_reading.json").read_text()),
+            "heldout": json.loads(ho.read_text())["loss"].get(arm) if ho.exists() else None}
+
+
 def read(a) -> int:
     out = Path(a.out)
     res = {}
     for arm in a.arm:
+        if arm in TOYS and arm not in DATED_TOYS:
+            res[arm] = arm_description(out, arm)
+            print(arm, "description only (Blocked 149 (i) (a))")
+            continue
         try:
             r = arm_reading(out, arm)
         except S4Refused as e:
