@@ -1046,6 +1046,16 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-08, S4 U1 (a refusal blamed on the steps when it was the toy's; caught by the gate's
+  first late run, before any date): in U1, R2 and R3 refused the gate at steps 1–2 because plant B
+  was not seen by the uncentred count. The writeup set those records aside as "steps that test
+  nothing designed". Blocked 149 then recommended a new window and "R2's gate at its new steps,
+  about 10 GPU-minutes", as if a new window would change that. At 6876 and 29101 plant B reached
+  only 0.14–0.17 at dose 0.5 (0.4 needed). The gate's thresholds were 410m's, and the design's
+  "Worth challenging" said so. One 10-second gate run at any late step would have shown it before
+  the user decided. Cost: a decision (Blocked 149 (ii)) that dates nothing. Rule: **when a gate
+  refuses, check whether the refusal moves with the cause you blame before you put a decision to
+  the user.**
 - 2026-11-08, N1 U1 (a gate arm that could not fail, and a null never sized; caught by the gate's
   first output, before any count): design-N1 planted B by setting a token's z to z* exactly, so its
   statistic (closeness to z*) sat at its maximum by construction, and the Haar null it was compared

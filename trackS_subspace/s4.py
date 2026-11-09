@@ -774,6 +774,16 @@ def gate(a) -> int:
     try:
         bd = d.b_dose(tr["base"]["u"], tr["plants"]["B_u"])
     except d.DoseRefused as e:
+        base_u = {n: cs.rate(units([n])["base"]["u"], REL_TOL) for n in trained}
+        shares = {k: {n: cs.share(cs.rate(units([n])["plants"]["B_u"][k], REL_TOL), base_u[n]) for n in trained}
+                  for k in tr["plants"]["B_u"]}
+        (out / arm / "gate_refused.json").write_text(json.dumps({
+            "code": code_sha(), "meta": meta(torch, arm, texts), "arm": arm, "induction_step": ind_step,
+            "steps": list(steps), "prompts": prompts, "reason": str(e), "need": d.B_SEEN_U,
+            "base_rate_u": base_u, "null_rate_u": cs.rate(nu["base"]["u"], REL_TOL),
+            "B_share_u_by_dose": shares,
+            "units_per_population": {"reinit": len(nu["base"]["u"]),
+                                     **{n: len(units([n])["base"]["u"]) for n in trained}}}, indent=1) + "\n")
         raise S4Refused(f"{arm}: {e} (the uncentred count's gate refuses)")
     b_target = cs.share(cs.rate(tr["plants"]["B_u"][bd], REL_TOL), cs.rate(tr["base"]["u"], REL_TOL))
     try:
@@ -862,6 +872,10 @@ def read(a) -> int:
             r = arm_reading(out, arm)
         except S4Refused as e:
             print(f"{arm}: {e}")
+            gr = out / arm / "gate_refused.json"
+            if arm in TOYS and gr.exists():  # design "The gate": a refused arm's V series as description
+                res[arm] = {**arm_description(out, arm), "label": "gate refused",
+                            "gate_refused": json.loads(gr.read_text())}
             continue
         if arm.startswith("H_"):            # D1 (a′): HAPAX's published date, not ours
             r["induction"] = {"prefix": {"step": H_INDUCTION_PUBLISHED[arm]}, "source": "published"}
