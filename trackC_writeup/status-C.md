@@ -43,7 +43,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `a59f60f3d3`
+- **Reviewed:** 2026-11-09 · body `b95669b122`
 <!-- /phase-card -->
 
 ## Units
@@ -523,7 +523,10 @@ induction-predictable tokens), both energy counts rise alike, within 5 counts th
 whether or not the paper's induction transition happens. It bears on F2 ("break, then induction"
 not shown causal), at its weight: one seed a side, 1B on the Pile, Hapax weakens induction rather
 than removing it, and no noise floor (`pythia-1b`'s checkpoints stay reserved by `design-8.md`,
-Blocked 7), so no gap is read. `trackS_subspace/status-S.md` "S4 on one page (closed 2026-11-09)".
+Blocked 7), so no gap is read. Before quoting it, date Hapax's own 1–2 induction heads from the
+paper's second panel (by eye the top head rises from ~1000 to ~2500, after both counts'
+plateaus; one colour-and-alpha pass on the figure). `trackS_subspace/status-S.md` "S4 on one
+page (closed 2026-11-09)".
 
 ## C2p unit 2, the revisions in `paper/` and the second fresh read (2026-10-24)
 

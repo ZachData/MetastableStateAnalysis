@@ -34,7 +34,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-11-09 · body `331fc20cc5`
+- **Reviewed:** 2026-11-09 · body `ba97fe1e62`
 <!-- /phase-card -->
 
 ## Units
@@ -89,8 +89,9 @@ this close-out, inside the 4-unit budget (D5 (a)); U3 not run. Writing only here
 2. **No released toy carries a gated date** (U1, U1b). R1 refused (recipe unreadable); R3–R6
    description only (held-out loss rising from ~2100; on the late window induction dates R3 at
    16942 and never forms on R4–R6); R2, the one healthy toy, refused by its gate at 6876 and 29101.
-3. **The uncentred count does not fit a 2-layer toy at its plateau** (U2, 64 library `val`
-   items, 116 units a step). Layer 0 raises E₁ steeply in every population, fresh inits included,
+3. **The uncentred count does not fit R2 at its plateau** (U2, 64 library `val` items, 116 units
+   a step; one seed of one config, read at init, 6876 and 29101). Layer 0 raises E₁ steeply in
+   all three populations, fresh inits included,
    so plant B at dose ≤ 1 turns 0 of 174 layer-0 units at init and 0 of 58 at 6876; layer 1
    already drops on 56 of 58 units at 6876. The positive control fails at V's plateau by
    construction, whatever the dose ceiling or the unit count; the null holds (re-inits 0).
@@ -124,7 +125,7 @@ anything on 410m or between released checkpoints.
 | U1 2. HAPAX's two unreleased seeds | carried to ROADMAP §7a S4′ as an input if released (a second seed for H) |
 | U1 3. whether 2507.21449's `L4` is these weights | carried to S4′ (it could say whether R3–R6's degeneration is known, which S4′'s deeper-toy option needs) |
 | U1b 4. R2's transient | done by U2 (layer 1's drop rate); its dating carried to S4′ with item 6 |
-| U1b 5. the digitised Hapax panel's heads | dropped: H carries no label and no gap is read without a noise floor, so a date for Hapax's heads changes no reading; S4′ can take it up if U1 1 opens |
+| U1b 5. the digitised Hapax panel's heads | carried to C2's rewrite with H's cited-context line (read before quoting it): by eye Hapax's top head rises from ~1000 to ~2500, after both counts' plateaus at 600–800, which would sharpen that sentence. Cost: one colour-and-alpha pass on the figure. (First dropped as "changes no reading"; re-homed after `/challenge-pr` on #335, finding 5, since the line now goes to the rewrite) |
 | U2 6. a per-transition instrument | carried to S4′ (its design starts from U2's per-transition table, below) |
 | Q4 (the atlas), B7's partner persistence | already carried to ROADMAP §7a (U2's design) |
 | Q5 (Tt, the planted negative sector), Tu, Q2–Q3 on trained toys | carried to S4′ (U3 not run) |
