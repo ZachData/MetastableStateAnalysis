@@ -7,6 +7,7 @@
 - **Question:** Do the 384 heads of `pythia-410m` share directions of the residual stream, per subspace family (OV write / read, QK query / key, OV's negative / positive / complex invariant subspaces), beyond a random arrangement of the same subspaces, how does that change over training, and what do the attention layers do inside the shared space (push, rotate, collapse)?
 - **Inputs:** `pythia-410m` weights at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 (and 8000 off the grid for the preflight and the gate); tokens only for unit 3's residual check (v1's 7 scored prompts, `trackB_circuit/b0_gate.py` `V1_SCORED`); code `trackS_subspace/s1.py`; records `data/trackS/s1/` (main tree) — `trackS_subspace/design-S1.md` "Objects, fixed here". S2: the same weights at 0, 256, 512, 1000, 2000, 4000, 143000 (8000 for the preflight) under a per-head OV hook, v1's 7 prompts for V and 7d's 16 repeated-random-token sequences for G; code `trackS_subspace/s2.py`; records `data/trackS/s2/` (main tree) — `trackS_subspace/design-S2.md` "Steps and readouts"
 - **Results:**
+  - S4 closed 2026-11-09 before its exit, by the frozen rule of Blocked 150 (c), on Blocked 151 (a), the user's (3 units + close-out): on HAPAX's 1B pair the energy counts rise alike with and without the paper's induction transition (one seed a side, description, no noise floor); no released toy carries a gated date; on the one healthy toy (R2) the uncentred count cannot be gated at V's plateau (layer 0 never turnable, layer 1 saturated), and V there is a count of layer 1's drops. The toys go to the ROADMAP's new S4′ row — `trackS_subspace/status-S.md` "S4 on one page (closed 2026-11-09)"
   - S4 unit 2 (Blocked 150 (a), the user's): the toy instrument's calibration fails its opening check, so S4 closes as Blocked 150 (c) under the frozen rule. On 64 library `val` items (116 units a step) plant B is seen by the uncentred count at R2's step 6876 at 0.03 at dose 1 (0.4 needed; 0.05 at dose 2), though at 29101 it passes at dose 1 (0.44) and the null holds. The limit is neither the unit count nor the dose ceiling: plant B at dose ≤ 1 never turns layer 0 (embedding → layer 0 rises steeply from init on), and layer 1 already drops on 56 of 58 units at V's plateau, so the check could not pass at any plateau step (corrected after `/challenge-pr` on #334). Whether S4 closes or is extended with a per-transition count is Blocked 151 — `trackS_subspace/status-S.md` "S4 unit 2, the toy instrument's calibration: the opening check fails (2026-11-09)"
   - S4 unit 1, Blocked 149 applied ((i) (a), (ii) (a), the user's): no released toy carries a gated date. On the late window (18540, 38140, 75000) R2's induction dates 14146, and its gate refuses at 6876 and 29101: plant B is seen by the uncentred count at 0.14–0.17 at dose 0.5 (0.4 needed), as at steps 1–2; doses up to 4 do not pass it either (7–12 units a step). R2's V (description, read after the refusal) rises at ~900 and is gone by 16942, so the late plateau is 0 (946 on U1's window). R3–R6 are description only. What next is Blocked 150 — `trackS_subspace/status-S.md` "S4 unit 1, Blocked 149 applied: R2's gate refuses (2026-11-08)"
   - S4 unit 1 (Blocked 148: D1 (a′), D2–D5 (a), the user's): on HAPAX's pair, removing induction's training pressure removes the paper's induction transition (vanilla's at about 800; Hapax's mean ramps), while both energy counts rise alike: within 5 counts of each other through step 800, half their plateaus at 600–800 on both sides. One seed a side, description; the dated one-step differences are single counts at the bar and are not read. The released toys answer nothing yet: the depth-3 to depth-6 runs get worse on held-out text from about step 2100 (unstable or overfit, not told apart), R1's recipe is unreadable, and on R2 and R3 induction forms at about 9,000–22,000, after the frozen window. No toy's V has been read (Blocked 149) — `trackS_subspace/status-S.md` "S4 unit 1, the released arms (2026-11-08)"
@@ -27,12 +28,13 @@
 - **Depends on:** none
 - **Feeds:** C
 - **Open threads:**
+  - The toys (a per-transition count gated at its own unsaturated steps; Tu, Tt and Q5; deeper healthy toys), carried to the ROADMAP's S4′ row; H's description carried to C2's rewrite — `trackS_subspace/status-S.md` "S4 on one page (closed 2026-11-09)"
   - Arm a's displacement at 143000 (11.9 against 1.0–1.1) and the selected pairs' at 143000 (about 1.5×), both carried to S3 — `trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"
   - Whether any OV-only edit undoes the break, and the gradient-flow statement's exact hypotheses (`lit-S2.md` Parked 1), both carried to C2's draft — `trackS_subspace/status-S.md` "S2 on one page (closed 2026-10-22)"
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-11-09 · body `8338ff3e04`
+- **Reviewed:** 2026-11-09 · body `ba97fe1e62`
 <!-- /phase-card -->
 
 ## Units
@@ -54,6 +56,7 @@
 | S4 1. the released arms | **H read: both energy counts rise alike (within 5 counts through 800) with and without the paper's induction transition (description). Toys: R1 refused (recipe unreadable); R3–R6's held-out loss rises from ~2100; induction forms after the frozen window on every toy; no toy's V read; Blocked 149** | "S4 unit 1" below; `s4.py`, `s4_hapax_fig.py` |
 | S4 1b. Blocked 149 applied | **R2's gate refuses at its late steps (plant B unseen, as at steps 1–2); R3–R6 description; no toy dated; Blocked 150** | "S4 unit 1, Blocked 149 applied" below |
 | S4 2. the toy instrument's calibration (Blocked 150 (a)) | **opening check fails: plant B unseen at R2's 6876 at doses ≤ 1 on 116 units (0.03); S4 closes as 150 (c); close-out next, U3 not run** | "S4 unit 2" below; `s4.py calib` |
+| S4 close-out (Blocked 151 (a), the user's) | **done 2026-11-09** (writing only; closed before its exit as 150 (c)) | "S4 on one page" below |
 
 ## Corrections received
 
@@ -65,6 +68,68 @@
   measured: on a leave-the-layer-out S they read as before from 512, so the bias moves none of
   S1's readings there; before 512 `ov_neg`'s and `ov_pos`'s outside-Haar `share` layers (up to 11)
   were the bias (0–2 on S₋ₗ). "S2 unit 3" below.
+
+## S4 on one page (closed 2026-11-09)
+
+**Asked** (`design-S4.md` "What S4 answers"): on a toy where the induction circuit is known, is
+there an energy break to move (Q1); does it move where induction cannot form or is suppressed
+(Q2); does it fall at a step without a warmup (Q3); S1's atlas with the circuit named (Q4); the
+tied arm (Q5). Arms: the released toys R1–R6, HAPAX's 1B pair H (D1 (a′), energy only), our
+trained Tu / Tt. **Closed 2026-11-09 before its exit**, by the frozen rule of Blocked 150 (c)
+(U2's opening check failed), on Blocked 151 (a), the user's: 3 units (U0, U1 with U1b, U2) and
+this close-out, inside the 4-unit budget (D5 (a)); U3 not run. Writing only here.
+
+**Established (tier 1, description; one seed an arm):**
+
+1. **On HAPAX's pair the energy counts rise alike with and without the paper's induction
+   transition** (U1): within 5 counts of each other through step 800, half their plateaus at
+   600–800 on both sides; vanilla's induction transition at about 800, Hapax's mean ramps. Q2's
+   one reading, and it is H's (1B, Pythia's recipe, Hapax weakens induction rather than removing
+   it), with no noise floor, so no label and no gap read.
+2. **No released toy carries a gated date** (U1, U1b). R1 refused (recipe unreadable); R3–R6
+   description only (held-out loss rising from ~2100; on the late window induction dates R3 at
+   16942 and never forms on R4–R6); R2, the one healthy toy, refused by its gate at 6876 and 29101.
+3. **The uncentred count does not fit R2 at its plateau** (U2, 64 library `val` items, 116 units
+   a step; one seed of one config, read at init, 6876 and 29101). Layer 0 raises E₁ steeply in
+   all three populations, fresh inits included,
+   so plant B at dose ≤ 1 turns 0 of 174 layer-0 units at init and 0 of 58 at 6876; layer 1
+   already drops on 56 of 58 units at 6876. The positive control fails at V's plateau by
+   construction, whatever the dose ceiling or the unit count; the null holds (re-inits 0).
+4. **On R2, V is a count of layer 1's drops**, so R2's transient (V up at ~900 under a constant LR
+   with no warmup, gone by 16942 as induction forms, dated 14146) is layer 1's drop rate rising
+   and falling. A one-seed lean its own gate cannot test.
+
+**Not established:** a break on any toy (Q1 gated); Q2's toy answer (R1 refused, no suppressed
+toy trained); Q3 (R2's rise at ~900 without a warmup is ungated and is layer 1's count, not
+Pythia's V); Q4 and Q5 (not run: Tu and Tt untrained, the planted negative sector, B7's read);
+that H's 5-count gaps are a difference (no noise floor); when Hapax's 1–2 induction heads form;
+anything on 410m or between released checkpoints.
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 0. scan, design | #331 | frozen on Blocked 148 (D1 (a′), D2–D5 (a)) |
+| 1. the released arms | #332 | H read (description); no toy dated; Blocked 149 |
+| 1b. Blocked 149 applied | #333 | R2's gate refuses at its late steps; R3–R6 description; Blocked 150 |
+| 2. the toy instrument's calibration (Blocked 150 (a)) | #334 | opening check fails; cause split by transition; Blocked 151 |
+| close-out (Blocked 151 (a)) | this | writing only |
+
+**Parked and open at close:**
+
+| item | fate |
+|---|---|
+| U0 1. 2506.13688's Pythia result | carried to C2's rewrite (already there: `trackC_writeup/status-C.md` "For the user's rewrite") |
+| U0 2. HAPAX's pair as a C2 arm | done: read in U1 under D1 (a′); H's description carried to C2's rewrite as cited context beside 2506.13688 (status-C, same section), with its fences |
+| U1 1. H's noise floor (`pythia-1b`'s checkpoints, reserved by `design-8.md`) | stays yours with the reserve (Blocked 7); named in that cited-context line, since without it H carries no label |
+| U1 2. HAPAX's two unreleased seeds | carried to ROADMAP §7a S4′ as an input if released (a second seed for H) |
+| U1 3. whether 2507.21449's `L4` is these weights | carried to S4′ (it could say whether R3–R6's degeneration is known, which S4′'s deeper-toy option needs) |
+| U1b 4. R2's transient | done by U2 (layer 1's drop rate); its dating carried to S4′ with item 6 |
+| U1b 5. the digitised Hapax panel's heads | carried to C2's rewrite with H's cited-context line (read before quoting it): by eye Hapax's top head rises from ~1000 to ~2500, after both counts' plateaus at 600–800, which would sharpen that sentence. Cost: one colour-and-alpha pass on the figure. (First dropped as "changes no reading"; re-homed after `/challenge-pr` on #335, finding 5, since the line now goes to the rewrite) |
+| U2 6. a per-transition instrument | carried to S4′ (its design starts from U2's per-transition table, below) |
+| Q4 (the atlas), B7's partner persistence | already carried to ROADMAP §7a (U2's design) |
+| Q5 (Tt, the planted negative sector), Tu, Q2–Q3 on trained toys | carried to S4′ (U3 not run) |
+| the MLP arm (D4 (a)) | stays in ROADMAP §7a, unscheduled (as at U2) |
 
 ## S4 unit 2, the toy instrument's calibration: the opening check fails (2026-11-09)
 

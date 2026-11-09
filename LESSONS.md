@@ -2658,6 +2658,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   of 147's line. All fixed before merge; no run spent. Rule (adds to the one above): a
   recommendation's premises are read from the row that owns them (the ROADMAP row, the status
   table), and a one-line item is replaced whole, never by its prefix.
+- 2026-11-09, S4 close-out (#335, `/challenge-pr` finding 1), a third repeat. Blocked 152's
+  weakest point took ROADMAP item 15's phrase "V's gate refused on C6's 70m run" as "on
+  `pythia-70m`". C6's own row and status-C put the refusal on `pythia-70m-warmup01` (0.38
+  against 0.4), and `PROJECT.md` §3.68 dates V on `pythia-70m` at 256. The recommendation (C4)
+  stood, and its weak point narrowed to the longer-ramp arm. Fixed before merge; no run spent.
+  The rule above already covered it, so it held only where it was looked up: before writing a
+  recommendation's weakest point, open the owning row of each premise, not only of its headline.
 
 ## 12. Deleted, then needed
 

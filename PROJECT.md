@@ -3110,6 +3110,22 @@ step 143000, layer 0, on the prompt library's `val` (`library_hash` `47feaa321fa
 
 ---
 
+## 3.82 Track S's S4 closed: on HAPAX's pair the energy counts rise with or without induction; the count does not fit the one healthy released toy (2026-11-09)
+
+**`trackS_subspace/status-S.md` "S4 on one page (closed 2026-11-09)"** holds the numbers; this
+section says why it is project-wide. Tier 1, description, one seed an arm.
+
+- The one causal-arm reading on C2's F2 is outside the paper's model: on HAPAX's 1B pair the
+  energy counts rise alike with and without the induction transition, with no noise floor, so it
+  is cited context for C2's rewrite and carries no label.
+- The energy count does not carry over to `timaeus/L2` as it stands (one seed of one 2-layer
+  attention-only Shortformer config): in all three populations read (fresh inits, steps 6876
+  and 29101) layer 0 raises the energy, and layer 1 saturates at V's plateau, so the positive
+  control cannot pass where V would be dated. A toy reading needs its own per-transition design
+  (ROADMAP §7a S4′), and the warmup question (F1) has no toy answer yet.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this

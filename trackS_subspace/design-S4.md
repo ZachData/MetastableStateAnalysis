@@ -1,6 +1,10 @@
 <!-- trackS_subspace/design-S4.md -->
 # Track S — design: S4, the toy induction model
 
+**Closed 2026-11-09** before its exit, by U2's frozen rule (Blocked 150 (c)), on Blocked 151
+(a), the user's; U3 did not run: `status-S.md` "S4 on one page (closed 2026-11-09)". The toys'
+next design is ROADMAP §7a S4′.
+
 **Frozen 2026-11-08** on Blocked 148, the user's: **D1 (a′), D2–D5 (a)**, as recommended
 ("Decisions" below), before any arm was read. Proposed the same day and revised after
 `/challenge-pr` on #331 (findings 1–5 taken, "Revised after #331" below). Choices U1's code places
