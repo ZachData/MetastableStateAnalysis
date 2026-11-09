@@ -1905,6 +1905,15 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   reported as a formation date. Rules: **a number in a write-up has a committed producer and a record
   before the PR**, and **a half-rise date is read only where the series has a transition; on a ramp
   the rule's crossing is set by the window**.
+- 2026-11-09, S4 U2: Blocked 150 recommended more prompts because "the binding limit is the unit
+  count". U1's record already showed plant B at 1 of 7 units at 6876, flat across doses, and split
+  by transition it would have shown why: layer 0 is never turned at dose ≤ 1 (fresh inits
+  included), and layer 1 is saturated at V's plateau. The 64-prompt check failed exactly that way
+  (0.03), and the first write-up's cause ("the dose, not the structure", then a structural reason)
+  contradicted itself until `/challenge-pr` on #334 split the record. Cost: one unit spent
+  confirming what the record held. Rule: **when a positive control fails, split its share by unit
+  kind (transition, layer, prompt) before proposing more units or doses; a pooled share can hide a
+  kind that cannot be turned, and a kind that is already saturated**.
 
 ## 7. Literature found after the construction was built
 

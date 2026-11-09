@@ -290,7 +290,8 @@ unit 1"): H read (description); the released toys are Blocked 149 (R3–R6's hel
 induction after the frozen window). Blocked 150 decided (a) 2026-11-09, the user's: U2 is the toy
 instrument's calibration (no training), U3 trains Tu (depth 2) and Tt with the close-out inside.
 **U2 done 2026-11-09: its opening check failed** (plant B unseen at R2's V plateau at doses ≤ 1 on
-116 units; `status-S.md` "S4 unit 2"), so S4 closes as 150 (c) at its next unit, and U3 does not run.
+116 units: layer 0 never turnable, layer 1 saturated; `status-S.md` "S4 unit 2"). The frozen rule
+closes S4 as 150 (c); close or extend with a per-transition count is Blocked 151.
 **Carried here, unscheduled:** Q4, S1's atlas on a toy with the circuit named (cost: `s1.py` at d
 256 on R2 and the trained arms; it could change whether the K-composition channel is a shared
 subspace), and B7's partner persistence on a tied toy of depth ≥ 3 (cost: one B7 run per arm).

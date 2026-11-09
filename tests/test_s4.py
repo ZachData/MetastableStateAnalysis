@@ -98,3 +98,4 @@ def test_b_ceiling_seen_caps_the_dose():
     assert r["pass"] and r["dose_seen"] == 1.0
     assert not s4.b_ceiling_seen(0.2, {**sh, "1": 0.39}, 0.0, 1.0, 0.4, 0.05)["pass"]   # 2 and the ceiling don't count
     assert not s4.b_ceiling_seen(0.2, sh, 0.06, 1.0, 0.4, 0.05)["pass"]                 # the null fails
+    assert s4.b_ceiling_seen(0.2, {"1e-05": 0.5}, 0.0, 1.0, 0.4, 0.05)["dose_seen"] == 1e-05   # exponent form (#334, 5)

@@ -207,8 +207,13 @@ def b_ceiling_seen(base_rate: float, shares: Dict[str, float], null_rate: float,
                    dose_max: float, need: float, null_max: float) -> dict:
     """U2 step 1's rule on one step: the re-inits' uncentred rate ≤ ``null_max`` and plant B's
     uncentred share ≥ ``need`` at some dose ≤ ``dose_max`` (keys other than doses are ignored)."""
-    seen = sorted(float(k) for k, s in shares.items()
-                  if k.replace(".", "", 1).isdigit() and 0 < float(k) <= dose_max and s >= need)
+    def dose(k: str) -> Optional[float]:
+        try:
+            return float(k)
+        except ValueError:
+            return None                 # "ceiling" and any other non-dose key
+    seen = sorted(x for k, s in shares.items()
+                  if (x := dose(k)) is not None and 0 < x <= dose_max and s >= need)
     return {"null_ok": null_rate <= null_max, "dose_seen": seen[0] if seen else None,
             "pass": null_rate <= null_max and bool(seen), "base_rate": base_rate}
 
