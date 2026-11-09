@@ -35,6 +35,7 @@
   - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
   - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps, through block 23's own output (computed post hoc by a hooked pass); E₁ at the end of the stack sits above the interior plateau on 7 of 7 prompts everywhere, and through 8000 it is highest there. By the exact split, the FFN moves the tokens out on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only; the frozen first-order label is unreadable at 9 of 18 steps. Each head's symmetrised QᵀK is indefinite by construction, and each layer's sum is indefinite too (positive share 0.43–0.67), so the theorem's Assumption 3.1 fails everywhere — `trackC_writeup/status-C.md` "C7 (i) unit 1"
   - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape on the block inputs at any checkpoint (through block 23's output, 1 of 7 prompts just passes at 143000 on states 1–24), and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
+  - C4 opened 2026-11-09 (STATE Blocked 153; writing only): a scan and a proposed design that trains `pythia-70m` from seed 0's init on Pythia's data order with a flat rate at the peak and with Pythia's own schedule (the harness check), and labels the flat arm's dates against the harness arm's on a shared dense grid (step against the summed rate: about 256 against 23 for V, 1000 against 350 for the centred date; disjoint bands, sympy-checked); revised after `/challenge-pr` on #344, since C6's ten-seed bands overlap; V's gate runs on the flat arm; Blocked 155 (the arms and the registration, the user's) — `trackC_writeup/status-C.md` "C4 unit 0"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -47,7 +48,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `296e5f4c41`
+- **Reviewed:** 2026-11-09 · body `c8a480cde2`
 <!-- /phase-card -->
 
 ## Units
@@ -84,6 +85,32 @@
 | C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed, revised after `/challenge-pr` on #341; frozen on Blocked 154 all (a) (Claude, on the user's delegation)** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
 | C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23, and through block 23's output, post hoc); by the exact split the FFN moves the tokens out on blocks 20–22 on 1–2 of 7 at 32000–54000 only (the frozen first-order label unreadable at 9 of 18 steps); Assumption 3.1 fails at every layer and step; revised after `/challenge-pr` on #342** | `c7_profile.py`; "C7 (i) unit 1" below |
 | C7 (i) close-out | **done 2026-11-09: writing only; exit met at 3 units; Parked items carried (ROADMAP C7) or dropped; a §8 sentence and the email's paragraph for the user** | "C7 (i) on one page" below |
+| C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; proposed; Blocked 155** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
+
+## C4 unit 0, the scan and design (2026-11-09)
+
+Opened by STATE Blocked 153 (C7 (i), then C4's design), as the third of the user's "next 3 items
+on state, automatically". Writing only. Nothing ran, nothing was downloaded, nothing is
+registered. **Input:** three web searches (`lit-C4.md`, all [S]); C6's design and records, read
+only for their documented facts; ROADMAP §10 items 15–16's cost estimate.
+
+- **The predictions on a flat arm** (design "The predictions"; `tools/math_checks/c4_flat_maps.py`):
+  with Pythia's ramp over W = 1430 steps removed, the summed-rate hypothesis maps V's 256 to
+  t²/2W ≈ 23 and the centred 1000 to ≈ 350, while step keeps 256 and 1000. *Revised after
+  `/challenge-pr` on #344 (accept with changes, 1–6 taken):* the reference is A0 read on the same
+  dense grid, not C6's REF70, whose ten-seed spread makes the centred bands overlap at 512. The
+  bands are disjoint while t < 2W/ρ³ ≈ 1464 at ρ = 1.25. The instantaneous rate is undefined on a
+  flat arm and is dropped (C2 3b and C6 already exclude it). A0 trains first and always.
+- **Arms:** F (flat at 1e-3) and A0 (Pythia's schedule, which must reproduce the released
+  `pythia-70m`'s dates). The long ramp is already the released `pythia-70m-warmup01` (C6).
+  Both arms start from the released step-0 weights on shard 0 of the standard preshuffled Pile.
+- **Scan:** no warmup-only intervention dating these events on a Pythia-scale model was found.
+  A 2026 blog on a small model (Qu & Liu) found that a fixed LR formed no induction heads, so
+  "not formed by 4000" is fixed as a reading and divergence as a refusal. One data shard (about
+  30 GB, unverified) covers step 4000. `t5h.py`'s loop is the harness's start.
+- **Cost:** about 4 GPU-days (an estimate until U1 measures throughput). Budget 4 units +
+  close-out. **Blocked 155** (D1–D4, all (a) recommended; the registration is the user's).
+- **Parked** (`lit-C4.md`): Qu & Liu's peak-dependence, which is D1 (b).
 
 ## C7 (i) on one page (closed 2026-11-09)
 
