@@ -3133,9 +3133,12 @@ section says why it is project-wide. Tier 1, description, seed 0.
 
 - The first reading of a training-aware mean-field theory (2605.07772, NeurIPS 2026) against a
   pretrained model's checkpoints. Its three-phase profile was read by its own fixed criterion,
-  without retuning. Over 18 checkpoints the energy at the end of the stack (through block 23's
-  output) is above the interior plateau, not below it. Only the final LayerNorm takes it below,
-  at two steps.
+  without retuning. Over 18 checkpoints the tokens at the end of the stack are at least as
+  clustered as on the mid-depth plateau, so there is no escape on the block inputs (0 of 7
+  prompts at every step). Through block 23's own output (post hoc) the result is the same except
+  at 143000, where on the extended states 1–24 one prompt of 7 just passes. Only the final
+  LayerNorm takes the tokens past the plateau, at two steps. At step 0 the first two phases
+  already pass.
 - The theory's hypothesis on attention (A = QᵀK positive definite) is structurally out of reach
   for a single head, whose symmetrised form has inertia 64/64. On 410m it fails for each
   layer's sum too, so the plateau-gap link is not tested. This is the sentence for `paper/` §8

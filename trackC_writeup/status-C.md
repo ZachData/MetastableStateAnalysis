@@ -34,7 +34,7 @@
   - **C6 closed 2026-11-01 at its exit** (U0, U1, U1b + close-out; Blocked 128 (a) extended it by one unit; 129 (a), the user's; writing only): V refused by its gate on the run; the centred count "consistent with cumulative", written into `paper/` scoped to that count (the abstract's schedule sentence scoped to 410m, §1, a §7 paragraph, "compatible with" the summed rate; 17 `c6.*` keys, 4 claims, `paper_check` 0, 35 pages; `/challenge-pr` on #299: accept with changes, findings 1–5 taken); F1 narrowed for 70m's centred date only (a fixed count of updates excluded there); V's date, the shift's size and 410m not established; U0's Parked 1 dropped, V on the run carried to ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
   - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps, through block 23's own output (computed post hoc by a hooked pass); E₁ at the end of the stack sits above the interior plateau on 7 of 7 prompts everywhere, and through 8000 it is highest there. By the exact split, the FFN moves the tokens out on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only; the frozen first-order label is unreadable at 9 of 18 steps. Each head's symmetrised QᵀK is indefinite by construction, and each layer's sum is indefinite too (positive share 0.43–0.67), so the theorem's Assumption 3.1 fails everywhere — `trackC_writeup/status-C.md` "C7 (i) unit 1"
-  - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape at any checkpoint through the last block, and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
+  - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape on the block inputs at any checkpoint (through block 23's output, 1 of 7 prompts just passes at 143000 on states 1–24), and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -47,7 +47,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `467d45c5e1`
+- **Reviewed:** 2026-11-09 · body `296e5f4c41`
 <!-- /phase-card -->
 
 ## Units
@@ -96,8 +96,8 @@ all (a), decided by Claude on the user's delegation. Tier 1, description, seed 0
 
 | # | finding | weight |
 |---|---|---|
-| 1 | By 2605.07772's own fixed criterion (B.3, not retuned), **no terminal escape at any of the 18 steps**, on any prompt, for E₁ or ‖m‖², on states 0–23 and 1–23, or through block 23's own output | the criterion's terminal ratio is negative on every prompt for E₁, so the 0.1 bar does not decide it |
-| 2 | The energy at the end of the stack is *above* the interior plateau; through step 8000 the last block's input is the most clustered state | post hoc on a seen profile (figure 13, appendix C) |
+| 1 | By 2605.07772's own fixed criterion (B.3, not retuned), **no terminal escape at any of the 18 steps** on states 0–23 and 1–23 (0 of 7 prompts, E₁ and ‖m‖²). Through block 23's own output (post hoc), against the plateau of states 10–13: 0 of 7 at every step, the ratio negative on every prompt; at 143000 two prompts are close (−0.009 `wiki_paragraph`, −0.048 `camus_letranger`). On the extended states 1–24 the terminal part passes on 1 of 7 at 143000 (`wiki_paragraph`, 0.109 against the 0.1 bar) | on states 0–23 the terminal ratio is negative on every prompt for E₁, so the 0.1 bar does not decide it; at 143000 through block 23 it nearly does |
+| 2 | In our sign E₁ at the end of the stack is *above* the interior plateau (more clustered); in the paper's sign (−E₁) it is below. Through step 8000 the last block's input is the most clustered state | post hoc on a seen profile (figure 13, appendix C) |
 | 3 | Only the final LayerNorm takes E₁ below the plateau, on 5 of 7 prompts at 32000 and 54000 | the readout's normaliser, not a block |
 | 4 | The FFN is the larger mover in nearly every block. By the exact split it moves the tokens out (σ_u < 0, larger than attention's) on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only, and in block 23 on 5 of 7 at 143000 | the frozen first-order label is unreadable at 9 of 18 steps (LESSONS 6) |
 | 5 | Each layer's summed sym(W_QᵀW_K) is indefinite at every layer and step (positive share 0.43–0.67; 0.50 to step 128), so **Assumption 3.1 fails**; a single head's form is indefinite by construction (inertia 64/64) | raw weights; LN₁ gains move g by ≤ 0.01 |
@@ -122,25 +122,34 @@ so the shape has no "learned" part either.
 - Seeds 1–9: *carried* to ROADMAP §8 C7 as "if the authors ask" (about an hour on the 3080).
 
 **For `paper/` §8** (the user's rewrite is not on `main` yet, so the sentence is here for the
-user to carry; it replaces M7's contrast in `lit-C2p-fulltext.md`): *"Isobe et al. (2026)
-predict that training makes the token distribution leave the clustered regime in the final
-layers. Applied without retuning to Pythia-410m's 18 checkpoints, their three-phase criterion
-finds no such escape: through the last block, the interaction energy stays above its mid-depth
-plateau at every checkpoint, and only the final LayerNorm takes it below, at two late
-checkpoints. Their analysis assumes a positive-definite interaction matrix, whereas each layer's
-symmetrised W_QᵀW_K is indefinite."* (Its numbers come from `data/trackC/c7/2026-11-09-u1/`;
+user to carry; it replaces M7's contrast in `lit-C2p-fulltext.md`; revised after `/challenge-pr`
+on #343): *"In a mean-field model with only the FFN trained, Isobe et al. (2026) show that
+training can make the token distribution leave the clustered regime in the final layers. Their
+fixed three-phase criterion, applied unchanged to Pythia-410m's 18 checkpoints, finds no such
+escape before the final LayerNorm: the tokens at the last block are at least as clustered as on
+the mid-depth plateau (states 10–13) at every checkpoint, and only the final LayerNorm takes them
+past it, at two late checkpoints. Pythia lies outside their hypotheses: each layer's symmetrised
+W_QᵀW_K is indefinite, where their analysis assumes it positive definite."* (Its numbers come from `data/trackC/c7/2026-11-09-u1/`;
 `paper_check` would need `c7.*` keys in `numbers.py` if the sentence carries a number.)
 
 **For the email to Isobe, Inoue and Imaizumi** (the user's to send; outreach, not posting):
-*We read your three-phase criterion (appendix B.3), unchanged, on Pythia-410m's released
-checkpoints (seed 0, 18 steps from 0 to 143 000, 7 prompts of 242–512 tokens). We used
-E₁ = (1/2n²)Σ exp⟨x̂ᵢ, x̂ⱼ⟩ and ‖m‖² on the unit-normalised residual stream, which are your
-energy at A = I, ε = 0 and its weak-attention term. The terminal part fails at every checkpoint
-and on every prompt, through the last block's output. The energy at the top of the stack is above
-the interior plateau, and until step 8000 it is at its maximum there. Pythia's blocks are parallel-residual, so
-each block's update splits exactly into an FFN part and an attention part. Late in training the
-last block's FFN does lower ‖m‖² more than attention does (5 of 7 prompts at 143 000), but not
-enough to leave the plateau. Only the final LayerNorm does that, and only at 32 000 and 54 000. On your
+*(revised after `/challenge-pr` on #343: stated in the authors' sign, the near-pass and the
+no-train control added, the split's method named).* *We read your three-phase criterion
+(appendix B.3), unchanged, on Pythia-410m's released checkpoints (seed 0, 18 steps from 0 to
+143 000, 7 prompts of 242–512 tokens). Your energy at A = I, ε = 0 is, up to constants,
+−E₁ with E₁ = (1/2n²)Σᵢⱼ exp⟨x̂ᵢ, x̂ⱼ⟩ on the unit-normalised residual stream, and we fed the
+criterion −E₁ and −‖m‖² (its weak-attention term). On states 0–23 (the embedding and each block's
+input) the terminal part fails at every checkpoint on every prompt. At the top of the stack your
+energy is below the interior plateau (states 10–13), so the tokens are more clustered there, not
+less, and until step 8000 they are most clustered at the last block's input. Adding the last
+block's own output (before the final LayerNorm) changes this only at 143 000. There, two prompts
+come close to the plateau, and on states 1–24 one of them passes your terminal part (ratio 0.109
+against 0.1). The final LayerNorm takes the tokens past the plateau on 5 of 7 prompts at 32 000
+and 54 000. Two further observations. First, at step 0, the untrained model, the first two phases
+already pass by your criterion, and the profile looks like the trained ones. Second, Pythia's
+blocks are parallel-residual, so each block's update is a sum of an FFN part and an attention
+part. Splitting the change in ‖m‖² between them by a two-part Shapley split, late in training the
+last block's FFN lowers ‖m‖² more than attention does (5 of 7 prompts at 143 000). On your
 Assumption 3.1: a single head's symmetrised W_QᵀW_K has inertia (64, 64) by construction, and
 each layer's sum over 16 heads is indefinite too (positive share 0.43–0.67). We would value your
 view on which quantity in a trained, indefinite, depth-varying model should play the role of
