@@ -1936,6 +1936,13 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   confirming what the record held. Rule: **when a positive control fails, split its share by unit
   kind (transition, layer, prompt) before proposing more units or doses; a pooled share can hide a
   kind that cannot be turned, and a kind that is already saturated**.
+- 2026-11-09, C7 (i) U1: F's frozen label was a first-order split of Δ‖m‖², and G2 checked it
+  only on a 1e-3 plant. On the real blocks at 32000–143000, the remainder is as large as Δ itself
+  in blocks 20–22, so the frozen label is not readable there. Only the exact Shapley split, added
+  beside at the freeze, can be read. The gate's plant was far smaller than the real updates, so it
+  could not have seen this. Rule: **a linearised statistic's gate plants at the real update's
+  size (here ‖Δx‖/‖x‖ read from the stored states), and the exact form, where one exists, is the
+  primary**.
 
 ## 7. Literature found after the construction was built
 

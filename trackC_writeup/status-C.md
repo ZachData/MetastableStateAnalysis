@@ -33,6 +33,7 @@
   - C6 unit 1b (2026-11-01; Blocked 128 (a), the user's, one unit beyond the budget; frozen after U1's gate output, before any output on the run's grid): the centred count alone, plant B at 3b's 0.5, V not read. Gate: 9.61e-5, 1e-4, 3e-4 gated (4.78e-3 not, B 0.39 at 20 000), equal to U1's top-dose arms. **The centred count reads "consistent with cumulative"**: dated 2000 on all three arms against 70m's 512–1000 over ten seeds; step excluded (its band 512–1000), instantaneous excluded (the run is already at 16–18 at 2000, a step its early set holds); in the in-sample calibration that label came only from cumulative plants (2 of 10, none from the 20 others). So on 70m the centred date comes later than a fixed step allows, compatible with the summed rate; the grid places the shift at a factor of about 1 to 3.9 against seed 0 (`/challenge-pr` on #298, finding 1). V not read (its profile on disk and seen: a lean, finding 2); one count's three near-equal arms — `trackC_writeup/status-C.md` "C6 unit 1b"
   - **C6 closed 2026-11-01 at its exit** (U0, U1, U1b + close-out; Blocked 128 (a) extended it by one unit; 129 (a), the user's; writing only): V refused by its gate on the run; the centred count "consistent with cumulative", written into `paper/` scoped to that count (the abstract's schedule sentence scoped to 410m, §1, a §7 paragraph, "compatible with" the summed rate; 17 `c6.*` keys, 4 claims, `paper_check` 0, 35 pages; `/challenge-pr` on #299: accept with changes, findings 1–5 taken); F1 narrowed for 70m's centred date only (a fixed count of updates excluded there); V's date, the shift's size and 410m not established; U0's Parked 1 dropped, V on the run carried to ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
+  - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps; E₁ and ‖m‖² at block 23's input sit above the interior plateau on 7 of 7 prompts everywhere, and through 8000 they are highest there. The FFN is the larger mover in nearly every block, but it does not move the tokens out at the end by the frozen label at any step (by the exact split, on 1–2 of 7 at 32000–54000). Each layer's summed QᵀK is indefinite (positive share 0.43–0.67, 0.50 to step 128), so the theorem's Assumption 3.1 fails everywhere. Block 23's own output is not seen — `trackC_writeup/status-C.md` "C7 (i) unit 1"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -42,10 +43,10 @@
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) now, then C4's design (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
-  - Isobe et al.'s three phases on 410m (C7 (i)): design proposed, Blocked 154; U1 and the close-out to come — `trackC_writeup/design-C7.md`
+  - Isobe et al.'s three phases on 410m (C7 (i)): U1 read (no terminal escape; 3.1 fails); the close-out (§8 sentence, the email's paragraph) to come — `trackC_writeup/status-C.md` "C7 (i) unit 1"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `da05807b68`
+- **Reviewed:** 2026-11-09 · body `1d6cb6ae5e`
 <!-- /phase-card -->
 
 ## Units
@@ -79,7 +80,79 @@
 | C6 1. Blocked 127 (a), the gate | **done 2026-11-01: 127 (a) frozen before output (`98d3f38`); seed 0's known answer exact; the run's gate refuses (no plant-B dose for the uncentred count at 7000 or 20 000, so no arm gated); no record on the run's grid; the exit met ("refused by its gate"); Blocked 128** | `c6_warmup.py`; "C6 unit 1" below |
 | C6 1b. the centred count alone (Blocked 128 (a), the user's; beyond the budget) | **done 2026-11-01: frozen before output on the run's grid (`fd18085`); 3 arms gated, equal to U1's top-dose arms; "consistent with cumulative" (dated 2000; step and instantaneous excluded); V not read** | `c6_warmup.py gate --centred-only`; "C6 unit 1b" below |
 | C6 close-out (Blocked 129 (a), the user's) | **done 2026-11-01: writing only; the label in `paper/` (abstract, §1, a §7 paragraph), scoped to the centred count; 17 `c6.*` keys from three records, 4 claims; `paper_check` 0, 35 pages; F1 narrowed for 70m's centred date; exit met; revised after `/challenge-pr` on #299 (findings 1–5 taken)** | "C6 on one page" below |
-| C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed; Blocked 154** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
+| C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed, revised after `/challenge-pr` on #341; frozen on Blocked 154 all (a) (Claude, on the user's delegation)** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
+| C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23); F's label 0 of 7 at every step; Assumption 3.1 fails at every layer and step** | `c7_profile.py`; "C7 (i) unit 1" below |
+
+## C7 (i) unit 1, the read (2026-11-09)
+
+**Input.** Seed 0's kept 410m runs (`a1a.RUNS`), the 18 steps × the 7 v1 prompts. The cached
+checkpoints were read on the CPU, because this is no forward-pass batch: 18 loads, the MLPs on
+stored states and 24 dense 1024² eigenproblems per step, about 10 s a step. Code
+`b52efb2bfd50` (`trackC_writeup/c7_profile.py`, with `b2.py`), frozen design `d886957`. Output
+`data/trackC/c7/2026-11-09-u1/` (main tree): `gate.json` (sha256 `7aa7e602dba7…`),
+`records/step<k>.json`, `checks.json`, `summary.json` (`5e43e0b1b3e5…`).
+**Checks:** G1 passes (template full at a = 0.3, 0.6, 1.0; linear and logistic not full; the
+mid-stack plant fails the plateau). G2 passes (signs recovered, first order within 1e-2, Shapley
+exact). The G1e blind spot is confirmed: a 5 % terminal fall is missed on 0–23 and seen on 1–23.
+G1n: the full profile holds in 200 of 200 draws at noise 0.01 and 0.02 of R. k1: A5's seed-0
+energies are reproduced to 1.5e-6. k2: the hooked pass reproduces the stored states to 1.3e-7
+and the MLP outputs to 2.7e-7 (steps 512, 143000). k3: 2.9e-15.
+Re-run: `python -m trackC_writeup.c7_profile gate`, then `run`, then `report`, with
+`METS_DATA=<main>/data`, `HF_HUB_OFFLINE=1`, `CUDA_VISIBLE_DEVICES=""`.
+
+**P, the profile (the paper's B.3 criterion, not retuned).** Per step, prompts passing (k of 7):
+
+| step | E₁ initial / plateau / terminal / full | ‖m‖² full | E₁ on 1–23 full | prompt-mean E₁: term. ratio; argmin F (E₁'s peak state) |
+|---|---|---|---|---|
+| 0–128 | 7 / 5–7 / 0 / 0 | 0 | 0 | −0.16 to −0.68; 23 |
+| 256, 512 | 7 / 7 / 0 / 0 | 0 | 0 | −0.41, −0.29; 23 |
+| 1000–8000 | 7 / 4–6 / 0 / 0 | 0 | 0 | −0.45 to −0.61; 23 |
+| 16000–54000 | 7 / 3–4 / 0 / 0 | 0 | 0 | −0.26 to −0.40; 3 |
+| 143000 | 7 / 2 / 0 / 0 | 0 | 0 | −0.23; 19 |
+
+- **No terminal escape by the paper's criterion at any step**, on any prompt, for either
+  statistic or either range. E₁ at block 23's input is *above* the interior plateau everywhere:
+  the terminal ratio is negative on the prompt mean at all 18 steps. Through 8000, E₁ is highest
+  at the last stored state, so the tokens are most clustered there, the opposite of an escape.
+- The initial part passes 7 of 7 at every step, and the embedding (state 0) sets F's maximum
+  every time: it is the least clustered state. On states 1–23 the initial part fails from 1000
+  on (state 1 is above the plateau).
+- **Step 0 reads like the trained steps**: initial and plateau pass, terminal fails. So nothing
+  here is "learned" in the paper's sense (B.2).
+- Beside (declared): at the post-final-LN state 24, E₁ falls below the plateau on 5 of 7 prompts
+  at 32000 and 54000 (median ratio 0.17, 0.18). It does so on 0 of 7 at every other step,
+  143000 included (median −0.03). That fall mixes block 23 with the readout's normaliser, which is
+  why it is not in the profile (D1 (a)).
+
+**F, which part moves the tokens out, blocks 20–22.**
+- **The frozen label ("δ_u < 0 and |δ_u| > |δ_a| on each of 20–22") holds on 0 of 7 prompts at
+  every step**, and on the prompt mean at none.
+- The exact Shapley form, beside, holds on 2 of 7 at 32000, 1 of 7 at 54000, and 0 elsewhere.
+- **First order fails late:** at 143000 the remainder is as large as Δ‖m‖² itself in all three
+  blocks (for example block 20: Δ −3.8e-2, remainder −4.7e-2). So from 32000 on, read the Shapley
+  form, not the frozen one.
+- On the prompt mean at 143000 (Shapley), the FFN lowers ‖m‖² at block 20 (−4.0e-2, attention
+  +2.5e-3), raises it at 21 (+3.3e-2), and lowers it at 22 by less than attention does (−9.5e-3
+  against −2.1e-2). At 32000 the FFN lowers ‖m‖² at all three blocks, but not more than attention
+  at 22. Blocks 20–22 lower ‖m‖² at some late steps, then, but not enough to bring state 23 below
+  the plateau.
+- The unsigned FFN speed exceeds attention's in blocks 20–22 at every step (ρ 1.4–3.1), and in
+  all but 1–2 of blocks 0–22 at every step (ρ below 1 in at most 2 blocks, from 2000 on). As 1e
+  U2 found, the FFN is the larger mover nearly everywhere, not only at the end.
+
+**Q, the interaction form.** The positive share of Σ_h sym(W_QᵀW_K)/8 is 0.50 at every layer
+from step 0 to 128, which is what a random form gives. It spreads to 0.43–0.67 from 2000 on and
+never comes near 1. **Assumption 3.1 fails at every layer and step.** The median interior gap
+(blocks 10–13) is 0.015 to 128, 0.17 at 512, 0.42 at 2000, and then 0.16–0.26. The per-head
+medians are in the records. By the design, g is the gap of an indefinite form, which the theory
+does not cover.
+
+**What it means for the email (description, one seed):** on Pythia-410m the energy rises toward
+the last stored layer at every checkpoint; no terminal escape is seen before the final LayerNorm.
+The FFN is the larger mover in nearly every block. The layer's QᵀK is indefinite, so the theorem's
+hypotheses do not hold there. **Not established:** whether block 23 itself escapes (its output
+exists only after the LN); any seed but 0; the escape's rate; anything about the paper's model,
+which this cannot refute.
 
 ## C7 (i) unit 0, the scan and design (2026-11-09)
 
