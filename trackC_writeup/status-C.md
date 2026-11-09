@@ -34,6 +34,7 @@
   - **C6 closed 2026-11-01 at its exit** (U0, U1, U1b + close-out; Blocked 128 (a) extended it by one unit; 129 (a), the user's; writing only): V refused by its gate on the run; the centred count "consistent with cumulative", written into `paper/` scoped to that count (the abstract's schedule sentence scoped to 410m, §1, a §7 paragraph, "compatible with" the summed rate; 17 `c6.*` keys, 4 claims, `paper_check` 0, 35 pages; `/challenge-pr` on #299: accept with changes, findings 1–5 taken); F1 narrowed for 70m's centred date only (a fixed count of updates excluded there); V's date, the shift's size and 410m not established; U0's Parked 1 dropped, V on the run carried to ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
   - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps, through block 23's own output (computed post hoc by a hooked pass); E₁ at the end of the stack sits above the interior plateau on 7 of 7 prompts everywhere, and through 8000 it is highest there. By the exact split, the FFN moves the tokens out on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only; the frozen first-order label is unreadable at 9 of 18 steps. Each head's symmetrised QᵀK is indefinite by construction, and each layer's sum is indefinite too (positive share 0.43–0.67), so the theorem's Assumption 3.1 fails everywhere — `trackC_writeup/status-C.md` "C7 (i) unit 1"
+  - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape on the block inputs at any checkpoint (through block 23's output, 1 of 7 prompts just passes at 143000 on states 1–24), and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -42,11 +43,11 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); ROADMAP C4, the schedule intervention (with 3c's Parked 0), separates them on 70m only, 410m by inference (C4 trains `pythia-70m`; corrected 2026-11-08, `/challenge-pr` on #330, finding 3); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) now, then C4's design (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
-  - Isobe et al.'s three phases on 410m (C7 (i)): U1 read (no terminal escape; 3.1 fails); the close-out (§8 sentence, the email's paragraph) to come — `trackC_writeup/status-C.md` "C7 (i) unit 1"
+  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
+  - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `98e635063f`
+- **Reviewed:** 2026-11-09 · body `296e5f4c41`
 <!-- /phase-card -->
 
 ## Units
@@ -82,6 +83,77 @@
 | C6 close-out (Blocked 129 (a), the user's) | **done 2026-11-01: writing only; the label in `paper/` (abstract, §1, a §7 paragraph), scoped to the centred count; 17 `c6.*` keys from three records, 4 claims; `paper_check` 0, 35 pages; F1 narrowed for 70m's centred date; exit met; revised after `/challenge-pr` on #299 (findings 1–5 taken)** | "C6 on one page" below |
 | C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed, revised after `/challenge-pr` on #341; frozen on Blocked 154 all (a) (Claude, on the user's delegation)** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
 | C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23, and through block 23's output, post hoc); by the exact split the FFN moves the tokens out on blocks 20–22 on 1–2 of 7 at 32000–54000 only (the frozen first-order label unreadable at 9 of 18 steps); Assumption 3.1 fails at every layer and step; revised after `/challenge-pr` on #342** | `c7_profile.py`; "C7 (i) unit 1" below |
+| C7 (i) close-out | **done 2026-11-09: writing only; exit met at 3 units; Parked items carried (ROADMAP C7) or dropped; a §8 sentence and the email's paragraph for the user** | "C7 (i) on one page" below |
+
+## C7 (i) on one page (closed 2026-11-09)
+
+Closed at its exit, at its budget of 3 units: U0 #341, U1 #342, and this close-out (writing only).
+The row was opened by STATE Blocked 153 as revised, and the design was frozen on Blocked 154
+all (a), decided by Claude on the user's delegation. Tier 1, description, seed 0's 18 steps ×
+7 v1 prompts. Numbers: "C7 (i) unit 1" below.
+
+**What it established**
+
+| # | finding | weight |
+|---|---|---|
+| 1 | By 2605.07772's own fixed criterion (B.3, not retuned), **no terminal escape at any of the 18 steps** on states 0–23 and 1–23 (0 of 7 prompts, E₁ and ‖m‖²). Through block 23's own output (post hoc), against the plateau of states 10–13: 0 of 7 at every step, the ratio negative on every prompt; at 143000 two prompts are close (−0.009 `wiki_paragraph`, −0.048 `camus_letranger`). On the extended states 1–24 the terminal part passes on 1 of 7 at 143000 (`wiki_paragraph`, 0.109 against the 0.1 bar) | on states 0–23 the terminal ratio is negative on every prompt for E₁, so the 0.1 bar does not decide it; at 143000 through block 23 it nearly does |
+| 2 | In our sign E₁ at the end of the stack is *above* the interior plateau (more clustered); in the paper's sign (−E₁) it is below. Through step 8000 the last block's input is the most clustered state | post hoc on a seen profile (figure 13, appendix C) |
+| 3 | Only the final LayerNorm takes E₁ below the plateau, on 5 of 7 prompts at 32000 and 54000 | the readout's normaliser, not a block |
+| 4 | The FFN is the larger mover in nearly every block. By the exact split it moves the tokens out (σ_u < 0, larger than attention's) on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only, and in block 23 on 5 of 7 at 143000 | the frozen first-order label is unreadable at 9 of 18 steps (LESSONS 6) |
+| 5 | Each layer's summed sym(W_QᵀW_K) is indefinite at every layer and step (positive share 0.43–0.67; 0.50 to step 128), so **Assumption 3.1 fails**; a single head's form is indefinite by construction (inertia 64/64) | raw weights; LN₁ gains move g by ≤ 0.01 |
+
+**Not established:** any seed but 0, or any other size; the escape's rate; the gap against the
+plateau (J, dropped before the freeze, since 3.1 fails); anything about the paper's model. Its
+model shares A across depth, trains only the FFN, adds noise and starts clustered, so nothing
+here refutes it. Step 0 reads like the trained steps (initial and plateau pass, terminal fails),
+so the shape has no "learned" part either.
+
+**Parked items at close**
+- `lit-C7.md` Parked 1, 2511.21635's figures (a three-phase depth profile in ViTs): *carried*
+  to ROADMAP §8 C7 as a reading for §8 if the user wants the comparison.
+- `lit-C7.md` Parked 2, Wendler et al. and Shibata et al.'s final-layer shifts: *dropped* (why:
+  they read the readout through a logit lens, and finding 3 already places the only fall at the
+  final LN; the email does not need them).
+- The design's cut beside readings (the pattern's σ₂/σ₁, the V = A cosine, λ₁ in the unit-LN
+  frame, the unrotated dimensions): *dropped* (why: none bears on the three phases, and Q's
+  answer is that 3.1 fails).
+- The boundary width across depth (70m / 160m / 410m): *dropped* (why: there is no terminal
+  escape to measure the width of).
+- Seeds 1–9: *carried* to ROADMAP §8 C7 as "if the authors ask" (about an hour on the 3080).
+
+**For `paper/` §8** (the user's rewrite is not on `main` yet, so the sentence is here for the
+user to carry; it replaces M7's contrast in `lit-C2p-fulltext.md`; revised after `/challenge-pr`
+on #343): *"In a mean-field model with only the FFN trained, Isobe et al. (2026) show that
+training can make the token distribution leave the clustered regime in the final layers. Their
+fixed three-phase criterion, applied unchanged to Pythia-410m's 18 checkpoints, finds no such
+escape before the final LayerNorm: the tokens at the last block are at least as clustered as on
+the mid-depth plateau (states 10–13) at every checkpoint, and only the final LayerNorm takes them
+past it, at two late checkpoints. Pythia lies outside their hypotheses: each layer's symmetrised
+W_QᵀW_K is indefinite, where their analysis assumes it positive definite."* (Its numbers come from `data/trackC/c7/2026-11-09-u1/`;
+`paper_check` would need `c7.*` keys in `numbers.py` if the sentence carries a number.)
+
+**For the email to Isobe, Inoue and Imaizumi** (the user's to send; outreach, not posting):
+*(revised after `/challenge-pr` on #343: stated in the authors' sign, the near-pass and the
+no-train control added, the split's method named).* *We read your three-phase criterion
+(appendix B.3), unchanged, on Pythia-410m's released checkpoints (seed 0, 18 steps from 0 to
+143 000, 7 prompts of 242–512 tokens). Your energy at A = I, ε = 0 is, up to constants,
+−E₁ with E₁ = (1/2n²)Σᵢⱼ exp⟨x̂ᵢ, x̂ⱼ⟩ on the unit-normalised residual stream, and we fed the
+criterion −E₁ and −‖m‖² (its weak-attention term). On states 0–23 (the embedding and each block's
+input) the terminal part fails at every checkpoint on every prompt. At the top of the stack your
+energy is below the interior plateau (states 10–13), so the tokens are more clustered there, not
+less, and until step 8000 they are most clustered at the last block's input. Adding the last
+block's own output (before the final LayerNorm) changes this only at 143 000. There, two prompts
+come close to the plateau, and on states 1–24 one of them passes your terminal part (ratio 0.109
+against 0.1). The final LayerNorm takes the tokens past the plateau on 5 of 7 prompts at 32 000
+and 54 000. Two further observations. First, at step 0, the untrained model, the first two phases
+already pass by your criterion, and the profile looks like the trained ones. Second, Pythia's
+blocks are parallel-residual, so each block's update is a sum of an FFN part and an attention
+part. Splitting the change in ‖m‖² between them by a two-part Shapley split, late in training the
+last block's FFN lowers ‖m‖² more than attention does (5 of 7 prompts at 143 000). On your
+Assumption 3.1: a single head's symmetrised W_QᵀW_K has inertia (64, 64) by construction, and
+each layer's sum over 16 heads is indefinite too (positive share 0.43–0.67). We would value your
+view on which quantity in a trained, indefinite, depth-varying model should play the role of
+your gap, and on whether the escape would be expected before the readout's normaliser.*
 
 ## C7 (i) unit 1, the read (2026-11-09)
 

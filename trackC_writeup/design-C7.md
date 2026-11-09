@@ -170,7 +170,7 @@ close-out. At the budget it closes at what it knows, unless the user extends it 
 |---|---|---|
 | 0 | the scan and this design (writing only) | Blocked 154 decided; the design frozen |
 | 1 (**done 2026-11-09**: no terminal escape at any step; F's label 0 of 7; 3.1 fails everywhere; `status-C.md` "C7 (i) unit 1") | `trackC_writeup/c7_profile.py` and pure tests; G0–G2; the run (CPU; 18 weight loads, 126 state reads); P, F, Q read; status section | every reading, or a refusal |
-| close-out | one page; a §8 sentence (into `paper/` if the user's rewrite is on `main` by then, else in `status-C.md` for the user to carry); the email's paragraph for the user; Parked items carried or dropped; the card current | the card current |
+| close-out (**done 2026-11-09**: `status-C.md` "C7 (i) on one page (closed 2026-11-09)") | one page; a §8 sentence (into `paper/` if the user's rewrite is on `main` by then, else in `status-C.md` for the user to carry); the email's paragraph for the user; Parked items carried or dropped; the card current | the card current |
 
 ## Decisions (each yours; recommendation first)
 

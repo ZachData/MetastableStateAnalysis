@@ -3126,6 +3126,26 @@ section says why it is project-wide. Tier 1, description, one seed an arm.
 
 ---
 
+## 3.83 Track C's C7 (i) closed: on Pythia-410m, no terminal escape from clustering by Isobe et al.'s own criterion, and their Assumption 3.1 fails at every layer (2026-11-09)
+
+**`trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"** holds the numbers; this
+section says why it is project-wide. Tier 1, description, seed 0.
+
+- The first reading of a training-aware mean-field theory (2605.07772, NeurIPS 2026) against a
+  pretrained model's checkpoints. Its three-phase profile was read by its own fixed criterion,
+  without retuning. Over 18 checkpoints the tokens at the end of the stack are at least as
+  clustered as on the mid-depth plateau, so there is no escape on the block inputs (0 of 7
+  prompts at every step). Through block 23's own output (post hoc) the result is the same except
+  at 143000, where on the extended states 1–24 one prompt of 7 just passes. Only the final
+  LayerNorm takes the tokens past the plateau, at two steps. At step 0 the first two phases
+  already pass.
+- The theory's hypothesis on attention (A = QᵀK positive definite) is structurally out of reach
+  for a single head, whose symmetrised form has inertia 64/64. On 410m it fails for each
+  layer's sum too, so the plateau-gap link is not tested. This is the sentence for `paper/` §8
+  and for the email to the authors.
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this
