@@ -7,6 +7,7 @@
 - **Question:** Do the 384 heads of `pythia-410m` share directions of the residual stream, per subspace family (OV write / read, QK query / key, OV's negative / positive / complex invariant subspaces), beyond a random arrangement of the same subspaces, how does that change over training, and what do the attention layers do inside the shared space (push, rotate, collapse)?
 - **Inputs:** `pythia-410m` weights at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 (and 8000 off the grid for the preflight and the gate); tokens only for unit 3's residual check (v1's 7 scored prompts, `trackB_circuit/b0_gate.py` `V1_SCORED`); code `trackS_subspace/s1.py`; records `data/trackS/s1/` (main tree) — `trackS_subspace/design-S1.md` "Objects, fixed here". S2: the same weights at 0, 256, 512, 1000, 2000, 4000, 143000 (8000 for the preflight) under a per-head OV hook, v1's 7 prompts for V and 7d's 16 repeated-random-token sequences for G; code `trackS_subspace/s2.py`; records `data/trackS/s2/` (main tree) — `trackS_subspace/design-S2.md` "Steps and readouts"
 - **Results:**
+  - S4 opened 2026-11-08 (Blocked 147 (b), the user's): a scan and a proposed design (Blocked 148, D1–D5). The untied toy arm is already released at depths 2–6 (`timaeus/L2`–`L6`: constant LR, no warmup, 451 checkpoints each). So is a Pythia-1b-shaped pair trained with and without the loss on induction-predictable tokens (HAPAX, 2511.05743). U1 reads those before any training — `trackS_subspace/status-S.md` "S4 unit 0, the scan and the design (2026-11-08)"
   - Opened 2026-10-20 with a scan, a `sympy` check and a design frozen as written (3 units + close-out); the rotation null, the norm-matched random draw and step 0 are one law for the mean projector, and the preflight refused per-unit verdicts against it, so S1 was designed to read counts — `trackS_subspace/design-S1.md` "Preflight (`tools/design_preflight.py`, step 8000, off the grid)"
   - Unit 1's gate: the instrument and its null pass (G0, G1, G1iii, G2: the three nulls are one law, step 0 reads no shared direction, the rotation null reads none at any step); the count fails its planted effect on the real pool in all 7 families, because at a trained step the mean projector's spectrum is dense at the null's edge, where each planted direction raises the count only about half the time; N refused by the frozen fallback (Blocked 82); the heads use nearly every dimension but unevenly (participation ratio 344–729 against 880), which alone explains a count near the edge, not the top eigenvalues — `trackS_subspace/status-S.md` "S1 unit 1, the gate (2026-10-20)"
   - Unit 2 (Blocked 82 (b), the user's): R1′ = the participation ratio against its exact Haar value; the null side passes (G0′–G2′); the additive plant passes in the 5 OV families and fails in QK, both by the plant's added dimensions diluting the pool's own concentration (math check fact 6), and with that removed it cannot see the pool, so the effect side is uncalibrated and QK's ρ is Blocked 83. Over training the OV families concentrate from 512 (`ov_write` and `ov_cplx` already from 256: corrected by `/challenge-pr` on #245), most at 2000 (ρ 0.59 `ov_write`), partly relax at 4000 (just after the LR warmup ends), and end at ρ 0.65–0.83; LN1's gain changes nothing; the spectrum is uneven from 512 (the top's null cannot tell a few directions from a graded spectrum) — `trackS_subspace/status-S.md` "S1 unit 2, R1′ and its re-gate (2026-10-21)"
@@ -28,7 +29,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-10-22 · body `32d74a34a7`
+- **Reviewed:** 2026-11-08 · body `e356869c8f`
 <!-- /phase-card -->
 
 ## Units
@@ -46,6 +47,7 @@
 | S2 3. R3 on S₋ₗ; S1's R3 on S₋ₗ beside | **done 2026-10-22: Blocked 89 (a), the user's; R3 refused as frozen, unmatched (the frozen selection took 37–69 % of pairs; read as description, nothing lower in V); S1's R3 on S₋ₗ as S1's from 512; a matched R3 is Blocked 90** | "S2 unit 3" below; `s2.py r3`, `r3-read`, `s1-r3-loo` |
 | S2 4. the matched R3, description (Blocked 90 (b), the user's) | **done 2026-10-22: as its controls in all 9 cells (V 0 of 5, G 0 of 4 read *lower*); R3's G1 0 of 9; 3.4–5.0 % of pairs above their head's write-space q99** | "S2 unit 4" below; `s2.py r3m-select`, `r3m`, `r3m-read` |
 | S2 close-out | **done 2026-10-22** (writing only; 90 (b)) | "S2 on one page" below |
+| S4 0. scan, design (Blocked 147 (b), the user's) | **done 2026-11-08: proposed; D1–D5 are Blocked 148; nothing read on any arm** | `lit-S4.md`, `design-S4.md`; "S4 unit 0" below |
 
 ## Corrections received
 
@@ -57,6 +59,18 @@
   measured: on a leave-the-layer-out S they read as before from 512, so the bias moves none of
   S1's readings there; before 512 `ov_neg`'s and `ov_pos`'s outside-Haar `share` layers (up to 11)
   were the bias (0–2 on S₋ₗ). "S2 unit 3" below.
+
+## S4 unit 0, the scan and the design (2026-11-08)
+
+Writing only; no weights downloaded, no pickle opened. Blocked 147 (b), the user's, opened S4.
+
+| | |
+|---|---|
+| scan | `trackS_subspace/lit-S4.md`: HF API configs and file lists (confirmed), 2511.05743 §3.1 (read), 2506.13688, 2511.16893, 2601.09588, 2604.11791 (summary) |
+| what it changed | the untied arm is released (`timaeus/L2`–`L6`, 451 checkpoints each, constant LR 1e-3, no warmup; `L1` empty, `L1W256-dense` a 1-layer candidate with its recipe unknown); a Pythia-1b-shaped pair with and without the loss on induction-predictable tokens is released (`KeremSahin2210/vanilla_1b`, `hapax_1b`, every 100 steps from 100, no step 0); the L-series' data `timaeus/pile13m` is private |
+| design | `trackS_subspace/design-S4.md`, proposed: Q1–Q5; arms R1–R6, H, Tu, Tt; C2's definitions (E₁, V, the centred count, A5's D4 (a) rewritten for any grid; the toys' window at steps 525, 1050, 2100; H's at 1000, 2000, 4000) on C2's prompt text retokenized, fresh inits for step 0, 3b's gate per arm; U1 the released arms (no training), U2 gated on U1, U3 the atlas, circuit, plant and B7; 4 units |
+| decisions | Blocked 148: D1 HAPAX's pair in S4 or C5; D2 the "without repeats" arm; D3 the tied arm's depth; D4 the MLP arm; D5 budget. Recommended D1 (a′) (H read for energy only: its recipe is `pythia-1b`'s, reserved against induction measurement by `p8_scale_ladder/design-8.md`), (a) for D2–D5. Revised after `/challenge-pr` on #331 (accept with changes, 1–5 taken: `design-S4.md` "Revised after #331") |
+| Parked | 1. 2506.13688's Pythia result (last-layer cosine near 1 early, falling around step 1000), not in `paper/`: **carried to C2's rewrite** (`trackC_writeup/status-C.md` "For the user's rewrite"). 2. HAPAX's pair as a C2 arm: in U1 under D1 (a); **carried to ROADMAP C5** under D1 (b) |
 
 ## S2 on one page (closed 2026-10-22)
 

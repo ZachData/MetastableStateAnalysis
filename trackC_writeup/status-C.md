@@ -43,7 +43,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-08 · body `f1945b1916`
+- **Reviewed:** 2026-11-08 · body `2e60041b15`
 <!-- /phase-card -->
 
 ## Units
@@ -509,6 +509,13 @@ Re-run as in "C2p unit 2" below. The 28-page build is `pdflatex main && bibtex m
 (2311.00863), a dated event at C2's step on F1; and neuron births on `pythia-410m-deduped`
 (neuron-lineage) at every step of a five-point grid, which date nothing. The wording and the
 numbers: `trackN_neurons/status-N.md` "Track N on one page (closed 2026-11-08)".
+
+**Cited context for the rewrite, from S4's scan (2026-11-08; a fetch summary, not read in full):**
+Gopalani and Hu (2506.13688, NeurIPS 2025) report that in Pythia's last layer the token states'
+mean pairwise cosine goes from 0.4–0.65 at init to above 0.9 within a few steps, "followed by a
+decrease around step 1000". That bears on §8 (C2's mean term, ‖m‖², and the centred date at
+1000) and is not cited in `paper/`. Read its §6 and figure 8 before quoting it:
+`trackS_subspace/lit-S4.md` §2.
 
 ## C2p unit 2, the revisions in `paper/` and the second fresh read (2026-10-24)
 

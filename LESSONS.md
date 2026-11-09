@@ -1952,6 +1952,17 @@ then said the floor was placed "as if the seeds were exchangeable", which 133's 
 contradicts (`/challenge-pr` on #315, finding 1). No label moved; Blocked 136. Rule: a decision
 about released seeds cites the release's account of them and the project's earlier decision on
 the same seeds before it is put to the user.
+2026-11-08 (S4's scan): Blocked 147 put S4 ("train a toy") against C4 ("train 70m", about 2
+GPU-days an arm) on training cost. Neither side's option said that the toy's untied arm was
+already released. T1 had found the `timaeus/L2`–`L6` attention-only series (constant LR, no
+warmup, 451 checkpoints) on 2026-10-29 and Parked it to ROADMAP §7b, a row S4's text never
+pointed at. Nor did either option mention a released Pythia-shaped pair trained with and without
+the loss on induction-predictable tokens (HAPAX, 2511.05743, `vanilla_1b` / `hapax_1b`). That
+pair is closer to "does the break move when induction cannot form?" than either option. S4's
+scan found both. No decision moved: the user chose S4, which now starts from them. Rule: a
+proposed row's cost and inputs are checked against the other tracks' inventories and Parked
+items (`grep` the row's model kind across `docs/lit-*.md` and the status files) and a
+release search, before the option is put to the user.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).
