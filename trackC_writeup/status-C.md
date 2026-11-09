@@ -94,10 +94,13 @@ on state, automatically". Writing only. Nothing ran, nothing was downloaded, not
 registered. **Input:** three web searches (`lit-C4.md`, all [S]); C6's design and records, read
 only for their documented facts; ROADMAP §10 items 15–16's cost estimate.
 
-- **The predictions on a flat arm** (design "The predictions"): with Pythia's ramp over W = 1430
-  steps removed, the summed-rate hypothesis maps V's 256 to t²/2W ≈ 23 and the centred 1000 to
-  ≈ 350. Step keeps 256 and 1000, and the instantaneous rate maps both to the first step. These
-  are an order of magnitude apart, against REF70's ten-seed bands (C6's frozen reading).
+- **The predictions on a flat arm** (design "The predictions"; `tools/math_checks/c4_flat_maps.py`):
+  with Pythia's ramp over W = 1430 steps removed, the summed-rate hypothesis maps V's 256 to
+  t²/2W ≈ 23 and the centred 1000 to ≈ 350, while step keeps 256 and 1000. *Revised after
+  `/challenge-pr` on #344 (accept with changes, 1–6 taken):* the reference is A0 read on the same
+  dense grid, not C6's REF70, whose ten-seed spread makes the centred bands overlap at 512. The
+  bands are disjoint while t < 2W/ρ³ ≈ 1464 at ρ = 1.25. The instantaneous rate is undefined on a
+  flat arm and is dropped (C2 3b and C6 already exclude it). A0 trains first and always.
 - **Arms:** F (flat at 1e-3) and A0 (Pythia's schedule, which must reproduce the released
   `pythia-70m`'s dates). The long ramp is already the released `pythia-70m-warmup01` (C6).
   Both arms start from the released step-0 weights on shard 0 of the standard preshuffled Pile.
