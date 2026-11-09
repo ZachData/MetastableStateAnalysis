@@ -6,8 +6,11 @@ Opened 2026-11-09 by STATE Blocked 153 as revised (#340; Claude's choice at the 
 Row: `docs/ROADMAP.md` §8 C7 (i) only; (ii) and (iii) stay unscheduled. Scan:
 `trackC_writeup/lit-C7.md` (2026-11-09; 2605.07772 v2 read in full). Unit 0 is writing only and
 nothing ran. **Proposed; revised after `/challenge-pr` on #341 (accept with changes, findings
-1–6 taken): F signed, J out, the embedding's blind spot planted, the beside readings cut. The
-decisions are Blocked 154.**
+1–6 taken): F signed, J out, the embedding's blind spot planted, the beside readings cut.
+**Frozen 2026-11-09 on Blocked 154, all (a)**, decided by Claude on the user's "do the next 3
+items on state automatically" (the recommendation; yours to overrule). One addition at the
+freeze, before any output: beside F's first-order split, the exact two-part Shapley split of
+Δ‖m‖² (see F).**
 
 ## What C7 (i) is for
 
@@ -75,7 +78,10 @@ since a unit token moves by P⊥_{x̂}(dx)/‖x‖ to first order. The remainder
 Δ‖m‖²_s − δ_u,s − δ_a,s is reported with each block. All tokens are included, position 0 too, as
 in P. The label, fixed now: **"the FFN moves the tokens out at the end"** when on each of blocks
 20–22 δ_u,s < 0 and |δ_u,s| > |δ_a,s|. The interior is described and not labelled: 1e U2 already
-found the MLP the larger mover at most steps (lean below). Beside: the unsigned tangential speeds
+found the MLP the larger mover at most steps (lean below). Beside, added at the freeze: the
+exact two-part Shapley split, σ_u = ½[f(x+u) − f(x) + f(x+u+a) − f(x+a)] with f = ‖m(unit rows)‖²
+and σ_a likewise, which sums to Δ‖m‖² exactly. Block 0's update is many times its input (the
+embedding's norm), so first order cannot hold there. Also beside: the unsigned tangential speeds
 ‖P⊥_{x̂} u‖/‖x‖ and ‖P⊥_{x̂} a‖/‖x‖ (median over tokens, position 0 out) and their ratio ρ_s.
 Block 23 gets δ_u only, since its output is stored only after the LN.
 
@@ -85,9 +91,10 @@ layer's energy at the paper's first order (Remark 3.11: each head contributes �
 these add). From its eigenvalues λ₁ ≥ λ₂ ≥ … we read:
 - **g_s = 1 − λ₂/λ₁**, the paper's gap factor, if λ₁ > 0 (else "not read");
 - the positive share Σλ₊/Σ|λ| (B2's C3), which is 1 exactly when Assumption 3.1's
-  positive-definiteness holds up to its null space;
-- λ₁ in the unit-LN₁ frame (λ₁ · r̄_s², with r̄_s the tokens' median ‖LN₁(x)‖), for the
-  paper's λ₁e^{−λ₁} factor.
+  positive-definiteness holds up to its null space.
+
+All of Q is read on the raw weights (the LN₁ gains not folded in). λ₁ in the unit-LN₁ frame is
+parked, below (`/challenge-pr` on #342, finding 4: the first wording both read it and parked it).
 
 Beside: the per-head medians of g and the positive share. The pattern's eigen-gap is not read:
 the causal pattern is lower triangular, so its eigenvalues are its diagonal (`lit-C7.md` §1,
@@ -162,7 +169,7 @@ close-out. At the budget it closes at what it knows, unless the user extends it 
 | unit | what | done when |
 |---|---|---|
 | 0 | the scan and this design (writing only) | Blocked 154 decided; the design frozen |
-| 1 | `trackC_writeup/c7_profile.py` and pure tests; G0–G2; the run (CPU; 18 weight loads, 126 state reads); P, F, Q read; status section | every reading, or a refusal |
+| 1 (**done 2026-11-09**: no terminal escape at any step; F's label 0 of 7; 3.1 fails everywhere; `status-C.md` "C7 (i) unit 1") | `trackC_writeup/c7_profile.py` and pure tests; G0–G2; the run (CPU; 18 weight loads, 126 state reads); P, F, Q read; status section | every reading, or a refusal |
 | close-out | one page; a §8 sentence (into `paper/` if the user's rewrite is on `main` by then, else in `status-C.md` for the user to carry); the email's paragraph for the user; Parked items carried or dropped; the card current | the card current |
 
 ## Decisions (each yours; recommendation first)
