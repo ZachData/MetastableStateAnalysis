@@ -24,8 +24,10 @@ def test_half_rise_equals_a3_d4a_on_pythias_grid(seed):
 def test_toy_grid_and_window():
     g = s4.TOY_GRID
     assert g[:26] == tuple(range(1, 27))
-    assert s4.TOY_WINDOW == (526, 1035, 2100)
-    assert set(s4.TOY_WINDOW) <= set(g) and g[-1] == 75000
+    assert s4.TOY_WINDOW_U1 == (526, 1035, 2100)
+    assert s4.TOY_WINDOW == (18540, 38140, 75000)           # Blocked 149 (ii) (a)
+    assert set(s4.TOY_WINDOW) | set(s4.TOY_WINDOW_U1) <= set(g) and g[-1] == 75000
+    assert s4.DATED_TOYS == ("R2",)                           # Blocked 149 (i) (a)
     assert set(g) <= set(range(1, 27)) | set(s4.LOG_GRID) | {2100}
     assert len(g) == 117                     # the design's "~120 per depth"
     assert s4.R1_GRID[0] == 0 and all(s % 10 == 0 for s in s4.R1_GRID)
@@ -57,6 +59,22 @@ def test_gate_steps():
     assert s4.gate_steps(8, g, (16, 32, 64)) == (4, 16)
     assert s4.gate_steps(None, g, (16, 32, 64)) == (16, 64)
     assert s4.gate_steps(64, g, (16, 32, 64)) == (32, 64)
+
+
+@pytest.mark.parametrize("arm", ["R3", "R4", "R5", "R6"])
+def test_description_only_toys_refuse_the_gate(tmp_path, arm):
+    class A:
+        out = str(tmp_path)
+    A.arm = [arm]
+    with pytest.raises(s4.S4Refused, match="description only"):
+        s4.gate(A)
+
+
+def test_reading_refuses_a_gate_record_on_another_window(tmp_path):
+    (tmp_path / "R2").mkdir()
+    (tmp_path / "R2" / "gate.json").write_text('{"meta": {"window": [526, 1035, 2100]}}')
+    with pytest.raises(s4.S4Refused, match="window"):
+        s4.arm_reading(tmp_path, "R2")
 
 
 def test_h_reserve_refuses_induction(tmp_path):
