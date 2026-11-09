@@ -166,6 +166,44 @@ R3–R6's held-out loss rising from ~2100: status-S "S4 unit 1").
 This replaces "The toys' plateau window is fixed at 525, 1050, 2100" below for the toys' reading;
 U1's window is kept in code as `TOY_WINDOW_U1`.
 
+## U2 after Blocked 150 (a), the user's, 2026-11-09: the toy instrument's calibration
+
+U2 trains nothing. It sizes the gate on the toy's own design points (CLAUDE.md "Calibration gate"),
+then, if the gate can pass, gates R2 and reads it **as exploration**: the dating rule below is
+placed after R2's V was seen on the 7 prompts. U3 trains Tu at depth 2 (against R2) and Tt, and holds
+the close-out. Q4 (the atlas) and B7's read are carried to ROADMAP §7a. The budget stays at 4 units.
+Everything in this section was fixed before any U2 output.
+
+**Step 1, the opening check (it decides whether U2 continues).**
+
+| | fixed |
+|---|---|
+| prompts | the library's `val`, k = 64 (`core.library.load("val", 64)`, its `library_hash` recorded), each retokenized by R2's tokenizer; an item whose largest single-token share exceeds ¼ is beside (as U1) |
+| populations | 3 fresh inits (U1's, seeds 0–2) and R2 at **6876 and 29101**, U1's gate steps from induction's 14146 by the frozen rule (kept, not re-chosen) |
+| plant B | doses 0.25, 0.5, **1** (the gate's range); beside, 2, 4 and the **ceiling** (the later state replaced by a pure Gaussian cloud: the most any spread can do) |
+| passes | at each step on its own: the re-inits' uncentred rate ≤ 5 % and plant B's uncentred share ≥ 0.4 at some dose ≤ 1 |
+| beside | the ceiling share; each step's median layer displacement ‖h_{t+1} − h_t‖ / m (the toy's own layer size, in the dose's units); units per population; the same on the 7 v1 prompts (U1's input) |
+
+The dose ceiling is 1 because above it the added spread is larger than the tokens: the plant
+replaces the state rather than spreading it, and a count that sees only that sees no break a layer
+could make. **If the check fails, the instrument does not fit this toy and S4 closes as Blocked
+150 (c)**: the close-out is the next unit and U3 does not run. A ceiling share below 0.4 says the
+cause is structural (the earlier state already sits at the isotropic floor, so no later state can
+fall below it), not the dose or the count.
+
+**Step 2, only if step 1 passes.** R2's records on the 64 prompts at every grid step (the induction
+probe as U1, so 14146 stands); U1's gate on them, with plant B's dose the smallest seen in
+{0.01 … 1}; then the rule below on V, on each gated centred arm and, beside, on induction's prefix
+score. U1's dates (946 on U1's window, "no change" on the late window) and the 7 prompts' series
+stay beside.
+
+**The rise-and-fall rule** (exploration on R2). m₃ is the running median of 3 over grid steps (at
+the ends, of the 2 there are). P = max m₃. The **rise** is the first grid step with m₃ ≥ P/2. The
+**fall** is the first grid step after argmax m₃ with m₃ < P/2. It reads "no rise" if P = 0 or the
+rise is the first grid step, and "no fall" if there is no such step. The reading is each quantity's
+rise and fall against induction's rise: their order and the gap in grid steps. That is
+description on one seed, labelled exploration, with no outcome row.
+
 ## Revised after #331
 
 `/challenge-pr` on #331: accept with changes; all five findings taken.

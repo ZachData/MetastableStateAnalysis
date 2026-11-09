@@ -287,7 +287,11 @@ is released at depths 2–6 (`timaeus/L2`–`L6`, constant LR, no warmup; T1's P
 §7b), and HAPAX's Pythia-1b-shaped pair (2511.05743) trained with and without the loss on
 induction-predictable tokens is released. So U1 reads released arms before anything is trained. **U1 done 2026-11-08** (`status-S.md` "S4
 unit 1"): H read (description); the released toys are Blocked 149 (R3–R6's held-out loss rises from ~2100, R1 refused,
-induction after the frozen window).
+induction after the frozen window). Blocked 150 decided (a) 2026-11-09, the user's: U2 is the toy
+instrument's calibration (no training), U3 trains Tu (depth 2) and Tt with the close-out inside.
+**Carried here, unscheduled:** Q4, S1's atlas on a toy with the circuit named (cost: `s1.py` at d
+256 on R2 and the trained arms; it could change whether the K-composition channel is a shared
+subspace), and B7's partner persistence on a tied toy of depth ≥ 3 (cost: one B7 run per arm).
 The MLP arm is dropped under D4 (a) (taken) and stays here, unscheduled (Parked: an MLP member of
 the series, if one is found or trained; it could change whether S4's answer holds beyond
 attention-only models).
