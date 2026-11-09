@@ -70,6 +70,13 @@ def test_description_only_toys_refuse_the_gate(tmp_path, arm):
         s4.gate(A)
 
 
+def test_reading_refuses_a_gate_record_on_another_window(tmp_path):
+    (tmp_path / "R2").mkdir()
+    (tmp_path / "R2" / "gate.json").write_text('{"meta": {"window": [526, 1035, 2100]}}')
+    with pytest.raises(s4.S4Refused, match="window"):
+        s4.arm_reading(tmp_path, "R2")
+
+
 def test_h_reserve_refuses_induction(tmp_path):
     with pytest.raises(s4.S4Refused):
         s4.induction_reading(tmp_path, "H_vanilla")

@@ -7,7 +7,7 @@
 - **Question:** Do the 384 heads of `pythia-410m` share directions of the residual stream, per subspace family (OV write / read, QK query / key, OV's negative / positive / complex invariant subspaces), beyond a random arrangement of the same subspaces, how does that change over training, and what do the attention layers do inside the shared space (push, rotate, collapse)?
 - **Inputs:** `pythia-410m` weights at steps 0, 128, 256, 512, 1000, 2000, 4000, 143000 (and 8000 off the grid for the preflight and the gate); tokens only for unit 3's residual check (v1's 7 scored prompts, `trackB_circuit/b0_gate.py` `V1_SCORED`); code `trackS_subspace/s1.py`; records `data/trackS/s1/` (main tree) — `trackS_subspace/design-S1.md` "Objects, fixed here". S2: the same weights at 0, 256, 512, 1000, 2000, 4000, 143000 (8000 for the preflight) under a per-head OV hook, v1's 7 prompts for V and 7d's 16 repeated-random-token sequences for G; code `trackS_subspace/s2.py`; records `data/trackS/s2/` (main tree) — `trackS_subspace/design-S2.md` "Steps and readouts"
 - **Results:**
-  - S4 unit 1, Blocked 149 applied ((i) (a), (ii) (a), the user's): no released toy carries a gated date. On the late window (18540, 38140, 75000) R2's induction dates 14146, and its gate refuses at 6876 and 29101: plant B is seen by the uncentred count at 0.14–0.17 at dose 0.5 (0.4 needed), as at steps 1–2, so the refusal is the toy's. R2's V (description, read after the refusal) rises at ~900 and is gone by 16942, so the late plateau is 0. R3–R6 are description only. What next is Blocked 150 — `trackS_subspace/status-S.md` "S4 unit 1, Blocked 149 applied: R2's gate refuses (2026-11-08)"
+  - S4 unit 1, Blocked 149 applied ((i) (a), (ii) (a), the user's): no released toy carries a gated date. On the late window (18540, 38140, 75000) R2's induction dates 14146, and its gate refuses at 6876 and 29101: plant B is seen by the uncentred count at 0.14–0.17 at dose 0.5 (0.4 needed), as at steps 1–2; doses up to 4 do not pass it either (7–12 units a step). R2's V (description, read after the refusal) rises at ~900 and is gone by 16942, so the late plateau is 0 (946 on U1's window). R3–R6 are description only. What next is Blocked 150 — `trackS_subspace/status-S.md` "S4 unit 1, Blocked 149 applied: R2's gate refuses (2026-11-08)"
   - S4 unit 1 (Blocked 148: D1 (a′), D2–D5 (a), the user's): on HAPAX's pair, removing induction's training pressure removes the paper's induction transition (vanilla's at about 800; Hapax's mean ramps), while both energy counts rise alike: within 5 counts of each other through step 800, half their plateaus at 600–800 on both sides. One seed a side, description; the dated one-step differences are single counts at the bar and are not read. The released toys answer nothing yet: the depth-3 to depth-6 runs get worse on held-out text from about step 2100 (unstable or overfit, not told apart), R1's recipe is unreadable, and on R2 and R3 induction forms at about 9,000–22,000, after the frozen window. No toy's V has been read (Blocked 149) — `trackS_subspace/status-S.md` "S4 unit 1, the released arms (2026-11-08)"
   - S4 opened 2026-11-08 (Blocked 147 (b), the user's): a scan and a proposed design (Blocked 148, D1–D5). The untied toy arm is already released at depths 2–6 (`timaeus/L2`–`L6`: constant LR, no warmup, 451 checkpoints each). So is a Pythia-1b-shaped pair trained with and without the loss on induction-predictable tokens (HAPAX, 2511.05743). U1 reads those before any training — `trackS_subspace/status-S.md` "S4 unit 0, the scan and the design (2026-11-08)"
   - Opened 2026-10-20 with a scan, a `sympy` check and a design frozen as written (3 units + close-out); the rotation null, the norm-matched random draw and step 0 are one law for the mean projector, and the preflight refused per-unit verdicts against it, so S1 was designed to read counts — `trackS_subspace/design-S1.md` "Preflight (`tools/design_preflight.py`, step 8000, off the grid)"
@@ -31,7 +31,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-11-08 · body `c56b04925b`
+- **Reviewed:** 2026-11-08 · body `3580c3277c`
 <!-- /phase-card -->
 
 ## Units
@@ -80,13 +80,19 @@ by the uncentred count (`R2/gate_refused.json`, 12 units a step, 6 prompts × 2 
 | B share, step 6876 (base rate 0.42) | 0 | 0.14 | 0.4 |
 | B share, step 29101 (base rate 0) | 0 | 0.17 | 0.4 |
 
-R2 and R3 refused the same way at steps 1–2 in U1, so the refusal is the toy's, not the steps'
+R2 and R3 refused the same way at steps 1–2 in U1, so the refusal does not move with the steps
 (LESSONS 6). The positive control was sized on 410m and never on a 2-layer, d-256 model (the
-design's "Worth challenging" named it).
+design's "Worth challenging" named it). **Doses above 0.5** (`/challenge-pr` on #333, finding 1;
+a diagnostic on a scratch copy, not a record): with 1, 2 and 4 added, the pooled share crosses 0.4
+at dose 2. Per step it is 0.14 at 6876 (1 of the 7 units not already violating) and 0.67 at
+29101, and the B-matched centred τ is not found in [1e-7, 1e-2]. So the dose alone does not pass,
+and 7–12 units a step are too few.
 
 **R2's V, description (gate refused; read after the refusal):** 0 through step 789; 4 of 12 units
 from 864–1035; 4–5 through 9012; then 3, 2, 1 at 12926–15481; 0 from 16942 to 75000. So on the
-late window V's plateau is 0, and D4 (a) would read "no change" even with a passing gate. V rises
+late window V's plateau is 0, and D4 (a) would read "no change" even with a passing gate. On U1's
+window (526, 1035, 2100, fixed before any output) V reads 0, 4, 5 and D4 (a) dates **946**
+(`/challenge-pr` on #333, finding 2); ungated, so description only. V rises
 early and dissolves while induction forms (9,012–18,540). This is a lean, and the instrument that
 reads it failed its own positive control. The centred count is not read: it needs the gate's τ.
 
@@ -98,7 +104,7 @@ On the late window, induction dates R3 at 16942, and R4–R6 at step 1 (never fo
 transition (description, below). No released toy carries a gated date: R1 has no readable recipe,
 R3–R6 lose held-out loss, and R2's positive control is not seen. What next is Blocked 150.
 
-**Parked:** (4) R2's transient (V up at ~900, gone by ~17,000 as induction forms) is the shape
+**Parked:** (4) R2's transient (a one-seed lean; V up at ~900, gone by ~17,000 as induction forms) is the shape
 C2 would want, and a gated instrument on a toy could test it. Carried to Blocked 150 (it changes
 whether U2's rule must date a rise and a fall, not a plateau). (5) The digitised Hapax panel's own
 heads (the paper's second panel; by eye its top head rises from ~1000 to ~2500, later than

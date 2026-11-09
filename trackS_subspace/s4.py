@@ -784,7 +784,9 @@ def gate(a) -> int:
             "B_share_u_by_dose": shares,
             "units_per_population": {"reinit": len(nu["base"]["u"]),
                                      **{n: len(units([n])["base"]["u"]) for n in trained}}}, indent=1) + "\n")
+        (out / arm / "gate.json").unlink(missing_ok=True)       # one gate record per arm, the latest
         raise S4Refused(f"{arm}: {e} (the uncentred count's gate refuses)")
+    (out / arm / "gate_refused.json").unlink(missing_ok=True)
     b_target = cs.share(cs.rate(tr["plants"]["B_u"][bd], REL_TOL), cs.rate(tr["base"]["u"], REL_TOL))
     try:
         bm = float(f"{cs.b_matched_tol(tr['base']['c'], tr['plants']['B_c'][bd], b_target):.3g}")
@@ -824,6 +826,8 @@ def arm_reading(out: Path, arm: str) -> dict:
     if not gp.exists():
         raise S4Refused(f"{arm}: no gate record; no date is read before the gate")
     gt = json.loads(gp.read_text())
+    if gt["meta"]["window"] != list(window(arm)):    # `/challenge-pr` on #333, finding 5
+        raise S4Refused(f"{arm}: gate record made on window {gt['meta']['window']}, not {list(window(arm))}")
     g, win = grid(arm), window(arm)
     recs = load_recs(out, arm)
     prompts = gt["prompts"]
