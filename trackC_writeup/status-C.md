@@ -40,10 +40,10 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); ROADMAP C4, the schedule intervention (with 3c's Parked 0), separates them on 70m only, 410m by inference (C4 trains `pythia-70m`; corrected 2026-11-08, `/challenge-pr` on #330, finding 3); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); since Blocked 152 (d) (2026-11-09, the user's) the project's next item, with no new row before it and F1 still open (posting before F1 is the user's); after it, C4's design (Blocked 153, 2026-11-09) — `trackC_writeup/referee-C2p.md`
+  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); since Blocked 152 (d) (2026-11-09, the user's) the project's next item, with no new row before it and F1 still open (posting before F1 is the user's); after it, C7 (i), then C4's design (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `a6409f1410`
+- **Reviewed:** 2026-11-09 · body `8df1f1c895`
 <!-- /phase-card -->
 
 ## Units
@@ -502,7 +502,9 @@ a per-cell OV table, the substitution on more seeds).
 **For the user's rewrite.** *It is the next item (STATE Blocked 152 (d), 2026-11-09, the
 user's): no new row opens before it, so the rewrite proceeds with F1 open as §7 words it;
 whether the paper is posted before F1 is read stays the user's (Blocked 40, 103). After it,
-C4's design opens (STATE Blocked 153, 2026-11-09).*
+C7 (i), Isobe et al.'s depth profile on 410m with attention's spectral gap per layer, opens
+first; its reading may enter §8 before you post. C4's design follows it (STATE Blocked 153,
+revised 2026-11-09; the order assumes posting before C4 reads F1).*
 If the Overleaf copy has been edited since #268, carry over this
 close-out's edits: the diff of `trackC_writeup/paper/` from `7d9cfe6` (#268's merge) to this PR's merge.
 Re-run as in "C2p unit 2" below. The 28-page build is `pdflatex main && bibtex main` and then
