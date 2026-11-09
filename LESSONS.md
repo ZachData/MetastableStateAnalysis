@@ -905,7 +905,11 @@ not fixed).
 - 2026-11-09 (#337's push run red, its PR run green on the same commit):
   `test_rows_ngram_reads_and_refuses` named three scratch dirs `hash(str(kw)) % 1000`; `str`
   hashes are salted per process, so about 1 run in 330 two names collided and `mkdir`
-  raised. Fixed: the dirs are named by index. A test's paths never come from `hash()`.
+  raised. Fixed: the dirs are named by index. Rule: **nothing a test builds (paths, seeds,
+  data) comes from `hash()` of a str/bytes**; use an index or `zlib.crc32`. Not fixed, parked
+  (`/challenge-pr` on #338, finding 3): `tests/test_phase2b_io.py` and `test_phase2b_runner.py`
+  seed fixture data from `abs(hash(stem))`, so their inputs differ run to run; no failure
+  seen; cost, four lines; it changes no decision, only whether those tests are reproducible.
 - 2026-10-16, B2a unit 1 (#208, blocked a merge): `test_b2a` asserted a planted plane's angle
   < 1e-10 through `plane_angle`, an arccos of the smallest singular value, which near 0 resolves
   only to √(2 eps) ≈ 1.5e-8. The same commit passed on the PR run and failed on the push run at
@@ -2034,8 +2038,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   and #296's two cost rows. The PR merged with all three gone, and C7 was missing for 8 days
   while the outreach plan still pointed to "ROADMAP C7 (i)". Restored byte for byte from
   `9e80f74` / `61ca1c2`. Rule: **after merging main into a branch, list the lines the
-  branch added that the merge no longer has** (`grep -vxFf base branch | grep -vxFf merge`,
-  per file the branch touched) before pushing it.
+  branch added that the merge no longer has** (`python scripts/merge_drops.py`, on HEAD after
+  the merge) and read the list before pushing. Not a `grep -vxFf` chain: this box's `grep` is
+  ugrep, which handles blank pattern lines differently, so the chain is never empty here
+  (`/challenge-pr` on #338, finding 2). Not a `check.sh` gate: intended overwrites (STATE)
+  are listed too.
 - 2026-11-02 (#305): `./scripts/check.sh | tail -2 && git commit … && git push` committed and
   pushed `aaac0f8` with 2 tests red, because the chain took `tail`'s exit status, not check's.
   Fixed in the next commit (`16e400e`). Rule: run check.sh on its own, or redirect it to a file,
