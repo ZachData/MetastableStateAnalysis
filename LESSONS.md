@@ -2046,11 +2046,16 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 - 2026-11-09, the same day, on #338 itself: #337 merged first, so #338 conflicted; the
   conflict was resolved in GitHub's web editor (`3432f2c`, committer GitHub) by taking
   main's side of `STATE.md` line 3, `docs/ROADMAP.md` §10 item 16 and `docs/cost_log.md`.
-  #338's §10 note on C7, its two cost rows and its line 3 were dropped; `merge_drops.py
-  3432f2c` lists all of them. Restored byte for byte from `8652245`. Rule: **when two PRs
-  touch the same STATE/ROADMAP/cost-log lines, a conflicting one is not resolved in the web
-  editor**: merge main into its branch locally, keep both sides, run `merge_drops.py` and read
-  it before pushing (the web editor never runs the check).
+  #338's §10 note on C7, its cost rows and its line 3 were dropped; `merge_drops.py
+  3432f2c` lists all of them. The note and the re-taken row were restored byte for byte from
+  `8652245` (#339). #338's first row was left out because #338 should have replaced it, not
+  appended a second row (`/challenge-pr` on #339, finding 1). Both drops (`9388a24`, `3432f2c`) were
+  web-editor resolutions, which the rule above never reaches, and every PR edits line 3 and
+  the cost log's tail, so any two open PRs conflict. Rule, **Claude's side**: when a merge
+  leaves another open PR conflicting, Claude merges main into that branch locally, keeps both
+  sides, runs `merge_drops.py`, reads it and pushes before the user merges (finding 2). Not
+  done, the user's: a CI check that fails only when a merge drops `docs/cost_log.md` rows
+  (finding 3; it would have caught both, without tripping on STATE's intended rewrites).
 - 2026-11-02 (#305): `./scripts/check.sh | tail -2 && git commit … && git push` committed and
   pushed `aaac0f8` with 2 tests red, because the chain took `tail`'s exit status, not check's.
   Fixed in the next commit (`16e400e`). Rule: run check.sh on its own, or redirect it to a file,
