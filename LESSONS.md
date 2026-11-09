@@ -1874,6 +1874,17 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   checks where the bar sits (its beside rows: plant 0.10 → 0 %, 0.20 → 100 %), not noise. Rule:
   **a gate whose pass rate is set "from the data's own spread" is first run at several spreads; if
   the rate does not move, it is a check of the rule's arithmetic, and is named so**.
+- 2026-11-08 (S4 U1): `design-S4.md` fixed the toys' dating window at steps 525, 1050 and 2100
+  (Pythia's 1000–4000 scaled by run length) and froze it, and the gate's steps were derived from
+  induction's date under that window. On the released toys, induction forms at about 9,000–22,000
+  on R2 and R3 and never on R4–R6, so the window lies before it on every arm; the frozen rule
+  dated induction at step 1 and the gate ran at steps 1 and 2. And the released depth-3 to depth-6
+  runs degenerate from about step 2100 (held-out loss to 7.0–9.0 nats), which no one had checked
+  before building an arm on them. Both were readable before the freeze: one checkpoint's induction
+  curve and held-out loss per arm, minutes of GPU and no V. The "Worth challenging" line named the
+  first risk and nothing tested it. Rule: **before a design freezes on released checkpoints, read
+  each arm's loss on held-out text and the timing of the event a window is placed against (not the
+  scored statistic); a window derived by scaling from another model is checked against the arm**.
 
 ## 7. Literature found after the construction was built
 
