@@ -29,7 +29,7 @@
   - The massive coordinates in the end-state shared spaces (carried to S3), 2603.13314's full text (carried to C2's draft) — `trackS_subspace/status-S.md` "S1 on one page (closed 2026-10-21)"
 - **After Phase 10:**
   - The weighted projectors (singular values as weights), where the rotation null keeps each head's spectrum and differs from Haar *(free, weights only)*
-- **Reviewed:** 2026-11-08 · body `d37f1520e9`
+- **Reviewed:** 2026-11-08 · body `e356869c8f`
 <!-- /phase-card -->
 
 ## Units
@@ -68,8 +68,8 @@ Writing only; no weights downloaded, no pickle opened. Blocked 147 (b), the user
 |---|---|
 | scan | `trackS_subspace/lit-S4.md`: HF API configs and file lists (confirmed), 2511.05743 §3.1 (read), 2506.13688, 2511.16893, 2601.09588, 2604.11791 (summary) |
 | what it changed | the untied arm is released (`timaeus/L2`–`L6`, 451 checkpoints each, constant LR 1e-3, no warmup; `L1` empty, `L1W256-dense` a 1-layer candidate with its recipe unknown); a Pythia-1b-shaped pair with and without the loss on induction-predictable tokens is released (`KeremSahin2210/vanilla_1b`, `hapax_1b`, every 100 steps from 100, no step 0); the L-series' data `timaeus/pile13m` is private |
-| design | `trackS_subspace/design-S4.md`, proposed: Q1–Q5; arms R1–R6, H, Tu, Tt; C2's instruments unchanged (E₁, V, the centred count, A5's D4 (a), with the toys' plateau window as the same fractions of the run), 3b's gate per arm; U1 the released arms (no training), U2 gated on U1, U3 the atlas, circuit, plant and B7; 4 units |
-| decisions | Blocked 148: D1 HAPAX's pair in S4 or C5; D2 the "without repeats" arm; D3 the tied arm's depth; D4 the MLP arm; D5 budget. Recommended (a) for each |
+| design | `trackS_subspace/design-S4.md`, proposed: Q1–Q5; arms R1–R6, H, Tu, Tt; C2's definitions (E₁, V, the centred count, A5's D4 (a) rewritten for any grid; the toys' window at steps 525, 1050, 2100; H's at 1000, 2000, 4000) on C2's prompt text retokenized, fresh inits for step 0, 3b's gate per arm; U1 the released arms (no training), U2 gated on U1, U3 the atlas, circuit, plant and B7; 4 units |
+| decisions | Blocked 148: D1 HAPAX's pair in S4 or C5; D2 the "without repeats" arm; D3 the tied arm's depth; D4 the MLP arm; D5 budget. Recommended D1 (a′) (H read for energy only: its recipe is `pythia-1b`'s, reserved against induction measurement by `p8_scale_ladder/design-8.md`), (a) for D2–D5. Revised after `/challenge-pr` on #331 (accept with changes, 1–5 taken: `design-S4.md` "Revised after #331") |
 | Parked | 1. 2506.13688's Pythia result (last-layer cosine near 1 early, falling around step 1000), not in `paper/`: **carried to C2's rewrite** (`trackC_writeup/status-C.md` "For the user's rewrite"). 2. HAPAX's pair as a C2 arm: in U1 under D1 (a); **carried to ROADMAP C5** under D1 (b) |
 
 ## S2 on one page (closed 2026-10-22)
