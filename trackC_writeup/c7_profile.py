@@ -362,6 +362,63 @@ def cmd_run(a) -> int:
     return 0
 
 
+def read_b23(model, tok, step: int) -> Dict:
+    """Post hoc after U1's output (`/challenge-pr` on #342, finding 2): block 23's output before the
+    final LN, from a hooked pass on the stored tokens. Known answers: the pass reproduces the stored
+    states 0-23 (rel <= STORED_TOL) and E1 at state 23 equals `energies.json` (rel <= 1e-6)."""
+    import torch
+    from core.metrics import interaction_energy
+    from p1e_energy_field.u2_attn import token_ids
+    rec = {"step": step, "prompts": {}}
+    for p in V1:
+        got = {}
+        h = model.gpt_neox.layers[23].register_forward_hook(
+            lambda mod, inp, out: got.__setitem__("x", (out[0] if isinstance(out, tuple) else out)[0].double().numpy()))
+        try:
+            with torch.no_grad():
+                hs = model(torch.tensor([token_ids(tok, run_dir(step, p))]), output_hidden_states=True).hidden_states
+        finally:
+            h.remove()
+        X = states(step, p)
+        rel = max(float(np.linalg.norm(hs[s][0].double().numpy() - X[s]) / np.linalg.norm(X[s])) for s in range(24))
+        e = energies(step, p)
+        x24 = got["x"]
+        e23 = interaction_energy(unit(X[23]), 1.0)
+        if rel > STORED_TOL or abs(e23 - e[23]) / e[23] > 1e-6:
+            raise Refused(f"refusing: b23 known answer at step {step} {p}: rel {rel}, E1(23) {e23} vs {e[23]}")
+        e24 = interaction_energy(unit(x24), 1.0)
+        e1 = np.append(e[:T + 1], e24)
+        mm = np.append([m2(X[s]) for s in range(T + 1)], m2(x24))
+        u = mlp_updates(model, X)[23]
+        rec["prompts"][p] = {
+            "rel_state": rel, "E1_24pre": e24, "m2_24pre": float(mm[-1]),
+            "P": {"E1": criterion(-e1), "m2": criterion(-mm), "E1_1_24": criterion(-e1[1:], t0=1)},
+            "vs_U1": {"E1": float((-e24 - criterion(-e[:T + 1])["F_pl"]) / criterion(-e[:T + 1])["R"]),
+                      "m2": float((-mm[-1] - criterion(-mm[:-1])["F_pl"]) / criterion(-mm[:-1])["R"])},
+            "F23": split(X[23], x24, u)}
+    return rec
+
+
+def cmd_b23(a) -> int:
+    import torch
+    from trackB_circuit.b0_gate import load
+    code = code_sha()
+    d = a.out / "records_b23"
+    d.mkdir(parents=True, exist_ok=True)
+    for step in STEPS:
+        path = d / f"step{step}.json"
+        if path.exists() and json.loads(path.read_text())["code"] == code:
+            continue
+        t0 = time.monotonic()
+        model, tok = load(step, "cpu", torch.float32)
+        rec = read_b23(model, tok, step)
+        rec.update(code=code, wall_s=round(time.monotonic() - t0, 1))
+        path.write_text(json.dumps(rec) + "\n")
+        print(f"b23 step {step} {rec['wall_s']} s", flush=True)
+        del model
+    return 0
+
+
 def summarise(out: Path) -> Dict:
     rows = []
     for step in STEPS:
@@ -401,11 +458,11 @@ def cmd_report(a) -> int:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("gate", "run", "report"):
+    for name in ("gate", "run", "report", "b23"):
         p = sub.add_parser(name)
         p.add_argument("--out", type=Path, default=DATA / "trackC" / "c7" / "2026-11-09-u1")
     a = ap.parse_args(argv)
-    return {"gate": cmd_gate, "run": cmd_run, "report": cmd_report}[a.cmd](a)
+    return {"gate": cmd_gate, "run": cmd_run, "report": cmd_report, "b23": cmd_b23}[a.cmd](a)
 
 
 if __name__ == "__main__":
