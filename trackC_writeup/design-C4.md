@@ -179,6 +179,48 @@ before A0's first record:
   after its first occurrence. On the released run the top head (L3 H6) reads 0.017 at 512 and
   0.93 at 1000.
 
+## The draft entry (D4 (a): the user's to commit, before F trains past step 64)
+
+Drafted by Claude in U1; nothing in `claims/registry.json` was touched. `tools/check_registry.py`
+now accepts phase `C` (U1). The registration commit adds this entry and, in the same commit,
+the line `r"|P-SCH[0-9]+"` to `ID_PATTERN` there (`P-C1`–`P-C4` are Phase 1d's, so the id is
+`P-SCH1`; allowed earlier, the coverage check refuses the id until the entry exists). Validated
+against a scratch copy of the registry: 0 errors. **The direction is a choice:**
+h1 below follows C6's lean on `pythia-70m-warmup01` (the centred date "consistent with
+cumulative"); registering step as h1 instead, or registering the label with no direction, are
+the alternatives.
+
+```json
+{
+  "id": "P-SCH1",
+  "claim": "H-RESIST",
+  "statement": "On pythia-70m trained from seed 0's init on Pythia's data order with the LR warmup removed (arm F: 1e-3 from the first update to step 1430, then Pythia's cosine), the token-centred count's date (R2) is consistent with the summed learning rate and not with the step count, against arm A0 (Pythia's own schedule, the same init, data and harness) read on the same dense grid.",
+  "h0": "The centred date is fixed in steps: F's date lies in [t_A0/rho, t_A0*rho].",
+  "h1": "The centred date waits for a summed rate: F's date lies in [(t_A0/rho)^2/2W, (t_A0*rho)^2/2W], W = 1430.",
+  "falsifier": "The label is 'consistent with step' or 'neither'. 'Not formed by 4000' and 'unreadable' are reported and score nothing; a harness refusal (R1, H1-H6) or a divergence means nothing is read.",
+  "instrument": "trackC_writeup/c4_train.py (the arms) and c4_read.py (records as C2 unit 3b's, float32 eager; the centred count at 70m's four frozen tau arms; the half-rise on the dense grid; rho = max(1.25, the grid's neighbour ratios at t_A0); h consistent iff consistent at every tau arm gated on F at step 3500 by C6's gate and dated on both arms); code hashes recorded at registration",
+  "phase": "C",
+  "experiment": "C4",
+  "gate": "",
+  "cost": "F",
+  "evaluable": "measurement",
+  "null_construction": "None: one seed per arm, a label against bands set by the grid, not by a measured run-to-run spread (no A0 rerun). The bands are disjoint for t_A0 < 2W/rho^3 (tools/math_checks/c4_flat_maps.py). 92 (i)'s early check is reported beside, not applied. V's date (R3) is read beside under the same rule if V's gate passes on F, and does not score.",
+  "calibration_record": null,
+  "real_run_record": null,
+  "relevance": 0.6,
+  "source": "trackC_writeup/design-C4.md (frozen 2026-11-09 on Blocked 155 all (a)); status-C.md 'C4 unit 1'",
+  "registered_commit": null,
+  "registered_date": null,
+  "registered_provenance": "gated",
+  "notes": "70m only; 410m by inference. Registered after A0's counts to 1000 were seen (H6, the harness check) and before any F count. bf16 against Pythia's fp16. Input set at run time: the shard's sha256, the batch-0 hash, the prompts hash, code hashes.",
+  "superseded_by": null,
+  "status": "active"
+}
+```
+
+`cost` copies `P-A5`'s code; check it against the registry's convention. `relevance` 0.6 copies
+`P-A5`'s, as a row that decides one sentence of the paper.
+
 ## Worth challenging (for the PR)
 
 - **A flat rate at Pythia's peak may diverge**, or form nothing (Qu & Liu, a blog on a small
