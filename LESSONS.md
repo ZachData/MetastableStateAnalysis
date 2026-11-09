@@ -2043,6 +2043,14 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   ugrep, which handles blank pattern lines differently, so the chain is never empty here
   (`/challenge-pr` on #338, finding 2). Not a `check.sh` gate: intended overwrites (STATE)
   are listed too.
+- 2026-11-09, the same day, on #338 itself: #337 merged first, so #338 conflicted; the
+  conflict was resolved in GitHub's web editor (`3432f2c`, committer GitHub) by taking
+  main's side of `STATE.md` line 3, `docs/ROADMAP.md` §10 item 16 and `docs/cost_log.md`.
+  #338's §10 note on C7, its two cost rows and its line 3 were dropped; `merge_drops.py
+  3432f2c` lists all of them. Restored byte for byte from `8652245`. Rule: **when two PRs
+  touch the same STATE/ROADMAP/cost-log lines, a conflicting one is not resolved in the web
+  editor**: merge main into its branch locally, keep both sides, run `merge_drops.py` and read
+  it before pushing (the web editor never runs the check).
 - 2026-11-02 (#305): `./scripts/check.sh | tail -2 && git commit … && git push` committed and
   pushed `aaac0f8` with 2 tests red, because the chain took `tail`'s exit status, not check's.
   Fixed in the next commit (`16e400e`). Rule: run check.sh on its own, or redirect it to a file,

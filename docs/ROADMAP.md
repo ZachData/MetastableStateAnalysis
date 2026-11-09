@@ -519,6 +519,11 @@ proposed, not decided.
     early by Claude at the user's "choose the next row after the rewrite" (`STATE.md` Blocked
     153, the reasons and C4's main risk there): C4's design opens when the user says the rewrite
     is done; the rest stay unscheduled.*
+    *Note, 2026-11-09 (#338): §8 row C7 (three reads from stored records, no forward pass;
+    (i) is the Isobe et al. outreach item) was missing from this file from 2026-11-01 to
+    2026-11-09, so items 13, 15 and 16 and #337's Blocked 153 chose without it on the list.
+    C7 is a candidate for the choice after the rewrite; whether it changes any of those
+    decisions is the user's.*
 
 ## 11. What each phase gives the plan
 
