@@ -32,6 +32,7 @@
   - C6 unit 1 (2026-11-01; Blocked 127 (a), the user's: V not read under instantaneous, frozen before output): seed 0's known answer exact, but **the run's gate refuses**. On the run, V sees plant B at 0.38 (7000; 13 of 34 units, 14 needed) and 0.33 (20 000) against the bar of 0.4 (`pythia-70m` at 7000, its own plant draws: 0.45, 13 of 29). The frozen gate takes the centred arms' dose from V's rule, so no arm is gated, though three would pass at the top dose (beside). Nothing on the run's grid was computed; the exit is met as "refused by its gate"; whether to read the centred count alone is Blocked 128 — `trackC_writeup/status-C.md` "C6 unit 1, Blocked 127 (a) and the run's gate (2026-11-01)"
   - C6 unit 1b (2026-11-01; Blocked 128 (a), the user's, one unit beyond the budget; frozen after U1's gate output, before any output on the run's grid): the centred count alone, plant B at 3b's 0.5, V not read. Gate: 9.61e-5, 1e-4, 3e-4 gated (4.78e-3 not, B 0.39 at 20 000), equal to U1's top-dose arms. **The centred count reads "consistent with cumulative"**: dated 2000 on all three arms against 70m's 512–1000 over ten seeds; step excluded (its band 512–1000), instantaneous excluded (the run is already at 16–18 at 2000, a step its early set holds); in the in-sample calibration that label came only from cumulative plants (2 of 10, none from the 20 others). So on 70m the centred date comes later than a fixed step allows, compatible with the summed rate; the grid places the shift at a factor of about 1 to 3.9 against seed 0 (`/challenge-pr` on #298, finding 1). V not read (its profile on disk and seen: a lean, finding 2); one count's three near-equal arms — `trackC_writeup/status-C.md` "C6 unit 1b"
   - **C6 closed 2026-11-01 at its exit** (U0, U1, U1b + close-out; Blocked 128 (a) extended it by one unit; 129 (a), the user's; writing only): V refused by its gate on the run; the centred count "consistent with cumulative", written into `paper/` scoped to that count (the abstract's schedule sentence scoped to 410m, §1, a §7 paragraph, "compatible with" the summed rate; 17 `c6.*` keys, 4 claims, `paper_check` 0, 35 pages; `/challenge-pr` on #299: accept with changes, findings 1–5 taken); F1 narrowed for 70m's centred date only (a fixed count of updates excluded there); V's date, the shift's size and 410m not established; U0's Parked 1 dropped, V on the run carried to ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
+  - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -40,10 +41,11 @@
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); ROADMAP C4, the schedule intervention (with 3c's Parked 0), separates them on 70m only, 410m by inference (C4 trains `pythia-70m`; corrected 2026-11-08, `/challenge-pr` on #330, finding 3); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
-  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); since Blocked 152 (d) (2026-11-09, the user's) the project's next item, with no new row before it and F1 still open (posting before F1 is the user's); after it, C7 (i), then C4's design (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
+  - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) now, then C4's design (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
+  - Isobe et al.'s three phases on 410m (C7 (i)): design proposed, Blocked 154; U1 and the close-out to come — `trackC_writeup/design-C7.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `8df1f1c895`
+- **Reviewed:** 2026-11-09 · body `8359fab5b9`
 <!-- /phase-card -->
 
 ## Units
@@ -77,6 +79,36 @@
 | C6 1. Blocked 127 (a), the gate | **done 2026-11-01: 127 (a) frozen before output (`98d3f38`); seed 0's known answer exact; the run's gate refuses (no plant-B dose for the uncentred count at 7000 or 20 000, so no arm gated); no record on the run's grid; the exit met ("refused by its gate"); Blocked 128** | `c6_warmup.py`; "C6 unit 1" below |
 | C6 1b. the centred count alone (Blocked 128 (a), the user's; beyond the budget) | **done 2026-11-01: frozen before output on the run's grid (`fd18085`); 3 arms gated, equal to U1's top-dose arms; "consistent with cumulative" (dated 2000; step and instantaneous excluded); V not read** | `c6_warmup.py gate --centred-only`; "C6 unit 1b" below |
 | C6 close-out (Blocked 129 (a), the user's) | **done 2026-11-01: writing only; the label in `paper/` (abstract, §1, a §7 paragraph), scoped to the centred count; 17 `c6.*` keys from three records, 4 claims; `paper_check` 0, 35 pages; F1 narrowed for 70m's centred date; exit met; revised after `/challenge-pr` on #299 (findings 1–5 taken)** | "C6 on one page" below |
+| C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed; Blocked 154** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
+
+## C7 (i) unit 0, the scan and design (2026-11-09)
+
+Opened by STATE Blocked 153 as revised (#340), at the user's word that the rewrite of `paper/`
+is done. Writing only; nothing ran. **Input:** 2605.07772 v2 (2026-10-16), the PDF's text
+extracted locally (the HTML is a 404), plus six web searches. Nothing is read from `data/`.
+
+- **What the paper gives a measurement** (`lit-C7.md` §1): the three phases; the energy
+  E_{ε,A} (clustering lowers it); Assumption 3.1 (A = QᵀK positive definite, simple λ₁); the
+  plateau's rate tied to 1 − λ₂/λ₁ and λ₁e^{−λ₁} (Remark 3.10, A.53); W*_t exponentially small
+  away from the terminal layer (Theorem 3.9); and **a fixed three-phase criterion, used without
+  retuning** (appendix B.3), which the design adopts as written.
+- **Two corrections to C7 (i)'s wording in ROADMAP and STATE (#340, finding 3).** (1) The gap is
+  the weight matrix QᵀK's, not the attention pattern's. A causal pattern is lower triangular, so
+  its eigenvalues are its diagonal and its eigen-gap is empty; the pattern's singular-value gap
+  (2410.07799) goes beside as a different mechanism. (2) The terminal escape's rate is R_ρ(g_ℓ),
+  the loss gradient's Rayleigh quotient, so "the gap against the escape's rate" is not read.
+- **What is new for a reading:** Pythia-410m is parallel-residual (`use_parallel_residual`
+  true, `rotary_pct` 0.25, checked in the config), so each block's FFN update is exact from the
+  stored input state. That makes the paper's Phase 3 mechanism ("the FFN dominates attention in
+  the final layers") a per-block ratio of tangential speeds.
+- **Pretrained models:** no test of the three phases found. A ViT paper (2511.21635) reports a
+  three-phase depth profile of similarity whose plateau grows with depth. Parked for the
+  close-out.
+- **Design** (`design-C7.md`): P, F, Q, J on seed 0's 18 steps × 7 prompts, step 0 the no-train
+  control, gate G0–G2 before any label, leans written down. Budget 3 units. **Blocked 154** (D1–D4,
+  all (a) recommended).
+- **Parked** (`lit-C7.md`): 2511.21635's figures; Wendler et al. and Shibata et al.'s final-layer
+  shifts. Both are for the close-out's §8 sentence and the email.
 
 ## C6 on one page (closed 2026-11-01)
 
