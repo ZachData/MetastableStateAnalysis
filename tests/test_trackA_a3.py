@@ -284,8 +284,8 @@ def test_rows_ngram_reads_and_refuses(tmp_path):
     """The checks placed before output (design-A3 §4, unit 4) refuse; #236 finding 4."""
     r = a3.rows_ngram(_ngram_dir(tmp_path))
     assert r["E6u"].shape == (4, len(STEPS), 1)
-    for kw in ({"loss_end": 5.0}, {"step0_off": 0.2}, {"bad_hash": True}):
-        d = tmp_path / str(len(kw) + hash(str(kw)) % 1000); d.mkdir()
+    for i, kw in enumerate(({"loss_end": 5.0}, {"step0_off": 0.2}, {"bad_hash": True})):
+        d = tmp_path / f"refuse{i}"; d.mkdir()  # not hash(): salted per process, collided on CI
         with pytest.raises(a3.A3Refused):
             a3.rows_ngram(_ngram_dir(d, **kw))
 

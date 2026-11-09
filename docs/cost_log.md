@@ -565,6 +565,14 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   matched itself never exited), and the reading revised after its calibration on the seeds'
   real profiles failed, which re-opened the code, tests and design. Fetching the checkpoints in a
   separate session before the design would have saved the waiting calls.
+| 2026-11-01 | CLAIM-C closed (n=20 calibration refuses by design; withdrawn; Stage 0 + CLAIM-C data deleted, 47 -> 315 GB free; ROADMAP C7); same session: the morning's disk cleanup and the Isobe/scale discussion; before /challenge-pr | 166 | 297k | 29.5M | 79k | #296 |
+  Over 2× the median (7.6M), ~3.9×: three units in one session as the user's questions led
+  (the disk survey and first deletions, a discussion of clustering scale and 2605.07772 with
+  outreach advice, then this close-out), and the SessionStart hook printed the main tree's 98 KB
+  STATE.md, which was stale (the tree lagged `origin/main`), so the right one was read again.
+  A fresh session after the cleanup would have cut it by about a third.
+| 2026-11-01 | CLAIM-C closed; after /challenge-pr (accept with changes; findings 1-5 taken: the correction clamped to the exact null's floor, the LESSONS rule restated, order and curve hash in the record, a withdrawn column, a shared fixture) · subagents: general-purpose opus-5-5 1.5M | 190 | 319k | 36.9M | 83k | #296 |
+  ~4.9× the median: the row above, plus the review round in the same session.
 | 2026-11-01 | C6 U1: Blocked 127 (a) frozen, the run's gate refused (V's plant B 0.38/0.33 < 0.4), a vacuous known-answer check fixed, Blocked 128; after /challenge-pr (accept with changes; findings 1-3, 5 taken) · subagents: general-purpose opus-5-5 1.3M, runner haiku-5-5 93k · runner batches, main calls: 4 (haiku-5-5) | 69 | 197k | 8.8M | 58k | #297 |
 | 2026-11-01 | C6 U1b: Blocked 128 (a) frozen, the centred count alone reads consistent with cumulative (2000 vs 512-1000), V not read, Blocked 129; after /challenge-pr (accept with changes; findings 1-2 taken, 3 partly) · subagents: general-purpose opus-5-5 934k, runner haiku-5-5 109k · runner batches, main calls: 4 (haiku-5-5) | 73 | 142k | 7.2M | 34k | #298 |
 | 2026-11-01 | C6 close-out (Blocked 129 (a)): U1b's label in paper/ (abstract, §1, §7), scoped to the centred count; C6 closed at its exit; after /challenge-pr (accept with changes; findings 1-5 taken) · subagents: general-purpose opus-5-5 2.6M | 102 | 200k | 13.8M | 56k | #299 |
