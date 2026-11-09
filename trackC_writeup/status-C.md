@@ -43,7 +43,7 @@
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a) — `trackC_writeup/referee-C2p.md`
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-08 · body `2e60041b15`
+- **Reviewed:** 2026-11-09 · body `a59f60f3d3`
 <!-- /phase-card -->
 
 ## Units
@@ -516,6 +516,14 @@ mean pairwise cosine goes from 0.4–0.65 at init to above 0.9 within a few step
 decrease around step 1000". That bears on §8 (C2's mean term, ‖m‖², and the centred date at
 1000) and is not cited in `paper/`. Read its §6 and figure 8 before quoting it:
 `trackS_subspace/lit-S4.md` §2.
+
+**Cited context for the rewrite, from S4's close (2026-11-09; description, not a result on 410m):**
+on HAPAX's Pythia-1b-shaped pair (2511.05743, trained with and without the loss on
+induction-predictable tokens), both energy counts rise alike, within 5 counts through step 800,
+whether or not the paper's induction transition happens. It bears on F2 ("break, then induction"
+not shown causal), at its weight: one seed a side, 1B on the Pile, Hapax weakens induction rather
+than removing it, and no noise floor (`pythia-1b`'s checkpoints stay reserved by `design-8.md`,
+Blocked 7), so no gap is read. `trackS_subspace/status-S.md` "S4 on one page (closed 2026-11-09)".
 
 ## C2p unit 2, the revisions in `paper/` and the second fresh read (2026-10-24)
 
