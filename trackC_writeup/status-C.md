@@ -85,7 +85,44 @@
 | C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed, revised after `/challenge-pr` on #341; frozen on Blocked 154 all (a) (Claude, on the user's delegation)** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
 | C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23, and through block 23's output, post hoc); by the exact split the FFN moves the tokens out on blocks 20–22 on 1–2 of 7 at 32000–54000 only (the frozen first-order label unreadable at 9 of 18 steps); Assumption 3.1 fails at every layer and step; revised after `/challenge-pr` on #342** | `c7_profile.py`; "C7 (i) unit 1" below |
 | C7 (i) close-out | **done 2026-11-09: writing only; exit met at 3 units; Parked items carried (ROADMAP C7) or dropped; a §8 sentence and the email's paragraph for the user** | "C7 (i) on one page" below |
-| C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; proposed; Blocked 155** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
+| C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
+| C4 1. the harness, A0 to 1000, F to 64 | **in progress 2026-11-09: data verified (H2), H1, H3, H5 pass, the reader's known answer exact; A0 training to 1000; the rule frozen in code** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
+
+## C4 unit 1, the harness (2026-11-09, in progress)
+
+Blocked 155 taken all (a) by Claude on the user's "do the next 4 items in state" (`design-C4.md`
+"Decided"). Tier 1 until the user registers the reading (D4 (a)); F does not train past 64 before.
+**Input:** `EleutherAI/pile-standard-pythia-preshuffled` at `bac79b68`, `document.idx` and shard 0
+(`HDD_1TB/mets_data/c4/pile/`; both sha256 equal to the Hub's LFS record, `c4/data_meta.json`);
+`EleutherAI/pythia-70m` step 0 as the init; code `c4_train.py` `1c1e1d2df083` (A0's run).
+
+| check | result |
+|---|---|
+| H2, the rows | the index's 146,432,000 rows; the first 4,096,064 (training to 4000 and H4's 64) are all 2049 tokens and contiguous from byte 0 of shard 0 |
+| H1, the init | the saved step 0 bit-equal to the released step 0, 76 of 76 tensors |
+| H3, the first updates | zero-initialised biases' increment signs against the released run: **0.9994 at step 2, 0.981 at 4** (bar 0.95), 0.963 at 8, 0.961 at 16 (beside); every parameter's step-2 sign 0.99987 |
+| H5, the loop | float64 against a hand-written AdamW on a tiny GPT-NeoX, three updates at rates 0, peak, peak/2, clip off and on: ≤ 1e-10 (`tests/test_trackC_c4_smoke.py`) |
+| the reader | released steps 0 and 1000 saved through C4's checkpoint format and read back: e1, e1c equal to C2 3b's records (max rel 0.0) |
+| throughput | 79k tokens/s at micro-batch 2 on random tokens (8 and 16 run out of memory), 28 s an update on the real run: about 7.8 h to 1000 and 31 h an arm to 4000 |
+| the induction witness | released run, top head L3 H6: ≤ 0.017 to 512, 0.93 at 1000, 0.96 at 4000, 0.61 at 143000 (`data/trackC/c4/2026-11-09-u1/induction_released.json`) |
+
+- **Corrected in the design** (`design-C4.md`): weight decay is 0.1 (Pythia's config), not 0.01;
+  the grid's neighbour ratios reach 1.33 (256/192, 2000/1500) and 1.5 (3000/2000), not ≤ 1.25.
+- **The rule's open details fixed in code before any count** (`design-C4.md` "The rule's details"):
+  92 (i)'s early check is beside, not applied (on F it would refuse the cumulative reading of V).
+- **The two `c2_seeds` refusals carried in were not made.** C4 derives no centred arm (it reads
+  70m's four frozen τ), and `c2_seeds.py` is hashed into `c6_warmup`'s and `c2_dose`'s
+  `code_sha`, which C6 U1b's stored records equal (`c83c50f4faa6`), so any edit, even a message,
+  stops `c6_warmup read` re-reading them. Also found: **70m's null-matched arm (9.61e-05) and
+  3c's (GPT-2) were derived at a null uncentred rate of exactly 0** (their preflights'
+  `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop (both rates 0), and the
+  refusal would stop those preflights' re-runs. Parked below.
+- A0's first launch was taken for dead and relaunched; the second process ran out of memory at
+  step 1 and wrote only a segment line to `A0/train_log.jsonl` (`LESSONS.md` 2).
+- **Parked:** (0) the two `c2_seeds` refusals, to the next unit that derives a centred arm with
+  code that no stored record's hash covers; cost: an edit that re-stamps C2's and C6's code;
+  could change: nothing read so far. (1) `c4_train.code_sha` is not cached (`LESSONS.md` 3's
+  rule), so `c4_train.py` is not edited while an arm trains; cost: none if kept.
 
 ## C4 unit 0, the scan and design (2026-11-09)
 

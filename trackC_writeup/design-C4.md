@@ -7,8 +7,9 @@ Claude as the third of the user's "next 3 items on state, automatically". Row:
 nothing was downloaded, and nothing is registered. **Proposed; revised after `/challenge-pr` on
 #344** (accept with changes, findings 1–6 taken). The reference is A0 on a shared dense grid, not
 REF70; the instantaneous hypothesis is dropped on F; A0 trains first and always; the flat maps
-have a math check; the warmup-stability scan is added. **The decisions and the registration are
-Blocked 155, the user's.**
+have a math check; the warmup-stability scan is added. **Frozen 2026-11-09 on Blocked 155 all (a)**
+(taken by Claude on the user's delegation, below); the registration (D4 (a)) is the user's, before
+F trains past step 64.
 
 ## What C4 is for
 
@@ -61,11 +62,15 @@ seed 0's released dates as the harness check (R1).
 
 Common to both: init = the released `pythia-70m` step-0 weights (seed 0's init); data = the first
 4000 × 1024 sequences of `EleutherAI/pile-standard-pythia-preshuffled` shard 0, in order; batch
-1024 × 2049 by gradient accumulation; Adam (β 0.9, 0.95, ε 1e-8), weight decay 0.01, gradient
+1024 × 2049 by gradient accumulation; Adam (β 0.9, 0.95, ε 1e-8), weight decay **0.1** (decoupled,
+not on biases or norms; *corrected in U1 from 0.01: `data/trackC/configs/pythia-70m.yml` says
+0.1*), gradient
 clip 1.0, Pythia's config; mixed precision on the 3080 (bf16 autocast, fp32 master; Pythia used
 fp16, so not bit-equal). **Checkpoints, the same dense grid for both arms:** 0, 1, 2, 4, 8, 12,
 16, 24, 32, 48, 64, 80, 96, 128, 160, 192, 256, 320, 384, 512, 640, 768, 1000, 1250, 1500,
-2000, 3000, 4000. Neighbour ratios are ≤ 1.33 from 48 on and ≤ 1.25 from 128 to 1500. Pythia's
+2000, 3000, 4000. Neighbour ratios are ≤ 1.34 from 48 to 2000 (1.33 at 256/192, 1.30 at
+1000/768, 1.33 at 2000/1500) and 1.5 at 3000/2000 (*corrected in U1: the design said ≤ 1.25
+from 128 to 1500*; ρ uses the actual ratios, so the bands are as the rule computes them). Pythia's
 own grid is a subset, so A0 is compared with the released run on it.
 
 ## The harness's known answers (U1, before any arm passes step 64)
@@ -147,6 +152,33 @@ with the label written into `paper/` §7, scoped to 70m. **Budget: 4 units + clo
 |---|---|---|---|
 | 155 | C4's design and registration | **D1, the arms:** (a) F (flat at 1e-3) and A0 (Pythia's, the harness check); warmup01 already covers the long ramp; (b) as (a), plus F½, flat at 5e-4 (Qu & Liu's peak-dependence; about 2 GPU-days more); (c) F only, with the harness checked on the first steps alone. **D2, horizon:** (a) 4000, C2's plateau window; (b) 2000, half the cost, without the centred plateau. **D3, order:** (a) A0 to 1000 (the harness, H6), then F to 4000 with V's gate, then A0 to 4000; (b) A0 to 4000 first. **D4, registration:** (a) you register the reading (the A0-referenced rule on F, R2 primary) in `claims/registry.json` after U1 freezes its code and before F trains past step 64; (b) unregistered, tier 1 | **D1 (a), D2 (a), D3 (a), D4 (a).** D1 (a) is the smallest pair that separates step from cumulative with a harness check; (b) only matters if F forms nothing, and can follow then. D3 (a) checks the harness before F, and tests V's risk before A0's second half, at no extra cost. D4 (a): C4 is the one row whose answer could go either way, and it decides a sentence of the paper |
 
+**Decided 2026-11-09: all (a)**, by Claude on the user's "do the next 4 items in state", as
+recommended (as Blocked 154 was); yours to overrule. D4 (a) leaves the registration itself to the
+user: F does not train past step 64 until it is in `claims/registry.json` (CLAUDE.md "Literature
+scans and the registry").
+
+## The rule's details, fixed in U1 before any arm's count was read (`c4_read.py`)
+
+The design left these open; each is fixed in code and tested on planted series (`tests/test_trackC_c4.py`)
+before A0's first record:
+
+- **The date** is `a3.d4a`'s half-rise on the dense grid (plateau = median at 1000, 2000, 4000).
+  A plateau ≤ 0 is "not formed by 4000"; a step-0 count ≥ half the plateau is unreadable. **92 (i)'s
+  early check (any step ≤ 128 at half) is reported beside, not applied**: on F the cumulative
+  hypothesis predicts V at ≈ 23, so applying it would refuse the very reading that hypothesis predicts.
+- **ρ** = max(1.25, t / prev(t), next(t) / t) on the dense grid at A0's date (no A0 rerun exists):
+  1.33 at 256, 1.30 at 1000. The bands stay disjoint at every grid step ≤ 1000 (tested).
+- **m_cumulative(t) = t² / 2W**, the continuous map the math check proves; t > W refuses.
+- **The centred count** is read at 70m's four frozen τ arms (`c2_dose.TAU_ARMS["70m"]`, as C6 read
+  them; none is re-derived, so the `c2_seeds` refusals carried in are not needed here, see
+  `status-C.md` "C4 U1"). As in C6, h is consistent when it is at every τ arm gated on F (at 3500)
+  and dated on both arms; no such arm is "unreadable"; all gated arms not formed is "not formed by 4000".
+- **R1** is per count and per τ arm, and refuses only on counts read (V if gated; gated τ arms).
+- **The induction witness** (beside): 8 sequences of 64 random tokens repeated twice (seed
+  20261109); a head's score is the mean attention from each second-copy position to the token
+  after its first occurrence. On the released run the top head (L3 H6) reads 0.017 at 512 and
+  0.93 at 1000.
+
 ## Worth challenging (for the PR)
 
 - **A flat rate at Pythia's peak may diverge**, or form nothing (Qu & Liu, a blog on a small
@@ -158,4 +190,6 @@ with the label written into `paper/` §7, scoped to 70m. **Budget: 4 units + clo
   would measure it; without one, a date of F near a band's edge reads "neither". REF70's reading
   is beside.
 - **70m only.** 410m's dates are reached by inference, as §7 must say.
-- **The cost is an estimate** until U1 measures throughput.
+- **The cost is an estimate** until U1 measures throughput. *U1 measured it:* 79k tokens/s at
+  micro-batch 2 (larger micro-batches run out of the 3080's 10 GB on the 50k-vocabulary logits),
+  26.5 s an update, about 29.5 h an arm to 4000, about 2.5 GPU-days for both.
