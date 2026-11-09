@@ -80,3 +80,21 @@ def test_reading_refuses_a_gate_record_on_another_window(tmp_path):
 def test_h_reserve_refuses_induction(tmp_path):
     with pytest.raises(s4.S4Refused):
         s4.induction_reading(tmp_path, "H_vanilla")
+
+
+def test_rise_fall_rule():
+    g = list(range(10, 110, 10))
+    r = s4.rise_fall([0, 0, 1, 4, 5, 5, 4, 1, 0, 0], g)
+    assert (r["peak"], r["rise"], r["fall"], r["peak_step"]) == (5.0, 40, 80, 50)
+    assert s4.rise_fall([0] * 10, g)["no_rise"]
+    assert s4.rise_fall([5] * 10, g)["no_rise"] and s4.rise_fall([5] * 10, g)["no_fall"]
+    up = s4.rise_fall([0, 0, 0, 2, 4, 4, 4, 4, 4, 4], g)
+    assert up["rise"] == 40 and up["no_fall"]           # m3 at 40 is median(0, 2, 4) = 2 = P/2
+
+
+def test_b_ceiling_seen_caps_the_dose():
+    sh = {"0.25": 0.1, "0.5": 0.3, "1": 0.45, "2": 0.9, "ceiling": 1.0}
+    r = s4.b_ceiling_seen(0.2, sh, 0.0, 1.0, 0.4, 0.05)
+    assert r["pass"] and r["dose_seen"] == 1.0
+    assert not s4.b_ceiling_seen(0.2, {**sh, "1": 0.39}, 0.0, 1.0, 0.4, 0.05)["pass"]   # 2 and the ceiling don't count
+    assert not s4.b_ceiling_seen(0.2, sh, 0.06, 1.0, 0.4, 0.05)["pass"]                 # the null fails

@@ -885,6 +885,11 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   (the refusal worked; cost: one check that no `reg.*` key moved). A PR that edits a `repo:`
   record of `numbers.py` re-runs `produce` in the same PR; CI now recomputes every key from the
   `repo:` records and fails if a value moved (`test_keys_from_tracked_records_match_the_table`).
+- 2026-11-09, S4 U2: the design took C2's 512-Pythia-token cut as safe for the toys because the 7 v1
+  prompts retokenize to 503–842 toy tokens. On the library's `val`, 4 of 64 items retokenize to
+  1028–1299, past the toys' 1024-position context. The first run stopped on a shape error, so
+  nothing was read wrong (cost: one rerun). Those items are now set beside, like the ¼ bar, and not
+  cut. A range measured on one prompt set is not a bound on another.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a
