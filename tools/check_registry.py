@@ -114,6 +114,7 @@ ID_PATTERN = re.compile(
     r"|P-I[0-9]+"                               # Phase 7, induction study
     r"|P-(?:ST|AB|SA)[0-9]+"                    # Phase 7, rest of the table
     r"|P-A[0-9]+"                               # Track A (P-A5, 2026-10-20)
+    r"|P-SCH[0-9]+"                             # Track C, C4 (P-SCH1, 2026-11-10)
     r"|P[56]b?-[A-Z]+[0-9]+"                    # archived phases 5b, 6
     r"|PB-[A-Z]+[0-9]+"                         # retired: folded into P-* above
     r"|CLAIM-[ABC]"                             # the three transition claims

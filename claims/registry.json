@@ -1027,6 +1027,31 @@
       "notes": "A reproducibility check, not a test of mechanism (D9 (a)): K says whether seed 0's dated break is the run's or the recipe's, nothing about why. Calibration gate on seed 0 (the development set), every arm passes: known answer (the panel's counts and half-rise 512 reproduced), planted effect (one step later reads 1000), planted null (inside exactly at 256 and 512), sensitivity (512 at rel_tol 1e-4 / 1e-2 and leaving any prompt out); trackA_force/status-A.md \"A5 unit 1\". Known caveat: a layer transition sits 6e-6 from rel_tol 1e-3, so float noise can move a seed's count by one. Descriptive, not scored: per-seed induction onset (7d's score at +1, carried from A3) and its order against the break; violations at step 0 in every seed; the beta = 3.5 LN1 reading. D10 (a): where a seed's half-point steps tie break-induction or previous-token-induction, each row's share done at the grid step before, against its own dating reference, the LR schedule's share beside, censored rows marked; the heads are each seed's top previous-token and +1 induction scores at 143000. Input set at run time: prompts hash, code hash, seed list, revisions.",
       "superseded_by": null,
       "status": "active"
+    },
+    {
+      "id": "P-SCH1",
+      "claim": "H-RESIST",
+      "statement": "On pythia-70m trained from seed 0's init on Pythia's data order with the LR warmup removed (arm F: 1e-3 from the first update to step 1430, then Pythia's cosine), the token-centred count's date (R2) is consistent with the summed learning rate and not with the step count, against arm A0 (Pythia's own schedule, the same init, data and harness) read on the same dense grid.",
+      "h0": "The centred date is fixed in steps: F's date lies in [t_A0/rho, t_A0*rho].",
+      "h1": "The centred date waits for a summed rate: F's date lies in [(t_A0/rho)^2/2W, (t_A0*rho)^2/2W], W = 1430.",
+      "falsifier": "The label is 'consistent with step' or 'neither'. 'Not formed by 4000' and 'unreadable' are reported and score nothing; a harness refusal (R1, H1-H6) or a divergence means nothing is read.",
+      "instrument": "trackC_writeup/c4_train.py (the arms) and c4_read.py (records as C2 unit 3b's, float32 eager; the centred count at 70m's four frozen tau arms; the half-rise on the dense grid; rho = max(1.25, the grid's neighbour ratios at t_A0); h consistent iff consistent at every tau arm gated on F at step 3500 by C6's gate and dated on both arms); code hashes at registration: c4_train 1c1e1d2df083, c4_read 220161b9159b (each module's code_sha())",
+      "phase": "C",
+      "experiment": "C4",
+      "gate": "",
+      "cost": "F",
+      "evaluable": "measurement",
+      "null_construction": "None: one seed per arm, a label against bands set by the grid, not by a measured run-to-run spread (no A0 rerun). The bands are disjoint for t_A0 < 2W/rho^3 (tools/math_checks/c4_flat_maps.py). 92 (i)'s early check is reported beside, not applied. V's date (R3) is read beside under the same rule if V's gate passes on F, and does not score.",
+      "calibration_record": null,
+      "real_run_record": null,
+      "relevance": 0.6,
+      "source": "trackC_writeup/design-C4.md (frozen 2026-11-09 on Blocked 155 all (a)); status-C.md 'C4 unit 1'",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "70m only; 410m by inference. Registered after A0's counts to 1000 were seen (H6, the harness check) and F's training loss to step 64 (the divergence check), before any F count. bf16 against Pythia's fp16. Input set at run time: the shard's sha256, the batch-0 hash, the prompts hash, code hashes.",
+      "superseded_by": null,
+      "status": "active"
     }
   ]
 }
