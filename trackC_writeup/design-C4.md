@@ -110,6 +110,47 @@ launched past them (Kalra & Barkeshli's catapult; a divergence is a refusal).
 | "not formed by 4000" | the event needs the ramp; F1 is not answered, the warmup is causal for it |
 | harness refusal | nothing is read; the harness is fixed or C4 closes |
 
+## Beside: the cloud's concentration and effective rank across the ramp (added 2026-11-10, the user's)
+
+Added while A0 trained to 1000, before any arm's count or cloud statistic was read and before F
+existed. **Description only:** no label, no rule, not part of R1–R3 or `P-SCH1`, and it moves none
+of them. No unit is added to the budget.
+
+**Why.** The middle-state cloud rises, falls and rises again on Pythia-410m (peak at 16, floor at
+2000–4000), Dodecahedron (floor at 671–917, inside its 1000-step warmup; second rise from
+1253–1465, just after it) and partly on Mistral GPT-2 small (`PROJECT.md` §3.78, §3.80; on
+Dodecahedron the warmup link is co-occurrence only). The sphere's effective rank is the same
+picture seen from the other side (A3's E5, dated at 8 on 410m), and E₁ moves with the tokens'
+mean (C2 5b). F removes the ramp with init, data and harness fixed, so it is the first run in the
+project that can show whether the cloud's shape follows the schedule.
+
+**What is read**, on every saved checkpoint of both arms (the dense grid and 3500), on v1's 7
+prompts (the same inputs as C4's records and T5's ρ series), float32 eager:
+- ρ_ℓ, ρ_mid, ρ_1:5 and ρ_mid⁻⁰ as `trackT_timaeus/t5.py` defines them (`state_stats`, `rho_mid`,
+  `rho_15`); on 70m's 6 blocks ρ_mid is the median over states 1–5 and ρ_1:5 their mean;
+- m_ℓ, the mean's share of the energy (`state_stats`);
+- the sphere's effective rank per state, `core.metrics.effective_rank(h, mode="normed")`, mean
+  over prompts, and its median over states 1–5 (er_mid). This is not A3's E5 producer (Phase 1's
+  reports), so 410m's E5 values are compared by shape, not level.
+
+Beside A0, the released `pythia-70m` on Pythia's grid to 4000, read the same way.
+
+**What is described, per arm:** the steps of ρ_mid's peak, its half-fall from the peak to its
+4000 value, and its minimum on the grid (censored if the minimum is at 4000); the same for er_mid
+(its trough, half-rise and maximum). Beside each of F's steps, the step that the step map (t) and
+the summed-rate map (t²/2W) give from A0's, as numbers, with no consistency call. Under the
+summed-rate map any A0 date ≤ 53 (√(2W)) maps below F's first update, so an early peak would
+sit at F's first grid steps.
+
+**When:** in U3 with R1–R3, after the frozen rule has been applied to both arms, so nothing seen
+here can shape how the registered reading is applied. The code goes in `c4_read.py` or a module
+beside it, never `c4_train.py` (its `code_sha` is the arms'). Cost: one forward pass per checkpoint
+and prompt, 29 × 7 per arm plus the released run's, minutes on the 3080.
+
+**Not established by it:** cause; anything past one seed per arm; anything for 410m but by
+inference; a reading on the prompt library (v1's 7 are kept for comparison with T5's and C4's own
+records, against the library default for new designs).
+
 ## Carried in (from the ROADMAP row; done in U1, before any arm's centred arm is derived)
 
 1. **C2 3c's Parked 0:** `c2_seeds.null_matched_tol` must refuse, not return a tolerance, when
