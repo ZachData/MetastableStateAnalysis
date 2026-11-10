@@ -169,7 +169,7 @@ would otherwise have to reconstruct from five files.
 | `8` | `p8_scale_ladder/` | UNEXPLAINED — active phase, see the section below. |
 | `9` | `p9_metric_intervention/` | parked, pre-design and deliberately unregistered. `plan-9.md` §13 states it: no construction frozen, no `P-*` id. Nothing has run under its name; its E0 ran as Phase 10's F1. |
 | `B` | `trackB_circuit/` | Track B, the circuit side; tier 1 on 410m, an exploration rung, and deliberately unregistered: B0–B3 closed with readings, no `P-*` id (`trackB_circuit/status-B.md`). |
-| `C` | `trackC_writeup/` | Track C, the write-ups; registers nothing of its own: C2 quotes rows scored elsewhere (`P-A5`, Track A's) and tier 1 readings (`trackC_writeup/status-C.md`). |
+| `C` | `trackC_writeup/` | Track C, the write-ups: C2 quotes rows scored elsewhere (`P-A5`, Track A's) and tier 1 readings; C4's reading on the flat arm is `P-SCH1` once the user registers it (`trackC_writeup/design-C4.md` "The draft entry"; `trackC_writeup/status-C.md`). |
 | `N` | `trackN_neurons/` | Track N, the MLP's neurons across training; tier 1 and deliberately unregistered: N1 opened 2026-11-08 as a scan and design, nothing run, no `P-*` id (`trackN_neurons/status-N.md`). |
 | `S` | `trackS_subspace/` | Track S, shared subspaces; tier 1 on 410m, an exploration rung, weights only, and deliberately unregistered: S1 opened 2026-10-20, no `P-*` id (`trackS_subspace/status-S.md`). |
 | `T` | `trackT_timaeus/` | Track T, Timaeus's checkpoints and the LLC; tier 1 and deliberately unregistered: T1 opened 2026-10-29 as an inventory, nothing run, no `P-*` id (`trackT_timaeus/status-T.md`). |

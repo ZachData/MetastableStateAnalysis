@@ -7,7 +7,7 @@ t_F = t^2 / 2W, which is <= W for t <= W; (2) the step band [t/rho, t rho] and t
 bound is about 1464, above both dates (256, 1000).
 
 Does NOT prove: anything about the discrete schedule's off-by-one (NeoX's rate is 0 at iteration 0:
-the discrete sum is eta_hat t (t + 1) / 2W, within 1/t of the continuous one, checked numerically
+the discrete sum to checkpoint t is eta_hat t (t - 1) / 2W, as the loop below sums; within 1/t of the continuous one, checked numerically
 below at t >= 16); that the dates themselves follow either hypothesis; anything past t = W, where
 both arms share the cosine.
 """

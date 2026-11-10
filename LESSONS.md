@@ -671,6 +671,14 @@ well-formed but empty/zero result. It looks exactly like a real result.
   first edits to `status-S.md` were again a Python string replace. The rule lived only here, so a
   session that did not open this section repeated it. Rule unchanged; the `runner` template's
   launch line is the one to copy, with the `mkdir` as its own call.
+- 2026-11-09 (C4 U1), a live run read as dead: A0 was launched as `setsid nohup python … &` and
+  `$!` saved as its PID, but `setsid` forks, so `$!` was not the Python process. The wait loop's
+  `kill -0` failed at once, the log was empty (stdout buffered during `torch.compile`), and the
+  run was taken for reaped and relaunched into the same directory. The second process ran out of
+  GPU memory at step 1 beside the first and wrote only a segment line to `train_log.jsonl`; no
+  checkpoint or resume state was touched. Rule: **find a detached run's PID with `pgrep -f`, not
+  `$!`, and launch it with `python -u`; before relaunching a run that looks dead, check
+  `nvidia-smi` / `pgrep` for it.**
 - 2026-10-21 (S1 unit 3), a comparison against the wrong null: `r3` scored step 0's compressions
   (the trained S on step 0's V_l) against the *trained* step's Haar draws, so its "outside" counts
   read 19–24 of 24 at every step from 512 and looked like a finding. Found reading the output

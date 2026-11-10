@@ -103,9 +103,9 @@ PHASES_WITHOUT_PREDICTIONS = {
     "S": "Track S, shared subspaces; tier 1 on 410m, an exploration rung, weights only, and "
          "deliberately unregistered: S1 opened 2026-10-20, no `P-*` id "
          "(`trackS_subspace/status-S.md`).",
-    "C": "Track C, the write-ups; registers nothing of its own: C2 quotes rows scored "
-         "elsewhere (`P-A5`, Track A's) and tier 1 readings "
-         "(`trackC_writeup/status-C.md`).",
+    "C": "Track C, the write-ups: C2 quotes rows scored elsewhere (`P-A5`, Track A's) and "
+         "tier 1 readings; C4's reading on the flat arm is `P-SCH1` once the user registers it "
+         "(`trackC_writeup/design-C4.md` \"The draft entry\"; `trackC_writeup/status-C.md`).",
     "T": "Track T, Timaeus's checkpoints and the LLC; tier 1 and deliberately "
          "unregistered: T1 opened 2026-10-29 as an inventory, nothing run, no `P-*` id "
          "(`trackT_timaeus/status-T.md`).",

@@ -35,10 +35,12 @@
   - C7 (i) opened 2026-11-09 (STATE Blocked 153 revised; writing only): a scan (2605.07772 v2 read in full) and a proposed design that reads Isobe et al.'s three phases on 410m's stored runs by the paper's own fixed criterion, the FFN against attention per block, and the interaction matrix's gap per layer; the scan corrects the row's wording (the gap is QᵀK's, a weight matrix, not the attention pattern's; the escape's rate is the loss's, not the gap's); Blocked 154 — `trackC_writeup/status-C.md` "C7 (i) unit 0"
   - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps, through block 23's own output (computed post hoc by a hooked pass); E₁ at the end of the stack sits above the interior plateau on 7 of 7 prompts everywhere, and through 8000 it is highest there. By the exact split, the FFN moves the tokens out on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only; the frozen first-order label is unreadable at 9 of 18 steps. Each head's symmetrised QᵀK is indefinite by construction, and each layer's sum is indefinite too (positive share 0.43–0.67), so the theorem's Assumption 3.1 fails everywhere — `trackC_writeup/status-C.md` "C7 (i) unit 1"
   - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape on the block inputs at any checkpoint (through block 23's output, 1 of 7 prompts just passes at 143000 on states 1–24), and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
+  - C4 opened 2026-11-09 (STATE Blocked 153; writing only): a scan and a proposed design that trains `pythia-70m` from seed 0's init on Pythia's data order with a flat rate at the peak and with Pythia's own schedule (the harness check), and labels the flat arm's dates against the harness arm's on a shared dense grid (step against the summed rate: about 256 against 23 for V, 1000 against 350 for the centred date; disjoint bands, sympy-checked); revised after `/challenge-pr` on #344, since C6's ten-seed bands overlap; V's gate runs on the flat arm; Blocked 155 taken all (a) (Claude, on the user's delegation) — `trackC_writeup/status-C.md` "C4 unit 0"
+  - C4 U1 (2026-11-09; tier 1, harness): the harness reproduces Pythia's run to step 1000: the init bit-equal, the data rows verified against the Hub's hashes, the first updates' signs agreeing with the released run at 0.9994 (step 2) and 0.981 (step 4), the loop exact in float64, the reader exact against C2 3b's records, the held-out loss at 1000 within 0.38%, the counts and the induction head (L3 H6) tracking the released run's; the flat arm trains to 64 without diverging; the rule frozen in code before any count; weight decay corrected to the config's 0.1; the reading's registration is the user's (STATE Blocked 156) — `trackC_writeup/status-C.md` "C4 unit 1"
   - C4 opened 2026-11-09 (STATE Blocked 153; writing only): a scan and a proposed design that trains `pythia-70m` from seed 0's init on Pythia's data order with a flat rate at the peak and with Pythia's own schedule (the harness check), and labels the flat arm's dates against the harness arm's on a shared dense grid (step against the summed rate: about 256 against 23 for V, 1000 against 350 for the centred date; disjoint bands, sympy-checked); revised after `/challenge-pr` on #344, since C6's ten-seed bands overlap; V's gate runs on the flat arm; Blocked 155 (the arms and the registration, the user's) — `trackC_writeup/status-C.md` "C4 unit 0"
   - C4's design gains a description beside (2026-11-10, the user's; writing only): ρ_mid, ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of both arms, read in U3 after R1–R3; no label, not in the registration — `trackC_writeup/status-C.md` "C4, an addition to the design"
 - **Superseded / wrong:** none
-- **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
+- **Registry:** none yet; C4's reading on the flat arm is drafted as `P-SCH1` for the user to register before F trains past step 64 (`design-C4.md` "The draft entry"); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
@@ -49,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-10 · body `7bed5afb02`
+- **Reviewed:** 2026-11-09 · body `a2b98dde9f`
 <!-- /phase-card -->
 
 ## Units
@@ -86,7 +88,65 @@
 | C7 (i) 0. the scan and design (Blocked 153 revised; budget 3 units) | **done 2026-11-09: writing only; 2605.07772 v2 read in full; design proposed, revised after `/challenge-pr` on #341; frozen on Blocked 154 all (a) (Claude, on the user's delegation)** | `lit-C7.md`, `design-C7.md`; "C7 (i) unit 0" below |
 | C7 (i) 1. the read | **done 2026-11-09: tier 1, description; gate and k1–k3 pass; no terminal escape at any of the 18 steps (0 of 7 prompts, E₁ and ‖m‖², states 0–23 and 1–23, and through block 23's output, post hoc); by the exact split the FFN moves the tokens out on blocks 20–22 on 1–2 of 7 at 32000–54000 only (the frozen first-order label unreadable at 9 of 18 steps); Assumption 3.1 fails at every layer and step; revised after `/challenge-pr` on #342** | `c7_profile.py`; "C7 (i) unit 1" below |
 | C7 (i) close-out | **done 2026-11-09: writing only; exit met at 3 units; Parked items carried (ROADMAP C7) or dropped; a §8 sentence and the email's paragraph for the user** | "C7 (i) on one page" below |
-| C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; proposed; Blocked 155** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
+| C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
+| C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
+
+## C4 unit 1, the harness (2026-11-09)
+
+Blocked 155 taken all (a) by Claude on the user's "do the next 4 items in state" (`design-C4.md`
+"Decided"). Tier 1 until the user registers the reading (D4 (a)); F does not train past 64 before
+(Blocked 156). **The harness passes every check with a bar (H1–H5) and A0 reproduces the released
+run to 1000 on the loss, the counts and the induction head; F trains at the flat peak without
+diverging.** Re-run: `python -m trackC_writeup.c4_train {verify,h1,h3,h4}` and
+`python -m trackC_writeup.c4_read {known,records,h6,induction}` (env in `c4_train`'s docstring).
+**Input:** `EleutherAI/pile-standard-pythia-preshuffled` at `bac79b68`, `document.idx` and shard 0
+(`HDD_1TB/mets_data/c4/pile/`; both sha256 equal to the Hub's LFS record, `c4/data_meta.json`);
+`EleutherAI/pythia-70m` step 0 as the init; code `c4_train.py` `1c1e1d2df083` (A0's run).
+
+| check | result |
+|---|---|
+| H2, the rows | the index's 146,432,000 rows; the first 4,096,064 (training to 4000 and H4's 64) are all 2049 tokens and contiguous from byte 0 of shard 0 |
+| H1, the init | the saved step 0 bit-equal to the released step 0, 76 of 76 tensors |
+| H3, the first updates | zero-initialised biases' increment signs against the released run: **0.9994 at step 2, 0.981 at 4** (bar 0.95), 0.963 at 8, 0.961 at 16 (beside); every parameter's step-2 sign 0.99987 |
+| H5, the loop | float64 against a hand-written AdamW on a tiny GPT-NeoX, three updates at rates 0, peak, peak/2, clip off and on: ≤ 1e-10 (`tests/test_trackC_c4_smoke.py`) |
+| the reader | released steps 0 and 1000 saved through C4's checkpoint format and read back: e1, e1c equal to C2 3b's records (max rel 0.0) |
+| throughput | 79k tokens/s at micro-batch 2 on random tokens (8 and 16 run out of memory), 28 s an update on the real run: about 7.8 h to 1000 and 31 h an arm to 4000 |
+| the induction witness | released run, top head L3 H6: ≤ 0.017 to 512, 0.93 at 1000, 0.96 at 4000, 0.61 at 143000 (`data/trackC/c4/2026-11-09-u1/induction_released.json`) |
+| A0 to 1000 | 23 checkpoints on the grid, 26,856 s; training-batch loss 3.68 at 1000; no divergence |
+| H4, the loss at 1000 | held-out rows 4,096,000–4,096,063, float32 eager: **A0 3.7200 against the released 3.7342, −0.38%** (bar 2%) (`c4/A0/h4_1000.json`) |
+| H6, A0's counts against the released run's (a report, no bar) | at 256 / 512 / 1000: uncentred 3 / 5 / 7 against 3 / 4 / 8; centred at τ 1e-4: 1 / 5 / 15 against 1 / 5 / 14; at 4.78e-3: 0 / 0 / 3 both; 0 through 64 in both (`h6_upto1000.json`) |
+| A0's induction witness | top head **L3 H6, the released run's**: ≤ 0.019 to 512, 0.32 at 640, 0.81 at 768, 0.93 at 1000 (released 0.93) (`induction_A0.json`) |
+| F to 64 | 11 checkpoints, 1782 s, code `1c1e1d2df083`; loss 11.08 → 9.11 (step 4) → 6.27 (64), below A0's at every step after 1 (A0 9.08 at 64); grad norm 3.67 → 0.39; **no divergence**. F's counts not computed (they are what `P-SCH1` is scored on) |
+| H4's power (after `/challenge-pr` on #346, finding 3; beside, no bar) | the same 64 rows at step 1000 on released variants: **`warmup01` (a 10× slower ramp) 5.3988, +44.6%**, far outside the 2% bar; seeds 1–9 (other init and data order) 3.722–3.791, −0.3% to +1.5%, all inside it. So H4 separates the schedule, not the seed, and A0's −0.38% lies within the seeds' spread (`h4_controls_1000.json`, `c4_read h4-controls`, code `220161b9159b`) |
+
+- **Corrected in the design** (`design-C4.md`): weight decay is 0.1 (Pythia's config), not 0.01;
+  the grid's neighbour ratios reach 1.33 (256/192, 2000/1500) and 1.5 (3000/2000), not ≤ 1.25.
+- **The rule's open details fixed in code before any count** (`design-C4.md` "The rule's details"):
+  92 (i)'s early check is beside, not applied (on F it would refuse the cumulative reading of V).
+- **The two `c2_seeds` refusals carried in were not made.** C4 derives no centred arm (it reads
+  70m's four frozen τ), and `c2_seeds.py` is hashed into `c6_warmup`'s and `c2_dose`'s
+  `code_sha`, which C6 U1b's stored records equal (`c83c50f4faa6`), so any edit, even a message,
+  stops `c6_warmup read` re-reading them. Also found: **70m's null-matched arm (9.61e-05) and
+  3c's (GPT-2) were derived at a null uncentred rate of exactly 0** (their preflights'
+  `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop (both rates 0), and the
+  refusal would stop those preflights' re-runs. Parked below.
+- **After `/challenge-pr` on #346 (accept with changes), in `c4_read.py` before registration:**
+  (1) if V's gate refuses on F, the centred arms are gated at plant B 0.5 (C6 U1b's form, as the
+  design says) instead of none; (2) a diverged arm (`c4_train.diverged` on its training log) is a
+  refusal in `gate` and `read`; (5) an A0 date with t ρ > W, or touching bands, labels nothing
+  for that arm ("A0 past the separable range": every grid step ≤ 1000 is separable, none above)
+  and no longer stops the read. `c4_train.py` unchanged. **H3 is signs only** (finding 3):
+  `warmup01` also agreed at 1.000 in C6, so H3 checks the init, the batch and the optimizer's
+  direction, not the schedule; H4 and the logged rates check the schedule.
+- H4's first try ran out of GPU memory in `held_loss` (8 rows of float32 logits; 2.3 GB reserved
+  but unallocated); re-run with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, so
+  `c4_train.py` stays at `1c1e1d2df083` for both arms' resumes. Set it for H4 at 4000 too.
+- A0's first launch was taken for dead and relaunched; the second process ran out of memory at
+  step 1 and wrote only a segment line to `A0/train_log.jsonl` (`LESSONS.md` 2).
+- **Parked:** (0) the two `c2_seeds` refusals, to the next unit that derives a centred arm with
+  code that no stored record's hash covers; cost: an edit that re-stamps C2's and C6's code;
+  could change: nothing read so far. (1) `c4_train.code_sha` is not cached (`LESSONS.md` 3's
+  rule), so `c4_train.py` is not edited while an arm trains; cost: none if kept.
 
 ## C4 unit 0, the scan and design (2026-11-09)
 
@@ -1835,5 +1895,6 @@ ROADMAP row carried it. Inputs read: the one-page closes of A3, A5, S1 and S2 an
 
 ## Corrections received
 
+- 2026-11-09 (C4 U1): C2's "null-matched" centred arms, 70m's 9.61e-05 (unit 3b's preflight) and 3c's GPT-2 arm, were derived at a null uncentred rate of exactly 0 (each preflight's `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop, not a τ matched to a non-zero rate. On 70m it counts as 1e-4 does (H6: equal at every step to 1000 on A0 and on the released run), so C6 U1b's and C4's "every gated arm" is in effect three arms. No label changes; the refusal is Parked (0) — "C4 unit 1"
 - 2026-10-30 (C2p readings audit): C2 unit 1's F5 row (`lit-C2-unit1.md` §1) gave Pendharkar §10 as "the conditions are never exactly satisfied in trained transformers"; §10 says it of Condition 6 (orthogonal subspaces) only, and tying is Remark 5's idealisation. Its "no result covers … weights that change from layer to layer" misses 2604.01978 (‖m‖² logistic in depth under per-layer random attention weights). §8's Razzhigaev comparison read a centred measure as ‖m‖². No date or reading moves; `paper/` corrected — "C2p readings audit (2026-10-30)", `lit-C2p-fulltext.md` W1–W4.
 - 2026-10-24 (C2p unit 2): C5's finding 4 ("the lean from 2510.06477, 'around 1k', did not hold") and `lit-C5.md`'s row read the paper's "around step 1k" as a date; its appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … only, so it bounds its changes to (1, 1000] (both C2 dates inside), and its training figure reads entropy, sink rate and the BOS norm, not σ₁²/‖X‖²_F. The coordinates' 16000–32000 stands; it is not a date the paper's grid could contradict. "C2p unit 2" below; `LESSONS.md` 7.
