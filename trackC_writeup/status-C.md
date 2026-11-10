@@ -106,6 +106,15 @@ with U1's env (`mets` conda env, torch 2.10.0+cu130, transformers 4.44.2; `HF_HO
 6.17 at 70, 6.11 at 71 (6.27 at 64), 26.5 s an update; about 29 h to 4000. Then
 `c4_read gate` (V's gate at 3500) and `c4_read records --arm F --upto 4000`.
 
+**Segment 2 (2026-11-10).** The machine went down about 13:01 (a reboot, not the code: no
+traceback, no exit file; `journalctl --list-boots`); the log reached step 239, the last resume state
+was 217 (saves are atomic, `.tmp` then rename). Resumed from 217 at 14:15 with the same code and
+env, `--until 768` (the user's 6-hour stop; `--until` must be a checkpoint step, so 875 was
+refused), log `F_to768.log`, exit in `F_to768.log.exit`, under a 5 h 20 min `timeout`. Steps
+218–239 are trained twice; `c4_read`'s loss reader keeps a resumed step's last entry. The re-run
+reproduces step 218's loss exactly and 219–220 to 2e-5 (4.777671 against 4.777652). Next segment:
+`train --arm F --until 4000` from 768 (about 24 h).
+
 ## C4 unit 1, the harness (2026-11-09)
 
 Blocked 155 taken all (a) by Claude on the user's "do the next 4 items in state" (`design-C4.md`
