@@ -36,6 +36,7 @@
   - C7 (i) unit 1 (2026-11-09; Blocked 154 all (a); tier 1, description, seed 0, no forward-pass batch): by the paper's own criterion there is no terminal escape at any of the 18 steps, through block 23's own output (computed post hoc by a hooked pass); E₁ at the end of the stack sits above the interior plateau on 7 of 7 prompts everywhere, and through 8000 it is highest there. By the exact split, the FFN moves the tokens out on each of blocks 20–22 on 1–2 of 7 prompts at 32000–54000 only; the frozen first-order label is unreadable at 9 of 18 steps. Each head's symmetrised QᵀK is indefinite by construction, and each layer's sum is indefinite too (positive share 0.43–0.67), so the theorem's Assumption 3.1 fails everywhere — `trackC_writeup/status-C.md` "C7 (i) unit 1"
   - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape on the block inputs at any checkpoint (through block 23's output, 1 of 7 prompts just passes at 143000 on states 1–24), and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
   - C4 opened 2026-11-09 (STATE Blocked 153; writing only): a scan and a proposed design that trains `pythia-70m` from seed 0's init on Pythia's data order with a flat rate at the peak and with Pythia's own schedule (the harness check), and labels the flat arm's dates against the harness arm's on a shared dense grid (step against the summed rate: about 256 against 23 for V, 1000 against 350 for the centred date; disjoint bands, sympy-checked); revised after `/challenge-pr` on #344, since C6's ten-seed bands overlap; V's gate runs on the flat arm; Blocked 155 (the arms and the registration, the user's) — `trackC_writeup/status-C.md` "C4 unit 0"
+  - C4's design gains a description beside (2026-11-10, the user's; writing only): ρ_mid, ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of both arms, read in U3 after R1–R3; no label, not in the registration — `trackC_writeup/status-C.md` "C4, an addition to the design"
 - **Superseded / wrong:** none
 - **Registry:** none, because Track C writes up rows scored elsewhere (`P-A5`, Track A's)
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -48,7 +49,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `c8a480cde2`
+- **Reviewed:** 2026-11-10 · body `7bed5afb02`
 <!-- /phase-card -->
 
 ## Units
@@ -111,6 +112,14 @@ only for their documented facts; ROADMAP §10 items 15–16's cost estimate.
 - **Cost:** about 4 GPU-days (an estimate until U1 measures throughput). Budget 4 units +
   close-out. **Blocked 155** (D1–D4, all (a) recommended; the registration is the user's).
 - **Parked** (`lit-C4.md`): Qu & Liu's peak-dependence, which is D1 (b).
+
+## C4, an addition to the design: the cloud and effective rank beside (2026-11-10)
+
+The user's, 2026-11-10, while A0 trained to 1000 (U1, `claude/c4-u1`); writing only, nothing read.
+`design-C4.md` "Beside: the cloud's concentration and effective rank across the ramp": ρ_mid,
+ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of A0 and F (and the released
+`pythia-70m` to 4000), v1's 7 prompts, read in U3 after R1–R3. Description only; no label, not in
+`P-SCH1`, no unit added. **Input:** none yet; the checkpoints U1–U3 save.
 
 ## C7 (i) on one page (closed 2026-11-09)
 
