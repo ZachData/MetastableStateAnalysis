@@ -51,8 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `3ec0f77f89`
-- **Reviewed:** 2026-11-10 · body `7bed5afb02`
+- **Reviewed:** 2026-11-09 · body `a2b98dde9f`
 <!-- /phase-card -->
 
 ## Units
@@ -118,6 +117,7 @@ diverging.** Re-run: `python -m trackC_writeup.c4_train {verify,h1,h3,h4}` and
 | H6, A0's counts against the released run's (a report, no bar) | at 256 / 512 / 1000: uncentred 3 / 5 / 7 against 3 / 4 / 8; centred at τ 1e-4: 1 / 5 / 15 against 1 / 5 / 14; at 4.78e-3: 0 / 0 / 3 both; 0 through 64 in both (`h6_upto1000.json`) |
 | A0's induction witness | top head **L3 H6, the released run's**: ≤ 0.019 to 512, 0.32 at 640, 0.81 at 768, 0.93 at 1000 (released 0.93) (`induction_A0.json`) |
 | F to 64 | 11 checkpoints, 1782 s, code `1c1e1d2df083`; loss 11.08 → 9.11 (step 4) → 6.27 (64), below A0's at every step after 1 (A0 9.08 at 64); grad norm 3.67 → 0.39; **no divergence**. F's counts not computed (they are what `P-SCH1` is scored on) |
+| H4's power (after `/challenge-pr` on #346, finding 3; beside, no bar) | the same 64 rows at step 1000 on released variants: **`warmup01` (a 10× slower ramp) 5.3988, +44.6%**, far outside the 2% bar; seeds 1–9 (other init and data order) 3.722–3.791, −0.3% to +1.5%, all inside it. So H4 separates the schedule, not the seed, and A0's −0.38% lies within the seeds' spread (`h4_controls_1000.json`, `c4_read h4-controls`, code `220161b9159b`) |
 
 - **Corrected in the design** (`design-C4.md`): weight decay is 0.1 (Pythia's config), not 0.01;
   the grid's neighbour ratios reach 1.33 (256/192, 2000/1500) and 1.5 (3000/2000), not ≤ 1.25.
@@ -130,6 +130,14 @@ diverging.** Re-run: `python -m trackC_writeup.c4_train {verify,h1,h3,h4}` and
   3c's (GPT-2) were derived at a null uncentred rate of exactly 0** (their preflights'
   `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop (both rates 0), and the
   refusal would stop those preflights' re-runs. Parked below.
+- **After `/challenge-pr` on #346 (accept with changes), in `c4_read.py` before registration:**
+  (1) if V's gate refuses on F, the centred arms are gated at plant B 0.5 (C6 U1b's form, as the
+  design says) instead of none; (2) a diverged arm (`c4_train.diverged` on its training log) is a
+  refusal in `gate` and `read`; (5) an A0 date with t ρ > W, or touching bands, labels nothing
+  for that arm ("A0 past the separable range": every grid step ≤ 1000 is separable, none above)
+  and no longer stops the read. `c4_train.py` unchanged. **H3 is signs only** (finding 3):
+  `warmup01` also agreed at 1.000 in C6, so H3 checks the init, the batch and the optimizer's
+  direction, not the schedule; H4 and the logged rates check the schedule.
 - H4's first try ran out of GPU memory in `held_loss` (8 rows of float32 logits; 2.3 GB reserved
   but unallocated); re-run with `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`, so
   `c4_train.py` stays at `1c1e1d2df083` for both arms' resumes. Set it for H4 at 4000 too.
@@ -1887,5 +1895,6 @@ ROADMAP row carried it. Inputs read: the one-page closes of A3, A5, S1 and S2 an
 
 ## Corrections received
 
+- 2026-11-09 (C4 U1): C2's "null-matched" centred arms, 70m's 9.61e-05 (unit 3b's preflight) and 3c's GPT-2 arm, were derived at a null uncentred rate of exactly 0 (each preflight's `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop, not a τ matched to a non-zero rate. On 70m it counts as 1e-4 does (H6: equal at every step to 1000 on A0 and on the released run), so C6 U1b's and C4's "every gated arm" is in effect three arms. No label changes; the refusal is Parked (0) — "C4 unit 1"
 - 2026-10-30 (C2p readings audit): C2 unit 1's F5 row (`lit-C2-unit1.md` §1) gave Pendharkar §10 as "the conditions are never exactly satisfied in trained transformers"; §10 says it of Condition 6 (orthogonal subspaces) only, and tying is Remark 5's idealisation. Its "no result covers … weights that change from layer to layer" misses 2604.01978 (‖m‖² logistic in depth under per-layer random attention weights). §8's Razzhigaev comparison read a centred measure as ‖m‖². No date or reading moves; `paper/` corrected — "C2p readings audit (2026-10-30)", `lit-C2p-fulltext.md` W1–W4.
 - 2026-10-24 (C2p unit 2): C5's finding 4 ("the lean from 2510.06477, 'around 1k', did not hold") and `lit-C5.md`'s row read the paper's "around step 1k" as a date; its appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … only, so it bounds its changes to (1, 1000] (both C2 dates inside), and its training figure reads entropy, sink rate and the BOS norm, not σ₁²/‖X‖²_F. The coordinates' 16000–32000 stands; it is not a date the paper's grid could contradict. "C2p unit 2" below; `LESSONS.md` 7.

@@ -138,3 +138,35 @@ def test_induction_score_reads_the_planted_diagonal():
         att[0, 0, i, 0] = 1.0
     sc = r.induction_scores(att, L)
     assert sc[0, 1] == 1.0 and sc[0, 0] == pytest.approx(0.0)
+
+
+def test_an_a0_date_past_the_separable_range_labels_nothing_and_does_not_stop_the_read():
+    """`/challenge-pr` on #346, finding 5: t ρ > W (or touching bands) is a per-arm refusal."""
+    assert all(r.separable(t, r.rho_at(t)) for t in r.GRID if 0 < t <= 1000)
+    assert not any(r.separable(t, r.rho_at(t)) for t in r.GRID if t > 1000)
+    for t in (1250, 1500, 2000):                                  # dated (plateau from 1000, 2000, 4000)
+        lab = r.label(r.date_on(_series(t)), r.date_on(_series(t)))
+        assert (lab["label"], lab["consistent"]) == ("A0 past the separable range", None)
+    a0 = r.date_on(_series(1000))
+    cum = r.label(r.date_on(_series(384)), a0)
+    past = r.label(r.date_on(_series(2000)), r.date_on(_series(2000)))
+    got = r.centred_label({"a": cum, "b": past}, {"a": True, "b": True})
+    assert (got["label"], got["arms"], got["past_arms"]) == ("consistent with cumulative", ["a"], ["b"])
+    assert r.centred_label({"b": past}, {"b": True})["label"] == "unreadable"
+
+
+def test_training_losses_and_divergence_from_the_log(tmp_path):
+    """finding 2: the reader refuses on a diverged arm; a resumed step's last entry wins."""
+    import json
+    seg = json.dumps({"segment": {"from": 0}})
+    lines = [seg] + [json.dumps({"step": s, "loss": 5.0}) for s in (1, 2, 3)] + [json.dumps({"step": 3, "loss": 4.0})]
+    lines += [json.dumps({"arm": "F", "step": 3, "loss": 99.0})]
+    assert r.train_losses(lines) == [5.0, 5.0, 4.0]
+    with pytest.raises(r.C4ReadRefused):
+        r.train_losses([json.dumps({"step": s, "loss": 1.0}) for s in (1, 3)])
+    for arm, tail in (("A0", [5.0] * 60), ("F", [50.0] * 60)):
+        (tmp_path / arm).mkdir()
+        (tmp_path / arm / "train_log.jsonl").write_text(
+            "\n".join(json.dumps({"step": i + 1, "loss": x}) for i, x in enumerate([5.0] * 200 + tail)) + "\n")
+    div = r.divergence(tmp_path)
+    assert div["A0"] is None and div["F"] is not None

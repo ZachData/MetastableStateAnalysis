@@ -156,7 +156,7 @@ and prompt, 29 × 7 per arm plus the released run's, minutes on the 3080.
 inference; a reading on the prompt library (v1's 7 are kept for comparison with T5's and C4's own
 records, against the library default for new designs).
 
-## Carried in (from the ROADMAP row; done in U1, before any arm's centred arm is derived)
+## Carried in (from the ROADMAP row; not made in U1: `status-C.md` "C4 unit 1", Parked 0)
 
 1. **C2 3c's Parked 0:** `c2_seeds.null_matched_tol` must refuse, not return a tolerance, when
    the null's uncentred rate is 0. A flat arm's early re-inits could hit this.
@@ -165,7 +165,9 @@ records, against the library default for new designs).
    the refusal names it, which changes no earlier reading. A widened bound would be a new
    instrument for every arm read so far.
 
-Both come with tests in U1, and C6's and C2's records are re-checked to read unchanged.
+Not made (U1, 2026-11-09): C4 derives no centred arm (it reads 70m's four frozen τ), and
+`c2_seeds.py` is hashed into `c6_warmup`'s and `c2_dose`'s code hashes, which C6 U1b's stored
+records carry, so any edit stops them re-reading. Parked to the next unit that derives an arm.
 
 ## Cost and data
 
@@ -182,7 +184,7 @@ with the label written into `paper/` §7, scoped to 70m. **Budget: 4 units + clo
 | unit | what | done when |
 |---|---|---|
 | 0 | the scan and this design (writing only); the flat maps' math check | Blocked 155 decided |
-| 1 | the harness (from `t5h`), the shard downloaded and verified, H1–H5, A0 to 1000 and H6 (about half a day), F's first 64 steps' loss, throughput measured; the two carried-in `c2_seeds` refusals with tests; **the rule's code frozen, and the reading registered by the user if D4 (a), before F trains past 64** | every check, or a refusal |
+| 1 | the harness (from `t5h`), the shard downloaded and verified, H1–H5, A0 to 1000 and H6 (about half a day), F's first 64 steps' loss, throughput measured (the two carried-in `c2_seeds` refusals not made, "Carried in"); **the rule's code frozen, and the reading registered by the user if D4 (a), before F trains past 64** | every check, or a refusal |
 | 2 | F to 4000 (runner, about 2 days); V's gate at 3500 | F's records, V gated or refused |
 | 3 | A0 from 1000 to 4000 (about 1.5 days); R1–R3 read | the labels |
 | close-out | one page, `paper/` §7, Parked carried or dropped, the card | the card current |

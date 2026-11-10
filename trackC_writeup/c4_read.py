@@ -22,8 +22,14 @@ reading that hypothesis predicts.
 next(t) / t) on the dense grid (no A0 rerun exists); hypothesis h is consistent when F's date
 lies in [m_h(t/ρ), m_h(t ρ)] with m_step(t) = t and m_cumulative(t) = t² / 2W (the flat maps,
 `tools/math_checks/c4_flat_maps.py`); the label is "consistent with step", "consistent with
-cumulative", "neither" or "both". For the centred count (C6's form), h is consistent when it is
-consistent at every τ arm that is gated on F and dated on both arms; no such arm: unreadable.
+cumulative", "neither" or "both". The maps hold on the warmup only, so an A0 date with t ρ > W,
+or whose two bands meet, labels nothing ("A0 past the separable range"; `/challenge-pr` on #346,
+finding 5). For the centred count (C6's form), h is consistent when it is consistent at every τ
+arm that is gated on F and dated on both arms; no such arm: unreadable.
+
+**Divergence** (`divergence`): either arm's training losses (`c4_train.diverged`: 50
+consecutive losses over 2× the running median) diverging is a refusal; nothing is read
+(`gate` and `read`; finding 2).
 
 **R1** (`r1`): A0's date against the released `pythia-70m`'s (unit 3b's seed-0 records), both on
 Pythia's grid to 4000; A0 must lie within the released date's grid step ± 1 (per count, per τ
@@ -32,7 +38,9 @@ arm), else a refusal and F is not read.
 **V's gate** (`gate`, U2): C6's gate (`c6_warmup.gate_one`, plant B's dose by rule 100 (a), the
 same plants and bars) on F at the off-grid step 3500, with 70m's 3 re-inits; the re-inits' rates
 must equal unit 3b's preflight. V is read only if 100 (a) finds B's dose; a centred τ arm only if
-it passes.
+it passes. If 100 (a) refuses, the centred arms are gated at plant B's fixed dose 0.5 (C6 U1b's
+form, `c6_warmup.U1B_B_DOSE`, which must be unit 3b's 70m dose) and V is not read (design
+"Readings"; finding 1).
 
 **Beside** (`induction`): the largest per-head induction score at each checkpoint, on 8
 sequences of 64 random tokens repeated twice (seeded): the mean attention from each second-copy
@@ -43,6 +51,7 @@ Tier 1 until the user registers the reading.
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_read known --out <dir>
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_read records --out <dir> --arm A0 --upto 1000
     python -m trackC_writeup.c4_read h6 --out <dir>
+    HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_read h4-controls --out <dir>   # beside
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_read induction --out <dir> --model released
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_read gate --out <dir>        # U2
     python -m trackC_writeup.c4_read read --out <dir>                                     # U3
@@ -133,6 +142,11 @@ def m(h: str, t: float) -> float:
     raise C4ReadRefused(f"hypothesis {h}")
 
 
+def separable(t_a0: int, rho: float) -> bool:
+    """The flat maps are defined (t ρ ≤ W) and the two bands are disjoint."""
+    return t_a0 * rho <= ct.W and band("cumulative", t_a0, rho)[1] < band("step", t_a0, rho)[0]
+
+
 def band(h: str, t_a0: int, rho: float) -> Tuple[float, float]:
     return m(h, t_a0 / rho), m(h, min(t_a0 * rho, ct.W))
 
@@ -155,6 +169,8 @@ def label(f: dict, a0: dict) -> dict:
     if f["status"] != "dated":
         return {"label": f"F {f['status']}", "consistent": None}
     rho = rho_at(a0["step"])
+    if not separable(a0["step"], rho):
+        return {"label": "A0 past the separable range", "consistent": None, "rho": rho, "t_a0": a0["step"]}
     cons = consistent(f["step"], a0["step"], rho)
     return {"label": name(cons), "consistent": cons, "rho": rho, "t_a0": a0["step"], "t_f": f["step"],
             "bands": {h: band(h, a0["step"], rho) for h in HYPS}}
@@ -164,10 +180,32 @@ def centred_label(per_tau: Dict[str, dict], gated: Dict[str, bool]) -> dict:
     """C6's form: h consistent iff consistent at every gated τ arm dated on both arms."""
     used = [k for k, r in per_tau.items() if gated.get(k) and r["consistent"] is not None]
     nf = [k for k, r in per_tau.items() if gated.get(k) and r["label"] == "not formed by 4000"]
+    past = [k for k, r in per_tau.items() if gated.get(k) and r["label"] == "A0 past the separable range"]
     if not used:
-        return {"label": "not formed by 4000" if nf else "unreadable", "arms": used}
+        return {"label": "not formed by 4000" if nf else "unreadable", "arms": used, "past_arms": past}
     cons = {h: all(per_tau[k]["consistent"][h] for k in used) for h in HYPS}
-    return {"label": name(cons), "consistent": cons, "arms": used, "not_formed_arms": nf}
+    return {"label": name(cons), "consistent": cons, "arms": used, "not_formed_arms": nf, "past_arms": past}
+
+
+def train_losses(lines: Iterable[str]) -> list:
+    """An arm's losses by step from its `train_log.jsonl` (a resumed step's last entry wins)."""
+    by = {}
+    for ln in lines:
+        d = json.loads(ln)
+        if "step" in d and "loss" in d and "arm" not in d:
+            by[int(d["step"])] = float(d["loss"])
+    if sorted(by) != list(range(1, len(by) + 1)):
+        raise C4ReadRefused(f"the training log's steps are not 1..{len(by)}")
+    return [by[s] for s in sorted(by)]
+
+
+def divergence(root: Path, arms: Sequence[str] = ct.ARMS) -> Dict[str, Optional[int]]:
+    """Each arm's first diverged step by `c4_train.diverged` (None: none)."""
+    out = {}
+    for arm in arms:
+        with open(root / arm / "train_log.jsonl") as fh:
+            out[arm] = ct.diverged(train_losses(fh))
+    return out
 
 
 def r1_pass(a0_step: Optional[int], rel_step: Optional[int], grid: Sequence[int] = PYTHIA) -> bool:
@@ -356,11 +394,43 @@ def induction(a) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- H4's power (beside)
+
+H4C_MODELS = ("EleutherAI/pythia-70m", "EleutherAI/pythia-70m-warmup01") + tuple(
+    f"EleutherAI/pythia-70m-seed{i}" for i in range(1, 10))
+
+
+def h4_controls(a) -> int:
+    """H4's held-out loss at ``--step`` on released variants (`/challenge-pr` on #346, finding 3):
+    a 10x slower warmup (warmup01) and seeds 1-9 (other init and data order). Beside, no bar."""
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    torch, device = c._torch_setup()
+    from transformers import GPTNeoXForCausalLM
+    from core.models import from_pretrained_eager
+    rows = ct.open_rows(Path(a.root))
+    res = {"code": code_sha(), "code_c4_train": ct.code_sha(), "rows": list(ct.HELD_OUT), "step": a.step, "loss": {}}
+    for nm in H4C_MODELS:
+        mdl = from_pretrained_eager(GPTNeoXForCausalLM, nm, revision=f"step{a.step}",
+                                    torch_dtype=torch.float32).to(device).eval()
+        res["loss"][nm] = ct.held_loss(mdl, rows, device)
+        print(json.dumps({"model": nm, "loss": res["loss"][nm]}), flush=True)
+        del mdl
+        torch.cuda.empty_cache()
+    ref = res["loss"][H4C_MODELS[0]]
+    res["rel_diff"] = {k: (v - ref) / ref for k, v in res["loss"].items()}
+    ct._jdump(Path(a.out) / f"h4_controls_{a.step}.json", res)
+    return 0
+
+
 # ---------------------------------------------------------------- V's gate on F (U2)
 
 def gate(a) -> int:
-    """C6's gate on F at GATE_STEP with 70m's 3 re-inits (rule 100 (a) for plant B's dose)."""
+    """C6's gate on F at GATE_STEP with 70m's 3 re-inits (rule 100 (a) for plant B's dose; if it
+    refuses, the centred arms at plant B 0.5, V not read). Refuses if either arm has diverged."""
     from trackC_writeup import c6_warmup as c6
+    div = divergence(Path(a.root))
+    if any(v is not None for v in div.values()):
+        raise C4ReadRefused(f"divergence {div}: nothing is read")
     os.environ["HF_HUB_OFFLINE"] = "1"
     torch, device = c._torch_setup()
     from transformers import AutoConfig, AutoTokenizer
@@ -379,17 +449,25 @@ def gate(a) -> int:
     mdl = load_local(ct.ckpt_dir(Path(a.root), "F", GATE_STEP), device)
     pops[f"step{GATE_STEP}"] = c6._units(mdl, tok, device, rng, u)
     del mdl
-    g = c6.gate_one(pops, reinits, f"step{GATE_STEP}")
     pf = json.loads(U3B_PREFLIGHT.read_text())
+    g = c6.gate_one(pops, reinits, f"step{GATE_STEP}")
+    as_frozen = None
+    if g["b_dose"] is None:                                   # V refused: the centred count alone
+        if pf["gate"]["b_dose"] != c6.U1B_B_DOSE:
+            raise C4ReadRefused(f"U1B_B_DOSE {c6.U1B_B_DOSE} is not unit 3b's 70m dose {pf['gate']['b_dose']}")
+        as_frozen = c6._jsonable(g)
+        g = c6.gate_one(pops, reinits, f"step{GATE_STEP}", fixed_b=c6.U1B_B_DOSE)
     null_now = g["null_rates"]
     null_3b = {k: pf["gate"]["arms"][k]["null_rate"] for k in null_now}
     if any(abs(null_now[k] - null_3b[k]) > 0.005 for k in null_now):
         raise C4ReadRefused(f"the re-inits' rates {null_now} differ from unit 3b's {null_3b}")
     arms = {f"{t:.3g}": bool(g["arms"].get(f"{t:.3g}", {}).get("pass", False)) for t in TAU}
-    res = {"code": code_sha(), "step": GATE_STEP, "gate": c6._jsonable(g), "u_read": g["b_dose"] is not None,
+    res = {"code": code_sha(), "step": GATE_STEP, "gate": c6._jsonable(g), "v_refused_gate": as_frozen,
+           "mode": "as frozen" if as_frozen is None else "centred only, plant B at 0.5 (C6 U1b's form)",
+           "u_read": as_frozen is None,
            "arms_gated": arms, "null_vs_3b": [null_now, null_3b]}
     ct._jdump(out / "gate.json", res)
-    print(json.dumps({"u_read": res["u_read"], "b_dose": g["b_dose"], "arms_gated": arms}), flush=True)
+    print(json.dumps({"mode": res["mode"], "u_read": res["u_read"], "b_dose": g["b_dose"], "arms_gated": arms}), flush=True)
     return 0
 
 
@@ -398,6 +476,10 @@ def gate(a) -> int:
 def read(a) -> int:
     out = Path(a.out)
     g = json.loads((out / "gate.json").read_text())
+    div = divergence(Path(a.root))
+    if any(v is not None for v in div.values()):
+        ct._jdump(out / "reading.json", {"code": code_sha(), "refused": "divergence", "diverged": div})
+        raise C4ReadRefused(f"divergence {div}: nothing is read")
     a0 = all_series(load_arm(out, "A0", GRID), GRID)
     f = all_series(load_arm(out, "F", GRID), GRID)
     rel = all_series(load_released(PYTHIA), PYTHIA)
@@ -410,7 +492,8 @@ def read(a) -> int:
     dates = {arm: {k: date_on(s[k]) for k in KEYS} for arm, s in (("A0", a0), ("F", f))}
     per = {k: label(dates["F"][k], dates["A0"][k]) for k in KEYS}
     refused = [k for k in KEYS if gated.get(k) and not r1[k]["pass"]]
-    res = {"code": code_sha(), "r1": r1, "r1_refused": refused, "gated": gated, "dates": dates, "per_key": per,
+    res = {"code": code_sha(), "code_c4_train": ct.code_sha(), "diverged": div, "gate_mode": g["mode"],
+           "r1": r1, "r1_refused": refused, "gated": gated, "dates": dates, "per_key": per,
            "R2_centred": None if refused else centred_label({k: per[k] for k in KEYS[1:]}, gated),
            "R3_V": None if refused or not gated["u"] else per["u"],
            "beside": {"A0": {k: v.tolist() for k, v in a0.items()}, "F": {k: v.tolist() for k, v in f.items()}}}
@@ -435,11 +518,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     q = sub.add_parser("induction"); common(q)
     q.add_argument("--model", required=True, choices=("released",) + ct.ARMS)
     q.add_argument("--upto", type=int, default=4000)
+    q = sub.add_parser("h4-controls"); common(q)
+    q.add_argument("--step", type=int, default=1000)
     q = sub.add_parser("gate"); common(q)
     q = sub.add_parser("read"); common(q)
     a = p.parse_args(argv)
     return {"known": known, "records": records, "h6": h6, "induction": induction, "gate": gate,
-            "read": read}[a.cmd](a)
+            "read": read, "h4-controls": h4_controls}[a.cmd](a)
 
 
 if __name__ == "__main__":
