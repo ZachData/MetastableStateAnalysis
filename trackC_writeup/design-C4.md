@@ -212,7 +212,7 @@ the alternatives.
   "registered_commit": null,
   "registered_date": null,
   "registered_provenance": "gated",
-  "notes": "70m only; 410m by inference. Registered after A0's counts to 1000 were seen (H6, the harness check) and before any F count. bf16 against Pythia's fp16. Input set at run time: the shard's sha256, the batch-0 hash, the prompts hash, code hashes.",
+  "notes": "70m only; 410m by inference. Registered after A0's counts to 1000 were seen (H6, the harness check) and F's training loss to step 64 (the divergence check), before any F count. bf16 against Pythia's fp16. Input set at run time: the shard's sha256, the batch-0 hash, the prompts hash, code hashes.",
   "superseded_by": null,
   "status": "active"
 }
