@@ -91,6 +91,21 @@
 | C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
 
+## C4 unit 2, F to 4000 and V's gate (running, 2026-11-10)
+
+**`P-SCH1` registered first** (Blocked 156 (a), the user's: `design-C4.md` "The draft entry" as
+written, h1 = the summed rate), commit `6ceacb1`: the entry plus `r"|P-SCH[0-9]+"` in
+`ID_PATTERN`; `tools/check_registry.py` 0 errors. The only change to the draft: "code hashes
+recorded at registration" became the hashes, `c4_train` `1c1e1d2df083`, `c4_read`
+`220161b9159b` (each module's `code_sha()`, equal to #346's merge). No F count existed then.
+
+F resumed from its step-64 state (`resume.pt`, code `1c1e1d2df083`, unchanged) on 2026-11-10
+with U1's env (`mets` conda env, torch 2.10.0+cu130, transformers 4.44.2; `HF_HOME` on
+`HDD_1TB`): `python -m trackC_writeup.c4_train train --arm F --until 4000`, log
+`HDD_1TB/mets_data/c4/F_to4000.log`, exit status in `F_to4000.log.exit`. First updates: loss
+6.17 at 70, 6.11 at 71 (6.27 at 64), 26.5 s an update; about 29 h to 4000. Then
+`c4_read gate` (V's gate at 3500) and `c4_read records --arm F --upto 4000`.
+
 ## C4 unit 1, the harness (2026-11-09)
 
 Blocked 155 taken all (a) by Claude on the user's "do the next 4 items in state" (`design-C4.md`
