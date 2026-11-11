@@ -117,8 +117,10 @@ reproduces step 218's loss exactly and 219–220 to 2e-5 (4.777671 against 4.777
 (3.39 at 760; flat lr 1e-3 throughout); checkpoints 256, 320, 384, 512, 640, 768 and `resume.pt`
 at 768 written. **Segment 3**, the same day 19:01–20:31: `--until 1000 --resume-every 10` under a 1 h 30 min
 `timeout` (the user's extension), log `F_to1000.log`, exit 124 (the timeout, as planned): reached
-964, resume state at **958** (loss 3.34 at 960); 959–964 will be trained again. Next segment:
-`train --arm F --until 4000` from 958 (3042 updates, about 23 h).
+964, resume state at **958** (loss 3.34 at 960); 959–964 will be trained again. **Segment 4**,
+2026-11-11 from 05:09: `train --arm F --until 4000 --resume-every 10` from 958 under a 31000 s
+`timeout` (the user's stop at about 14:00), log `F_to2pm.log`, exit in `F_to2pm.log.exit`;
+step 960's loss 3.33916 against segment 3's 3.33914. At 27 s an update it should reach about 2100.
 
 ## C4 unit 1, the harness (2026-11-09)
 
