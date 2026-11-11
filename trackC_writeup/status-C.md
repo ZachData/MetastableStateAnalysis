@@ -112,8 +112,10 @@ was 217 (saves are atomic, `.tmp` then rename). Resumed from 217 at 14:15 with t
 env, `--until 768` (the user's 6-hour stop; `--until` must be a checkpoint step, so 875 was
 refused), log `F_to768.log`, exit in `F_to768.log.exit`, under a 5 h 20 min `timeout`. Steps
 218–239 are trained twice; `c4_read`'s loss reader keeps a resumed step's last entry. The re-run
-reproduces step 218's loss exactly and 219–220 to 2e-5 (4.777671 against 4.777652). Next segment:
-`train --arm F --until 4000` from 768 (about 24 h).
+reproduces step 218's loss exactly and 219–220 to 2e-5 (4.777671 against 4.777652). **Ended
+2026-11-10 18:23, exit 0**: 551 updates in 14888 s (27.0 s an update); loss 3.487 at 768
+(3.39 at 760; flat lr 1e-3 throughout); checkpoints 256, 320, 384, 512, 640, 768 and `resume.pt`
+at 768 written. Next segment: `train --arm F --until 4000` from 768 (3232 updates, about 24 h).
 
 ## C4 unit 1, the harness (2026-11-09)
 
