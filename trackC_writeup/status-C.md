@@ -123,7 +123,11 @@ at 768 written. **Segment 3**, the same day 19:01–20:31: `--until 1000 --resum
 step 960's loss 3.33916 against segment 3's 3.33914. **Ended 13:45, exit 124** (the timeout, as
 planned): logged to 2090, resume state at **2090** (loss 3.14 at 2090; the rate on Pythia's cosine
 from 1430, as designed, 0.99995e-3 at 2090); no traceback. Next segment: `train --arm F --until
-4000` from 2090 (1910 updates, about 14.3 h).
+4000` from 2090 (1910 updates, about 14.3 h). **Segment 5**, 2026-11-11 from 13:58:
+`train --arm F --until 4000 --resume-every 10` from 2090, no `timeout` (the user's "keep
+training until I say when to stop"), detached (`setsid nohup`), log `F_seg5.log`, exit in
+`F_seg5.log.exit`; loss 3.037 at 2100, 26.6 s an update, so 4000 at about 04:10 on 11-12 if
+not stopped.
 
 ## C4 unit 1, the harness (2026-11-09)
 
