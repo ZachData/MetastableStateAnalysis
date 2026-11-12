@@ -130,7 +130,10 @@ training until I say when to stop"), detached (`setsid nohup`), log `F_seg5.log`
 143** (SIGTERM from outside; no reboot in `journalctl --list-boots`, no traceback; who sent it is
 not recorded): logged to 2840, resume state at **2840** (loss 3.09). **Segment 6**, 2026-11-12 from
 05:05: the same command from 2840 (code `1c1e1d2df083` in `resume.pt`), detached, log
-`F_seg6.log`, exit in `F_seg6.log.exit`; loss 3.047 at 2850; 1160 updates, so 4000 at about 13:40.
+`F_seg6.log`, exit in `F_seg6.log.exit`; loss 3.047 at 2850. **Ended 2026-11-12 about 13:55,
+exit 0: F trained to 4000** (1160 updates in 31770 s, 27.4 s an update; loss 2.990 at 4000;
+checkpoints to 3000, 3500, 4000 written). Next: `c4_read gate` (V's gate at 3500), then
+`c4_read records --arm F --upto 4000`.
 
 ## C4 unit 1, the harness (2026-11-09)
 
