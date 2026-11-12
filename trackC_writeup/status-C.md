@@ -126,8 +126,11 @@ from 1430, as designed, 0.99995e-3 at 2090); no traceback. Next segment: `train 
 4000` from 2090 (1910 updates, about 14.3 h). **Segment 5**, 2026-11-11 from 13:58:
 `train --arm F --until 4000 --resume-every 10` from 2090, no `timeout` (the user's "keep
 training until I say when to stop"), detached (`setsid nohup`), log `F_seg5.log`, exit in
-`F_seg5.log.exit`; loss 3.037 at 2100, 26.6 s an update, so 4000 at about 04:10 on 11-12 if
-not stopped.
+`F_seg5.log.exit`; loss 3.037 at 2100, 26.6 s an update. **Ended 2026-11-11 about 19:45, exit
+143** (SIGTERM from outside; no reboot in `journalctl --list-boots`, no traceback; who sent it is
+not recorded): logged to 2840, resume state at **2840** (loss 3.09). **Segment 6**, 2026-11-12 from
+05:05: the same command from 2840 (code `1c1e1d2df083` in `resume.pt`), detached, log
+`F_seg6.log`, exit in `F_seg6.log.exit`; loss 3.047 at 2850; 1160 updates, so 4000 at about 13:40.
 
 ## C4 unit 1, the harness (2026-11-09)
 
