@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-12 · body `b2347ee2b2`
+- **Reviewed:** 2026-11-12 · body `613d10298e`
 <!-- /phase-card -->
 
 ## Units
@@ -144,7 +144,9 @@ at 0.25 it sees 4). This is the read C6's run failed (0.38 and 0.33 there), pass
 unit. The re-inits' rates equal unit 3b's preflight (0 at every arm, both). Centred arms gated:
 **9.61e-5, 1e-4, 3e-4** (plant B share 1.0, A 0.0); **4.78e-3 not** (B 0.36), the same three
 as C6 U1b. `gate_one`'s overall `pass` is false only because of that fourth arm; the design reads
-each arm on its own.
+each arm on its own. **Re-run once** (the same rule, inputs and seed, into a scratch folder,
+because of the one-unit margin; `/challenge-pr` on #347, finding 1): `gate.json` byte-equal, so
+13 of 28 reproduces on this machine.
 
 **F's records (2026-11-12):** `c4_read records --arm F --upto 4000`: 29 checkpoints × 7 v1
 prompts = 203 records in `data/trackC/c4/2026-11-12-u2/F/records/`, 100 s. Step 0 equals A0's
