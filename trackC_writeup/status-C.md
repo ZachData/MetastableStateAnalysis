@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-12 · body `613d10298e`
+- **Reviewed:** 2026-11-12 · body `00c0896b2a`
 <!-- /phase-card -->
 
 ## Units
@@ -91,6 +91,29 @@
 | C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
 | C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
+| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **running: A0 resumed 2026-11-12 17:35** | "C4 unit 3" below |
+
+## C4 unit 3, A0 to 4000 and the reading (started 2026-11-12)
+
+**A0 resumed** from its step-1000 state (`resume.pt`, code `1c1e1d2df083`, unchanged since U1) on
+2026-11-12 at 17:35, the user's "Do C4 U3": `python -m trackC_writeup.c4_train train --arm A0
+--until 4000 --resume-every 10`, detached (`setsid nohup`), U2's env (`mets` conda env; `HF_HOME`
+on `HDD_1TB`), log `HDD_1TB/mets_data/c4/A0_seg2.log`, exit in `A0_seg2.log.exit`. First
+updates: loss 3.659 at 1002 (3.682 at 1000), rate 7.0e-4 (Pythia's ramp at iteration 1001);
+about 23 h to 4000. Then `c4_read records --arm A0 --upto 4000` into U2's folder
+(`data/trackC/c4/2026-11-12-u2/`, beside `gate.json` and F's records), then `read`.
+
+**The description beside, coded before any value was seen** (`trackC_writeup/c4_beside.py`, a
+module of its own so `c4_read.py`'s registered hash `220161b9159b` stays; tests
+`tests/test_trackC_c4_beside.py` on planted series). The design left the shapes' details open;
+fixed in code: ρ_mid's (and ρ_1:5's) peak is the first maximum, its half-fall the first later
+step at or below the midpoint of the peak and the 4000 value, its minimum taken **after the
+peak** (censored at 4000), the whole grid's minimum beside; er_mid the mirror (trough, half-rise,
+maximum after the trough). The summed-rate map is the continuous F step whose summed rate
+(`c4_train.summed`) equals A0's to t: t(t−1)/2W on the warmup (A0's iteration 0 runs at rate 0,
+so the design's t²/2W less t/2W), t − W/2 ± 2 after it. `describe` refuses until `reading.json`
+exists (the design's "When"). Smoke-run on CPU on step 0 only (the shared init): 7 states,
+every value finite.
 
 ## C4 unit 2, F to 4000 and V's gate (done 2026-11-12)
 
