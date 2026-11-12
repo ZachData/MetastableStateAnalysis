@@ -37,10 +37,10 @@
   - **C7 (i) closed 2026-11-09 at its exit** (3 units: U0, U1, close-out; writing only): on Pythia-410m, Isobe et al.'s own criterion finds no terminal escape on the block inputs at any checkpoint (through block 23's output, 1 of 7 prompts just passes at 143000 on states 1–24), and their positive-definiteness assumption fails at every layer; a §8 sentence and the email's paragraph written for the user; seeds and the ViT comparison carried to ROADMAP C7, the rest dropped with why — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
   - C4 opened 2026-11-09 (STATE Blocked 153; writing only): a scan and a proposed design that trains `pythia-70m` from seed 0's init on Pythia's data order with a flat rate at the peak and with Pythia's own schedule (the harness check), and labels the flat arm's dates against the harness arm's on a shared dense grid (step against the summed rate: about 256 against 23 for V, 1000 against 350 for the centred date; disjoint bands, sympy-checked); revised after `/challenge-pr` on #344, since C6's ten-seed bands overlap; V's gate runs on the flat arm; Blocked 155 taken all (a) (Claude, on the user's delegation) — `trackC_writeup/status-C.md` "C4 unit 0"
   - C4 U1 (2026-11-09; tier 1, harness): the harness reproduces Pythia's run to step 1000: the init bit-equal, the data rows verified against the Hub's hashes, the first updates' signs agreeing with the released run at 0.9994 (step 2) and 0.981 (step 4), the loop exact in float64, the reader exact against C2 3b's records, the held-out loss at 1000 within 0.38%, the counts and the induction head (L3 H6) tracking the released run's; the flat arm trains to 64 without diverging; the rule frozen in code before any count; weight decay corrected to the config's 0.1; the reading's registration is the user's (STATE Blocked 156) — `trackC_writeup/status-C.md` "C4 unit 1"
-  - C4 opened 2026-11-09 (STATE Blocked 153; writing only): a scan and a proposed design that trains `pythia-70m` from seed 0's init on Pythia's data order with a flat rate at the peak and with Pythia's own schedule (the harness check), and labels the flat arm's dates against the harness arm's on a shared dense grid (step against the summed rate: about 256 against 23 for V, 1000 against 350 for the centred date; disjoint bands, sympy-checked); revised after `/challenge-pr` on #344, since C6's ten-seed bands overlap; V's gate runs on the flat arm; Blocked 155 (the arms and the registration, the user's) — `trackC_writeup/status-C.md` "C4 unit 0"
   - C4's design gains a description beside (2026-11-10, the user's; writing only): ρ_mid, ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of both arms, read in U3 after R1–R3; no label, not in the registration — `trackC_writeup/status-C.md` "C4, an addition to the design"
+  - C4 U2 (2026-11-12; `P-SCH1` registered first by the user, Blocked 156 (a)): the flat arm trained to 4000 without diverging; V's gate at the off-grid step 3500 passes as frozen, so V is read (plant B seen at 0.5, by one unit over the bar, where C6's run failed), and three of the four centred arms are gated (4.78e-3 not, as in C6); the flat arm's records written, no count read — `trackC_writeup/status-C.md` "C4 unit 2"
 - **Superseded / wrong:** none
-- **Registry:** none yet; C4's reading on the flat arm is drafted as `P-SCH1` for the user to register before F trains past step 64 (`design-C4.md` "The draft entry"); C2 quotes `P-A5`, Track A's
+- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a); not yet scored); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-09 · body `a2b98dde9f`
+- **Reviewed:** 2026-11-12 · body `613d10298e`
 <!-- /phase-card -->
 
 ## Units
@@ -90,6 +90,73 @@
 | C7 (i) close-out | **done 2026-11-09: writing only; exit met at 3 units; Parked items carried (ROADMAP C7) or dropped; a §8 sentence and the email's paragraph for the user** | "C7 (i) on one page" below |
 | C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
+| C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
+
+## C4 unit 2, F to 4000 and V's gate (done 2026-11-12)
+
+**`P-SCH1` registered first** (Blocked 156 (a), the user's: `design-C4.md` "The draft entry" as
+written, h1 = the summed rate), commit `6ceacb1`: the entry plus `r"|P-SCH[0-9]+"` in
+`ID_PATTERN`; `tools/check_registry.py` 0 errors. The only change to the draft: "code hashes
+recorded at registration" became the hashes, `c4_train` `1c1e1d2df083`, `c4_read`
+`220161b9159b` (each module's `code_sha()`, equal to #346's merge). No F count existed then.
+
+F resumed from its step-64 state (`resume.pt`, code `1c1e1d2df083`, unchanged) on 2026-11-10
+with U1's env (`mets` conda env, torch 2.10.0+cu130, transformers 4.44.2; `HF_HOME` on
+`HDD_1TB`): `python -m trackC_writeup.c4_train train --arm F --until 4000`, log
+`HDD_1TB/mets_data/c4/F_to4000.log`, exit status in `F_to4000.log.exit`. First updates: loss
+6.17 at 70, 6.11 at 71 (6.27 at 64), 26.5 s an update; about 29 h to 4000. Then
+`c4_read gate` (V's gate at 3500) and `c4_read records --arm F --upto 4000`.
+
+**Segment 2 (2026-11-10).** The machine went down about 13:01 (a reboot, not the code: no
+traceback, no exit file; `journalctl --list-boots`); the log reached step 239, the last resume state
+was 217 (saves are atomic, `.tmp` then rename). Resumed from 217 at 14:15 with the same code and
+env, `--until 768` (the user's 6-hour stop; `--until` must be a checkpoint step, so 875 was
+refused), log `F_to768.log`, exit in `F_to768.log.exit`, under a 5 h 20 min `timeout`. Steps
+218–239 are trained twice; `c4_read`'s loss reader keeps a resumed step's last entry. The re-run
+reproduces step 218's loss exactly and 219–220 to 2e-5 (4.777671 against 4.777652). **Ended
+2026-11-10 18:23, exit 0**: 551 updates in 14888 s (27.0 s an update); loss 3.487 at 768
+(3.39 at 760; flat lr 1e-3 throughout); checkpoints 256, 320, 384, 512, 640, 768 and `resume.pt`
+at 768 written. **Segment 3**, the same day 19:01–20:31: `--until 1000 --resume-every 10` under a 1 h 30 min
+`timeout` (the user's extension), log `F_to1000.log`, exit 124 (the timeout, as planned): reached
+964, resume state at **958** (loss 3.34 at 960); 959–964 will be trained again. **Segment 4**,
+2026-11-11 from 05:09: `train --arm F --until 4000 --resume-every 10` from 958 under a 31000 s
+`timeout` (the user's stop at about 14:00), log `F_to2pm.log`, exit in `F_to2pm.log.exit`;
+step 960's loss 3.33916 against segment 3's 3.33914. **Ended 13:45, exit 124** (the timeout, as
+planned): logged to 2090, resume state at **2090** (loss 3.14 at 2090; the rate on Pythia's cosine
+from 1430, as designed, 0.99995e-3 at 2090); no traceback. Next segment: `train --arm F --until
+4000` from 2090 (1910 updates, about 14.3 h). **Segment 5**, 2026-11-11 from 13:58:
+`train --arm F --until 4000 --resume-every 10` from 2090, no `timeout` (the user's "keep
+training until I say when to stop"), detached (`setsid nohup`), log `F_seg5.log`, exit in
+`F_seg5.log.exit`; loss 3.037 at 2100, 26.6 s an update. **Ended 2026-11-11 about 19:45, exit
+143** (SIGTERM from outside; no reboot in `journalctl --list-boots`, no traceback; who sent it is
+not recorded): logged to 2840, resume state at **2840** (loss 3.09). **Segment 6**, 2026-11-12 from
+05:05: the same command from 2840 (code `1c1e1d2df083` in `resume.pt`), detached, log
+`F_seg6.log`, exit in `F_seg6.log.exit`; loss 3.047 at 2850. **Ended 2026-11-12 about 13:55,
+exit 0: F trained to 4000** (1160 updates in 31770 s, 27.4 s an update; loss 2.990 at 4000;
+checkpoints to 3000, 3500, 4000 written).
+
+**V's gate at 3500 (2026-11-12): passes as frozen, so V is read in U3.** `c4_read gate`, code
+`220161b9159b` (the registered hash), on F's step-3500 checkpoint with 70m's 3 re-inits; record
+`data/trackC/c4/2026-11-12-u2/gate.json` (main tree, sha256 `ef40569a4f28…`), 20 s on the GPU.
+Neither arm's loss diverged (`c4_train.diverged`). Rule 100 (a) finds plant B's dose at **0.5**:
+the uncentred count sees 13 of the 28 units not already violating (0.464; bar 0.4, so 12 needed;
+at 0.25 it sees 4). This is the read C6's run failed (0.38 and 0.33 there), passed here by one
+unit. The re-inits' rates equal unit 3b's preflight (0 at every arm, both). Centred arms gated:
+**9.61e-5, 1e-4, 3e-4** (plant B share 1.0, A 0.0); **4.78e-3 not** (B 0.36), the same three
+as C6 U1b. `gate_one`'s overall `pass` is false only because of that fourth arm; the design reads
+each arm on its own. **Re-run once** (the same rule, inputs and seed, into a scratch folder,
+because of the one-unit margin; `/challenge-pr` on #347, finding 1): `gate.json` byte-equal, so
+13 of 28 reproduces on this machine.
+
+**F's records (2026-11-12):** `c4_read records --arm F --upto 4000`: 29 checkpoints × 7 v1
+prompts = 203 records in `data/trackC/c4/2026-11-12-u2/F/records/`, 100 s. Step 0 equals A0's
+step-0 records exactly (e1, e1c, max difference 0.0 on all 7 prompts; the same init). **No
+count, date or label has been computed from them**: that is U3's `read`, which needs A0 to 4000.
+
+**Re-run.** `METS_DATA=<main>/data HF_HOME=<HDD_1TB>/mets_data/hf python -m
+trackC_writeup.c4_read gate --out <dir>`, then `… records --out <dir> --arm F --upto 4000`
+(the `mets` conda env, GPU). U2's exit is met. Next, U3: A0 from 1000 to 4000 (`c4_train train
+--arm A0 --until 4000`, about 23 h), then `records --arm A0 --upto 4000` and `read`.
 
 ## C4 unit 1, the harness (2026-11-09)
 

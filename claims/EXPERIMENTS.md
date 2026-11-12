@@ -14,7 +14,7 @@ gate → what that gate is worth. It is the file to read when the question is
 
 ## Where the evidence stands
 
-- **40** registered predictions across **7** phases and **5** claims.
+- **41** registered predictions across **8** phases and **5** claims.
 - **11** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
 - **19** are dormant — pre-registered, falsifier intact, instrument archived.
 - **1** withdrawn by the user, kept and uncounted: `CLAIM-C`.
@@ -28,6 +28,7 @@ gate → what that gate is worth. It is the file to read when the question is
 | `6` | 12 | 4 | 2 | 0 | `H-OPERATOR` |
 | `7` | 9 | 4 | 4 | 0 | `H-BRIDGE` |
 | `A` | 1 | 1 | 1 | 1 | `H-RESIST` |
+| `C` | 1 | 0 | 0 | 0 | `H-RESIST` |
 | `1c` | 4 | 1 | 1 | 0 | `H-RESIST` |
 | `2d` | 2 | 2 | 2 | 0 | `H-OPERATOR` |
 | `5b` | 9 | 2 | 0 | 0 | `H-BRIDGE` |
@@ -91,6 +92,12 @@ null that was tried and found invalid, kept visible rather than dropped.
 |---|---|---|---|---|---|---|---|---|
 | A5 | `P-A5` | `H-RESIST` | e-value | active | `trackA_force.a5_seeds:p_value_p_a5` | `claims/audits/p_a5_dry_run.json` | — | Exact binomial over seeds: K ~ Bin(9, 1/6) under H0 (D6 (b): the step uniform over the 12 non-zero grid steps up to 4000, of which 2 are inside), p =… |
 
+### Phase C — `trackC_writeup/`
+
+| experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
+|---|---|---|---|---|---|---|---|---|
+| C4 | `P-SCH1` | `H-RESIST` | measurement | active | — | — | — | None: one seed per arm, a label against bands set by the grid, not by a measured run-to-run spread (no A0 rerun). |
+
 ### Phase 1c — `p1c_frames/`
 
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
@@ -149,7 +156,7 @@ behaviour of the construction (`claims/calibration/`).
 | `H-BUDGET` | **none** | 0 | 0 | 1 | not adjudicated |
 | `H-EMERGE` | `1` | 1 | 1 | 1 | not adjudicated |
 | `H-OPERATOR` | `6`, `2d` | 14 | 4 | 1 | not adjudicated |
-| `H-RESIST` | `1`, `A`, `1c` | 6 | 2 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
+| `H-RESIST` | `1`, `A`, `C`, `1c` | 7 | 2 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
 | `H-TRANSFER` | `1` | 1 | 0 | 1 | not adjudicated |
 
 ## Gaps
@@ -169,7 +176,6 @@ would otherwise have to reconstruct from five files.
 | `8` | `p8_scale_ladder/` | UNEXPLAINED — active phase, see the section below. |
 | `9` | `p9_metric_intervention/` | parked, pre-design and deliberately unregistered. `plan-9.md` §13 states it: no construction frozen, no `P-*` id. Nothing has run under its name; its E0 ran as Phase 10's F1. |
 | `B` | `trackB_circuit/` | Track B, the circuit side; tier 1 on 410m, an exploration rung, and deliberately unregistered: B0–B3 closed with readings, no `P-*` id (`trackB_circuit/status-B.md`). |
-| `C` | `trackC_writeup/` | Track C, the write-ups: C2 quotes rows scored elsewhere (`P-A5`, Track A's) and tier 1 readings; C4's reading on the flat arm is `P-SCH1` once the user registers it (`trackC_writeup/design-C4.md` "The draft entry"; `trackC_writeup/status-C.md`). |
 | `N` | `trackN_neurons/` | Track N, the MLP's neurons across training; tier 1 and deliberately unregistered: N1 opened 2026-11-08 as a scan and design, nothing run, no `P-*` id (`trackN_neurons/status-N.md`). |
 | `S` | `trackS_subspace/` | Track S, shared subspaces; tier 1 on 410m, an exploration rung, weights only, and deliberately unregistered: S1 opened 2026-10-20, no `P-*` id (`trackS_subspace/status-S.md`). |
 | `T` | `trackT_timaeus/` | Track T, Timaeus's checkpoints and the LLC; tier 1 and deliberately unregistered: T1 opened 2026-10-29 as an inventory, nothing run, no `P-*` id (`trackT_timaeus/status-T.md`). |

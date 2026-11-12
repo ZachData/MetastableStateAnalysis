@@ -1059,6 +1059,14 @@ so both cases raised `KeyError` before reaching the gate. It failed locally too:
 run. Fixed by stubbing `t5h.prompts_hash`, as `test_b7_activity.py` does. A test written to
 answer a review is run before the push that answers it.
 
+2026-11-12: **`claude/c4-u2` carried a red `./scripts/check.sh` for two days, through 9 commits.**
+`P-SCH1`'s registration (`6ceacb1`) changed `claims/registry.json` without re-running the three
+renderers (`claims/EVALUABILITY.md`, `EXPERIMENTS.md`, `FALSIFICATION.md`), and the segment
+commits after it changed `status-C.md` without re-stamping the card. Each segment was committed as a
+progress note, not a Stop, so no one ran the check; `check.sh` also stops at the first stale file,
+so each fix showed the next. Found at U2's Stop; all four regenerated there. A registry edit runs
+the three renderers in the same commit; a mid-unit progress commit runs `check.sh` too.
+
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋
 `CLAUDE.md` start protocol; ✅ deps tier on every push; ⚠️ branch protection
