@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-12 · body `00c0896b2a`
+- **Reviewed:** 2026-11-12 · body `cccb8dcc11`
 <!-- /phase-card -->
 
 ## Units
@@ -100,7 +100,9 @@
 --until 4000 --resume-every 10`, detached (`setsid nohup`), U2's env (`mets` conda env; `HF_HOME`
 on `HDD_1TB`), log `HDD_1TB/mets_data/c4/A0_seg2.log`, exit in `A0_seg2.log.exit`. First
 updates: loss 3.659 at 1002 (3.682 at 1000), rate 7.0e-4 (Pythia's ramp at iteration 1001);
-about 23 h to 4000. Then `c4_read records --arm A0 --upto 4000` into U2's folder
+about 23 h to 4000. **Stopped by the user at 17:53** (SIGTERM; the wrapper died with it, so no
+exit file): logged to 1041, resume state at **1040** (code `1c1e1d2df083`). Resume with the same
+command (1040 → 4000, about 22.5 h). Then `c4_read records --arm A0 --upto 4000` into U2's folder
 (`data/trackC/c4/2026-11-12-u2/`, beside `gate.json` and F's records), then `read`.
 
 **The description beside, coded before any value was seen** (`trackC_writeup/c4_beside.py`, a
