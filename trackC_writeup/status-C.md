@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-12 · body `cccb8dcc11`
+- **Reviewed:** 2026-11-13 · body `34f1ab705d`
 <!-- /phase-card -->
 
 ## Units
