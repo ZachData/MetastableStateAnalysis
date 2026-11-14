@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-13 · body `34f1ab705d`
+- **Reviewed:** 2026-11-13 · body `e8cc1e51a4`
 <!-- /phase-card -->
 
 ## Units
@@ -106,7 +106,10 @@ command (1040 → 4000, about 22.5 h). **Segment 3, resumed 2026-11-13 at 10:16*
 "continue the training"), the same command and env, detached (`setsid nohup systemd-inhibit`),
 log `A0_seg3.log` (block-buffered, so progress is in `A0/train_log.jsonl`), exit in
 `A0_seg3.log.exit`: 1041 onward from the 1040 state, loss 3.717 at 1050, 27.5 s an update, so
-4000 about 2026-11-14 09:00. Then `c4_read records --arm A0 --upto 4000` into U2's folder
+4000 about 2026-11-14 09:00. **Stopped by the user at 22:31** ("let's stop all computation";
+SIGTERM, no exit file): logged to 2620 (loss 3.143), resume state at **2620** (code
+`1c1e1d2df083`, checked by loading it). Resume with the same command (2620 → 4000, about 10.5 h).
+Then `c4_read records --arm A0 --upto 4000` into U2's folder
 (`data/trackC/c4/2026-11-12-u2/`, beside `gate.json` and F's records), then `read`.
 
 **The description beside, coded before any value was seen** (`trackC_writeup/c4_beside.py`, a
