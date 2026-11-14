@@ -51,7 +51,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-13 · body `e8cc1e51a4`
+- **Reviewed:** 2026-11-14 · body `a8d04dbaa6`
 <!-- /phase-card -->
 
 ## Units
@@ -91,7 +91,7 @@
 | C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
 | C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
-| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **running: A0 resumed 2026-11-12 17:35** | "C4 unit 3" below |
+| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **running: A0 segment 4 from 2620, 2026-11-14 11:02** | "C4 unit 3" below |
 
 ## C4 unit 3, A0 to 4000 and the reading (started 2026-11-12)
 
@@ -109,6 +109,10 @@ log `A0_seg3.log` (block-buffered, so progress is in `A0/train_log.jsonl`), exit
 4000 about 2026-11-14 09:00. **Stopped by the user at 22:31** ("let's stop all computation";
 SIGTERM, no exit file): logged to 2620 (loss 3.143), resume state at **2620** (code
 `1c1e1d2df083`, checked by loading it). Resume with the same command (2620 → 4000, about 10.5 h).
+**Segment 4, resumed 2026-11-14 at 11:02** (the user's "Resume A0 from 2620 to 4000"), the same
+command and env, detached (`setsid nohup systemd-inhibit`), log `A0_seg4.log`, exit in
+`A0_seg4.log.exit`: the log's segment line reads from 2620, code `1c1e1d2df083`; loss 3.150 at
+2621 (3.143 at 2620), 27.4 s an update, so 4000 about 2026-11-14 21:30.
 Then `c4_read records --arm A0 --upto 4000` into U2's folder
 (`data/trackC/c4/2026-11-12-u2/`, beside `gate.json` and F's records), then `read`.
 
