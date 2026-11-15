@@ -18,6 +18,11 @@ Written to be read with the source open. Each lives in its phase's directory:
 
 Phases 2c, 3 and 4 are out of scope per `INDEX.md` (2026-07-18) and have no document.
 
+Not per-phase: `MATH_TRAINING_SYMMETRY.md` (2026-11-15) is a question register, not derivations:
+how training moves the weights from random toward trained, read through the parameters'
+symmetry group, conservation laws and how AdamW breaks them (checked closed forms:
+`tools/math_checks/ts_conservation.py`).
+
 ## Reading order
 
 **If you want the theory:** `math-1.md` §1 → §1A → `math-1c.md` §2 → §8.
