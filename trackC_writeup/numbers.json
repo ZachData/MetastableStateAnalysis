@@ -1,12 +1,12 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "782c03f5b838",
+ "code": "9395bf84c6f7",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
   "data:trackA/a5/2026-10-20-u1/seed0/plan.json": "1df0690389258e2f8f31f8e9c2ecff106c41371527bb45261468a03e51f14da8",
   "repo:claims/audits/p_a5_real_run.json": "e812fccb0d859a71ce8260b83068f54264b4b273d5866e4763f2930cab28d40f",
-  "repo:claims/registry.json": "aa11fe7a0d300e4da4debb3b7b2653939c686f4cb01036299328ed531779ed8d",
+  "repo:claims/registry.json": "11fbafae3814cd11c71c44d3fada437d8e2bfbb9cda3174a6fbd509dbc137664",
   "data:trackA/a3/2026-10-20-A3u5/a3_rows.json": "25c0867c40b29ccc1647532dce27b550836d20857a4d109c0e7b93d305472302",
   "data:trackS/s2/2026-10-21-u2/readings.json": "c5ecf6863def480db4ff96bf8eea3275af3ad558f17d84402c9d3ae279232baa",
   "data:trackS/s2/2026-10-21-u2/gate_read.json": "4e03ca7c7a9262ae9b5055462be8ed2f15726b8522fd59cd695d48ffd4a2f7c6",
@@ -32,7 +32,9 @@
   "data:trackC/c2ridge/2026-10-28/ridge.json": "80a25e46453f8d49a29465180ddd0bb8df818d1477dcfcbe213b258a54ca6567",
   "data:trackC/c2grid/2026-10-29/grid.json": "815063581cc332b64e7b671be8d53b7ece28a99f7af35b5abca1b499f9246e46",
   "data:trackC/c6/2026-11-01-u1b/reading.json": "e6c16e77b314a08d6cefca3ef1d4f27cd3882820f72055416f185e0f46188a21",
-  "data:trackC/c6/2026-11-01-u1/calibration_127a.json": "069794c05f4fe5faccb1ccb0a4a5c8b51ea6d385422c5feaadd14175051a0e0c"
+  "data:trackC/c6/2026-11-01-u1/calibration_127a.json": "069794c05f4fe5faccb1ccb0a4a5c8b51ea6d385422c5feaadd14175051a0e0c",
+  "data:trackC/c4/2026-11-12-u2/reading.json": "08e53d047cf31c14fb66b5567c0bc03126c09463a5728451fc1747287ea04aca",
+  "data:trackC/c4/2026-11-14-close/close.json": "cc5a4e9dfbb74163551a2499d51b3ffc6d4c7ec176082b5bfa6c577947921a0b"
  },
  "keys": {
   "cfg.train_iters": {
@@ -9767,6 +9769,216 @@
   "c6.cal_both": {
    "value": 8,
    "record": "data:trackC/c6/2026-11-01-u1/calibration_127a.json"
+  },
+  "c4.label": {
+   "value": "neither",
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.label_v": {
+   "value": "neither",
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.arms": {
+   "value": 3,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.r1": {
+   "value": true,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.c_f": {
+   "value": [
+    48
+   ],
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.c_a0": {
+   "value": [
+    640
+   ],
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.c_band": {
+   "value": {
+    "step": [
+     512.0,
+     800.0
+    ],
+    "cumulative": [
+     91.65874125874126,
+     223.7762237762238
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.v_f": {
+   "value": 24,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.v_a0": {
+   "value": 384,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.v_band": {
+   "value": {
+    "step": [
+     288.0,
+     512.0
+    ],
+    "cumulative": [
+     29.001398601398602,
+     91.65874125874126
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.v_a0_256": {
+   "value": 3.0,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.v_a0_half": {
+   "value": 3.5,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.plateau": {
+   "value": {
+    "A0": [
+     15.0,
+     15.0
+    ],
+    "F": [
+     14.0,
+     14.0
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.f_early": {
+   "value": [
+    29.0,
+    34.0
+   ],
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.a0_max": {
+   "value": 17.0,
+   "record": "data:trackC/c4/2026-11-12-u2/reading.json"
+  },
+  "c4.n_trans": {
+   "value": 35,
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.set": {
+   "value": {
+    "A0": [
+     [
+      1,
+      2
+     ]
+    ],
+    "F": [
+     [
+      1,
+      2
+     ]
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.settled": {
+   "value": {
+    "A0": [
+     1000,
+     1000
+    ],
+    "F": [
+     512,
+     640
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.ind": {
+   "value": {
+    "A0": 768,
+    "F": 320
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.ind_loss": {
+   "value": {
+    "A0": 4.020435304380953,
+    "F": 4.132852970053339
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.heads": {
+   "value": {
+    "A0": [
+     "L3H6",
+     "L3H1",
+     "L3H5",
+     "L3H0"
+    ],
+    "F": [
+     "L2H6",
+     "L3H4",
+     "L3H3",
+     "L3H7"
+    ],
+    "released": [
+     "L3H6",
+     "L3H1",
+     "L3H5",
+     "L3H0"
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.rho": {
+   "value": [
+    1.25,
+    1.25
+   ],
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.rho_star": {
+   "value": {
+    "step": [
+     13.333333333333334,
+     13.333333333333334
+    ],
+    "cumulative": [
+     1.727334068350122,
+     1.727334068350122
+    ]
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.loss": {
+   "value": {
+    "A0": 3.0465590126346798,
+    "F": 2.998015974485315
+   },
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.n_grid": {
+   "value": 28,
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.grid_ok": {
+   "value": true,
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.head_bar": {
+   "value": 0.5,
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4.n_heads": {
+   "value": [
+    4
+   ],
+   "record": "data:trackC/c4/2026-11-14-close/close.json"
   }
  }
 }

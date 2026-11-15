@@ -893,6 +893,10 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   (the refusal worked; cost: one check that no `reg.*` key moved). A PR that edits a `repo:`
   record of `numbers.py` re-runs `produce` in the same PR; CI now recomputes every key from the
   `repo:` records and fails if a value moved (`test_keys_from_tracked_records_match_the_table`).
+  Again 2026-11-14 (C4 close-out): `P-SCH1`'s registration (`6ceacb1`, the user's commit from
+  `design-C4.md` "The draft entry") changed the registry without `produce`; the refusal worked
+  and no key moved. The draft entry's instructions did not name the step. A drafted registry
+  entry lists `numbers produce --reread repo:claims/registry.json` beside the commit it asks for.
 - 2026-11-09, S4 U2: the design took C2's 512-Pythia-token cut as safe for the toys because the 7 v1
   prompts retokenize to 503–842 toy tokens. On the library's `val`, 4 of 64 items retokenize to
   1028–1299, past the toys' 1024-position context. The first run stopped on a shape error, so
@@ -1961,6 +1965,17 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   plant was far smaller than the real updates, so it could not have seen this. Rule: **a linearised statistic's gate plants at the real update's
   size (here ‖Δx‖/‖x‖ read from the stored states), and the exact form, where one exists, is the
   primary**.
+- 2026-11-14, C4 (found at its close-out): the registered reading compared the two arms'
+  half-rise dates, and its tests planted only series that rise once to a plateau. On the flat
+  arm the centred count rose to 2.4× its plateau through a transient the harness arm does not
+  have (the centred energy falling at nearly every transition past block 0), and settled on the
+  plateau's two transitions only by 640. So "neither" is the rule's correct output, and the two
+  dates are not of one event. The per-transition table that shows it was on disk at the reading
+  and was first drawn at the close-out. Cost: none in compute; the label's meaning, and a paper
+  paragraph that has to say so. Rule: **a date compared across arms is planted with the shapes
+  the intervention can produce (an overshoot, a second rise), and the reading carries a
+  same-event check fixed beforehand (here the set of transitions at the date against the
+  plateau's)**.
 
 ## 7. Literature found after the construction was built
 
@@ -2741,6 +2756,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   stood, and its weak point narrowed to the longer-ramp arm. Fixed before merge; no run spent.
   The rule above already covered it, so it held only where it was looked up: before writing a
   recommendation's weakest point, open the owning row of each premise, not only of its headline.
+- 2026-11-14, C4 U3 (found at the close-out): U3 wrote "U3's exit is met" from its unit row
+  ("R1–R3 read"), and `/challenge-pr` on #348 reviewed what was there. `design-C4.md` "Readings
+  and outcomes" also names two things beside R1–R3: the loss curves and the per-head induction
+  score at each checkpoint, "so 'formed' has a second witness". The witness was never run on F
+  and stopped at 1000 on A0. Run at the close-out (two minutes), it dates induction at 320 on F
+  against the centred date's 48, which changes how the label is read. Cost: none in compute; a
+  reading closed and reviewed without it. Rule: **before a unit says its exit is met, list every
+  "beside" the design's readings section names and give each a file or a line saying why not**.
 
 ## 12. Deleted, then needed
 

@@ -634,5 +634,113 @@
  {
   "literal": "10",
   "why": "§7 C6: the summed rate's shift √10, the square root of the run's ten-times longer warmup (√(p/p′) with the in-warmup rate a tenth; design-C6.md, c6_schedule.py); a claim checks both shift ranges contain it"
+ },
+ {
+  "slot": "{{c4.n_grid}}",
+  "where": "§7 C4 (close-out 2026-11-14): the dense grid's length"
+ },
+ {
+  "slot": "{{c4.arms}}",
+  "where": "§7 C4 (close-out 2026-11-14): the centred arms gated on the flat arm"
+ },
+ {
+  "slot": "{{c4.c_f|list}}",
+  "where": "§7 C4 (close-out 2026-11-14): the flat arm's centred date on every gated arm (registered reading)"
+ },
+ {
+  "slot": "{{c4.c_a0|list}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's centred date"
+ },
+ {
+  "slot": "{{c4.c_band[step]|range0}}",
+  "where": "§7 C4 (close-out 2026-11-14): step's band for the centred date"
+ },
+ {
+  "slot": "{{c4.c_band[cumulative]|range0}}",
+  "where": "§7 C4 (close-out 2026-11-14): the summed rate's band for the centred date"
+ },
+ {
+  "slot": "{{c4.v_f}}",
+  "where": "§7 C4 (close-out 2026-11-14): the flat arm's V date (R3, beside)"
+ },
+ {
+  "slot": "{{c4.v_a0}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's V date"
+ },
+ {
+  "slot": "{{c4.v_band[cumulative]|range0}}",
+  "where": "§7 C4 (close-out 2026-11-14): the summed rate's band for V's date"
+ },
+ {
+  "slot": "{{c4.v_a0_256}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's V count at step 256"
+ },
+ {
+  "slot": "{{c4.v_a0_half|f1}}",
+  "where": "§7 C4 (close-out 2026-11-14): half the harness arm's V plateau"
+ },
+ {
+  "slot": "{{c4.rho[0]|f2}}",
+  "where": "§7 C4 (close-out 2026-11-14): the registered tolerance at the centred date"
+ },
+ {
+  "slot": "{{c4.rho_star[step]|range0}}",
+  "where": "§7 C4 (close-out 2026-11-14): the tolerance at which step's band would reach the flat arm's centred date (post hoc)"
+ },
+ {
+  "slot": "{{c4.rho_star[cumulative]|range2}}",
+  "where": "§7 C4 (close-out 2026-11-14): the same for the summed rate's band (post hoc)"
+ },
+ {
+  "slot": "{{c4.plateau[A0]|range}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's centred plateau"
+ },
+ {
+  "slot": "{{c4.plateau[F]|range}}",
+  "where": "§7 C4 (close-out 2026-11-14): the flat arm's centred plateau"
+ },
+ {
+  "slot": "{{c4.a0_max}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's largest centred count on the grid"
+ },
+ {
+  "slot": "{{c4.f_early|range}}",
+  "where": "§7 C4 (close-out 2026-11-14): the flat arm's centred count at steps 64-256 on the gated arms"
+ },
+ {
+  "slot": "{{c4.n_trans}}",
+  "where": "§7 C4 (close-out 2026-11-14): transitions after the first, times the prompts"
+ },
+ {
+  "slot": "{{c4.settled[A0]|range}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's first step with the final majority set (post hoc)"
+ },
+ {
+  "slot": "{{c4.settled[F]|range}}",
+  "where": "§7 C4 (close-out 2026-11-14): the flat arm's (post hoc)"
+ },
+ {
+  "slot": "{{c4.ind[A0]}}",
+  "where": "§7 C4 (close-out 2026-11-14): the harness arm's induction half-rise (the design's beside witness, run at the close-out)"
+ },
+ {
+  "slot": "{{c4.ind[F]}}",
+  "where": "§7 C4 (close-out 2026-11-14): the flat arm's"
+ },
+ {
+  "slot": "{{c4.ind_loss[A0]|f2}}",
+  "where": "§7 C4 (close-out 2026-11-14): training loss at the harness arm's induction half-rise"
+ },
+ {
+  "slot": "{{c4.ind_loss[F]|f2}}",
+  "where": "§7 C4 (close-out 2026-11-14): training loss at the flat arm's"
+ },
+ {
+  "slot": "{{c4.head_bar|f1}}",
+  "where": "§7 C4 (close-out 2026-11-14): the induction score at or above which a head is listed"
+ },
+ {
+  "slot": "{{c4.n_heads|list}}",
+  "where": "§7 C4 (close-out 2026-11-14): heads at the bar at step 4000 on each of the harness arm, the flat arm and the released run"
  }
 ]

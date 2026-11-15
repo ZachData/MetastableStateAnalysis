@@ -3144,6 +3144,25 @@ section says why it is project-wide. Tier 1, description, seed 0.
   layer's sum too, so the plateau-gap link is not tested. This is the sentence for `paper/` §8
   and for the email to the authors.
 
+## 3.84 Track C's C4 closed: with the LR ramp removed on 70m the registered prediction fails; the dates are not fixed in steps, and the flat arm's counts date a transient (2026-11-14)
+
+**`trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"** holds the numbers; this
+section says why it is project-wide. `P-SCH1` was registered before the flat arm's counts
+existed, and its prediction failed.
+
+- The first training intervention in the project. `pythia-70m` was trained twice from seed 0's
+  init on Pythia's data order, once on Pythia's schedule (it reproduces the released run) and
+  once flat at the peak rate. The registered reading of the centred date is "neither": the flat
+  arm dates before the bands of both the step count and the summed rate. With C6's longer ramp,
+  a fixed count of updates is excluded on 70m from both sides. F1 stays open for 410m.
+- Read after the label, as description on one pair of runs: the flat arm's counts rise through
+  a transient that Pythia's schedule does not show, so the half-rise does not date one event on
+  both arms; both arms end on the same two transitions; induction forms at 320 against 768, at
+  near-equal loss, in four heads that share none with the harness arm's four. The ramp delays
+  and damps the cloud's early rise and fall, and does not produce it.
+- For later designs: a date compared across arms needs a same-event check (`LESSONS.md` 6,
+  2026-11-14). What could confirm or break the leans is ROADMAP §8 C4′.
+
 ---
 
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)

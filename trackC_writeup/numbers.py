@@ -91,6 +91,10 @@ RECORDS = {
     # the in-sample calibration its label is quoted with (U1's record, `centred_only_3arms`)
     "c6u1b": "data:trackC/c6/2026-11-01-u1b/reading.json",
     "c6cal": "data:trackC/c6/2026-11-01-u1/calibration_127a.json",
+    # C4 (§7; the close-out, 2026-11-14): U3's registered reading on the flat arm, and the close-out's
+    # post hoc description (`c4_close.py`: per-transition counts, the induction witness per head)
+    "c4read": "data:trackC/c4/2026-11-12-u2/reading.json",
+    "c4close": "data:trackC/c4/2026-11-14-close/close.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -758,7 +762,51 @@ KEYS: Dict[str, tuple] = {
     "c6.cal_both": ("c6cal", lambda c: sum(1 for k, row in c["centred_only_3arms"]["literal"]["rows"].items()
                                            if k.endswith("|cumulative")
                                            and row["joint"]["label"] == "consistent with cumulative and instantaneous")),
+    # C4 close-out: §7's "Pythia 70m with the warmup removed". `c4read` is the registered reading (P-SCH1);
+    # every `c4close` key is post hoc description.
+    "c4.label": ("c4read", lambda r: r["R2_centred"]["label"]),
+    "c4.label_v": ("c4read", lambda r: r["R3_V"]["label"]),
+    "c4.arms": ("c4read", lambda r: len(r["R2_centred"]["arms"])),
+    "c4.r1": ("c4read", lambda r: all(v["pass"] for v in r["r1"].values()) and not r["r1_refused"]),
+    "c4.c_f": ("c4read", lambda r: sorted({r["per_key"][a]["t_f"] for a in r["R2_centred"]["arms"]})),
+    "c4.c_a0": ("c4read", lambda r: sorted({r["per_key"][a]["t_a0"] for a in r["R2_centred"]["arms"]})),
+    "c4.c_band": ("c4read", lambda r: {h: _span(x for a in r["R2_centred"]["arms"] for x in r["per_key"][a]["bands"][h])
+                                       for h in ("step", "cumulative")}),
+    "c4.v_f": ("c4read", lambda r: r["R3_V"]["t_f"]),
+    "c4.v_a0": ("c4read", lambda r: r["R3_V"]["t_a0"]),
+    "c4.v_band": ("c4read", lambda r: r["R3_V"]["bands"]),
+    "c4.v_a0_256": ("c4read", lambda r: r["beside"]["A0"]["u"][_C4GRID.index(256)]),
+    "c4.v_a0_half": ("c4read", lambda r: r["dates"]["A0"]["u"]["plateau"] / 2),
+    "c4.plateau": ("c4read", lambda r: {arm: _span(r["dates"][arm][a]["plateau"] for a in r["R2_centred"]["arms"])
+                                        for arm in ("A0", "F")}),
+    "c4.f_early": ("c4read", lambda r: _span(r["beside"]["F"][a][_C4GRID.index(s)] for a in r["R2_centred"]["arms"]
+                                             for s in (64, 80, 96, 128, 160, 192, 256))),
+    "c4.a0_max": ("c4read", lambda r: max(x for a in r["R2_centred"]["arms"] for x in r["beside"]["A0"][a])),
+    "c4.n_trans": ("c4close", lambda c: (len(c["transitions"]["F"]["u"][0]) - 1) * 7),
+    "c4.set": ("c4close", lambda c: {arm: [list(t) for t in sorted({tuple(c["settled"][arm][a]["set"]) for a in _c4_arms(c)})]
+                                     for arm in ("A0", "F")}),
+    "c4.settled": ("c4close", lambda c: {arm: _span(c["settled"][arm][a]["step"] for a in _c4_arms(c))
+                                         for arm in ("A0", "F")}),
+    "c4.ind": ("c4close", lambda c: {arm: c["induction"][arm]["half_rise"] for arm in ("A0", "F")}),
+    "c4.ind_loss": ("c4close", lambda c: next(e["loss"] for e in c["events"] if e["event"] == "induction half-rise")),
+    "c4.heads": ("c4close", lambda c: {arm: [f"L{h['layer']}H{h['head']}" for h in c["induction"][arm]["heads_at_bar_4000"]]
+                                       for arm in ("A0", "F", "released")}),
+    "c4.rho": ("c4close", lambda c: _span(c["margin"][a]["rho"] for a in _c4_arms(c))),
+    "c4.rho_star": ("c4close", lambda c: {h: _span(c["margin"][a][h] for a in _c4_arms(c)) for h in ("step", "cumulative")}),
+    "c4.loss": ("c4close", lambda c: c["loss_4000"]),
+    "c4.n_grid": ("c4close", lambda c: len(c["grid"])),
+    "c4.grid_ok": ("c4close", lambda c: tuple(c["grid"]) == _C4GRID),
+    "c4.head_bar": ("c4close", lambda c: c["head_bar"]),
+    "c4.n_heads": ("c4close", lambda c: sorted({len(c["induction"][arm]["heads_at_bar_4000"]) for arm in ("A0", "F", "released")})),
 }
+#: C4's dense grid (`c4_train.GRID`; a claim checks the close-out record's equals it)
+_C4GRID = (0, 1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128, 160, 192, 256, 320, 384, 512, 640, 768,
+           1000, 1250, 1500, 2000, 3000, 4000)
+
+
+def _c4_arms(c: dict) -> List[str]:
+    """The centred arms the registered reading used: the close-out's centred-date events name them."""
+    return [e["event"].split()[2] for e in c["events"] if e["event"].startswith("centred date ")]
 
 
 def _shift(r: dict, first: int, last: int) -> List[float]:
@@ -950,6 +998,27 @@ CLAIMS: List[tuple] = [
     ("§7 C6: seed 0's centred count at 1000 is far above the run's, which is still at its early level",
      lambda k: k["c6.s0_at1000"][0] > 4 * k["c6.run_at"]["1000"][1]
      and k["c6.run_at"]["512"][1] <= k["c6.run_at"]["1000"][1] < k["c6.at_date"][0] / 4),
+    # C4 close-out: §7's flat-arm paragraph
+    ("§7 C4: the registered reading is 'neither' on every gated arm, the flat arm's one date below both bands, "
+     "the harness check passed; V's the same", lambda k: k["c4.label"] == "neither" and k["c4.label_v"] == "neither"
+     and k["c4.r1"] is True and len(k["c4.c_f"]) == 1 and len(k["c4.c_a0"]) == 1
+     and k["c4.c_f"][0] < k["c4.c_band"]["cumulative"][0] < k["c4.c_band"]["cumulative"][1] < k["c4.c_band"]["step"][0]
+     and k["c4.v_f"] < k["c4.v_band"]["cumulative"][0] and k["c4.v_a0_256"] < k["c4.v_a0_half"] <= k["c4.v_a0_256"] + 1),
+    ("§7 C4: the flat arm's centred count overshoots (more than twice its plateau, at least four fifths of the "
+     "transitions after the first) and the harness arm's never passes its plateau by more than 2",
+     lambda k: k["c4.f_early"][0] > 2 * k["c4.plateau"]["F"][1] and k["c4.f_early"][1] <= k["c4.n_trans"]
+     and k["c4.f_early"][0] >= 0.8 * k["c4.n_trans"] and k["c4.a0_max"] <= k["c4.plateau"]["A0"][1] + 2),
+    ("§7 C4: both arms settle on the same two transitions, the flat arm earlier in steps",
+     lambda k: k["c4.set"]["A0"] == k["c4.set"]["F"] == [[1, 2]] and k["c4.settled"]["F"][1] < k["c4.settled"]["A0"][0]),
+    ("§7 C4: induction forms earlier on the flat arm, at a near-equal loss, in four heads disjoint from the harness "
+     "arm's, which are the released run's", lambda k: k["c4.ind"]["F"] < k["c4.ind"]["A0"]
+     and abs(k["c4.ind_loss"]["A0"] - k["c4.ind_loss"]["F"]) < 0.2
+     and set(k["c4.heads"]["A0"]) == set(k["c4.heads"]["released"]) and not set(k["c4.heads"]["A0"]) & set(k["c4.heads"]["F"])
+     and len(k["c4.heads"]["A0"]) == len(k["c4.heads"]["F"]) == 4 and k["c4.heads"]["A0"][0] == k["c4.heads"]["released"][0]),
+    ("§7 C4: step is excluded by an order of magnitude, the summed rate by less than a factor of 2 in the "
+     "harness arm's date", lambda k: k["c4.rho_star"]["step"][0] > 10 and k["c4.rho"][1] < k["c4.rho_star"]["cumulative"][0]
+     and k["c4.rho_star"]["cumulative"][1] < 2 and k["c4.loss"]["F"] < k["c4.loss"]["A0"] and k["c4.grid_ok"] is True
+     and k["c4.n_heads"] == [4]),
 ]
 
 
@@ -1057,6 +1126,7 @@ FORMATS: Dict[str, Callable] = {
     "ands": lambda v: _andstr(list(v)),
     "or": lambda v: _and(sorted(set(v))).replace(" and ", " or "),
     "range": lambda v: f"{_num(v[0])}–{_num(v[1])}",
+    "range0": lambda v: f"{_grouped(round(v[0]))}–{_grouped(round(v[1]))}",
     "range2": lambda v: f"{v[0]:.2f}–{v[1]:.2f}",
     "range3": lambda v: f"{v[0]:.3f}–{v[1]:.3f}",
     "date": lambda v: v[:10],
