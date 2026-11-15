@@ -41,8 +41,9 @@
   - C4 U2 (2026-11-12; `P-SCH1` registered first by the user, Blocked 156 (a)): the flat arm trained to 4000 without diverging; V's gate at the off-grid step 3500 passes as frozen, so V is read (plant B seen at 0.5, by one unit over the bar, where C6's run failed), and three of the four centred arms are gated (4.78e-3 not, as in C6); the flat arm's records written, no count read — `trackC_writeup/status-C.md` "C4 unit 2"
   - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) reads "neither": the flat arm dates before the bands of both the step count and the summed rate (48 against the harness arm's 640, summed-rate band from 92), so `P-SCH1`'s falsifier is met; V's date (R3, beside) also reads "neither" but one count on the harness arm's side would make it "consistent with cumulative", so it is undetermined; the flat arm's centred count overshoots its plateau about 2.4× before settling; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
   - **C4 closed 2026-11-14 at its exit** (4 units + close-out, the budget): on 70m with the ramp removed the registered prediction (the summed rate) failed, the centred date reading "neither"; a fixed count of updates is excluded from both sides with C6 (later under a longer ramp, earlier with none); read after the label, as description: the summed rate is excluded only by a factor of 1.73 in the harness arm's date (the grid's tolerance is 1.25, no run-to-run spread measured); the flat arm's count rises through a transient the harness arm lacks (the centred energy falling at nearly every transition past the first at 64–256) and both arms end on the same two transitions; the induction witness the design asked for, run here, dates induction at 768 on the harness arm and 320 on the flat arm at near-equal loss, in four heads that share none with the harness arm's four (the released run's); the label in `paper/` §7 and §1; candidates carried to ROADMAP C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
+  - C4′ opened 2026-11-15 (STATE Blocked 158 (a), the user's; writing only, nothing computed): a scan and a proposed design for two readings without training: induction's date on the released long-warmup 70m by C6's frozen rule, against C4's lean that it follows the summed rate, and whether the flat arm's function at each step is the harness arm's at some step (per-token KL against the harness arm's own step-to-step KL), each gated on the real design points before output; budget 3 units + close-out; decisions STATE Blocked 159 — `trackC_writeup/status-C.md` "C4′ unit 0"
 - **Superseded / wrong:** none
-- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry: STATE Blocked 157, the user's); C2 quotes `P-A5`, Track A's
+- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
@@ -54,7 +55,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-14 · body `b39f1d3f41`
+- **Reviewed:** 2026-11-15 · body `a9a5e9d196`
 <!-- /phase-card -->
 
 ## Units
@@ -96,6 +97,38 @@
 | C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
 | C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **done 2026-11-14: A0 1000 → 4000 (3 segments, loss 3.042); R1 passes; R2 (centred) "neither": F dates before both maps' bands; R3 (V) "neither" on one count of A0's, so undetermined; `P-SCH1`'s falsifier met (scoring, Blocked 157); the description beside written** | "C4 unit 3" below |
 | C4 close-out | **done 2026-11-14: exit met at the budget (4 units + close-out); the label in `paper/` §7 and §1 (28 `c4.*` keys, 5 claims; `paper_check` 0, 36 pages); the design's induction witness run on both arms (not run in U3): 768 on A0, 320 on F, the two arms' four heads disjoint; post hoc beside: F's count rises through a transient absent on A0, both end on the same two transitions; Parked carried (ROADMAP C4′) or dropped** | `c4_close.py`, `data/trackC/c4/2026-11-14-close/`; "C4 on one page" below |
+| C4′ 0. the scan and design (Blocked 158 (a), the user's; budget 3 units + close-out) | **done 2026-11-15: writing only, nothing computed; (a) and (b) designed, each gated on the real design points before output; proposed, D1–D5 Blocked 159** | `lit-C4p.md`, `design-C4p.md`; "C4′ unit 0" below |
+
+## C4′ unit 0, the scan and design (2026-11-15)
+
+Opened on Blocked 158 (a), the user's: C4′ (a) then (b), no training. Scan `lit-C4p.md` (three
+searches, [S] only): no warmup-length intervention dating induction at scale was found; the
+summed rate is an established clock for the loss (2408.11029, 2503.12811), not for events; KL
+across PolyPythias seeds reconverges near induction (2509.26643), so (b) is read in two windows
+and its residual against A0's own step-to-step KL and the seeds' KL. Design `design-C4p.md`:
+
+| | reading | gate (before output) | lean stated now |
+|---|---|---|---|
+| (a) A1 | induction's top-head date on `pythia-70m-warmup01` by C6's frozen rule (ten-seed reference, three schedules) | leave-one-out plants on the ten seeds: ≥ 8 of 10 cumulative and ≥ 8 of 10 step plants read as their own | cumulative (≈ 2430 from A0's 768; step 768) |
+| (a) A2, A3 | heads ≥ 0.5 against the released run's and the seeds'; the per-transition centred set (end set, transient) from C6 U1b's records | none (description) | end set {T1, T2}; no transient on a ramped run |
+| (b) | F on A0's path at a step when min_t K(F_s, A0_t) ≤ A0's step-to-step KL there; early (1–256) and late (320–4000) | per window: the released run reads "one path" with match = s, ≥ 8 of 9 seeds "another path" | "another path" early |
+
+Inputs: every checkpoint is cached except warmup01's step 3000 (one download, beside only under
+D1 (a)). Warmup01's induction has never been computed here (no producer or record names it),
+which is what makes D3 (a), registering A1 as a second `P-SCH` entry, legitimate. Decisions D1–D5: STATE
+Blocked 159, recommended all (a).
+
+**`/challenge-pr` on #350: accept with changes, findings 1–4 taken** (design revised): (b)'s
+effect plant (seeds) differs from A0 in init and order and F in neither, so "one path" is the
+weaker reading and the late window may be refused; the gate's step counts (seeds 2–4000, late 4
+steps); the released checkpoints are fp16-representable, so the null is read against A0 rounded
+to fp16; A1's "consistent with cumulative" is a band, and a fixed-loss clock predicts the same
+band (the loss at the date beside); (b)'s cost re-planned (per half-row, all pairs as one matrix
+product), about an hour, a stop at 3 h.
+
+**Parked:** `lit-C4p.md` Parked 1 (2509.26643's full text, before U2's code).
+
+**Re-run:** nothing to re-run (writing only).
 
 ## C4 on one page (closed 2026-11-14)
 
