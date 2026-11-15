@@ -5,7 +5,8 @@
 2026-11-15 (U0, writing only); revised after `/challenge-pr` on #350 (accept with changes,
 findings 1–4 taken: (b)'s gate step counts and what it does not test, the null at fp16, what A1's
 label covers, (b)'s cost). U1: A1's gate passed 2026-11-15 (10 of 10 on every schedule); the
-draft entry is "A1's draft entry" below, STATE Blocked 160.** Opened
+draft entry is "A1's draft entry" below, declined by the user (Blocked 160 (b)), so A1 is tier 1
+and was read 2026-11-15 (`status-C.md` "C4′ unit 1").** Opened
 on Blocked 158 (a), the user's (2026-11-15): C4′ (a), then (b), each with its rule fixed before
 its output; the replicate pair (C4′ (c)) is decided on what they show. Scan: `lit-C4p.md`.
 Nothing below has been computed. Of the inputs, only C6's centred counts on warmup01 (A3's
@@ -132,7 +133,8 @@ close-out** (U0 this design, U1 (a), U2 (b), close-out). GPU about 1–2 hours i
 ## A1's draft entry (D3 (a); U1, after the gate, before any score on the run)
 
 Drafted by Claude 2026-11-15 after A1's gate passed (`data/trackC/c4p/2026-11-15-u1/gate.json`;
-`status-C.md` "C4′ unit 1"). **Registering it is the user's** (STATE Blocked 160);
+`status-C.md` "C4′ unit 1"). **Declined by the user, 2026-11-15 (Blocked 160 (b)): A1 is tier
+1; kept below as drafted.** **Registering it is the user's** (STATE Blocked 160);
 `c4p_read heads --model run` refuses until it is in `claims/registry.json` or declined. Every
 field but `registered_commit` / `registered_date` as it would be committed:
 
