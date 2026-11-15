@@ -132,7 +132,8 @@ close-out** (U0 this design, U1 (a), U2 (b), close-out). GPU about 1–2 hours i
 ## A1's draft entry (D3 (a); U1, after the gate, before any score on the run)
 
 Drafted by Claude 2026-11-15 after A1's gate passed (`data/trackC/c4p/2026-11-15-u1/gate.json`;
-`status-C.md` "C4′ unit 1"). **Registering it is the user's** (STATE Blocked 160);
+`status-C.md` "C4′ unit 1"). **Declined by the user, 2026-11-15 (Blocked 160 (b)): A1 is tier
+1; kept below as drafted.** **Registering it is the user's** (STATE Blocked 160);
 `c4p_read heads --model run` refuses until it is in `claims/registry.json` or declined. Every
 field but `registered_commit` / `registered_date` as it would be committed:
 
