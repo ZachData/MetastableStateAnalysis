@@ -123,6 +123,20 @@ def calibrate(profiles: Dict[str, Sequence[float]], loo: bool = True, late: str 
             "pass": all(summary[t]["exact"] >= GATE_MIN for t in GATED)}
 
 
+def run_dates(v: Sequence[float]) -> Dict[str, Optional[int]]:
+    """The half-rise under each schedule, on that schedule's own window and early set (the date
+    the label tests; `/challenge-pr` on #351, finding 1: not step's window for every schedule)."""
+    return {h: cw.date_on(v, h)["step"] for h in HYPS}
+
+
+def loss_steps(dates: Dict[str, Optional[int]], seed0: Optional[int]) -> List[Tuple[str, int]]:
+    """(model, step) pairs for `loss`: each distinct run date, then seed 0's; refuse on none."""
+    run = sorted({d for d in dates.values() if d is not None})
+    if not run or seed0 is None:
+        raise C4pRefused(f"no date to read the loss at (run {dates}, seed0 {seed0})")
+    return [("run", s) for s in run] + [("seed0", seed0)]
+
+
 def heads_at(sc: Sequence[Sequence[float]], bar: float = HEAD_BAR) -> List[Tuple[int, int]]:
     a = np.asarray(sc, float)
     return sorted((int(l), int(h)) for l, h in zip(*np.where(a >= bar)))
@@ -141,13 +155,15 @@ def transients(mat: np.ndarray, grid: Sequence[int]) -> dict:
 
 # ---------------------------------------------------------------- the registration guard
 
-def registered(path: Path = REGISTRY, entry: str = ENTRY_ID) -> bool:
+def registered(path: Path = REGISTRY, entry: str = ENTRY_ID) -> Optional[dict]:
     reg = json.loads(path.read_text())
-    return any(p.get("id") == entry for p in reg.get("predictions", reg if isinstance(reg, list) else []))
+    return next((p for p in reg.get("predictions", reg if isinstance(reg, list) else []) if p.get("id") == entry), None)
 
 
 def run_allowed(out: Path, registration: Optional[str], path: Path = REGISTRY) -> str:
-    """Why the run's scores may be computed now, or refuse (D3 (a))."""
+    """Why the run's scores may be computed now, or refuse (D3 (a)). A registered entry must name
+    this code's hash in its instrument and the gate must have run under it (`/challenge-pr` on
+    #351, finding 4)."""
     g = out / "gate.json"
     if not g.exists():
         raise C4pRefused("gate.json missing: the gate runs before the run's scores")
@@ -155,8 +171,11 @@ def run_allowed(out: Path, registration: Optional[str], path: Path = REGISTRY) -
     if not gate["pass"]:
         return "gate failed: A1 refused, the run's profile is description"
     if registration == "registered":
-        if not registered(path):
+        e = registered(path)
+        if e is None:
             raise C4pRefused(f"{ENTRY_ID} is not in {path}: register it first")
+        if code_sha() not in e.get("instrument", "") or gate.get("code") != code_sha():
+            raise C4pRefused(f"{ENTRY_ID}'s instrument and the gate ({gate.get('code')}) must name this code ({code_sha()})")
         return f"{ENTRY_ID} registered"
     if registration == "declined":
         return "registration declined by the user: A1 tier 1, rule frozen in this code"
@@ -217,21 +236,20 @@ def heads(a) -> int:
 
 
 def loss(a) -> int:
-    """Beside A1: the held-out loss at the run's half-rise and at pythia-70m's (`read`'s dates)."""
+    """Beside A1: the held-out loss at the run's half-rise under each schedule (each on that
+    schedule's own window, `run_dates`) and at pythia-70m's; refuses if either has no date."""
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
     from trackC_writeup import c4_train as ct
-    torch, device = c._torch_setup()
     out = Path(a.out)
     rd = json.loads((out / "reading.json").read_text())
+    want = loss_steps(rd["run_dates"], rd["seed_dates"]["seed0"])
+    torch, device = c._torch_setup()
     rows = ct.open_rows(Path(a.root))
-    want = {"run": rd["run_date_step"], "seed0": rd["seed_dates"]["seed0"]}
-    res = {"code": code_sha(), "rows": list(ct.HELD_OUT), "loss": {}}
-    for name, s in want.items():
-        if s is None:
-            continue
+    res = {"code": code_sha(), "rows": list(ct.HELD_OUT), "run_dates": rd["run_dates"], "label": rd["label"], "loss": {}}
+    for name, s in want:
         mdl = _load(name, s, device)
-        res["loss"][name] = {"step": s, "loss": ct.held_loss(mdl, rows, device)}
-        print(json.dumps({name: res["loss"][name]}), flush=True)
+        res["loss"][f"{name}@{s}"] = ct.held_loss(mdl, rows, device)
+        print(json.dumps({name: s, "loss": res["loss"][f"{name}@{s}"]}), flush=True)
         del mdl
         torch.cuda.empty_cache()
     (out / "loss.json").write_text(json.dumps(res, indent=1) + "\n")
@@ -286,13 +304,13 @@ def read(a) -> int:
     res = {"code": code_sha(), "gate_pass": g["pass"], "why_allowed": h["why_allowed"], "ref": g["ref"],
            "label": rd["joint"]["label"] if g["pass"] else None, "joint": rd["joint"], "count": rd["count"],
            "a1_refused": not g["pass"], "run_profile": v,
-           "run_date_step": cw.date_on(v, "step")["step"],
+           "run_dates": run_dates(v),
            "seed_dates": g["seed_dates"],
            "beside": {"run_3000": float(np.max(h["per_step"]["3000"])) if "3000" in h["per_step"] else None,
                       "run_top_head": {str(s): list(map(int, np.unravel_index(int(np.argmax(h["per_step"][str(s)])), (6, 8))))
                                        for s in STEPS}}}
     (out / "reading.json").write_text(json.dumps(res, indent=1) + "\n")
-    print(json.dumps({k: res[k] for k in ("label", "a1_refused", "run_date_step", "ref")}))
+    print(json.dumps({k: res[k] for k in ("label", "a1_refused", "run_dates", "ref")}))
     print(json.dumps({hh: (rd["count"][hh]["dates"], rd["count"][hh]["status"]) for hh in HYPS}))
     print("profile", [round(x, 3) for x in v], "beside 3000", res["beside"]["run_3000"])
     return 0

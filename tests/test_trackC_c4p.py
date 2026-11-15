@@ -81,13 +81,26 @@ def test_heads_at_and_transients():
     assert p.transients(mat, (1, 2, 3, 4)) == {"T1": [2]}
 
 
-def _gate(tmp_path, ok):
-    (tmp_path / "gate.json").write_text(json.dumps({"pass": ok}))
+def test_run_dates_use_each_schedules_window():
+    """#351 finding 1: a run rising at 4000 reads cumulative, and its date is cumulative's 4000,
+    not step's (unreadable on 1000–4000)."""
+    v = _rise(4000)
+    assert p.reading(v, (1000,))["joint"]["label"] == "consistent with cumulative"
+    d = p.run_dates(v)
+    assert d["cumulative"] == 4000 and d["step"] is None
+    assert p.loss_steps(d, 1000) == [("run", 4000), ("seed0", 1000)]
+    with pytest.raises(p.C4pRefused):
+        p.loss_steps({h: None for h in w.HYPS}, 1000)
 
 
-def _reg(tmp_path, ids):
+def _gate(tmp_path, ok, code=None):
+    (tmp_path / "gate.json").write_text(json.dumps({"pass": ok, "code": code or p.code_sha()}))
+
+
+def _reg(tmp_path, ids, instrument=None):
     f = tmp_path / "reg.json"
-    f.write_text(json.dumps({"predictions": [{"id": i} for i in ids]}))
+    f.write_text(json.dumps({"predictions": [{"id": i, "instrument": instrument or f"c4p_read {p.code_sha()}"}
+                                             for i in ids]}))
     return f
 
 
@@ -104,3 +117,8 @@ def test_run_guard(tmp_path):
         p.run_allowed(tmp_path, "registered", reg)
     assert "registered" in p.run_allowed(tmp_path, "registered", _reg(tmp_path, ["P-SCH1", p.ENTRY_ID]))
     assert "declined" in p.run_allowed(tmp_path, "declined", reg)
+    with pytest.raises(p.C4pRefused):                       # entry names another code hash
+        p.run_allowed(tmp_path, "registered", _reg(tmp_path, [p.ENTRY_ID], "c4p_read 000000000000"))
+    _gate(tmp_path, True, code="000000000000")
+    with pytest.raises(p.C4pRefused):                       # gate run under another code hash
+        p.run_allowed(tmp_path, "registered", _reg(tmp_path, [p.ENTRY_ID]))
