@@ -39,7 +39,7 @@
   - C4 U1 (2026-11-09; tier 1, harness): the harness reproduces Pythia's run to step 1000: the init bit-equal, the data rows verified against the Hub's hashes, the first updates' signs agreeing with the released run at 0.9994 (step 2) and 0.981 (step 4), the loop exact in float64, the reader exact against C2 3b's records, the held-out loss at 1000 within 0.38%, the counts and the induction head (L3 H6) tracking the released run's; the flat arm trains to 64 without diverging; the rule frozen in code before any count; weight decay corrected to the config's 0.1; the reading's registration is the user's (STATE Blocked 156) — `trackC_writeup/status-C.md` "C4 unit 1"
   - C4's design gains a description beside (2026-11-10, the user's; writing only): ρ_mid, ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of both arms, read in U3 after R1–R3; no label, not in the registration — `trackC_writeup/status-C.md` "C4, an addition to the design"
   - C4 U2 (2026-11-12; `P-SCH1` registered first by the user, Blocked 156 (a)): the flat arm trained to 4000 without diverging; V's gate at the off-grid step 3500 passes as frozen, so V is read (plant B seen at 0.5, by one unit over the bar, where C6's run failed), and three of the four centred arms are gated (4.78e-3 not, as in C6); the flat arm's records written, no count read — `trackC_writeup/status-C.md` "C4 unit 2"
-  - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) and V's date (R3, beside) both read "neither": the flat arm dates before the bands of both the step count and the summed rate (centred 48 against the harness arm's 640, summed-rate band from 92; V 24 against 384, from 29), so `P-SCH1`'s falsifier is met; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
+  - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) reads "neither": the flat arm dates before the bands of both the step count and the summed rate (48 against the harness arm's 640, summed-rate band from 92), so `P-SCH1`'s falsifier is met; V's date (R3, beside) also reads "neither" but one count on the harness arm's side would make it "consistent with cumulative", so it is undetermined; the flat arm's centred count overshoots its plateau about 2.4× before settling; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
 - **Superseded / wrong:** none
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry: STATE Blocked 157, the user's); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -52,7 +52,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-14 · body `fe6e680d99`
+- **Reviewed:** 2026-11-14 · body `68b3a60d59`
 <!-- /phase-card -->
 
 ## Units
@@ -92,7 +92,7 @@
 | C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
 | C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
-| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **done 2026-11-14: A0 to 4000 (4 segments, loss 3.042); R1 passes; R2 (centred) "neither", R3 (V) "neither": F dates before both maps' bands; `P-SCH1`'s falsifier met (scoring, Blocked 157); the description beside written** | "C4 unit 3" below |
+| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **done 2026-11-14: A0 1000 → 4000 (3 segments, loss 3.042); R1 passes; R2 (centred) "neither": F dates before both maps' bands; R3 (V) "neither" on one count of A0's, so undetermined; `P-SCH1`'s falsifier met (scoring, Blocked 157); the description beside written** | "C4 unit 3" below |
 
 ## C4 unit 3, A0 to 4000 and the reading (started 2026-11-12)
 
@@ -158,7 +158,15 @@ v1's 7 prompts; `gate.json` `ef40569a4f28227a…` (U2). Divergence: none on eith
   either map). **`P-SCH1`'s falsifier reads "the label is 'consistent with step' or 'neither'"**,
   so it is met. Scoring the entry (its `status`, `real_run_record`) is a registry edit: Blocked
   157, the user's.
-- **R3, V's date: "neither"** (beside; does not score).
+- **R3, V's date: "neither"** (beside; does not score), **and it turns on one count on A0's
+  side** (`/challenge-pr` on #348, finding 1): A0's V count at 256 is 3 against the half-plateau
+  3.5; at 4 A0 dates at 256, ρ 1.333, summed-rate band [12.9, 40.7], and F's 24 would read
+  "consistent with cumulative" (as U0's prediction from the released date did). So R3 is
+  **undetermined at this resolution**, not a second witness for R2.
+- **F's centred count overshoots** (finding 2): it reaches 32–34 at 64–192, about 2.4× its
+  plateau 14, and decays to 14 by 4000; A0's rises to its plateau (13–17) without a peak. The
+  label does not depend on it: dated at half F's peak (17), F's centred date is 64, still below
+  the band's 91.7.
 - F's dates lie **below** the summed-rate band on every key: V's by one dense-grid step (24
   against a lower edge 29.0; the grid holds 16, 24, 32), the centred arms' by three (48 against
   91.7). F forms earlier than both maps predict from A0.
@@ -177,7 +185,10 @@ the flat peak, or the count's sensitivity at a high rate). 70m only; 410m by inf
 ### The description beside (2026-11-14, after `reading.json`; no label)
 
 `c4_beside records --model {A0,F,released}` (A0 35 s; F and released not timed, under a minute each; GPU) then `describe` →
-`beside/description.json` (sha256 `82307fbca41beff5…`, carries `reading.json`'s hash). The step
+`beside/description.json` (sha256 `6018e385f422e90f…`, carries `reading.json`'s hash), code
+`c4_beside` `22e8be8856cf`. First run at `2be40d7a277c`; after the docstring and the resume guard
+(findings 3, 4) all four files were re-run and equal it apart from the code field (the first
+run kept at `beside_2be40d7a277c/`). The step
 and the value at each shape point; "after" points none censored.
 
 | series | model | peak / trough | half | min / max after | at 4000 |
