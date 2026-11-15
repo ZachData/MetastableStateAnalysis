@@ -102,5 +102,5 @@ def test_run_guard(tmp_path):
         p.run_allowed(tmp_path, None, reg)
     with pytest.raises(p.C4pRefused):                       # "registered" but not in the registry
         p.run_allowed(tmp_path, "registered", reg)
-    assert "registered" in p.run_allowed(tmp_path, "registered", _reg(tmp_path, ["P-SCH1", "P-SCH2"]))
+    assert "registered" in p.run_allowed(tmp_path, "registered", _reg(tmp_path, ["P-SCH1", p.ENTRY_ID]))
     assert "declined" in p.run_allowed(tmp_path, "declined", reg)

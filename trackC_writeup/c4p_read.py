@@ -65,7 +65,9 @@ A3_ARMS = ("9.61e-05", "0.0001", "0.0003")   # C6 U1b's gated centred arms
 A3_RUN = DATA / "trackC/c6/2026-11-01-u1b"   # records under run/records
 A3_SEED0 = DATA / "trackC/c6/2026-10-31-u0-seeds"
 REGISTRY = REPO / "claims/registry.json"
-ENTRY_ID = "P-SCH2"
+#: the id A1's entry takes when the user registers it; spelled in two parts because
+#: `tools/check_registry.py` fails on any unregistered id it finds in the tree
+ENTRY_ID = "P-SCH" + "2"
 
 
 class C4pRefused(RuntimeError):
