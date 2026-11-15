@@ -1,7 +1,9 @@
 <!-- trackC_writeup/design-C4p.md -->
 # Track C — design: C4′ (a) and (b), no training
 
-**Status: proposed 2026-11-15 (U0, writing only); decisions D1–D5 are STATE Blocked 159.** Opened
+**Status: proposed 2026-11-15 (U0, writing only); decisions D1–D5 are STATE Blocked 159.
+Revised after `/challenge-pr` on #350 (accept with changes, findings 1–4 taken: (b)'s gate step
+counts and what it does not test, the null at fp16, what A1's label covers, (b)'s cost).** Opened
 on Blocked 158 (a), the user's (2026-11-15): C4′ (a), then (b), each with its rule fixed before
 its output; the replicate pair (C4′ (c)) is decided on what they show. Scan: `lit-C4p.md`.
 Nothing below has been computed. Of the inputs, only C6's centred counts on warmup01 (A3's
@@ -45,9 +47,11 @@ with **C6's frozen rule, unchanged** (`c6_warmup.py`: `ref70`, `bands`, `window`
 | the label | `joint` over the one profile: "consistent with …", "not told apart", "neither", or "unreadable" |
 | **the gate** (before the run's scores are computed) | C6's `calibrate` with `loo=True` on the ten seeds' induction profiles: each seed's profile planted under each schedule (`plant`), read against the other nine seeds' reference. **Passes iff ≥ 8 of 10 cumulative plants read exactly "consistent with cumulative" and ≥ 8 of 10 step plants exactly "consistent with step"**; instantaneous's beside. If it fails, A1 is refused and the run's profile is still computed and reported, as description |
 | the lean, stated now | **"consistent with cumulative"** supports item 9's lean on a run C4 did not train; **"consistent with step"** breaks it; anything else leaves it a lean |
+| what "consistent with cumulative" covers (`/challenge-pr` on #350, finding 3) | a half-rise in the cumulative band, a set of grid steps (C6's grid has 1000, 2000, 4000 there; the released run's score goes 0.02 at 512 to 0.93 at 1000), **not a point at ≈ 2430**. Inside the warmup every clock that is a function of the summed rate predicts the same band, among them **a fixed training loss** (2408.11029's law with S2 = 0, `lit-C4p.md` 2). So the label supports "the summed rate or a function of it", and cannot tell the summed rate from loss |
+| beside, the loss at the date | the held-out loss (`ct.HELD_OUT`'s 64 rows, unseen by either run at or before step 4000) at the run's half-rise and at `pythia-70m`'s; equal losses say a loss clock fits as well as the summed rate, numbers only |
 
 A1 is C4's lean read on a held-out run with its rule fixed before output, so it could be
-registered (D3).
+registered (D3), with the scope in the row above written into its statement.
 
 **A2, the heads (beside, description).** The heads with score ≥ 0.5 (`c4_close.HEAD_BAR`) on the
 run, on `pythia-70m` and on each seed at 4000, 8000, 16 000 and 143 000, and the overlap of each
@@ -83,22 +87,28 @@ states are to each other.
 |---|---|
 | windows | **early**, F's steps 1–256 (C4's transient, before F's induction at 320); **late**, 320–4000 (`lit-C4p.md` 3: per-seed KL reconverges near induction) |
 | a window's reading | **"one path"** if F is on A0's path at ≥ ⅔ of the window's steps and match is non-decreasing up to one grid step; **"another path"** if on the path at < ⅓; else **"mixed"** |
-| **the gate** (planted null and effect on the real design points, before F is read) | null: `pythia-70m` (same init and order as A0; harness noise) as pseudo-F on its 12 grid steps 1–4000; effect: each of `pythia-70m-seed1..9` (another init and order) as pseudo-F. **A window is readable iff the null reads "one path" with match(s) = s at ≥ ⅔ of its steps and ≥ 8 of 9 seeds read "another path"**. An unreadable window reports F's numbers as description and no reading |
+| **the gate** (planted null and effect on the real design points, before F is read) | null: `pythia-70m` (same init and order as A0; harness noise) as pseudo-F on its 13 grid steps 1–4000 (early 9: 1–256; late 4: 512–4000), **against A0 rounded to fp16**, since every released weight is fp16-representable (stored as fp32) and early updates below fp16's resolution vanish from it (`/challenge-pr` on #350, finding 2; F is read against A0 at full precision, both fp32 from one harness). Effect: each of `pythia-70m-seed1..9` (another init and order) as pseudo-F on its 12 cached steps 2–4000 (early 8, late 4; no step 1), against A0 at full precision. **A window is readable iff the null reads "one path" with match(s) = s at ≥ ⅔ of its steps and ≥ 8 of 9 seeds read "another path"**; with 4 late steps, ⅔ is 3 of 4 and ⅓ is 2 of 4. An unreadable window reports F's numbers as description and no reading |
+| what the gate does not test (finding 1) | a seed differs from A0 in init and order; F differs in neither. The gate shows the instrument sees an init-and-order difference, not a same-init one, so **"one path" is the weaker reading**: a same-init departure smaller than a seed's could read "one path". The seeds reconverge near 2k (2509.26643), so **the late window may well be refused**; then (b)'s reading is the early window's, which holds the lean |
 | the clock, beside | in a "one path" window, match(s) against the step map (t = s) and the summed-rate map (`c4_read.m`, inverted); numbers only, no label |
 | beside, description | each match's training loss on both arms (the S1 laws predict a loss match, `lit-C4p.md` 2); K in both directions; the seeds' K(released_t, seed_t) at the same step as the "another init" scale; per parameter group, ‖θ_s − θ_0‖ on both arms (same init, so comparable), the A0 step of equal displacement, and cos(θ^F_s − θ_0, θ^A0_match(s) − θ_0) |
 | the lean, stated now | item 10 says F is not A0 on another clock: **"another path" early** is the lean; "one path" in both windows breaks it |
 
-**Cost.** About 80 checkpoints (29 + 29 + 12 + 9 × 12 ≈ 180 with the controls) × one forward pass
-of 64 × 2048 tokens; about 4 000 pairs of KL over 131 072 × 50 304 log-probs, computed on the GPU
-a row at a time, the A0 side's 29 models held in CPU memory (≈ 8 GB of 31). Estimated under an hour; U2 times one
-row first and refuses to subsample positions.
+**Cost** (revised, `/challenge-pr` on #350, finding 4). About 180 checkpoints with the controls
+(29 F + 29 A0 + 13 released + 9 × 12 seeds), each a forward pass of 64 × 2048 tokens. One
+model's float32 log-probs on one row are 412 MB, so a row's 29 A0 models do not fit on the GPU
+together and a per-pair loop is far over an hour. Instead, per half-row (1024 positions), each
+model's float32 log-probs are kept in CPU memory (206 MB each; ≈ 12 GB for F and A0 together),
+and at each position K's cross term for every pair is one matrix product
+(P_F (n_F × V) · log P_A0ᵀ), the entropy terms per model; the controls likewise. Estimated about an
+hour; U2 times one half-row first, refuses to subsample positions, and stops for the user if the
+projected total passes 3 h.
 
 ## Exit condition and budget
 
 **Exit:** A1 labelled or refused by its gate, A2 and A3 written; (b) read per window or each
 window refused by its gate; each lean of C4's items 6–10 that (a) or (b) touches marked held,
 broken or untouched, so C4′ (c)'s registration can be decided on them. **Budget: 3 units +
-close-out** (U0 this design, U1 (a), U2 (b), close-out). GPU about an hour in all.
+close-out** (U0 this design, U1 (a), U2 (b), close-out). GPU about 1–2 hours in all.
 
 ## Carried in
 

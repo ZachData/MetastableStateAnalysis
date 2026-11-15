@@ -55,7 +55,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-15 · body `809e33b264`
+- **Reviewed:** 2026-11-15 · body `a9a5e9d196`
 <!-- /phase-card -->
 
 ## Units
@@ -117,6 +117,14 @@ Inputs: every checkpoint is cached except warmup01's step 3000 (one download, be
 D1 (a)). Warmup01's induction has never been computed here (no producer or record names it),
 which is what makes D3 (a), registering A1 as a second `P-SCH` entry, legitimate. Decisions D1–D5: STATE
 Blocked 159, recommended all (a).
+
+**`/challenge-pr` on #350: accept with changes, findings 1–4 taken** (design revised): (b)'s
+effect plant (seeds) differs from A0 in init and order and F in neither, so "one path" is the
+weaker reading and the late window may be refused; the gate's step counts (seeds 2–4000, late 4
+steps); the released checkpoints are fp16-representable, so the null is read against A0 rounded
+to fp16; A1's "consistent with cumulative" is a band, and a fixed-loss clock predicts the same
+band (the loss at the date beside); (b)'s cost re-planned (per half-row, all pairs as one matrix
+product), about an hour, a stop at 3 h.
 
 **Parked:** `lit-C4p.md` Parked 1 (2509.26643's full text, before U2's code).
 
