@@ -33,7 +33,9 @@ D6. **Weight decay with RoPE is a group penalty.** A rotary pair's score is Re(c
     least |q|^2 + |k|^2 on that orbit is 2 |q| |k| (the non-rotary block's is 2 |M|_*).
 D7. **A zero-sum gradient does not make a zero-sum Adam step.** Rows of the unembedding's
     gradient sum to zero over the vocabulary; their signs do not.
-D8. **Orbit dimension.** Pythia-410m's continuous symmetries span about 0.81 % of its parameters.
+D8. **Orbit dimension.** The continuous symmetries of §8.2's table span 0.88 % of Pythia-410m's
+    parameters. D8b: the two families added after `/challenge-pr` on #354 (the value-bias shift,
+    reader rows along 1/gamma) leave a head's output unchanged.
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -48,7 +50,8 @@ WHAT IT DOES NOT PROVE
 - D5: gradient flow, scalar factors. Not Adam, not a matrix.
 - D6: the minimum over the orbit, i.e. what decay prefers at a fixed function; not that training
   reaches it. Biases (not decayed in Pythia) are left out.
-- D8: counts the symmetries listed in §8's table; a missed symmetry would raise it.
+- D8: counts the symmetries listed in §8.2's table, term by term; a missed symmetry would raise
+  it (two were missed in the first pass). The table is not claimed complete.
 """
 import math
 
@@ -167,13 +170,45 @@ def d7_zero_sum(seed=4, V=2000):
 
 def d8_orbit(d=1024, L=24, H=16, V=50304):
     dh = d // H; rot = dh // 4; nr = dh - rot
-    per_head = nr * nr + 2 * (rot // 2) + dh * dh + nr  # QK GL(48) x (C*)^8, OV GL(64), key-bias translations
-    per_layer = H * per_head + 2 * d + 2 * d + (d + 4 * d) + 1  # gains, norm-bias shifts, writers along 1, bias exchange
-    k = L * per_layer + d + V + 1 + d  # unembedding translation, embedding rows along 1, joint writer scale, final gain
-    k += (d - 1) * (d - 2) // 2  # rotations of the stream fixing 1 (gains conjugated into the readers)
+    per_head = (nr * nr + rot      # QK: GL(48) x (C*)^8
+                + dh * dh          # OV: GL(64)
+                + nr               # key-bias translations (non-rotary)
+                + dh)              # value-bias shift against the output bias
+    per_layer = (H * per_head
+                 + 2 * d           # each norm's gain against its readers' columns
+                 + 2 * d           # each norm's bias against its readers' biases
+                 + 5 * d + 2       # writers along 1: 1^T W_O (d), 1^T W_out (4d), the two biases
+                 + d               # attention-out against MLP-out bias
+                 + 7 * d)          # reader rows along 1/gamma: QKV (3d rows), MLP-in (4d rows)
+    k = (L * per_layer + d         # unembedding translation
+         + V                       # embedding rows along 1
+         + 1                       # joint scale of the writers
+         + d + V                   # final gain against W_U's columns; W_U's rows along 1/gamma
+         + (d - 1) * (d - 2) // 2)  # rotations of the stream fixing 1
     D = L * (4 * d * d + 4 * d + 8 * d * d + 5 * d + 4 * d) + 2 * V * d + 2 * d
-    assert 0.005 < k / D < 0.010, k / D
+    assert k == 3_550_002 and abs(k / D - 0.00876) < 1e-4, (k, k / D)
     print(f"D8: orbit dimension {k:,} of {D:,} parameters ({100 * k / D:.2f} %); (D - k)/2 = {(D - k) / 2:,.0f}  OK")
+
+
+def d8b_missed_symmetries(seed=5, d=12, k=4, n=7):
+    """The two families the first pass missed, on one head reading a LayerNorm output."""
+    rng = np.random.default_rng(seed)
+    x = rng.standard_normal((n, d)); g, be = rng.uniform(0.5, 2, d), rng.standard_normal(d)
+    ln = g * (x - x.mean(1, keepdims=True)) / x.std(1, keepdims=True) + be
+    Wq, Wk, Wv, Wo = (rng.standard_normal(s) for s in ((k, d), (k, d), (k, d), (d, k)))
+    bv, bo = rng.standard_normal(k), rng.standard_normal(d)
+
+    def out(Wq, Wv, bv, bo, ln):
+        sc = (ln @ Wq.T) @ (ln @ Wk.T).T
+        a = np.exp(sc - sc.max(1, keepdims=True)); a /= a.sum(1, keepdims=True)
+        return a @ (ln @ Wv.T + bv) @ Wo.T + bo
+    base = out(Wq, Wv, bv, bo, ln)
+    c = rng.standard_normal(k)
+    assert np.abs(out(Wq, Wv, bv + c, bo - Wo @ c, ln) - base).max() < 1e-10          # value-bias shift
+    a = rng.standard_normal(k)
+    ln0 = ln - be                                                                    # the gain part alone
+    assert np.abs((ln0 @ (Wq + np.outer(a, 1 / g)).T) - ln0 @ Wq.T).max() < 1e-10     # reader rows along 1/gamma
+    print("D8b: value-bias shift and reader rows along 1/gamma leave the head unchanged  OK")
 
 
 if __name__ == "__main__":
@@ -185,3 +220,4 @@ if __name__ == "__main__":
     d6_rope_group_penalty()
     d7_zero_sum()
     d8_orbit()
+    d8b_missed_symmetries()

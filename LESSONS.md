@@ -464,7 +464,10 @@ stated decay, shrank ten times too fast; the session's first decay figures (buil
 wrong and were redone. The same reading showed `c6_schedule.lr`'s cosine has the wrong floor
 (immaterial to 20 000; `status-C.md` "Corrections received"). A hyperparameter quoted from a
 document is checked against the config, or against the weights where a null direction exists
-(`tools/ts_weights.py` "clock").
+(`tools/ts_weights.py` "clock"). The correction line this session then wrote said every C-track reading
+used the schedule at ≤ 20 000 without opening `c6_schedule.py`, which reads to 143 000; and the
+symmetry table was labelled "solved" with two families missing (`/challenge-pr` on #354,
+findings 1 and 2). A claim about what a file reads is checked by opening the file.
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
