@@ -68,13 +68,18 @@ and MLP-out (`p1d_cluster_ensemble/lit-1d.md` row 2).
 | F3 | A LayerNorm gain γ_i feeding column i of W, decay on W only: d/dt(γ_i² − ‖W[:, i]‖²) = 2λ‖W[:, i]‖² |
 | F4 | RoPE: the QK symmetry per rotary pair shrinks from GL(2) to {aI + bJ} (a complex scalar) |
 | F5 | Random init: the QK symmetric energy fraction has ratio-of-expectations (1 + 1/d)/2 = **0.500488** at d = 1024 |
+| F6 | **With RoPE, F1 holds only in part:** gradient flow conserves Ψ_QK's 48 × 48 non-rotary block and the trace of each rotary pair's 2 × 2 block; the cross blocks and each pair's traceless part move even under exact flow. So a measured drift of the rest is RoPE's, not Adam's |
 
-**F5 against the repo's data.** `PROJECT.md` §3.12 block J (`tools/run/qk_symmetry_sweep.py`,
-410m, non-rotary 48 dims) reads the median symmetric fraction at **0.5005 at step 512** and
-**0.5231 at 143000**; identity weights give 1.0. So at 512 the QK products still sit at the
-random value of this invariant, and by the end they have moved about 2 % of the way to
-identity on it. The spread of the random value (needed to say how many standard deviations
-0.523 is) is not computed.
+**Biases and LayerNorm's bias enter the laws** (argued, not in the check): the QK and OV laws
+hold for the factors augmented with their biases (W̃_Q = [W_Q b_Q], and so on), so b_K b_Kᵀ is
+part of Ψ_QK; and the gain law F3 becomes γ_i² + β_i² − ‖W[:, i]‖² with the LayerNorm bias β.
+
+**F5 against the repo's data** (`data/analysis/qk_symmetry_sweep.json`, block J, 410m,
+non-rotary 48 dims). Median symmetric fraction **0.500542 at step 0** (F5's 0.500488), 0.500665
+at 512, **0.5231 at 143000**; identity weights give 1.0. Step 0's own spread over 384 heads is
+the random null: p99 0.50217, max 0.50268. So by 143000 the median head has moved **about
+4.5 %** of the way from random to identity on this invariant, far outside step 0's spread.
+(Corrected after `/challenge-pr` on #353, finding 3: an earlier draft said 0.5005 at 512 and 2 %.)
 
 **A consequence of the init, from F1 (derived, not measured).** `wang_init` makes W_O far
 smaller than W_V at step 0, so Ψ_OV(0) ≈ d(σ_small² − σ_wang²) I_{d_h}, positive definite.
@@ -98,8 +103,8 @@ Tractability is a guess, using the tests in §6. **A** = likely derivable in a s
 |---|---|---|---|---|
 | Q1 | **Pythia's exact symmetry group.** List every transform of GPT-NeoX's parameters that leaves the function unchanged: per-head QK (GL(48) × (C*)⁸ by F4, with biases), per-head OV GL(64), head and MLP-neuron permutations (GeLU has no rescaling), LayerNorm-gain ↔ column rescalings, softmax translations (unembedding; the key bias's non-rotary part, which adds a key-independent term to every score), residual-stream rotations fixing **1** (LayerNorm's centring; the gain must be conjugated into the readers, as in "computational invariance"). Which are exact, which hold only up to a reparameterisation that is not orthogonal (and so does not commute with the gradient)? | A | The table every later question uses; the dimension of a generic orbit | Kunin §3; Ziyin §4 |
 | Q2 | **Are the laws complete for an attention layer?** Marcotte's Lie-algebra method on one softmax head (then with RoPE, then with LayerNorm in front). Does softmax or RoPE add laws beyond Q1's, or remove any? | A–B | The full list of what the init fixes under exact gradient flow | Marcotte §3–4 |
-| Q3 | **How AdamW breaks them.** Evolution of Ψ_QK, Ψ_OV and the gain laws under (a) finite-η GD (Kunin's modified flow), (b) sign descent / Adam's diagonal preconditioner, (c) decoupled weight decay with Pythia's schedule. Is there an **Adam-native invariant**? (Scalar case: under sign flow on f(uv), \|u\| − \|v\| is conserved; is there a matrix analogue, e.g. an ℓ1/ℓ∞ imbalance?) | B | A prediction of each law's drift from the optimiser alone; the ℓ∞ geometry of Xie & Li seen through symmetry | Kunin §5; Ziyin §3 |
-| Q4 | **Mirror symmetries and what decays to zero.** Ziyin's theorem for Pythia's group: in the non-rotary 48 dims the QK rotation symmetry predicts low rank; in the rotary dims the only reflections are per-pair (q-pair and k-pair both × −1), which predicts **whole frequency pairs** switching off rather than single directions. Is λ = 0.01 plus Adam's noise "large enough" (the threshold γ₀ in Thm "general")? | A–B | A predicted pattern of rank loss by subspace, testable on weights alone | Ziyin, theorems "general" and "rotation symmetry"; App. "Transformer" |
+| Q3 | **How AdamW breaks them.** Evolution of Ψ_QK, Ψ_OV and the gain laws under (a) finite-η GD (Kunin's modified flow), (b) sign descent / Adam's diagonal preconditioner, (c) decoupled weight decay with Pythia's schedule. Is there an **Adam-native invariant**? (Scalar case: under sign flow on f(uv), \|u\| − \|v\| is conserved; is there a matrix analogue, e.g. an ℓ1/ℓ∞ imbalance?) And **what Adam does along a direction the loss cannot see** (E0: zero gradient in exact arithmetic, rounding-level gradient in practice, no decay): random walk, or drift at full step size? | B | A prediction of each law's drift from the optimiser alone; the ℓ∞ geometry of Xie & Li seen through symmetry | Kunin §5; Ziyin §3 |
+| Q4 | **Mirror symmetries and what decays to zero.** Ziyin's theorem for Pythia's group: in the non-rotary 48 dims the QK rotation symmetry predicts low rank; in the rotary dims the only reflections are per-pair (q-pair and k-pair both × −1), which predicts **whole frequency pairs** switching off rather than single directions. Is λ = 0.01 plus Adam's noise "large enough" (the threshold γ₀ in Thm "general")? Caveat (`/challenge-pr` on #353, finding 5): the augmented factors include biases, which Pythia does not decay, so the decay route of the theorem covers only part of each mirror; the noise route remains. **Least certain row** | A–B | A predicted pattern of rank loss by subspace, testable on weights alone | Ziyin, theorems "general" and "rotation symmetry"; App. "Transformer" |
 | Q5 | **Orbits, degeneracy and the LLC.** A k-dimensional symmetry orbit through a minimum makes the minimum set at least k-dimensional, so λ ≤ (D − k)/2. What is k for a Pythia block (from Q1), and how does it compare with Track T's measured LLC? How much of the measured degeneracy is "only" symmetry? | A | A symmetry floor under the LLC; the excess is the non-trivial part | Hoogland; Şimşek |
 
 ### Where the three reference points sit on the quotient
@@ -124,8 +129,8 @@ Weights only unless stated; 410m's 154 checkpoints, and the PolyPythias seeds fo
 
 | # | Test | From | Note |
 |---|---|---|---|
-| E0 | **Positive control:** a parameter with zero gradient evolves by weight decay alone (biases are not decayed in Pythia, so it should be **bit-identical across checkpoints**). Candidate: the non-rotary part of each key bias (Q1). | Q1 | If it moves, Q1's table is wrong somewhere. Run first |
-| E1 | Ψ_QK, Ψ_OV and the gain laws per head × checkpoint, against e^{−2λ∫η} (F2, F3) | F1–F3, Q3 | The excess drift over pure decay is Adam's fingerprint |
+| E0 | **Already read, and it fails** (`/challenge-pr` on #353, finding 1; re-read in this session from the local 410m checkpoints, `query_key_value.bias` as (heads, 3, 64), dims 16–63). The non-rotary key bias gets **exactly zero gradient in exact arithmetic** (it adds a key-independent term to every score, and a softmax row's gradient sums to zero), and biases are not decayed, so it should stay at its init (0). It is 0 at step 0, ≈ 0.1–0.2 at 512, and **3.3, 128, 458 at 143000** in layers 0, 12, 23 (the rotary part of layer 23's key bias is 19). The reviewer reports it holds one direction late in training. **Candidate causes, not separated:** (a) rounding leaves a small gradient of consistent sign, which Adam normalises to full-size steps, and nothing decays it back; (b) the training code differs from the HF forward pass this argument uses. One full-precision backward pass separates them. | Q1, Q3 | If (a): Adam drifts along directions the loss cannot see, a concrete instance of L3, and a candidate mechanism for large invisible weights. These biases can still matter numerically in half precision |
+| E1 | The **conserved parts** of Ψ_QK (F6: non-rotary block, per-pair traces, biases included), Ψ_OV and the gain laws, per head × checkpoint, against e^{−2λ∫η} (F2, F3) | F1–F3, F6, Q3 | The excess drift over pure decay is Adam's fingerprint. With the key bias at E0's size, the bias term may dominate Ψ_QK; report it separately |
 | E2 | Per-rotary-frequency norms of W_Q, W_K rows vs non-rotary rank | Q4 | Whole pairs switching off would support the mirror reading |
 | E3 | Invariants vs Q6's exact random values, across checkpoints | Q6, Q7 | Replaces sampled step-0 nulls |
 | E4 | Stable rank of each head's M and of ΔW = W_t − W_0 vs step | Q9 | `FUTURE_IDEAS.md` D3 |
@@ -139,8 +144,10 @@ Weights only unless stated; 410m's 154 checkpoints, and the PolyPythias seeds fo
 
 ## 7. What this file does not establish
 
-- Nothing in §4 is derived; F1–F5 are the only checked statements, in the scope their check states.
-- Pythia's facts in §3 come from repo documents, not re-read from `config.json` this session.
+- Nothing in §4 is derived; F1–F6 are the only checked statements, in the scope their check states.
+- Pythia's facts in §3 come from repo documents; the reviewer of #353 checked the config and
+  the init σ's against the step-0 checkpoint and found them consistent.
+- E0's cause is open (§5).
 - The §2 summaries were read from abstracts and theorem statements, not full proofs.
 - Triage: this is a **discovery** (CLAUDE.md), parked here. Whether it becomes a phase, with an
   exit condition and a unit budget, is the user's decision.

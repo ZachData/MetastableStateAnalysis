@@ -23,6 +23,12 @@ WHAT IT SHOWS
    standard Gaussian entries, E tr(M²) = d k and E ‖M‖_F² = d² k, so the ratio of expectations
    of the symmetric energy fraction (‖M‖_F² + tr M²) / (2 ‖M‖_F²) is (1 + 1/d) / 2.
    At d = 1024 that is 0.500488.
+6. **With RoPE only part of Ψ_QK is conserved** (added after `/challenge-pr` on #353, finding
+   2). If the loss sees (W_Q, W_K) through M_θ = W_Qᵀ R(θ) W_K for several θ, with R(θ)
+   rotating a pair of head dims and fixing the rest, gradient flow conserves the non-rotary
+   block of Ψ and the trace of each rotary pair's 2 × 2 block, and in general nothing else
+   (the cross blocks and the pair's traceless part move). Checked on one pair plus one
+   non-rotary dim, two angles.
 
 WHAT IT DOES NOT PROVE
 ----------------------
@@ -105,7 +111,25 @@ def check_sym_fraction():
           f" (1 + 1/1024)/2 = {(1 + 1 / 1024) / 2:.6f}")
 
 
+def check_rope_conserved(d=2):
+    k = 3  # head dims 0, 1 rotary pair; 2 non-rotary
+    WQ = sp.Matrix(k, d, lambda i, j: sp.Symbol(f"q{i}{j}"))
+    WK = sp.Matrix(k, d, lambda i, j: sp.Symbol(f"k{i}{j}"))
+    dWQ, dWK = sp.zeros(k, d), sp.zeros(k, d)
+    for t, (c, s) in enumerate([(sp.Rational(3, 5), sp.Rational(4, 5)),
+                                (sp.Rational(5, 13), sp.Rational(12, 13))]):
+        R = sp.Matrix([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+        G = sp.Matrix(d, d, lambda i, j: sp.Symbol(f"g{t}{i}{j}"))  # dL/dM_t
+        dWQ -= R * WK * G.T
+        dWK -= R.T * WQ * G
+    dPsi = (dWQ * WQ.T + WQ * dWQ.T - dWK * WK.T - WK * dWK.T).applyfunc(sp.expand)
+    assert dPsi[2, 2] == 0 and sp.expand(dPsi[0, 0] + dPsi[1, 1]) == 0, "6 fails"
+    assert dPsi[0, 2] != 0 and sp.expand(dPsi[0, 0] - dPsi[1, 1]) != 0, "6: more conserved"
+    print("6: RoPE: non-rotary block and each pair's trace conserved; cross and traceless move  OK")
+
+
 if __name__ == "__main__":
+    check_rope_conserved()
     check_conservation()
     check_gain()
     check_rope_commutant()

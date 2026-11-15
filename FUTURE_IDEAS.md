@@ -67,7 +67,7 @@ opening for this project.
 system is a gradient flow of an interaction energy when `QᵀK` is symmetric.
 PROJECT.md §3.12 block J (2026-09-09, `tools/run/qk_symmetry_sweep.py`,
 410m, 384 heads × 19 steps) found the median QK
-symmetric fraction at **0.5005 → 0.5231** from step 512 to 143000, with 11 of
+symmetric fraction at **0.5005 (step 0; 0.5007 at 512) → 0.5231 at 143000** (corrected 2026-11-15, #353), with 11 of
 384 heads above 0.7. Autoregressive training does **not** move most heads
 towards the symmetric case the gradient-flow theorems use. The heads that
 become symmetric are content matchers. This is the most concrete known part
