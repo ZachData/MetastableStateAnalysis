@@ -42,6 +42,7 @@
   - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) reads "neither": the flat arm dates before the bands of both the step count and the summed rate (48 against the harness arm's 640, summed-rate band from 92), so `P-SCH1`'s falsifier is met; V's date (R3, beside) also reads "neither" but one count on the harness arm's side would make it "consistent with cumulative", so it is undetermined; the flat arm's centred count overshoots its plateau about 2.4× before settling; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
   - **C4 closed 2026-11-14 at its exit** (4 units + close-out, the budget): on 70m with the ramp removed the registered prediction (the summed rate) failed, the centred date reading "neither"; a fixed count of updates is excluded from both sides with C6 (later under a longer ramp, earlier with none); read after the label, as description: the summed rate is excluded only by a factor of 1.73 in the harness arm's date (the grid's tolerance is 1.25, no run-to-run spread measured); the flat arm's count rises through a transient the harness arm lacks (the centred energy falling at nearly every transition past the first at 64–256) and both arms end on the same two transitions; the induction witness the design asked for, run here, dates induction at 768 on the harness arm and 320 on the flat arm at near-equal loss, in four heads that share none with the harness arm's four (the released run's); the label in `paper/` §7 and §1; candidates carried to ROADMAP C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
   - C4′ opened 2026-11-15 (STATE Blocked 158 (a), the user's; writing only, nothing computed): a scan and a proposed design for two readings without training: induction's date on the released long-warmup 70m by C6's frozen rule, against C4's lean that it follows the summed rate, and whether the flat arm's function at each step is the harness arm's at some step (per-token KL against the harness arm's own step-to-step KL), each gated on the real design points before output; budget 3 units + close-out; decisions STATE Blocked 159 — `trackC_writeup/status-C.md` "C4′ unit 0"
+  - C4′ U1, first half (2026-11-15; Blocked 159 all (a), the user's; rule frozen and pushed before output): on `pythia-70m` and PolyPythias seeds 1–9 every top induction head rises between 512 and 1000, so the reference is {1000}; the rule's leave-one-out gate passes 10 of 10 on every schedule (easy: each rise is one grid step); A1's entry drafted for the user (Blocked 160), no induction score on the run computed; the run's per-transition centred set has a transient (T3 at 2000–4000) and seed 0's none (description) — `trackC_writeup/status-C.md` "C4′ unit 1"
 - **Superseded / wrong:** none
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -55,7 +56,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-15 · body `a9a5e9d196`
+- **Reviewed:** 2026-11-15 · body `ac1ea80a0c`
 <!-- /phase-card -->
 
 ## Units
@@ -98,6 +99,63 @@
 | C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **done 2026-11-14: A0 1000 → 4000 (3 segments, loss 3.042); R1 passes; R2 (centred) "neither": F dates before both maps' bands; R3 (V) "neither" on one count of A0's, so undetermined; `P-SCH1`'s falsifier met (scoring, Blocked 157); the description beside written** | "C4 unit 3" below |
 | C4 close-out | **done 2026-11-14: exit met at the budget (4 units + close-out); the label in `paper/` §7 and §1 (28 `c4.*` keys, 5 claims; `paper_check` 0, 36 pages); the design's induction witness run on both arms (not run in U3): 768 on A0, 320 on F, the two arms' four heads disjoint; post hoc beside: F's count rises through a transient absent on A0, both end on the same two transitions; Parked carried (ROADMAP C4′) or dropped** | `c4_close.py`, `data/trackC/c4/2026-11-14-close/`; "C4 on one page" below |
 | C4′ 0. the scan and design (Blocked 158 (a), the user's; budget 3 units + close-out) | **done 2026-11-15: writing only, nothing computed; (a) and (b) designed, each gated on the real design points before output; proposed, D1–D5 Blocked 159** | `lit-C4p.md`, `design-C4p.md`; "C4′ unit 0" below |
+| C4′ 1. (a): A1's gate, the draft entry, A3; then the run's scores, A1, A2 | **in progress 2026-11-15 (Blocked 159 all (a)): the ten seeds' profiles computed, all dated 1000; A1's gate passes 10 of 10 on every schedule; A1's entry drafted (Blocked 160, yours); A3 written. Not computed: any induction score on the run** | `c4p_read.py`, `data/trackC/c4p/2026-11-15-u1/`; "C4′ unit 1" below |
+
+## C4′ unit 1, (a): the gate, the draft entry, A3 (2026-11-15; the run's scores wait on Blocked 160)
+
+Blocked 159 decided all (a) by the user (2026-11-15): the 18-step grid with 3000 beside (D1), C6's
+rule on the top head (D2), A1 registered by the user after the gate and before the run's scores
+(D3), (b)'s gated residual (D4), (a) first (D5). Code `trackC_writeup/c4p_read.py`, committed and
+pushed (`839c9a8`, code `55e5be8cb2bc`) before any output; 11 pure tests
+(`tests/test_trackC_c4p.py`). Records `data/trackC/c4p/2026-11-15-u1/` (main tree), code
+`fff3b3948cbc`: the only change from `55e5be8cb2bc` is the entry id's spelling (the registry
+check fails on an unregistered id in the tree), and every record re-run under it equals the first
+pass's (`2026-11-15-u1-v0/`, kept) apart from the code field. GPU, 23 s a model.
+
+**Known answer.** `pythia-70m`'s per-head scores equal C4's close-out `heads_released.json` at
+all 13 shared steps (max |Δ| 0.0).
+
+**The ten seeds** (`pythia-70m`, `-seed1..9`): every top-head profile is ≤ 0.021 through 512 and
+0.92–0.94 at 1000, plateau (median over 1000–4000) 0.87–0.97, so **every seed dates 1000 and the
+reference is {1000}**: on this grid the seeds show no spread, which also means the grid cannot see
+one below its 512–1000 gap. Bands: step {1000}, cumulative {2000, 4000}, instantaneous {8000, 16 000}
+(disjoint). Top heads at 1000 vary by seed (L3H6 on seeds 0 and 6, L3H7, L3H1, L3H4, L4H0, L4H4).
+
+**A1's gate (leave-one-out plants): passes.** 10 of 10 plants read exactly their own schedule for
+step, cumulative and instantaneous; the same without leave-one-out and under both other
+late-state versions (`same_step`, `cumulative`). It is an easy gate: the seeds' rises are a single
+grid step, so a plant is a clean step function under every map. It does not test a run whose rise
+spans several grid steps (`gate.json`, sha256 `56866b4c…`).
+
+**The draft entry: `design-C4p.md` "A1's draft entry"; registering it is Blocked 160.**
+`heads --model run` refuses until the entry is in `claims/registry.json` or the user declines it.
+
+**A3, the per-transition centred set (description; C4's leans marked).** From C6 U1b's records
+(the run) and C6 U0's (seed 0), the same at all three gated arms (9.61e-5, 1e-4, 3e-4) except
+where noted (`a3.json`):
+
+| | the run | seed 0 (`pythia-70m`) |
+|---|---|---|
+| first majority | T2, T3 at 2000 | T1, T2 at 1000 |
+| majority set 8000–54 000 | {T1, T2} | {T1, T2}, with T4 at 8000–16 000 (out at 32 000–54 000, back at 143 000) |
+| at 143 000 (the grid's end) | {T1, T2, T5} | {T1, T2, T4, T5} |
+| transient (a majority transition absent at the end) | **T3 at 2000–4000** | none |
+| T2 before T1 | yes (2000: T2 7 of 7, T1 1) | yes (512: T2 3, T1 0) |
+
+C4's leans: "both arms end on {T1, T2}" — the run holds {T1, T2} from 8000 to 54 000, as seed 0
+does, and both add T5 by 143 000; at 4000 (C4's horizon) the run is {T1, T2, T3}. "F has a
+transient, A0 none" — **the run, with the ramp ten times longer, also has one** (T3) and seed 0
+none, so a transient is not peculiar to removing the ramp. "T2 fills before T1" holds on both.
+Description only; one run.
+
+**Not yet computed** (after Blocked 160): the run's scores on the grid and at 3000 (D1, beside),
+A1's label (`read`), the held-out loss at the two dates (`loss`), A2 (`a2`). Re-run:
+
+    HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4p_read heads --out <dir> --model seed0 … seed9
+    python -m trackC_writeup.c4p_read gate --out <dir>
+    python -m trackC_writeup.c4p_read a3 --out <dir>
+    HF_HOME=… python -m trackC_writeup.c4p_read heads --out <dir> --model run --registration {registered,declined}
+    python -m trackC_writeup.c4p_read read --out <dir>; python -m trackC_writeup.c4p_read loss --out <dir>; … a2 --out <dir>
 
 ## C4′ unit 0, the scan and design (2026-11-15)
 

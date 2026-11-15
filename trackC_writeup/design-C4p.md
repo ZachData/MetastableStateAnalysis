@@ -1,9 +1,11 @@
 <!-- trackC_writeup/design-C4p.md -->
 # Track C — design: C4′ (a) and (b), no training
 
-**Status: proposed 2026-11-15 (U0, writing only); decisions D1–D5 are STATE Blocked 159.
-Revised after `/challenge-pr` on #350 (accept with changes, findings 1–4 taken: (b)'s gate step
-counts and what it does not test, the null at fp16, what A1's label covers, (b)'s cost).** Opened
+**Status: frozen 2026-11-15 on Blocked 159 all (a), the user's (D1–D5 as recommended). Proposed
+2026-11-15 (U0, writing only); revised after `/challenge-pr` on #350 (accept with changes,
+findings 1–4 taken: (b)'s gate step counts and what it does not test, the null at fp16, what A1's
+label covers, (b)'s cost). U1: A1's gate passed 2026-11-15 (10 of 10 on every schedule); the
+draft entry is "A1's draft entry" below, STATE Blocked 160.** Opened
 on Blocked 158 (a), the user's (2026-11-15): C4′ (a), then (b), each with its rule fixed before
 its output; the replicate pair (C4′ (c)) is decided on what they show. Scan: `lit-C4p.md`.
 Nothing below has been computed. Of the inputs, only C6's centred counts on warmup01 (A3's
@@ -126,6 +128,30 @@ close-out** (U0 this design, U1 (a), U2 (b), close-out). GPU about 1–2 hours i
 | D3 | register A1 | **as a second `P-SCH` entry, by you, after the gate passes and before the run's scores are computed** (C4's lean on a held-out run, the one confirmatory reading available without training); Claude drafts the entry in U1 | tier 1 only, the rule frozen in code and pushed before output |
 | D4 | (b)'s rule | the residual against A0's own resolution, gated on the released run (null) and the nine seeds (effect), per window | description only: the matrix, matches and residuals, no reading |
 | D5 | order | U1 (a), then U2 (b), as Blocked 158 (a) | (b) first (its gate needs no download) |
+
+## A1's draft entry (D3 (a); U1, after the gate, before any score on the run)
+
+Drafted by Claude 2026-11-15 after A1's gate passed (`data/trackC/c4p/2026-11-15-u1/gate.json`;
+`status-C.md` "C4′ unit 1"). **Registering it is the user's** (STATE Blocked 160);
+`c4p_read heads --model run` refuses until it is in `claims/registry.json` or declined. Every
+field but `registered_commit` / `registered_date` as it would be committed:
+
+| field | value |
+|---|---|
+| id, claim | the next `P-SCH` number, 2 (`c4p_read.ENTRY_ID`; not written whole here, since `tools/check_registry.py` fails on an unregistered id in the tree), `H-RESIST` (as `P-SCH1`) |
+| statement | On `EleutherAI/pythia-70m-warmup01` (`pythia-70m`'s init and data order with its LR warmup ten times longer, 14 300 steps, at the same peak), the top induction head's half-rise, read with C6's frozen rule on Pythia's 18-step grid against the ten `pythia-70m` seeds' dates, is consistent with the summed learning rate (cumulative) and with neither the step count nor the instantaneous rate. |
+| h0 | Induction's date is fixed in steps: the label is "consistent with step" (half-rise at grid step 1000, step's band from the seeds' reference {1000}). |
+| h1 | Induction's date waits for a summed rate, or any function of it inside the warmup (a fixed training loss among them): the label is "consistent with cumulative" (half-rise at 2000 or 4000; below half the 4000–8000 plateau through 512). |
+| falsifier | The label is "consistent with step", "consistent with instantaneous" or "neither". A label naming cumulative with another schedule, "not told apart" and "unreadable" are reported and score nothing. |
+| instrument | `trackC_writeup/c4p_read.py` (code `fff3b3948cbc` at the gate): per-head induction scores (`c4_read.induction_scores` on C4's sequences, `IND_LEN` 64, `IND_N` 8, `IND_SEED` 20261109; float32 eager, GPU), the profile the top head's score per grid step; `c6_warmup`'s `date_on`, `band`, `window`, `early`, `count_reading`, `joint` unchanged, no (count, schedule) withheld; the reference the ten seeds' readable half-rises |
+| gate | leave-one-out plants of the ten seeds' profiles under each schedule: 10 of 10 read exactly their own label for step and cumulative (≥ 8 needed), instantaneous 10 of 10 beside |
+| cost, evaluable | `F`, `measurement` |
+| null_construction | None beyond the gate: one run, a label against bands set by the seeds' dates (all ten 1000, so on this grid the reference has no spread) and the grid. The bands are disjoint: step {1000}, cumulative {2000, 4000}, instantaneous {8000, 16000}. Step 3000 of the run is printed beside, outside the rule (D1 (a)); the held-out loss at the date beside. |
+| calibration_record | `data/trackC/c4p/2026-11-15-u1/gate.json` (sha256 `56866b4ce777079993d7c7cb92c19f3c33a489937236d0a3e5d76fcbee4af93a`) |
+| relevance | 0.6 (the floor, as `P-SCH1`) |
+| source | `trackC_writeup/design-C4p.md` (frozen 2026-11-15 on Blocked 159 all (a)); `status-C.md` "C4′ unit 1" |
+| registered_provenance | `gated` |
+| notes | "Consistent with cumulative" is a band of grid steps, not a point at ≈ 2430; inside the warmup every function of the summed rate predicts that band, a fixed training loss among them (2408.11029 with S2 = 0), so this entry cannot tell the summed rate from loss. 70m only; one run, sharing `pythia-70m`'s init and order. C4's lean (`status-C.md` "C4 on one page" item 9), formed post hoc on one pair of trained runs. Registered after the ten seeds' profiles and the gate, and after the run's centred count (C6 U1b: "consistent with cumulative", dated 2000) and its per-transition sets (A3) were seen; before any induction score on the run. |
 
 ## Worth challenging (for the PR)
 
