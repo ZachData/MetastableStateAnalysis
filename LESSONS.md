@@ -2165,6 +2165,11 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
   Rules: a design that names a new tracked non-`.py`/`.md` file whitelists it in the same unit;
   `pgrep -f` in a wait loop uses a bracketed pattern (`'[b]uild_l1'`), as Blocked item 1 already
   says for Stage 0.
+- 2026-11-14 (C4 U3, A0 segment 4): the exit watcher was written as `until [ -f <exit> ] || ! kill
+  -0 $(pgrep -f "c4_train train --arm A0")`, unbracketed, so it would have found itself and
+  missed a kill without an exit file (the way segments 2 and 3 ended). Seen on reading it back,
+  replaced by `while kill -0 <the trainer's python PID>` before it mattered. The rule above was
+  in place and not followed; **a watcher waits on the trainer's PID**, not on a pattern.
 
 **The rule now.** Target `main`; one coherent piece of work per PR; verify
 with `git merge-base --is-ancestor`; worktree per task; fetch + recheck HEAD
