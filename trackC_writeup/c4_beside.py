@@ -24,7 +24,11 @@ was seen:
   beside, the maximum over the whole grid.
 - beside each of A0's steps, the F step the step map gives (t) and the one the summed-rate map
   gives: the continuous F step whose summed rate equals A0's to t (`c4_train.summed`), which is
-  t²/2W on the warmup, as numbers, with no consistency call.
+  t(t−1)/2W on the warmup (A0's iteration 0 runs at rate 0; `c4_read`'s registered bands use the
+  design's t²/2W, which differs by t/2W), as numbers, with no consistency call.
+
+`records` resumes a partial file only if it was written by this code (`code_sha()`); a file from
+another hash is a refusal (`/challenge-pr` on #348, finding 4).
 
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_beside records --out <dir> --model A0
     HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_beside records --out <dir> --model F
@@ -136,6 +140,17 @@ def steps_of(model: str, root: Path) -> list:
     return [s for s in ct.SAVE_STEPS if ct.ckpt_dir(root, model, s).exists()]
 
 
+def resumed(f: Path) -> dict:
+    """The per-step rows already in ``f``, if it was written by this code; else a refusal."""
+    if not f.exists():
+        return {}
+    d = json.loads(f.read_text())
+    if d.get("code") != code_sha():
+        raise C4BesideRefused(f"{f}: written by code {d.get('code')}, this is {code_sha()}; "
+                              f"move it aside to re-run")
+    return d["per_step"]
+
+
 def records(a) -> int:
     os.environ["HF_HUB_OFFLINE"] = "1"
     torch, device = c._torch_setup()
@@ -147,7 +162,7 @@ def records(a) -> int:
     if a.model != "released" and steps != list(ct.SAVE_STEPS):
         raise C4BesideRefused(f"{a.model}: checkpoints {sorted(set(ct.SAVE_STEPS) - set(steps))} missing")
     f = out / "beside" / f"{a.model}.json"
-    res = json.loads(f.read_text())["per_step"] if f.exists() else {}
+    res = resumed(f)
     for s in steps:
         if str(s) in res:
             continue

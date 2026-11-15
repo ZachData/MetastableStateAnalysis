@@ -1,4 +1,6 @@
 """C4's description beside (`trackC_writeup/c4_beside.py`), on planted series. No torch, no data."""
+import json
+
 import numpy as np
 import pytest
 
@@ -47,6 +49,16 @@ def test_summed_map_is_t2_over_2w_on_the_warmup_and_shifts_by_w_over_2_after():
     late = b.summed_map(3000)
     assert ct.summed("F", int(late)) <= ct.summed("A0", 3000) <= ct.summed("F", int(late) + 1)
     assert 3000 - ct.W / 2 - 2 < late < 3000 - ct.W / 2 + 2
+
+
+def test_resume_refuses_a_file_from_another_code_hash(tmp_path):
+    f = tmp_path / "A0.json"
+    assert b.resumed(f) == {}
+    f.write_text(json.dumps({"code": b.code_sha(), "per_step": {"0": {"rho_mid": 1.0}}}))
+    assert b.resumed(f) == {"0": {"rho_mid": 1.0}}
+    f.write_text(json.dumps({"code": "000000000000", "per_step": {"0": {"rho_mid": 1.0}}}))
+    with pytest.raises(b.C4BesideRefused):
+        b.resumed(f)
 
 
 def test_summarise_takes_states_1_to_5_on_seven_states():
