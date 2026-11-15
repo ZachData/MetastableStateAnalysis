@@ -754,6 +754,15 @@ well-formed but empty/zero result. It looks exactly like a real result.
   had resumed through it yet. Fixed: crossings are (from, to) pairs in a sidecar outside the hash,
   since a pair names the code that reads it. **An exception to a guard names both ends, and its
   test asserts that a third value is refused.**
+- 2026-11-15, C4′ U1 (`/challenge-pr` on #351, findings 1 and 4): `c4p_read.read` stored the run's
+  date for the loss beside from `date_on(v, "step")`, step's window, whatever schedule the label
+  named. A run reading "consistent with cumulative" with its rise at 4000 is unreadable on that
+  window, so the date was `None`, and `loss` skipped `None` with `continue`: the loss at the date
+  would have been silently absent. The registration guard also checked only the entry's id, not
+  the code it named. Nothing had read the run yet. Fixed (`f5b158635210`): a date per schedule on
+  its own window, `loss` refuses on no date, and the guard requires the entry and the gate to name
+  this code. **A value "beside" a label is computed on the same window as the label. A `continue`
+  on a missing input is a refusal written as a skip.**
 
 **The rule now.** Refuse rather than degrade (standing rule 4). Before
 launching a batch, inspect the **first** output for populated content, not

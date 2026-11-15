@@ -42,7 +42,7 @@
   - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) reads "neither": the flat arm dates before the bands of both the step count and the summed rate (48 against the harness arm's 640, summed-rate band from 92), so `P-SCH1`'s falsifier is met; V's date (R3, beside) also reads "neither" but one count on the harness arm's side would make it "consistent with cumulative", so it is undetermined; the flat arm's centred count overshoots its plateau about 2.4× before settling; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
   - **C4 closed 2026-11-14 at its exit** (4 units + close-out, the budget): on 70m with the ramp removed the registered prediction (the summed rate) failed, the centred date reading "neither"; a fixed count of updates is excluded from both sides with C6 (later under a longer ramp, earlier with none); read after the label, as description: the summed rate is excluded only by a factor of 1.73 in the harness arm's date (the grid's tolerance is 1.25, no run-to-run spread measured); the flat arm's count rises through a transient the harness arm lacks (the centred energy falling at nearly every transition past the first at 64–256) and both arms end on the same two transitions; the induction witness the design asked for, run here, dates induction at 768 on the harness arm and 320 on the flat arm at near-equal loss, in four heads that share none with the harness arm's four (the released run's); the label in `paper/` §7 and §1; candidates carried to ROADMAP C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
   - C4′ opened 2026-11-15 (STATE Blocked 158 (a), the user's; writing only, nothing computed): a scan and a proposed design for two readings without training: induction's date on the released long-warmup 70m by C6's frozen rule, against C4's lean that it follows the summed rate, and whether the flat arm's function at each step is the harness arm's at some step (per-token KL against the harness arm's own step-to-step KL), each gated on the real design points before output; budget 3 units + close-out; decisions STATE Blocked 159 — `trackC_writeup/status-C.md` "C4′ unit 0"
-  - C4′ U1, first half (2026-11-15; Blocked 159 all (a), the user's; rule frozen and pushed before output): on `pythia-70m` and PolyPythias seeds 1–9 every top induction head rises between 512 and 1000, so the reference is {1000}; the rule's leave-one-out gate passes 10 of 10 on every schedule (easy: each rise is one grid step); A1's entry drafted for the user (Blocked 160), no induction score on the run computed; the run's per-transition centred set has a transient (T3 at 2000–4000) and seed 0's none (description) — `trackC_writeup/status-C.md` "C4′ unit 1"
+  - C4′ U1, first half (2026-11-15; Blocked 159 all (a), the user's; rule frozen and pushed before output): on `pythia-70m` and PolyPythias seeds 1–9 every top induction head rises between 512 and 1000, so the reference is {1000}; the rule's leave-one-out gate passes 10 of 10 on every schedule (easy: each rise is one grid step); on this grid "consistent with cumulative" means a delay of 1× to about 8× over the seeds, not the summed rate in particular; A1's entry drafted for the user (Blocked 160), no induction score on the run computed; the run's centred set has a T3 majority at 2000–4000 that seed 0 never has, but whether either has a transient turns on the horizon (description) — `trackC_writeup/status-C.md` "C4′ unit 1"
 - **Superseded / wrong:** none
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
@@ -56,7 +56,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-15 · body `ac1ea80a0c`
+- **Reviewed:** 2026-11-15 · body `9297f23d81`
 <!-- /phase-card -->
 
 ## Units
@@ -106,11 +106,14 @@
 Blocked 159 decided all (a) by the user (2026-11-15): the 18-step grid with 3000 beside (D1), C6's
 rule on the top head (D2), A1 registered by the user after the gate and before the run's scores
 (D3), (b)'s gated residual (D4), (a) first (D5). Code `trackC_writeup/c4p_read.py`, committed and
-pushed (`839c9a8`, code `55e5be8cb2bc`) before any output; 11 pure tests
+pushed (`839c9a8`, code `55e5be8cb2bc`) before any output; 12 pure tests
 (`tests/test_trackC_c4p.py`). Records `data/trackC/c4p/2026-11-15-u1/` (main tree), code
-`fff3b3948cbc`: the only change from `55e5be8cb2bc` is the entry id's spelling (the registry
-check fails on an unregistered id in the tree), and every record re-run under it equals the first
-pass's (`2026-11-15-u1-v0/`, kept) apart from the code field. GPU, 23 s a model.
+`f5b158635210`. Two changes since `55e5be8cb2bc`, neither touching the rule or the gate: the
+entry id's spelling (`fff3b3948cbc`; the registry check fails on an unregistered id in the tree),
+then `/challenge-pr` on #351's findings 1 and 4 (the loss beside dated the run on step's window
+whatever the label, and skipped silently on no date; the guard now checks that the entry and the
+gate name this code). Every record re-run under each equals the first pass's apart from the code
+field (`2026-11-15-u1-v0/`, `-v1/`, kept). GPU, 23 s a model.
 
 **Known answer.** `pythia-70m`'s per-head scores equal C4's close-out `heads_released.json` at
 all 13 shared steps (max |Δ| 0.0).
@@ -125,7 +128,10 @@ one below its 512–1000 gap. Bands: step {1000}, cumulative {2000, 4000}, insta
 step, cumulative and instantaneous; the same without leave-one-out and under both other
 late-state versions (`same_step`, `cumulative`). It is an easy gate: the seeds' rises are a single
 grid step, so a plant is a clean step function under every map. It does not test a run whose rise
-spans several grid steps (`gate.json`, sha256 `56866b4c…`).
+spans several grid steps (`gate.json`, sha256 `0dc81951…`). What the label can say: the seeds
+date in (512, 1000], so "consistent with cumulative" (2000 or 4000) means a delay over them of
+between 1× and about 8×, which contains the summed rate's √10 but does not single it out; it
+excludes no delay and about 10× (`/challenge-pr` on #351, finding 2; the draft says so).
 
 **The draft entry: `design-C4p.md` "A1's draft entry"; registering it is Blocked 160.**
 `heads --model run` refuses until the entry is in `claims/registry.json` or the user declines it.
@@ -139,14 +145,17 @@ where noted (`a3.json`):
 | first majority | T2, T3 at 2000 | T1, T2 at 1000 |
 | majority set 8000–54 000 | {T1, T2} | {T1, T2}, with T4 at 8000–16 000 (out at 32 000–54 000, back at 143 000) |
 | at 143 000 (the grid's end) | {T1, T2, T5} | {T1, T2, T4, T5} |
-| transient (a majority transition absent at the end) | **T3 at 2000–4000** | none |
+| transient (a majority transition absent at the end), end 143 000 | T3 at 2000–4000 | none |
+| the same, end 54 000 | T3 at 2000–4000 | T4 at 8000–16 000 |
+| the same, end 4000 (C4's horizon) | none (the run's set at 4000 is {T1, T2, T3}, not yet settled) | none |
 | T2 before T1 | yes (2000: T2 7 of 7, T1 1) | yes (512: T2 3, T1 0) |
 
-C4's leans: "both arms end on {T1, T2}" — the run holds {T1, T2} from 8000 to 54 000, as seed 0
-does, and both add T5 by 143 000; at 4000 (C4's horizon) the run is {T1, T2, T3}. "F has a
-transient, A0 none" — **the run, with the ramp ten times longer, also has one** (T3) and seed 0
-none, so a transient is not peculiar to removing the ramp. "T2 fills before T1" holds on both.
-Description only; one run.
+C4's leans: "both arms end on {T1, T2}": both hold {T1, T2} through 32 000–54 000 (seed 0 with T4
+at 8000–16 000), both add T5 by 143 000; at 4000 the run is {T1, T2, T3}. **"F has a transient, A0
+none": untouched.** Whether either model has one turns on the horizon (`/challenge-pr` on #351,
+finding 3): to 143 000 the run's T3 counts and seed 0 has none only because its T4 returns at
+143 000; to 54 000 both have one; to 4000 neither. What the run does show is a T3 majority at
+2000–4000 that seed 0 never has. "T2 fills before T1" holds on both. Description only; one run.
 
 **Not yet computed** (after Blocked 160): the run's scores on the grid and at 3000 (D1, beside),
 A1's label (`read`), the held-out loss at the two dates (`loss`), A2 (`a2`). Re-run:
