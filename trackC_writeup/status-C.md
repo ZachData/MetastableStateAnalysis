@@ -56,7 +56,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-15 · body `4c9f515950`
+- **Reviewed:** 2026-11-15 · body `30839bd85a`
 <!-- /phase-card -->
 
 ## Units
@@ -2368,6 +2368,7 @@ ROADMAP row carried it. Inputs read: the one-page closes of A3, A5, S1 and S2 an
 
 ## Corrections received
 
+- 2026-11-15 (training-symmetry §8.4): `c6_schedule.lr` (and `c4_train.lr_pythia`, which restates it) decays by a cosine *to* `min_lr`; the released weights' zero-gradient embedding rows read NeoX's schedule as max(`min_lr`, peak/2 · (1 + cos(π(i − W)/T))) at λ = 0.1000 on every checkpoint from 512 (70m and 410m). The two agree in the summed rate within 0.01 % to 8000 and 0.11 % to 20 000, and differ by 1.4 % at 64 000 and 6.2 % at 143 000, so no C6, C4 or C4′ band or label moves (all read ≤ 20 000); the code is left as frozen. Pointer: `MATH_TRAINING_SYMMETRY.md` §8.4, `tools/ts_weights.py`.
 - 2026-11-14 (C4 close-out): C4 U3 reported its exit met without the induction witness that `design-C4.md` "Readings and outcomes" names beside R1–R3 (F never read; A0 only to 1000, from U1). Run at the close-out: induction's half-rise is 768 on A0 and 320 on F, so on F it does not share a step with the centred date (48) as it does on Pythia's schedule. No label changes — "C4 on one page (closed 2026-11-14)", item 9.
 - 2026-11-09 (C4 U1): C2's "null-matched" centred arms, 70m's 9.61e-05 (unit 3b's preflight) and 3c's GPT-2 arm, were derived at a null uncentred rate of exactly 0 (each preflight's `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop, not a τ matched to a non-zero rate. On 70m it counts as 1e-4 does (H6: equal at every step to 1000 on A0 and on the released run), so C6 U1b's and C4's "every gated arm" is in effect three arms. No label changes; the refusal is Parked (0) — "C4 unit 1"
 - 2026-10-30 (C2p readings audit): C2 unit 1's F5 row (`lit-C2-unit1.md` §1) gave Pendharkar §10 as "the conditions are never exactly satisfied in trained transformers"; §10 says it of Condition 6 (orthogonal subspaces) only, and tying is Remark 5's idealisation. Its "no result covers … weights that change from layer to layer" misses 2604.01978 (‖m‖² logistic in depth under per-layer random attention weights). §8's Razzhigaev comparison read a centred measure as ‖m‖². No date or reading moves; `paper/` corrected — "C2p readings audit (2026-10-30)", `lit-C2p-fulltext.md` W1–W4.

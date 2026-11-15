@@ -46,16 +46,20 @@ Three consequences frame every question below:
 Not on disk, cited in `FUTURE_IDEAS.md` and relevant: Saxe et al. 2014 (exact deep-linear
 dynamics), Boix-Adserà et al. 2306.07042 (incremental rank in transformers), Xie & Li ICML 2024
 (AdamW ↔ ℓ∞ constraint), Saponati et al. 2502.10927 (QK symmetry from the objective).
-Marcotte et al.'s later work on momentum / non-Euclidean flows would serve Q3 if it exists;
-not located, not read.
+Located 2026-11-15 (§8; read through fetched summaries only, not on disk): Marcotte, Gribonval
+& Peyré 2405.12888 (momentum and non-Euclidean flows), the same authors' 2506.06194 (ResNets
+and attention layers), Jacobs, Zhou & Burkholz 2603.02064 (steepest and sign flows).
 
 ## 3. What is already established (the starting point)
 
 **Pythia's parameterisation** (410m; to re-check against `config.json` before relying on a
 number): d = 1024, 16 heads, d_h = 64, rotary on 25 % of each head (16 dims, 8 frequency
 pairs; 48 non-rotary), parallel attention and MLP, LayerNorm with gain and bias, GeLU MLP,
-untied embeddings, QKV and output biases. AdamW β (0.9, 0.95), **weight decay 0.01 on matrices,
-not on gains or biases**, clip 1.0 (`trackT_timaeus/design-T5.md` "optimizer"). Init:
+untied embeddings, QKV and output biases. AdamW β (0.9, 0.95), **weight decay 0.1 on matrices,
+not on gains or biases**, clip 1.0, fp16 (Pythia's `pythia-70m.yml` / `pythia-410m.yml`;
+`trackC_writeup/c4_train.py`). Corrected 2026-11-15 (§8.4): this line said 0.01, taken from
+`trackT_timaeus/design-T5.md`, which describes another model's card; the Pythia paper's table
+also prints 0.01; the released weights read 0.1000. Init:
 `small_init` σ = √(2/5d) on embeddings, QKV, MLP-in; `wang_init` σ = 2/(L√d) on attention-out
 and MLP-out (`p1d_cluster_ensemble/lit-1d.md` row 2).
 
@@ -151,3 +155,143 @@ Weights only unless stated; 410m's 154 checkpoints, and the PolyPythias seeds fo
 - The §2 summaries were read from abstracts and theorem statements, not full proofs.
 - Triage: this is a **discovery** (CLAUDE.md), parked here. Whether it becomes a phase, with an
   exit condition and a unit budget, is the user's decision.
+
+## 8. First deriving session (2026-11-15): what is solved, what the literature has, what is open
+
+Tier 1. Closed forms D1–D8: `tools/math_checks/ts_derived.py` (it lists what each does not
+prove). Weights: `tools/ts_weights.py`, no forward pass; records `data/ts/pythia-70m.json`
+(12 steps, 16–143000) and `data/ts/pythia-410m.json` (8 steps), main tree, each step's Hub
+revision inside. **Everything read from weights is description, one run per model, and the
+readings were chosen while looking at the numbers.**
+
+### 8.1 Triage of §4
+
+| # | Status | In one line |
+|---|---|---|
+| Q1 | **solved as a table** (8.2) | four symmetries the register lacked; a generic orbit is 0.81 % of 410m's parameters (D8) |
+| Q2 | **in the literature, without RoPE** | 2506.06194: for one softmax head the laws are exactly the functions of Ψ_QK and Ψ_OV (complete); multi-head: they hold, completeness open. RoPE, biases, LayerNorm not covered, so F6 is the open increment (their Lie-algebra rank on a toy would settle it; not run) |
+| Q3 | **mostly solved** (8.3, D3, D4) | Adam's motion per coordinate in closed form; sign flow keeps \|u\| − \|v\| for scalar factors (as 2603.02064, diagonal networks), nothing for matrix factors; a diagonal metric keeps a weighted gain law only while √v is stationary |
+| Q4 | **solved in form** (D6) | decay on (W_Q, W_K) is a nuclear-norm penalty on the non-rotary block plus a group penalty on each rotary pair, so the prediction "whole pairs switch off" stands; λ is 0.1, strong enough (8.5). E2 is the test |
+| Q5 | **solved: the floor is negligible** (D8) | (D − k)/2 ≈ 2.0 × 10⁸; continuous symmetry removes under 1 % of D/2. No LLC exists in this repo to set beside it (Track T measured none) |
+| Q6 | **solved for trace and spectral invariants** (D1, D2) | every such invariant of a head is a function of k × k Gaussian matrices; spread of the symmetric fraction and the share of real eigenvalues in closed form |
+| Q7 | **three candidates measured** (8.4) | quantities plain SGD conserves exactly and Adam does not: the unembedding's vocabulary mean, the writers' component along **1**, the key bias |
+| Q8 | **described from weights, not derived** (8.3) | the first updates are sign steps and largely rank one until about step 32–64; what the direction is was not derived |
+| Q9 | D5 only | imbalance sets the speed of a product; the softmax toy is not done |
+| Q10, Q11 | untouched | |
+
+### 8.2 Pythia's symmetries (Q1). Dimensions for 410m; "null" = the gradient vanishes along it
+
+| Symmetry | Dim. | Under gradient flow | Under AdamW, exact arithmetic | Read (8.4) |
+|---|---|---|---|---|
+| QK per head, GL(48) × (C*)⁸ | 2320 | F6's part of Ψ_QK, × e^{−2λτ₁} | no law (D4) | no (E1) |
+| OV per head, GL(64) | 4096 | Ψ_OV, × e^{−2λτ₁} | no law (D4) | no (E1) |
+| Key bias, non-rotary (null, **a coordinate**) | 48 per head | frozen | frozen (0 / (0 + ε)) | **moves at 0.2–0.75 of Adam's top speed** |
+| Embedding rows of never-seen tokens (null, coordinates) | ≈ 241 rows | × e^{−λτ₁} | × e^{−λτ₁} | **holds to 4 digits** |
+| Writers along **1**: 1ᵀW_O, 1ᵀW_out, W_E **1** (LayerNorm's centring; null, **not** a coordinate) | 5d + 2 per layer, + V | init part × e^{−λτ₁} | init part × e^{−λτ₁}, plus a leak (D7) | **holds; leak ≈ 1/8 of a generic direction's** |
+| Unembedding translation (softmax; null, not a coordinate) | d | vocabulary mean of W_U × e^{−λτ₁} | not conserved (D7) | **grows 80–900 ×** |
+| Attention-out ↔ MLP-out bias (parallel residual: only the sum is seen) | d per layer | difference conserved | equal for ever (same gradient, same init) | bit-equal on 70m; within 0.2–2 % on 410m |
+| Joint scale of every writer (pre-LN: the stream's scale is not seen) | 1 | ‖writers‖² × e^{−2λτ₁}, + η² ‖g‖² per step | a norm equilibrium (Kosson et al. 2305.17212, from memory, not fetched) | no |
+| LayerNorm gain ↔ its readers' columns; LayerNorm bias ↔ its readers' biases | 2d per norm | F3 | D4 (b) | no |
+| Rotations of the stream fixing **1**, gains conjugated | (d−1)(d−2)/2 | none (compact) | broken at step 1 | — |
+| Head and MLP-neuron permutations | discrete | — | — | — |
+
+**The distinction the readings turn on:** Adam leaves a null direction alone only if it is a
+single coordinate. A null direction spread over many coordinates (a mean over the vocabulary or
+over the stream's coordinates) has a zero-sum gradient, and the per-coordinate normalised
+update of a zero-sum gradient is not zero-sum (D7). SGD conserves these exactly.
+
+### 8.3 Adam's motion law and its two clocks (Q3)
+
+**D3.** For one coordinate with gradient μ + σξ_t and ρ = μ/√(μ² + σ²), over a slowly varying
+rate: displacement = ρ τ₁ ± (1 − ρ²)√(1 − ρ²/2) √τ₂, with **τ₁ = Σ η_t, τ₂ = Σ η_t²**. So
+\|Δθ\| ≤ τ₁; a consistent sign travels τ₁; a zero-mean gradient walks √τ₂. In the small-rate
+limit the drift part of Adam's path is a function of τ₁ alone (the "summed rate" clock), the
+diffusive part of τ₂, and only the averaging windows (10 and 20 steps) count in steps. On a
+linear ramp of length W: τ₁ = η̂ t²/2W, τ₂ = η̂² t³/3W².
+
+| Read (last MLP-out; other matrices alike) | 16 | 64 | 256 | 512 | 1000 | 4000 | 143000 |
+|---|---|---|---|---|---|---|---|
+| 70m rms(ΔW) / τ₁ | 0.87 | 0.41 | 0.12 | 0.05 | 0.02 | 0.009 | 0.001 |
+| 70m rms(ΔW) / √τ₂ | 3.0 | 2.8 | 1.6 | 0.90 | 0.62 | 0.55 | 0.16 |
+| 70m rank-one share of ‖ΔW‖² | 0.70 | 0.45 | 0.06 | 0.04 | 0.03 | 0.03 | 0.08 |
+| 70m ‖ΔW‖_op / ‖W₀‖_op | 0.06 | 0.40 | 0.66 | 0.89 | 1.3 | 5.1 | 10.6 |
+| 410m rms(ΔW) / τ₁ | 0.71 | 0.27 | 0.06 | 0.04 | 0.02 | 0.011 | 0.001 |
+| 410m rms(ΔW) / √τ₂ | 2.4 | 1.8 | 0.89 | 0.68 | 0.66 | 0.65 | 0.37 |
+| 410m rank-one share | 0.76 | 0.25 | 0.11 | 0.06 | 0.04 | 0.01 | 0.02 |
+
+- **The weights move coherently until about step 32–64** (0.7–0.9 of the most Adam allows, 45–76 %
+  of it in one rank-one direction), **then on the diffusive scale** (0.55–0.9 √τ₂ over 512–4000),
+  and below it late. The energy break (512) and induction (512–1000) fall after the changeover.
+- **A bound on the first event.** A fully coherent sign update has operator norm τ₁√(mn); it
+  equals the init's σ(√m + √n) at τ₁* = σ(1/√m + 1/√n). For 70m's MLP-out τ₁* = 0.98 × 10⁻³:
+  step 53 under Pythia's ramp, and **step 1 with the ramp removed** (η̂ = 10⁻³). Beside C4's
+  finding 7 (F's cloud collapses in its first updates, er_mid 1.22 at step 4; A0's trough at
+  48): post hoc. Measured coherence falls before the bound is met (0.40 of the init at 64).
+- **C4, C6 and C4′ in these clocks** (post hoc; the dates are theirs, in units of η̂ and η̂²):
+
+  | run | centred date | τ₁ | τ₂ |
+  |---|---|---|---|
+  | A0 (ramp 1430) | 640 | 143 | 42.7 |
+  | `warmup01` (ramp 14 300; grid 1000, 2000, 4000) | 2000 | 140 | 13.0 |
+  | F (flat) | 48 (a transient's onset) | 48 | 48 |
+
+  A0 and the long ramp agree on τ₁ and not on τ₂; A0 and F agree on τ₂ and not on τ₁. Since
+  F's date is not the same event (C4 finding 7), this is **not a reading**; it says which
+  quantity a future schedule arm should be designed to separate. For induction on `warmup01`
+  τ₁ predicts a delay of √10 = 3.2 ×, τ₂ of 10^{2/3} = 4.6 ×; C4′ U1's bracket (2 × to 5.9 ×) holds both.
+
+### 8.4 Invisible directions: what AdamW did (Q1, Q3, Q7; E0 quantified)
+
+| Reading | 70m | 410m |
+|---|---|---|
+| **Clock.** λ implied by never-seen embedding rows, every step 256–143000 | 0.0998–0.1001 (241–266 rows) | 0.0995–0.1029 (241–275 rows; 0.0995–0.1000 from 512) |
+| **Writers along 1**: coefficient on the init (pure decay beside) | 0.7315 (0.7201) at 4000; 0.2192 (0.2196) at 16000 | 0.9036 (0.9062) at 4000; 0.412 (0.405) at 32000; 0.106 (0.109) at 143000 |
+| the same, new content over the init's norm (a random direction ⊥ **1** beside) | 0.24 (1.96) at 4000 | 0.60 (4.4) at 4000; 0.88 (7.9) at 143000 |
+| **W_U's vocabulary mean**, norm (median centred row beside) | 0.003 at 16; 0.41 (1.24) at 4000; 0.20 at 64000; **2.48 (0.72) at 143000** | 0.003 at 16; 0.32 (1.04) at 4000; 0.24 (0.73) at 143000 |
+| **Key bias, non-rotary, last layer**: rms per coordinate / τ₁ | 0.01 at 64; 0.37 at 256; 0.51 at 1000; **0.74 at 143000** (rms 54) | 0.03 at 64; 0.25 at 512; 0.50 at 1000; **0.745 at 143000** (rms 16.5, norm 458) |
+| share of its coordinates beyond τ₁/2 at 143000 | 0.97 | 0.92 |
+| the same bias in layer 0 at 143000, rms / τ₁ | 0.045 | 0.005 |
+
+- **The clock is exact, and it corrected two facts.** Rows with zero gradient give
+  row_t = e^{−λτ₁(t)} row₀, so the weights carry τ₁(t): **λ = 0.1** (not 0.01), and NeoX's
+  schedule is max(min_lr, η̂/2 (1 + cos(π(i − W)/T))), not a cosine to min_lr as
+  `c6_schedule.lr` has it (τ₁ equal within 0.11 % to 20 000, 6.2 % apart at 143 000; no
+  C-track result moves; `status-C.md` "Corrections received"). On another run (F, `warmup01`)
+  the same rows read the dose delivered, with no schedule assumed.
+- **E0, sharpened.** By D3 a zero-mean rounding gradient would leave each key-bias coordinate
+  near √τ₂ (0.07 on 410m); it is over 200 times that, and 92–97 % of the last layer's
+  coordinates have gone more than half of the farthest Adam can take them. So the gradient
+  there keeps one sign, ρ ≈ 0.75, from about step 256 (70m) or 512 (410m), in upper layers
+  only. The cause is still open (fp16 rounding is the candidate; E0's backward pass).
+- **The unembedding's common vector is Adam's.** SGD cannot change W_U's vocabulary mean; on
+  70m at 143000 it is 3.5 × a row's own part. Its late jump on 70m (0.20 → 2.48 after 64000) is
+  not explained here.
+
+### 8.5 Closed forms and what follows
+
+| # | Result | Against the repo |
+|---|---|---|
+| D1 | Symmetric fraction at init: mean 1/2 + 1/(2d), **sd 1/(√2 d) = 0.00069**, for any k | Block J's step-0 p99 0.50217 (formula 0.50209), max of 384 heads 0.50268 (≈ mean + 3 sd = 0.50256). 143000's 0.5231 is **33 sd** from init. Closes Q6's open spread |
+| D2 | Real eigenvalues of a head's QK or OV at init: Edelman–Kostlan–Shub, **12.5 % (k = 48), 10.7 % (k = 64)** | an exact null for OV's complex share (not compared here) |
+| D5 | s = uv with u² − v² = c: ṡ = −L′(s)√(c² + 4s²) | `wang_init`: Ψ_OV(0) ≈ 0.39 I, so OV starts unbalanced and learns with no plateau (rate ≈ c\|L′\|); Ψ_QK(0) ≈ 0 ± 0.018 against 0.4 |
+| F2 with λ = 0.1 | Ψ(t) = e^{−0.2 τ₁}Ψ(0): half by τ₁ = 3.5 | step ≈ 4200 (70m), ≈ 12 000 (410m); 4 × 10⁻⁷ and 0.012 left at 143000. **E1's window is the early run** |
+| D6 | Rotary pair = one complex rank-one term; least norm on its orbit 2\|q\|\|k\| | undriven directions keep e^{−λτ₁(T)} = 6 × 10⁻⁴ (70m), 0.11 (410m), so decay alone can switch pairs off |
+| D8 | Orbit 3.28 M of 405 M | Q5 |
+
+### 8.6 What looks worth a unit (a recommendation; none scheduled)
+
+| # | Unit | Why first |
+|---|---|---|
+| 1 | **E0's backward pass**, fp32 against fp16, on one batch at 143000 and at 256 | separates rounding from a code difference; the largest numbers in the model (‖b_K‖ 458) come from a direction the loss cannot see |
+| 2 | **τ₁ against τ₂ as a registered schedule reading** | 8.3's table says which pair of arms separates them; the clock rows give each run's τ₁ from its weights |
+| 3 | **E1 on steps ≤ 4000**, with D4's weighted form beside | the only window where the init's imbalance survives decay |
+| 4 | **Displacement exponent per matrix over all 154 checkpoints** (weights only) | dates the coherent → diffusive changeover per layer, to set beside 512 and 1000 |
+| 5 | F6's completeness by Lie-algebra rank on a RoPE toy; Q9's toy | the two parts no paper covers |
+
+### 8.7 Not established here
+
+- Why the key bias moves, why W_U's mean jumps late on 70m, what the early rank-one direction is.
+- That any date follows τ₂: 8.3's table is post hoc on three runs, one of them a different event.
+- Anything about the path beyond the bulk's displacement; no forward pass was run.
+- The literature rows rest on fetched summaries (2506.06194's Cor. 3.9 and its sign-flow
+  appendix, 2603.02064's Lemma 4.5), not full texts.
