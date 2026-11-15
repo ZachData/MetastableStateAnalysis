@@ -40,19 +40,21 @@
   - C4's design gains a description beside (2026-11-10, the user's; writing only): ρ_mid, ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of both arms, read in U3 after R1–R3; no label, not in the registration — `trackC_writeup/status-C.md` "C4, an addition to the design"
   - C4 U2 (2026-11-12; `P-SCH1` registered first by the user, Blocked 156 (a)): the flat arm trained to 4000 without diverging; V's gate at the off-grid step 3500 passes as frozen, so V is read (plant B seen at 0.5, by one unit over the bar, where C6's run failed), and three of the four centred arms are gated (4.78e-3 not, as in C6); the flat arm's records written, no count read — `trackC_writeup/status-C.md` "C4 unit 2"
   - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) reads "neither": the flat arm dates before the bands of both the step count and the summed rate (48 against the harness arm's 640, summed-rate band from 92), so `P-SCH1`'s falsifier is met; V's date (R3, beside) also reads "neither" but one count on the harness arm's side would make it "consistent with cumulative", so it is undetermined; the flat arm's centred count overshoots its plateau about 2.4× before settling; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
+  - **C4 closed 2026-11-14 at its exit** (4 units + close-out, the budget): on 70m with the ramp removed the registered prediction (the summed rate) failed, the centred date reading "neither"; a fixed count of updates is excluded from both sides with C6 (later under a longer ramp, earlier with none); read after the label, as description: the summed rate is excluded only by a factor of 1.73 in the harness arm's date (the grid's tolerance is 1.25, no run-to-run spread measured); the flat arm's count rises through a transient the harness arm lacks (the centred energy falling at nearly every transition past the first at 64–256) and both arms end on the same two transitions; the induction witness the design asked for, run here, dates induction at 768 on the harness arm and 320 on the flat arm at near-equal loss, in four heads that share none with the harness arm's four (the released run's); the label in `paper/` §7 and §1; candidates carried to ROADMAP C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
 - **Superseded / wrong:** none
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry: STATE Blocked 157, the user's); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); ROADMAP C4, the schedule intervention (with 3c's Parked 0), separates them on 70m only, 410m by inference (C4 trains `pythia-70m`; corrected 2026-11-08, `/challenge-pr` on #330, finding 3); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
+  - After C4 (closed 2026-11-14): on 70m the dates are not fixed in steps, and on the flat arm they are not the summed rate's either, by a margin the run-to-run spread could cover; the flat arm's counts date a transient, so what sets the dates is open, and so are the spread, whether the schedule chooses the induction heads, and whether induction's date follows the summed rate; 410m is still unseparated. Seven candidates, none scheduled: ROADMAP §8 C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-14 · body `68b3a60d59`
+- **Reviewed:** 2026-11-14 · body `b39f1d3f41`
 <!-- /phase-card -->
 
 ## Units
@@ -93,6 +95,140 @@
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
 | C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
 | C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **done 2026-11-14: A0 1000 → 4000 (3 segments, loss 3.042); R1 passes; R2 (centred) "neither": F dates before both maps' bands; R3 (V) "neither" on one count of A0's, so undetermined; `P-SCH1`'s falsifier met (scoring, Blocked 157); the description beside written** | "C4 unit 3" below |
+| C4 close-out | **done 2026-11-14: exit met at the budget (4 units + close-out); the label in `paper/` §7 and §1 (28 `c4.*` keys, 5 claims; `paper_check` 0, 36 pages); the design's induction witness run on both arms (not run in U3): 768 on A0, 320 on F, the two arms' four heads disjoint; post hoc beside: F's count rises through a transient absent on A0, both end on the same two transitions; Parked carried (ROADMAP C4′) or dropped** | `c4_close.py`, `data/trackC/c4/2026-11-14-close/`; "C4 on one page" below |
+
+## C4 on one page (closed 2026-11-14)
+
+**Asked** (`design-C4.md` "What C4 is for"): train `pythia-70m` from seed 0's init on Pythia's
+data order with the LR ramp removed (F, flat at the peak) and with Pythia's own schedule (A0,
+the harness check), date C2's two events on both on one dense grid, and label F's dates by the
+map that predicts them from A0's (step, or the summed rate). **Exit met at the budget** (4 units
++ this close-out, no extension): R1–R3 read, the label in `paper/` §7 scoped to 70m.
+
+**Established** (registered reading `P-SCH1` for R2; the rest tier 1, description; one run per arm):
+
+1. **The harness reproduces the released run** (U1, U3): init bit-equal, data verified, loss
+   −0.38% at 1000, R1 passes on every count; and (close-out) A0's four heads with an induction
+   score ≥ 0.5 at 4000 are the released run's four (L3H6, L3H1, L3H5, L3H0).
+2. **A flat rate at Pythia's peak trains** (U2): no divergence, loss below A0's at every step
+   after 1, 3.00 against 3.05 at 4000. V's gate passes on F by one unit (13 of 28, 12 needed).
+3. **R2, the registered reading: "neither". `P-SCH1`'s prediction (the summed rate) failed.** F's
+   centred date is 48 on all three gated arms against A0's 640: below step's band [512, 800] and
+   below the summed rate's [91.7, 223.8] (U3's table).
+4. **R3, V's date: undetermined.** "Neither" (24 against 384), turning on one count on A0's side.
+5. **A fixed count of updates is excluded on 70m from both sides**: by C6 under a ten times
+   longer ramp (later) and here with none (earlier, by a factor of 13 for the centred date and 16
+   for V's). This is the part of the label that does not depend on the tolerance.
+
+**Beside, read at the close-out, post hoc** (`c4_close.py`, code `019846e1561b`; chosen after
+`reading.json` and the description beside were seen; description, no label, moves nothing above).
+**Input set:** `reading.json` `08e53d047cf31c14…`, `beside/description.json` `6018e385f422e90f…`,
+both arms' 203 records and training logs, every saved checkpoint of both arms and the released
+`pythia-70m` on Pythia's grid to 4000; `c4_read` `220161b9159b` and `c4_train` `1c1e1d2df083`
+unchanged. Output `data/trackC/c4/2026-11-14-close/close.json` (sha256 `cc5a4e9dfbb74163…`),
+`heads_{A0,F,released}.json`.
+
+6. **The label's margin.** The summed rate's band would reach F's centred date at a tolerance of
+   1.73 in A0's date (1.47 for V's), against the registered 1.25 (1.33), which is the grid's and
+   not a measured run-to-run spread; 70m's ten seeds span 512–1000 on Pythia's coarser grid (C6
+   U0). Step's band would need 13.3 (16). So "not step" is robust and "not the summed rate" is not.
+7. **The two arms' counts do not rise for the same reason.** Prompts (of 7) violating at each
+   transition (T0 is the embeddings → block 0's output), centred at 1e-4:
+
+   | step | A0 T0–T5 | A0 count | F T0–T5 | F count |
+   |---|---|---|---|---|
+   | 32 | 0 0 0 0 0 0 | 0 | 0 0 0 0 0 0 | 0 |
+   | 48 | 0 0 0 0 0 0 | 0 | 0 2 5 4 4 1 | 16 |
+   | 64 | 0 0 0 0 0 0 | 0 | 0 6 6 7 7 6 | 32 |
+   | 192 | 1 0 0 0 0 0 | 1 | 0 7 7 7 7 2 | 30 |
+   | 320 | 1 0 1 0 0 0 | 2 | 0 7 7 7 2 1 | 24 |
+   | 512 | 0 0 3 1 1 0 | 5 | 0 7 7 6 0 0 | 20 |
+   | 640 | 0 0 7 3 1 0 | 11 | 0 7 7 3 0 0 | 17 |
+   | 1000 | 0 6 7 2 0 0 | 15 | 0 7 7 2 0 0 | 16 |
+   | 4000 | 1 7 7 0 2 0 | 17 | 0 7 7 0 0 0 | 14 |
+
+   On F, from 64 to 256, the centred energy falls at 29–34 of the 35 prompt × transition cells
+   past the first: block 0 raises it and every later block lowers it. That follows the cloud's
+   collapse in F's first updates (er_mid 1.22 at step 4 against A0's trough of 5.23 at 48) and is
+   absent on A0, whose count never passes 17. **Both arms end on the same majority set, T1 and T2**
+   (blocks 1 and 2), A0 from step 1000 and F from 640 (512 at 3e-4). So F's date of 48 is the
+   onset of a transient, and the half-rise does not date one event on both arms. On A0 the rise
+   has two parts: T2 fills at 512–640 and T1 at 768–1000.
+8. **V sits one block earlier on F.** A0's uncentred drops are at T2 (5–7 of 7 from 640); F's are
+   at T1 (7 of 7 from step 24 to 4000), with T5 reaching 4 of 7 at 4000, so F's uncentred set is
+   still moving at the horizon. The centred profiles converge; the uncentred ones have not.
+9. **Induction (the design's beside witness, not run in U3).** The top head's score reaches half
+   its plateau at **768 on A0 and 320 on F**, at training losses 4.02 and 4.13. A0's heads ≥ 0.5 at
+   4000: L3H6 0.96, L3H1 0.90, L3H5 0.61, L3H0 0.56 (the released run's). **F's: L2H6 0.94, L3H4
+   0.80, L3H3 0.79, L3H7 0.58: none shared**, from the same init and data order. F has 6 heads at
+   the bar at 320 (two in block 4) and 4 from 1000. The summed-rate map puts A0's 768 at 206 on F.
+10. **The order of events changes**, so F is not A0 on another clock (A0 step / F step, and each
+    arm's training loss there):
+
+    | event | A0 | F | ratio | summed-rate map of A0's | loss A0 / F |
+    |---|---|---|---|---|---|
+    | ρ_mid's peak | 48 | 4 | 12 | 0.8 | 9.51 / 9.17 |
+    | ρ_mid's half-fall | 96 | 24 | 4 | 3.2 | 8.09 / 7.28 |
+    | V's date (R3) | 384 | 24 | 16 | 51.6 | 5.31 / 7.28 |
+    | the centred date (R2) | 640 | 48 | 13.3 | 143.2 | 4.45 / 6.61 |
+    | er_mid's half-rise | 384 | 256 | 1.5 | 51.6 | 5.31 / 4.54 |
+    | induction's half-rise | 768 | 320 | 2.4 | 206.2 | 4.02 / 4.13 |
+    | the centred set settled | 1000 | 640 | 1.56 | 349.7 | 3.67 / 3.54 |
+
+    The effective rank recovers after the centred date on F and before it on A0. The cloud's
+    rise and fall (the user's question of 2026-11-10) happens without a ramp, earlier and deeper
+    (ρ_mid 0.96 at step 4 against 0.74 at 48), so the ramp delays and damps it and does not
+    produce it; on F the cloud is still more concentrated at 4000 (ρ_mid 0.31 against 0.24).
+
+**Not established.** What sets F's dates (items 6–10 are one pair of runs, read after the label).
+Whether F's transient is the rate's or Adam's first steps at a rate (no arm separates them).
+Whether the head sets differ because of the schedule (F ran once; the harness arm matching the
+released run says the harness's own noise keeps the heads, not that a second F would). Whether
+induction's date follows the summed rate (206 against 320, numbers only). The run-to-run spread
+of any date. Anything on 410m, the paper's model. Cause.
+
+**In `paper/`** (this close-out): §7 gains "Pythia 70m with the warmup removed" (two
+paragraphs: the registered reading and its failure; then, marked as read after the label, the
+margin, the transient, the shared end set, induction and the heads) and §1 one sentence. 28
+`c4.*` keys from `reading.json` and `close.json`, five claims, 27 slots; `paper_check` 0, 36 pages.
+The abstract is not touched (its 70m clause is C6's and stays true as worded).
+
+**Units at close:**
+
+| unit | PR | outcome |
+|---|---|---|
+| 0. scan and design | #344 | arms F and A0, A0-referenced bands, sympy-checked maps |
+| 1. the harness | #346 | H1–H5 pass, A0 to 1000 tracks the released run; rule frozen in code |
+| 2. F to 4000, V's gate | #347 | `P-SCH1` registered first; no divergence; V gated by one unit |
+| 3. A0 to 4000, the reading | #348 | R1 passes; R2 "neither"; R3 undetermined; the description beside |
+| close-out | this | this page; `paper/` §7; the induction witness; candidates to ROADMAP C4′ |
+
+**Parked items at close:**
+- U1 (0), the two `c2_seeds` refusals: **carried to ROADMAP §8 C4′** (the next unit that derives
+  a centred arm), as before; nothing read so far depends on them.
+- U1 (1), `c4_train.code_sha` uncached: **dropped**; both arms are trained. A new arm under C4′
+  keeps the rule (do not edit `c4_train.py` while it trains).
+- `lit-C4.md`'s Parked, Qu & Liu's peak-dependence (D1 (b), F½): **carried to C4′ (d)**.
+- R3's one-count dependence and the unmeasured run-to-run spread: **carried to C4′ (c)**.
+- Items 6–10 above are leans. Each is **carried to C4′** as something a fresh pair or a released
+  run could confirm or break; none is a finding to build on.
+
+**Found at the close-out.** (1) U3 closed without the induction witness the design names beside
+R1–R3 on F, and A0's stopped at 1000; it was run here (`LESSONS.md` 11). (2) The half-rise
+compared across arms dates a transient on F and the plateau's rise on A0; the rule's planted
+series all rose once (`LESSONS.md` 6). (3) `numbers.json` still
+hashed the registry from before `P-SCH1`'s registration (`6ceacb1`); `produce` refused until the
+registry was named with `--reread`; the only change is the added entry and no key moved
+(`LESSONS.md` 3, second instance).
+
+**For the user's Overleaf copy.** The diff of `trackC_writeup/paper/` from `b73bb8e` to this
+PR's merge: two paragraphs at the end of §7 and one sentence in §1.
+
+**Re-run.** `METS_DATA=<main>/data HF_HOME=<HDD_1TB>/mets_data/hf python -m
+trackC_writeup.c4_close heads --out <dir> --model {A0,F,released}` (GPU, a minute each), then
+`… c4_close close --out <dir> --reading <main>/data/trackC/c4/2026-11-12-u2` (the `mets` conda
+env); then `METS_DATA=<main>/data <main>/.venv/bin/python -m trackC_writeup.numbers produce`,
+`python -m trackC_writeup.paper_check` (0).
 
 ## C4 unit 3, A0 to 4000 and the reading (started 2026-11-12)
 
@@ -2084,6 +2220,7 @@ ROADMAP row carried it. Inputs read: the one-page closes of A3, A5, S1 and S2 an
 
 ## Corrections received
 
+- 2026-11-14 (C4 close-out): C4 U3 reported its exit met without the induction witness that `design-C4.md` "Readings and outcomes" names beside R1–R3 (F never read; A0 only to 1000, from U1). Run at the close-out: induction's half-rise is 768 on A0 and 320 on F, so on F it does not share a step with the centred date (48) as it does on Pythia's schedule. No label changes — "C4 on one page (closed 2026-11-14)", item 9.
 - 2026-11-09 (C4 U1): C2's "null-matched" centred arms, 70m's 9.61e-05 (unit 3b's preflight) and 3c's GPT-2 arm, were derived at a null uncentred rate of exactly 0 (each preflight's `uncentred_at_1e-3.null_rate`), so each is the null's largest centred drop, not a τ matched to a non-zero rate. On 70m it counts as 1e-4 does (H6: equal at every step to 1000 on A0 and on the released run), so C6 U1b's and C4's "every gated arm" is in effect three arms. No label changes; the refusal is Parked (0) — "C4 unit 1"
 - 2026-10-30 (C2p readings audit): C2 unit 1's F5 row (`lit-C2-unit1.md` §1) gave Pendharkar §10 as "the conditions are never exactly satisfied in trained transformers"; §10 says it of Condition 6 (orthogonal subspaces) only, and tying is Remark 5's idealisation. Its "no result covers … weights that change from layer to layer" misses 2604.01978 (‖m‖² logistic in depth under per-layer random attention weights). §8's Razzhigaev comparison read a centred measure as ‖m‖². No date or reading moves; `paper/` corrected — "C2p readings audit (2026-10-30)", `lit-C2p-fulltext.md` W1–W4.
 - 2026-10-24 (C2p unit 2): C5's finding 4 ("the lean from 2510.06477, 'around 1k', did not hold") and `lit-C5.md`'s row read the paper's "around step 1k" as a date; its appendix B.1 reads Pythia at steps 1, 1k, 2k, 4k, … only, so it bounds its changes to (1, 1000] (both C2 dates inside), and its training figure reads entropy, sink rate and the BOS norm, not σ₁²/‖X‖²_F. The coordinates' 16000–32000 stands; it is not a date the paper's grid could contradict. "C2p unit 2" below; `LESSONS.md` 7.
