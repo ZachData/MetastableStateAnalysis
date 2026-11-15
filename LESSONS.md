@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-11-15 (training-symmetry register, #353): the register quoted block J's "0.5005 at step
+  512" from `FUTURE_IDEAS.md` §2 B; the record (`qk_symmetry_sweep.json`) has 0.500542 at step 0
+  and 0.500665 at 512, and its "2 % of the way to identity" was 4.5 %. The same PR proposed a
+  positive control ("the non-rotary key bias stays bit-identical") without opening the local
+  checkpoints, where it is 458 by 143000 (layer 23). Both caught by `/challenge-pr` on #353,
+  which read the JSON and the weights. Rule: a number quoted into a new doc is read from its
+  record, not from a summary of it; a prediction about local data is checked on that data
+  before it is written as a control.
 - 2026-11-08 (T5′ U1): STATE's Blocked 142, `status-T.md` "T5′ U1 resumed" and `design-T5p.md`
   listed `t5j.outcome_row`'s refused-run flag as left in U1; it had landed with U1's first commit
   (`02ecc4e`, with its test). Caught by grepping before writing it; no work repeated. Same rule:
