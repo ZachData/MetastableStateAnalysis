@@ -39,8 +39,9 @@
   - C4 U1 (2026-11-09; tier 1, harness): the harness reproduces Pythia's run to step 1000: the init bit-equal, the data rows verified against the Hub's hashes, the first updates' signs agreeing with the released run at 0.9994 (step 2) and 0.981 (step 4), the loop exact in float64, the reader exact against C2 3b's records, the held-out loss at 1000 within 0.38%, the counts and the induction head (L3 H6) tracking the released run's; the flat arm trains to 64 without diverging; the rule frozen in code before any count; weight decay corrected to the config's 0.1; the reading's registration is the user's (STATE Blocked 156) — `trackC_writeup/status-C.md` "C4 unit 1"
   - C4's design gains a description beside (2026-11-10, the user's; writing only): ρ_mid, ρ_1:5, m_ℓ and the sphere's effective rank on every saved checkpoint of both arms, read in U3 after R1–R3; no label, not in the registration — `trackC_writeup/status-C.md` "C4, an addition to the design"
   - C4 U2 (2026-11-12; `P-SCH1` registered first by the user, Blocked 156 (a)): the flat arm trained to 4000 without diverging; V's gate at the off-grid step 3500 passes as frozen, so V is read (plant B seen at 0.5, by one unit over the bar, where C6's run failed), and three of the four centred arms are gated (4.78e-3 not, as in C6); the flat arm's records written, no count read — `trackC_writeup/status-C.md` "C4 unit 2"
+  - C4 U3 (2026-11-14; registered, `P-SCH1`): the harness arm trained to 4000 and matches the released run's dates on Pythia's grid on every count (R1); on the flat arm the centred date (R2, the registered reading) and V's date (R3, beside) both read "neither": the flat arm dates before the bands of both the step count and the summed rate (centred 48 against the harness arm's 640, summed-rate band from 92; V 24 against 384, from 29), so `P-SCH1`'s falsifier is met; one seed per arm, bands set by the grid; the cloud's concentration and effective rank described beside, no label — `trackC_writeup/status-C.md` "C4 unit 3"
 - **Superseded / wrong:** none
-- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a); not yet scored); C2 quotes `P-A5`, Track A's
+- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry: STATE Blocked 157, the user's); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
@@ -51,7 +52,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-14 · body `a8d04dbaa6`
+- **Reviewed:** 2026-11-14 · body `fe6e680d99`
 <!-- /phase-card -->
 
 ## Units
@@ -91,7 +92,7 @@
 | C4 0. the scan and design (Blocked 153; budget 4 units + close-out) | **done 2026-11-09: writing only; frozen on Blocked 155 all (a) (Claude, on the user's delegation)** | `lit-C4.md`, `design-C4.md`; "C4 unit 0" below |
 | C4 1. the harness, A0 to 1000, F to 64 | **done 2026-11-09: data verified (H2); H1, H3, H4 (−0.38% at 1000), H5 pass; the reader's known answer exact; A0's counts and induction head track the released run's (H6); F to 64 without divergence; the rule frozen in code; registration Blocked 156** | `c4_train.py`, `c4_read.py`; "C4 unit 1" below |
 | C4 2. F to 4000 and V's gate (`P-SCH1` registered first, Blocked 156 (a)) | **done 2026-11-12: F trained to 4000 in 6 segments without diverging (loss 2.990); V's gate at 3500 passes as frozen (plant B at 0.5, 13 of 28 units, 12 needed); centred arms 9.61e-5, 1e-4, 3e-4 gated, 4.78e-3 not; 203 records; nothing counted** | `data/trackC/c4/2026-11-12-u2/`; "C4 unit 2" below |
-| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **running: A0 segment 4 from 2620, 2026-11-14 11:02** | "C4 unit 3" below |
+| C4 3. A0 1000 → 4000, A0's records, R1–R3, the description beside | **done 2026-11-14: A0 to 4000 (4 segments, loss 3.042); R1 passes; R2 (centred) "neither", R3 (V) "neither": F dates before both maps' bands; `P-SCH1`'s falsifier met (scoring, Blocked 157); the description beside written** | "C4 unit 3" below |
 
 ## C4 unit 3, A0 to 4000 and the reading (started 2026-11-12)
 
@@ -127,6 +128,80 @@ maximum after the trough). The summed-rate map is the continuous F step whose su
 so the design's t²/2W less t/2W), t − W/2 ± 2 after it. `describe` refuses until `reading.json`
 exists (the design's "When"). Smoke-run on CPU on step 0 only (the shared init): 7 states,
 every value finite.
+
+**A0 reached 4000 on 2026-11-14 at 21:48, exit 0** (`{"done": "A0", "until": 4000}`; 1380
+updates in 38697 s, 28.0 s an update; no reboot in `journalctl --list-boots`): loss 3.042 at 4000
+(F 2.990). Both arms are trained.
+
+**A0's records** (`c4_read records --arm A0 --upto 4000`, 102 s): 29 checkpoints × 7 prompts =
+203 in `A0/records/`, every value finite; step 0 equals F's step 0 exactly (e1, e1c, max
+difference 0.0, the shared init).
+
+### The reading (2026-11-14; `P-SCH1`'s falsifier is met)
+
+`c4_read read` → `data/trackC/c4/2026-11-12-u2/reading.json` (sha256 `08e53d047cf31c14…`).
+**Input set:** code `c4_read` `220161b9159b`, `c4_train` `1c1e1d2df083` (both equal to the
+registration's); the shard and batch hashes in `HDD_1TB/mets_data/c4/data_meta.json` (U1's H2);
+v1's 7 prompts; `gate.json` `ef40569a4f28227a…` (U2). Divergence: none on either arm. Gate mode
+"as frozen". **R1 passes on every count** (Pythia's grid): V, A0 512 against the released 256
+(one grid step); the four centred arms, A0 1000 against the released 1000. So F is read.
+
+| key (gated on F?) | A0 date | F date | ρ | step band | summed-rate band | label |
+|---|---|---|---|---|---|---|
+| V (yes) | 384 | 24 | 1.333 | [288, 512] | [29.0, 91.7] | neither |
+| centred 9.61e-5 (yes) | 640 | 48 | 1.25 | [512, 800] | [91.7, 223.8] | neither |
+| centred 1e-4 (yes) | 640 | 48 | 1.25 | [512, 800] | [91.7, 223.8] | neither |
+| centred 3e-4 (yes) | 640 | 48 | 1.25 | [512, 800] | [91.7, 223.8] | neither |
+| centred 4.78e-3 (no; beside) | 768 | 64 | 1.302 | [589.8, 1000] | [121.6, 349.7] | neither |
+
+- **R2, the centred date: "neither"** (every gated arm dated on both arms, none consistent with
+  either map). **`P-SCH1`'s falsifier reads "the label is 'consistent with step' or 'neither'"**,
+  so it is met. Scoring the entry (its `status`, `real_run_record`) is a registry edit: Blocked
+  157, the user's.
+- **R3, V's date: "neither"** (beside; does not score).
+- F's dates lie **below** the summed-rate band on every key: V's by one dense-grid step (24
+  against a lower edge 29.0; the grid holds 16, 24, 32), the centred arms' by three (48 against
+  91.7). F forms earlier than both maps predict from A0.
+- Plateaus (the median at the plateau steps): A0 V 7, centred 15, 4.78e-3 3; F V 10, centred 14,
+  4.78e-3 6. 92 (i)'s early flag (an early count ≥ half the plateau at a step ≤ 128) is up on
+  every F key and no A0 key; reported beside, not applied (the registration's).
+- Beside, not a reading: U0's predictions came from the *released* dates (V ≈ 23 under the
+  summed rate, the centred date ≈ 350). The registered rule uses A0's dense-grid dates (384, 640),
+  whose summed-rate bands are the ones in the table.
+
+**Not established.** One seed per arm and no A0 rerun: the bands are set by the grid, not by a
+measured run-to-run spread (the registration's `null_construction`). "Neither" says F's dates
+come before both maps' bands; it does not say what sets them (another clock, an Adam transient at
+the flat peak, or the count's sensitivity at a high rate). 70m only; 410m by inference.
+
+### The description beside (2026-11-14, after `reading.json`; no label)
+
+`c4_beside records --model {A0,F,released}` (A0 35 s; F and released not timed, under a minute each; GPU) then `describe` →
+`beside/description.json` (sha256 `82307fbca41beff5…`, carries `reading.json`'s hash). The step
+and the value at each shape point; "after" points none censored.
+
+| series | model | peak / trough | half | min / max after | at 4000 |
+|---|---|---|---|---|---|
+| ρ_mid | A0 | 48 (0.735) | 96 (0.428) | 2000 (0.195) | 0.241 |
+| ρ_mid | F | 4 (0.964) | 24 (0.527) | 768 (0.233) | 0.307 |
+| ρ_mid | released | 32 (0.658) | 128 (0.307) | 2000 (0.195) | 0.244 |
+| ρ_1:5 | A0 | 48 (0.645) | 96 (0.427) | 2000 (0.202) | 0.252 |
+| ρ_1:5 | F | 4 (0.935) | 24 (0.535) | 1250 (0.242) | 0.324 |
+| ρ_1:5 | released | 32 (0.583) | 128 (0.333) | 2000 (0.199) | 0.260 |
+| er_mid | A0 | 48 (5.23) | 384 (32.4) | 2000 (64.6) | 56.8 |
+| er_mid | F | 4 (1.22) | 256 (30.3) | 1250 (60.8) | 41.9 |
+| er_mid | released | 32 (8.53) | 512 (37.8) | 2000 (65.3) | 55.5 |
+
+A0's shape points under the two maps (F steps, numbers only): ρ_mid's peak 48 → step 48, summed
+0.8; its half-fall 96 → 96, 3.2; er_mid's half-rise 384 → 384, 51.4; the minima and maxima at
+2000 → 2000, 1284.5. The whole-grid extremes equal the after-peak ones on every series.
+
+**Re-run.** `METS_DATA=<main>/data HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4_read
+records --out <dir> --arm A0 --upto 4000`, then `… c4_read read --out <dir>` (CPU, 1 s), then
+`… c4_beside records --out <dir> --model {A0,F,released}` (`HF_HUB_OFFLINE=1` for released) and
+`… c4_beside describe --out <dir>`; the `mets` conda env, GPU. **U3's exit is met** (the labels).
+Next, C4's close-out: one page, the label into `paper/` §7 scoped to 70m, Parked carried or
+dropped, the card.
 
 ## C4 unit 2, F to 4000 and V's gate (done 2026-11-12)
 
