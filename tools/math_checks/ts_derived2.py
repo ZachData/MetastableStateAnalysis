@@ -24,8 +24,9 @@ D10. **The first update from the init.**
     (a) Adam's second update for gradients g_1 and g_2 = x g_1:
         u_2(x) = (beta_1 + x) / (1 + beta_1) * sqrt((1 + beta_2) / (beta_2 + x^2)); u_2(1) = 1,
         its maximum over x is at x = beta_2 / beta_1 and is 1.0004; u_2 = 0.85 at x = 0.270 and 5.06.
-        One jump of 5.06 and steady gradients after reproduce 70m's bias at checkpoints 4, 8 and
-        16 within 1.5 %; a drop to 0.270 is over 10 % low.
+        70m's stored value (10 units of 2^-24 against a rate of 11.73) pins the jump only to
+        x in [3.4, 8.2]; with steady gradients after, checkpoints 4, 8 and 16 narrow it to
+        [4.6, 7.9]. A drop to 0.270 is over 10 % low at those checkpoints.
     (b) LayerNorm's Jacobian J = (P - y y^T / d) / s (y the output, P the centring) has J^T 1 = 0 and
         J^T y = 0: the back-signal reaching a writer has no component along 1 or along the
         token's own normalised stream.
@@ -54,7 +55,9 @@ WHAT IT DOES NOT PROVE
   (d) is a toy: iid tokens, no attention, one block; thresholds are loose bounds on one seed's
   values (printed), not derived rates. Pythia's own agreement is measured by `ts_first_step.py`.
 - D11: numerical rank (float64, singular-value gap printed) at two random points of toys with
-  d = 3 to 5; "complete" is relative to the reduced model (S, A_p, B_p), i.e. it assumes the data
+  d = 3 to 5 and k_n = 0 to 3. The "+ k_n" (biases) and "+ 2k" (centred inputs) terms follow from
+  the generators those two cases leave out (what a softmax row and a centred input cannot see);
+  the rank only confirms that nothing else is gained or lost. "Complete" is relative to the reduced model (S, A_p, B_p), i.e. it assumes the data
   and loss can produce every combination of those gradients, and distinct frequencies with at
   least 2P + 1 offsets. Not a proof for general (d, k_n, P), and nothing about MLPs or depth.
 """
@@ -115,21 +118,26 @@ def d10a_second_update(b1=0.9, b2=0.95):
     assert abs(f(float(lo))) < 1e-12 and abs(f(float(hi))) < 1e-12 and abs(float(lo) - 0.2696) < 2e-4 and abs(float(hi) - 5.063) < 2e-3
     # one jump in gradient size, then steady, on a ramp whose rate is (t - 1) units at update t:
     # the cumulative displacement at checkpoints 2, 4, 8, 16 (ts_first_step.py measures 0.852, 5.455, 26.59, 117.3 on 70m)
-    cum = {}
-    for xv in (float(hi), float(lo)):
-        m = v = c = 0.0; cum[xv] = {}
+    def cum(xv):
+        m = v = c = 0.0; out = {}
         for t in range(1, 17):
             g = 1.0 if t == 1 else xv
             m = b1 * m + (1 - b1) * g; v = b2 * v + (1 - b2) * g * g
             c += (t - 1) * (m / (1 - b1 ** t)) / math.sqrt(v / (1 - b2 ** t))
             if t in (2, 4, 8, 16):
-                cum[xv][t] = c
-    up, down = cum[float(hi)], cum[float(lo)]
-    assert all(abs(up[t] / w - 1) < 0.015 for t, w in ((2, 0.852), (4, 5.455), (8, 26.59), (16, 117.3)))
-    assert all(down[t] / w - 1 < -0.10 for t, w in ((4, 5.455), (8, 26.59), (16, 117.3)))
-    print(f"D10a: u_2(1) = 1, max {umax:.5f} at x = beta_2/beta_1; u_2 = 0.85 at x = {float(lo):.3f} and {float(hi):.2f}; a jump of "
-          f"{float(hi):.2f} then steady gives " + ", ".join(f"{up[t]:.2f}" for t in (2, 4, 8, 16)) + " at checkpoints 2, 4, 8, 16 "
-          f"(70m: 0.852, 5.455, 26.59, 117.3, within 1.5 %); a drop to {float(lo):.2f} gives " + ", ".join(f"{down[t]:.2f}" for t in (4, 8, 16)) + " (over 10 % low)  OK")
+                out[t] = c
+        return out
+    meas = ((4, 5.455), (8, 26.59), (16, 117.3)); down = cum(float(lo))
+    assert all(down[t] / w - 1 < -0.10 for t, w in meas)
+    # what the measurement pins (`/challenge-pr` on #355, finding 4): 70m's bias at checkpoint 2 is 10 units of 2^-24
+    # against a rate of 11.73, so u_2 is only known to lie in [9.5, 10.5) / 11.73
+    rate = 1e-3 / 1430 / 2.0 ** -24; grid = np.arange(1.1, 40, 0.01); u2f = sp.lambdify(x, u2)
+    q = [xv for xv in grid if 9.5 / rate <= u2f(xv) < 10.5 / rate]
+    fit = [xv for xv in q if all(abs(cum(xv)[t] / w - 1) < 0.015 for t, w in meas)]
+    assert abs(q[0] - 3.36) < 0.02 and abs(q[-1] - 8.22) < 0.02 and abs(fit[0] - 4.61) < 0.02 and abs(fit[-1] - 7.94) < 0.02
+    print(f"D10a: u_2(1) = 1, max {umax:.5f} at x = beta_2/beta_1; u_2 = 0.85 at x = {float(lo):.3f} and {float(hi):.2f}; fp16 pins the jump to "
+          f"x in [{q[0]:.2f}, {q[-1]:.2f}], and [{fit[0]:.2f}, {fit[-1]:.2f}] if the gradients were steady after (checkpoints 4, 8, 16 within 1.5 %); "
+          f"a drop to {float(lo):.2f} gives " + ", ".join(f"{down[t]:.2f}" for t in (4, 8, 16)) + " against 5.455, 26.59, 117.3 (over 10 % low)  OK")
 
 
 def d10b_layernorm_jacobian(d=4):
@@ -250,6 +258,7 @@ def d11_rope_laws_complete(seed=3):
     rng = np.random.default_rng(seed)
     cases = [("no RoPE, k = 2 (control)", 4, 2, 0, False, False), ("no RoPE, k = 3 (control)", 4, 3, 0, False, False),
              ("RoPE, 2 non-rotary + 1 pair", 4, 2, 1, False, False), ("RoPE, 2 + 2 pairs", 5, 2, 2, False, False),
+             ("RoPE, 1 + 1", 4, 1, 1, False, False), ("RoPE, 3 + 1", 5, 3, 1, False, False),
              ("RoPE, 2 pairs only", 4, 0, 2, False, False), ("RoPE 2 + 1, biases, softmax", 3, 2, 1, True, False),
              ("RoPE 2 + 1, centred inputs", 4, 2, 1, False, True)]
     for name, d, kn, P, bias, cen in cases:

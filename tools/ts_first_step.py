@@ -29,6 +29,10 @@ from step 16.
   sign(u_v - 1/V)) and the column factor fitted on a random half of the rows and scored on the
   other half. For block 0's readers the column factor is also predicted from the init:
   sign(sum_v u_in,v LN(E_0[v])).
+- **controls** (`/challenge-pr` on #355): the last block's writer bias against the same prediction
+  from a far pair of iterations' counts and from permuted token ids; and, on the tokens whose side
+  of 1/V differs between the two pairs, which pair W_U's step-2 rows side with (the only reading
+  here that bears on the data order).
 - **key_bias**: the non-rotary key bias (E0's direction) per layer: share nonzero and rms over the
   cumulative rate at 2, 4, 8, 16.
 - **intervals** (D9): per pair of consecutive checkpoints, the rms of the mean normalised update
@@ -59,13 +63,15 @@ from ts_weights import HUB, OUT, Ckpt, lr, LAM  # noqa: E402
 PILE = Path(os.environ.get("C4_ROOT", "/run/media/system/HDD_1TB/mets_data/c4")) / "pile" / "document-00000-of-00020.bin"
 ROW, BATCH, V, UNIT = 2049, 1024, 50304, 2.0 ** -24
 PEAK = {"pythia-70m": 1e-3, "pythia-410m": 3e-4}
-STEPS = [0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 143000]
+STEPS = [0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 64000, 120000, 143000]
+OTHER = 3000                                             # a far pair of iterations, for the controls
 lay = lambda l, n: f"gpt_neox.layers.{l}.{n}"
 
 
-def unigram():
+def unigram(i=0):
+    """Target and input token frequencies of iterations i and i + 1, and the rows' hash."""
     rows = np.memmap(PILE, dtype="<u2", mode="r", shape=(PILE.stat().st_size // (2 * ROW), ROW))
-    b = np.asarray(rows[:2 * BATCH])
+    b = np.asarray(rows[i * BATCH:(i + 2) * BATCH])
     return (np.bincount(b[:, 1:].ravel(), minlength=V) / b[:, 1:].size, np.bincount(b[:, :-1].ravel(), minlength=V) / b[:, :-1].size,
             hashlib.sha256(b.tobytes()).hexdigest()[:12])
 
@@ -117,6 +123,22 @@ def main(model):
                            "vs_last_layer": float(np.mean(np.sign(a) == np.sign(p2[lay(L - 1, "attention.dense.bias")])))}
         rb[l] = float(np.mean(np.sign(p2[lay(l, "mlp.dense_h_to_4h.bias")]) == np.sign(p0[lay(l, "mlp.dense_4h_to_h.weight")].T @ np.sign(m))))
     rec["writer_bias"], rec["reader_bias_vs_Wout_sign"] = wb, rb
+
+    # ---- controls (`/challenge-pr` on #355, finding 2): is it these two batches, or the corpus?
+    wlast = np.sign(p2[lay(L - 1, "attention.dense.bias")]); crng = np.random.default_rng(1)
+    centred = lambda f: np.sign(U0.T @ (f - 1 / V) - (U0.T @ (f - 1 / V)).mean())
+    u_far = unigram(OTHER)[0]
+    ctl = {"other_batches": OTHER, "writer_bias_last_other_batches": float(np.mean(wlast == centred(u_far))),
+           "writer_bias_last_permuted_ids": float(np.mean(wlast == centred(u[crng.permutation(V)])))}
+    # tokens on opposite sides of 1/V in the two pairs: whose side do W_U's step-2 rows take?
+    D2 = p2["embed_out.weight"] - U0; S2 = np.sign(D2) * (np.abs(U0) < 2.0 ** -11)
+    side0, side1 = np.where(u > 1 / V, 1.0, -1.0), np.where(u_far > 1 / V, 1.0, -1.0); differ = side0 != side1
+    col = np.where((S2[~differ] * side0[~differ, None]).sum(0) >= 0, 1.0, -1.0)                 # fitted on the tokens that agree
+    n_tok = 2 * BATCH * (ROW - 1); gap = np.abs(u - u_far) * n_tok
+    for nm, sel in (("all", differ), ("count_gap_60", differ & (gap >= 60))):
+        ctl[f"W_U_differing_tokens_{nm}"] = {"tokens": int(sel.sum()),
+                                             "sides_with_first_batches": float(((S2[sel] * side0[sel, None] * col) > 0).sum() / np.count_nonzero(S2[sel]))}
+    rec["controls"] = ctl
 
     # ---- matrices: rank-one sign structure
     lnE = (E0 - E0.mean(1, keepdims=True)) / E0.std(1, keepdims=True); r0 = np.sign(ui @ lnE)
@@ -183,7 +205,9 @@ def main(model):
             ub = -(x1 - dec[0] * x0) / w.sum(); n = np.linalg.norm(ub)
             cos = lambda z: float((ub * z).sum() / (n * np.linalg.norm(z))) if n > 0 and np.linalg.norm(z) > 0 else None
             r[nm] = {"rms": float(np.sqrt((ub ** 2).mean())), "cos_first": cos(first[nm]) if nm in first else None,
-                     "cos_prev": cos(last[nm]) if nm in last else None, "rms_lambda_w": float(lam * np.sqrt((x1 ** 2).mean()))}
+                     "cos_prev": cos(last[nm]) if nm in last else None, "rms_lambda_w": float(lam * np.sqrt((x1 ** 2).mean())),
+                     # a window of many decay lengths forces rms(u_bar) toward lambda rms(W) (D9): only short windows test it
+                     "window_in_decay_lengths": float(lam * et.sum())}
             first.setdefault(nm, ub); last[nm] = ub
         iv[f"{a}-{b}"] = r
     rec["intervals"] = iv
@@ -202,6 +226,9 @@ def report(rec, L):
     print("  writer bias at step 2 against sign centre(W_U0^T (u - 1/V)), by layer: " + " ".join(f"{w['layers'][l]['vs_prediction']:.3f}" for l in range(L))
           + f"; against the last layer's: " + " ".join(f"{w['layers'][l]['vs_last_layer']:.3f}" for l in range(L))
           + f"; attn = mlp bias in all layers: {all(w['layers'][l]['attn_equals_mlp'] for l in range(L))}; final-LN bias (uncentred form) {w['final_ln_bias_vs_uncentred']:.3f}")
+    c = rec["controls"]; print(f"  controls, last block's writer bias: token counts of iterations {c['other_batches']}-{c['other_batches'] + 1} {c['writer_bias_last_other_batches']:.3f}; "
+                               f"permuted token ids {c['writer_bias_last_permuted_ids']:.3f}; W_U rows of tokens on opposite sides of 1/V in the two pairs side with the first: "
+                               + "; ".join(f"{k[len('W_U_differing_tokens_'):]} {v['sides_with_first_batches']:.3f} ({v['tokens']} tokens)" for k, v in c.items() if k.startswith("W_U_")))
     rb = rec["reader_bias_vs_Wout_sign"]; print(f"  reader bias against sign(W_out0^T sign b_out): min {min(rb.values()):.3f} median {float(np.median(list(rb.values()))):.3f} max {max(rb.values()):.3f} (D10c 0.794)")
     for s in (2, 16):
         o = M[s]; print(f"  matrices at step {s}: " + "; ".join(f"{k} {v['agree']:.3f}" + (f" (col predicted {v['agree_col_predicted']:.3f}, col match {v['col_vs_predicted']:.3f})" if "agree_col_predicted" in v else "")
@@ -215,7 +242,7 @@ def report(rec, L):
     for k, r in rec["intervals"].items():
         f = lambda nm: (f"{r[nm]['rms']:.3f}" + (f" [{r[nm]['cos_first']:+.2f}]" if r[nm]["cos_first"] is not None else "")) if nm in r else "-"
         print(f"    {k:>13}: writer bias {f('writer_bias_last')} | final-LN bias {f('final_ln_bias')} | key bias last {f('key_bias_last')} first {f('key_bias_first')} | "
-              f"W_U {f('W_U')} | MLP-out {f('mlp_out_last')} (lambda rms W {r['mlp_out_last']['rms_lambda_w']:.4f}) | QKV0 {f('qkv_first')}" if "mlp_out_last" in r else
+              f"W_U {f('W_U')} | MLP-out {f('mlp_out_last')} (lambda rms W {r['mlp_out_last']['rms_lambda_w']:.4f}; window {r['mlp_out_last']['window_in_decay_lengths']:.2g} decay lengths) | QKV0 {f('qkv_first')}" if "mlp_out_last" in r else
               f"    {k:>13}: writer bias {f('writer_bias_last')} | final-LN bias {f('final_ln_bias')} | key bias last {f('key_bias_last')} first {f('key_bias_first')}")
 
 

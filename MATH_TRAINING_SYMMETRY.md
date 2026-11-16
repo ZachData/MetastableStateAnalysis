@@ -330,10 +330,13 @@ linear ramp of length W: τ₁ = η̂ t²/2W, τ₂ = η̂² t³/3W².
 
 Tier 1, the user's "continue on the mathematical derivations". Exit condition: Q8, Q2's open
 increment and Q4's AdamW gap each derived with a check, or stated as not derivable; budget one
-unit (closed here). Closed forms D9–D11: `tools/math_checks/ts_derived2.py` (it lists what each
+unit (closed here). The three targets were named to the user before any output; the exit
+condition and budget were written here with the results, not before (`/challenge-pr` on #355
+asked). Revised after that review (accept with changes, findings 1–5 taken; each is marked
+where it landed). Closed forms D9–D11: `tools/math_checks/ts_derived2.py` (it lists what each
 does not prove). Weights: `tools/ts_first_step.py`, no forward pass; records
 `data/ts/first_step_pythia-70m.json` and `first_step_pythia-410m.json` (main tree, code
-`5840511051d1`, each step's Hub revision inside). **Input:** checkpoints 0–143000 of both models and
+`df888dca798b`, each step's Hub revision inside). **Input:** checkpoints 0–143000 of both models and
 the token counts of iterations 0 and 1 of `pile-standard-pythia-preshuffled` shard 0 (2 × 1024
 rows, sha `4a75e9a181ee`; Σu² = 0.0059, 10.9 % of the vocabulary above 1/V, 3.3 % unseen).
 **Everything read from weights is description, one run per model; the readings were chosen on
@@ -343,10 +346,10 @@ rows, sha `4a75e9a181ee`; Σu² = 0.0059, 10.9 % of the vocabulary above 1/V, 3.
 
 | # | Was | Now |
 |---|---|---|
-| Q8 | described, not derived | **derived and read (9.3):** the first update is rank one per matrix, its factors fixed by the init and the token counts; the last block's writer bias matches the prediction on 98.4 % (70m) and 99.2 % (410m) of coordinates |
+| Q8 | described, not derived | **derived and read (9.3):** where a mean back-signal and a mean input exist, the first update is rank one, its factors fixed by the init and the corpus's token frequencies; the last block's writer bias matches the prediction on 98.4 % (70m) and 99.2 % (410m) of coordinates. Clear for writers and value rows; weak for block 0's MLP-in and query rows (0.59–0.63); absent for key rows |
 | Q2 | F6 the open increment | **F6 is complete on a toy (9.4, D11);** the per-pair law is also in Tran et al. 2606.17816 (ICML 2026; read through a third-party note only) |
 | Q3 | mostly solved | **plus an identity (9.2, D9):** two checkpoints give Adam's mean normalised update between them exactly; below ε Adam is SGD |
-| Q4 | AdamW's stationary point not derived | **per coordinate (D9 b, c):** a weight that stands still has ū = −λθ; under sign steps \|u\| − \|v\| decays at rate λ. No group structure, so "whole pairs switch off" is the L2 picture's prediction only. Matrix factors not treated |
+| Q4 | AdamW's stationary point not derived | **per coordinate (D9 b, c):** a weight that stands still has ū = −λθ; under sign steps \|u\| − \|v\| decays at rate λ. An argument, not a check (finding 5): the stationarity condition is per coordinate, so nothing in it favours a whole pair, and "whole pairs switch off" stays the L2 picture's prediction. Matrix factors not treated |
 | E0 | moves from about 256 or 512 | **dated (9.3):** its normalised update is under 0.02 (70m) and 0.06 (410m) through step 64, below Adam's ε, and a third to a half of a sign step from 128–256 (70m) and 256–512 (410m) |
 
 ### 9.2 AdamW in integral form (D9)
@@ -364,9 +367,20 @@ It is an identity of the update rule. What it gives:
 | c | A linear functional c with c·u_t = 0 at every step decays as A. Under sign steps on f(uv) that is \|u\| − \|v\| (rate λ; gradient flow's u² − v² goes at 2λ, F2) | Q4, scalar factors |
 | d | For \|g\| ≪ ε the step is η g / ε: Adam is SGD with rate η/ε, linear, and keeps zero-sum constraints (it does not above ε, D7) | E0's early window |
 
-**Read (b), late:** over 16000–143000 the last block's MLP-out has rms(ū) 0.004–0.005 (70m) and
-0.003–0.005 (410m), against λ rms(W) 0.0036–0.0052 and 0.0026–0.0032. So late weights are held
-by a net push of under half a percent of a sign step, equal to what decay removes.
+**Read (b), late** (rewritten, finding 1). ū depends on the window: over a window of several
+decay lengths (λΔτ₁ ≳ 1) the identity forces rms(ū) toward λ rms(W) whatever the weights did, so
+only short windows test anything. The last block's MLP-out, rms(ū) over λ rms(W):
+
+| window (decay lengths) | 70m | 410m |
+|---|---|---|
+| 4000–8000 | 1.86 (0.40) | 5.59 (0.12) |
+| 8000–16000 | 1.25 (0.79) | 2.79 (0.24) |
+| 16000–32000 | 1.06 (1.5, forced) | 1.63 (0.45) |
+| 120000–143000 | – | **1.05 (0.07)** |
+
+So the net push exceeds what decay removes through 32000 (the weights are still growing), and
+equals it within 5 % at the end of 410m's run, on a window short enough to test it: there the
+mean normalised update is 0.27 % of a sign step. 70m's late windows are all too long to say.
 
 ### 9.3 The first update from the init (Q8; D10)
 
@@ -385,21 +399,29 @@ structure in its exact gradient.
 |---|---|---|
 | attention-out bias = MLP-out bias, every layer (8.2's pair) | bit-equal | bit-equal |
 | **last block's writer bias at step 2 = η sign centre(W_U(0)ᵀ(u − 1/V))** | **0.984** | **0.992** |
+| … control: the same from the counts of iterations 3000–3001 (so the reading is the corpus's frequencies, not these two batches; finding 2) | 0.992 | 0.991 |
+| … control: token ids permuted (the planted null) | 0.514 | 0.483 |
 | the same in block 0 (the back-signal there has passed every later block) | 0.621 | 0.508 |
 | final LayerNorm's bias = η sign(W_U(0)ᵀ(u − 1/V)) (no Jacobian in front, so the model's own prediction is not removed) | 0.934 | 0.941 |
 | MLP-in bias against sign(W_out(0)ᵀ sign b_out): 0.794 for a Gaussian back-signal (D10c) | 0.781–0.803 | 0.773–0.801 |
 | W_U at step 16: sign(u_v − 1/V) ⊗ one column vector (fitted, split-half) | 0.918 | 0.936 |
 | … rows of never-seen tokens (pushed down along that vector) | 0.980 | 0.992 |
 | … rows above 1/V | 0.775 | 0.826 |
+| W_U at step 2, the 1488 tokens on opposite sides of 1/V in iterations 0–1 and 3000–3001: share siding with 0–1 (the one reading that bears on the data order; the reviewer's test) | 0.640 | 0.650 |
+| … the 352 of them whose counts differ by 60 or more | 0.745 | 0.767 |
 | attention-out, last block, step 16: sign(b_out) ⊗ fitted column | 0.963 | 0.912 |
 | value rows, last block, step 16: sign(b_V) ⊗ fitted column | 0.960 | 0.940 |
 | MLP-in, last block, step 16 | 0.841 | 0.878 |
 | key rows, last block, step 16 (no mean back-signal expected: a softmax row's gradient sums to zero over keys) | 0.543 | 0.540 |
 | block 0's value rows, step 16, **column predicted**: sign(Σ_v u_v LN(E_0[v])) (the fitted column matches it on 98–99 %) | 0.860 | 0.824 |
+| block 0's other readers, step 16 (finding 3: left out of the first draft): MLP-in; query rows; key rows | 0.608; 0.626; 0.516 | 0.591; 0.611; 0.505 |
 | embedding rows of never-seen tokens at step 2 | none moved | none moved |
 
 Step 2's readable sample (\|W_0\| < 2⁻¹¹, 1.4–2.6 % of entries) gives the same picture; both steps
-are in the records. Half is chance for every row but the first.
+are in the records. Half is chance for every row but the first. **Scope (finding 3):** the
+rank-one form is clear for the writers and the value rows (0.80–0.96), weak for block 0's
+MLP-in and query rows (about 0.6, where the covariance term is not small beside the mean), and
+absent for key rows.
 
 - **What the early rank-one direction is (8.7's open line).** Per matrix, sign(its bias) ⊗
   sign(its mean input). For the last block's writers the row factor is the sign of the
@@ -409,10 +431,11 @@ are in the records. Half is chance for every row but the first.
 - **Adam's first moving update is 0.85 of a sign step, on every coordinate** (70m: 484 of 512
   writer-bias coordinates at 10 units of 2⁻²⁴ against a rate of 11.73; 410m's 3 of 3.52 is too
   coarse to say). Mean u per interval: 0.85, 0.92, 0.96, 0.99 to steps 2, 4, 8, 16. By D10a a
-  common 0.85 means the second gradient was 5.06 × (or 0.27 ×) the first **at the same weights**;
-  one jump of 5.06 and steady gradients after reproduce checkpoints 4, 8 and 16 within 1.5 %,
-  and the drop is over 10 % low. So the first gradient Adam saw was about a fifth the size of
-  the ones that followed. Not explained (Parked 1).
+  common 0.85 means the second gradient was larger (or 0.27 ×) than the first **at the same
+  weights**; the drop is over 10 % low at checkpoints 4, 8 and 16, so it was larger. By how much
+  is set by fp16 only loosely (finding 4): **3.4 to 8.2 ×**, or 4.6 to 7.9 × if the gradients
+  were steady afterwards. The range holds 8, a power of two, which a loss-scale or
+  accumulation step would give. Not explained (Parked 1).
 - **How long the unigram push lasts** (D9 b; rms of ū per interval, 1 = a sign step):
 
   | interval | 0–2 | 8–16 | 16–32 | 32–64 | 64–128 | 128–256 | 256–512 | 512–1000 | 2000–4000 |
@@ -448,6 +471,7 @@ computation.
 |---|---|---|---|
 | no RoPE, k = 2 and 3 (control: Marcotte's k(k+1)/2) | 3, 6 | k(k+1)/2 | 3, 6 |
 | 4; 2; 1 | 4 | k_n(k_n+1)/2 + P | 10 |
+| 4; 1; 1 and 5; 3; 1 (finding 5: k_n varied; the reviewer also ran 4) | 2, 7 | k_n(k_n+1)/2 + P | 6, 15 |
 | 5; 2; 2 | 5 | k_n(k_n+1)/2 + P | 21 |
 | 4; 0; 2 | 2 | P | 10 |
 | 3; 2; 1, biases, softmax | 6 | k_n(k_n+1)/2 + P + k_n | 10 |
@@ -461,6 +485,8 @@ computation.
   sum of the two, so it holds, but it hides that b_K alone is conserved. For a 410m head the
   formula gives 1176 + 8 + 48 laws (an extrapolation from the toys).
 - **LayerNorm in front** adds 2k frozen coordinates (the readers' rows along **1**, 8.2).
+- The "+ k_n" and "+ 2k" terms are put in by what those two toys leave out of the loss's view
+  (finding 5); the rank confirms only that nothing else is gained or lost.
 - **Literature.** Tran et al. 2606.17816 list ‖Q⁽ʲ⁾‖² − ‖K⁽ʲ⁾‖² per 2 × 2 block for multi-head
   attention with RoPE, by a PDE method, and claim completeness without position encodings (the
   open problem of 2506.06194). Read through a third-party note and the abstract only. Not in
@@ -471,15 +497,18 @@ computation.
 
 - D11 is numerical rank on toys with d ≤ 5 at two random points; "complete" is relative to
   (S, A_p, B_p) being all the loss sees. D10's toy has no attention.
-- 1/V stands in for the model's mean prediction at the init; no forward pass was run. The
-  fitted column factors are fits (split-half), except block 0's.
+- 1/V stands in for the model's mean prediction at the init; no forward or backward pass was
+  run. The fitted column factors are fits (split-half), except block 0's. One backward pass at
+  the init would measure all three (finding 6; not taken here, it joins Parked 3's pass).
+- That Pythia saw these batches in this order: only the differing-tokens rows of 9.3 bear on it
+  (0.64–0.77 against a half).
 - Q4 for matrix factors under AdamW; Q9's toy; Q10, Q11.
 - That E0's onset is caused by the end of the unigram push: the two are adjacent in time on two
   runs with the same data order (post hoc).
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|
-| 1 | Why Adam's first moving update is 0.85 on every coordinate | a common factor of 5 between two gradients at the same weights points at the training code (clipping, loss scaling, the first batch), as 8.6 unit 1's candidate (b) does / one reading of NeoX's step at the Pythia commit / whether E0's cause is rounding or code |
+| 1 | Why Adam's first moving update is 0.85 on every coordinate | a common factor of 3.4–8.2 between two gradients at the same weights points at the training code (clipping, loss scaling, the first batch), as 8.6 unit 1's candidate (b) does / one reading of NeoX's step at the Pythia commit / whether E0's cause is rounding or code |
 | 2 | 70m's final LayerNorm bias moves at 0.36 of a sign step over 64000–143000 in a new direction, with W_U at 2.6 × its earlier rate; 410m shows nothing | the same late event as 8.4's W_U mean jump / weights only, the 143 checkpoints between / whether 70m's 143000 is a usable endpoint for weight-space readings |
 | 3 | The date the common vector overtakes the stream (C4's collapse: A0's trough at 48, F's by step 4) in closed form | needs the mean activations at the init, one forward pass / an hour / a derived date for C4's finding 7, replacing 8.3's floor of step 53 |
 | 4 | 410m's writer push ends about 13 × earlier in τ₁ than 70m's | the common shift per unit τ₁ scales with neurons × layers (8 × between the two) / with 3 / whether early dates should be compared in τ₁ × width |

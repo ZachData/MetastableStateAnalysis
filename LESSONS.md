@@ -2797,6 +2797,14 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   against the centred date's 48, which changes how the label is read. Cost: none in compute; a
   reading closed and reviewed without it. Rule: **before a unit says its exit is met, list every
   "beside" the design's readings section names and give each a file or a line saying why not**.
+- 2026-11-16 (training symmetry §9, `/challenge-pr` on #355): two headline sentences said more
+  than their readings. "Late weights are held by what decay removes" compared two numbers that
+  the unit's own identity (D9) forces together on any window of several decay lengths; and "the
+  two batches Pythia saw first" was never set against other batches (any two give 99 %; the
+  planted null, permuted token ids, had not been run). Both were one cheap control away. Rule:
+  **a reading that agrees gets its null and its forced-agreement check before it gets a sentence**
+  (the calibration gate, applied to description too). Also: the unit's exit condition was written
+  with the results, not before.
 
 ## 12. Deleted, then needed
 
