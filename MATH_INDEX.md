@@ -18,7 +18,8 @@ Written to be read with the source open. Each lives in its phase's directory:
 
 Phases 2c, 3 and 4 are out of scope per `INDEX.md` (2026-07-18) and have no document.
 
-Not per-phase: `MATH_TRAINING_SYMMETRY.md` (2026-11-15) is a question register, not derivations:
+Not per-phase: `MATH_TRAINING_SYMMETRY.md` (2026-11-15) is a question register with a first deriving session (§8, 2026-11-15:
+D1–D8 in `tools/math_checks/ts_derived.py`, weights read by `tools/ts_weights.py`):
 how training moves the weights from random toward trained, read through the parameters'
 symmetry group, conservation laws and how AdamW breaks them (checked closed forms:
 `tools/math_checks/ts_conservation.py`).
