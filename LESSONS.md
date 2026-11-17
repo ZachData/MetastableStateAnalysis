@@ -2022,6 +2022,23 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   failing gate (a main-tree path default, `tests/test_no_hardcoded_repo.py`) was committed and
   pushed, then fixed in the next commit. Rule: **gate on the script's own exit status, never
   through a pipe**.
+- **2026-11-17, training symmetry §11 (b_K zeroed): an answer rule with one reachable outcome,
+  and an arm described from memory.** (i) The primary statistic was r = d / e_I: what zeroing
+  the key bias does, over the arm's own rounding error. To second order r ≈ 1 + e_Z / e_I − ρ
+  (ρ the two errors' correlation term; `/challenge-pr` on #357, finding 1). If b_K is the floor,
+  r ≈ 1. If b_K plays no part, zeroing still re-rolls the rounding, so r ≈ 2. Both read
+  "comparable", which the answer rule mapped to "matters". So the answer was fixed before the
+  run, and it read "matters" at all six cells. The design had G0 (the zeroing is exact) but no
+  planted null run through the *label rule*. Its thresholds were not placed. The reading came from
+  the description line e_Z / e_I (0.004 on 410m's float32: b_K is 99.6 % of the error). Rule:
+  **a label rule gets the calibration gate too: write each outcome's expected statistic under the
+  null and under the effect, in closed form if no plant is cheap, and refuse to freeze if two
+  outcomes land in one band. When the effect may itself be the floor a statistic divides by, the
+  primary statistic is the counterfactual floor (the edited arm against the reference)**. (ii)
+  The design said H16 had "fp16 scores and softmax". In transformers 4.44, RoPE's float32 cos / sin
+  promote q and k to float32, so the scores are float32. One `_attn` spy on the loaded model showed
+  it. Rule: **an arm's precision is checked on the loaded model before the design freezes, not
+  taken from the library's reputation**.
 
 ## 7. Literature found after the construction was built
 
