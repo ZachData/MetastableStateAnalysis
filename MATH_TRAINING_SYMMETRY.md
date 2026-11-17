@@ -628,14 +628,27 @@ batch-to-batch noise; KBr, the other control, does pass at 256: 0.74–0.86.)
 | 410m @ 256 | 0.54, 4 × 10⁻⁶ (random) | 0.52, 0.03 (random) | **0.84, 6.5 (systematic)** | 0.067 | 0.55, 0.57 | (a-FA) |
 | 410m @ 143000 | 0.92, 0.06 (weak) | 0.51, 2.5 (random) | **1.00, 202 (systematic)** | 0.84 | 1.00, 1.00 | (a-FA) |
 
-**E0's label: (a-FA), the flash kernel's rounding, at all four cells.** In fp16, the
-FlashAttention-2 backward gives the invisible key bias a gradient that keeps its sign from one
-half-batch to the other, is 6–200 ε after the clip (so Adam takes near-full steps on it), and at
-143000 points along the motion and along b itself on every coordinate of both models.
-HF's fp16 eager graph (fp16 softmax output) gives a gradient of random sign. Float32 gives a
-persistent sign at three cells, but 17–1600 times below ε, where Adam is SGD (D9d) and
-cannot move it. By D13 (`tools/math_checks/ts_e0.py`) the residual is dO·(O^exact − O^fp16)
-summed against q, the mechanism of Qiu & Yao 2510.04212. **Depth (description):** F16's
+**E0's label: (a-FA), the flash kernel's rounding, at all four cells.** What the label
+establishes (reworded after `/challenge-pr` on #356, findings 1–2): in fp16, the FlashAttention-2
+backward gives the invisible key bias a gradient that keeps its sign from one half-batch to the
+other and is 6–200 ε after the clip (so Adam would take near-full steps on it). That this
+gradient is what grew b is inferred, not tested (G2 failed; Parked 1 is the causal test). At
+143000 it points along the motion and along b on every coordinate of both models, **but float32
+does almost the same there in direction** (0.91, 0.98), 17–130 times below ε. HF's fp16 eager
+graph (fp16 softmax output) gives a gradient of random sign at every cell. **Route not
+isolated:** by D13 (`tools/math_checks/ts_e0.py`) any error in the row term δ lands on this
+gradient. δ = rowsum(dO ∘ O) from the fp16 O is Qiu & Yao 2510.04212's mechanism, but FA2 also
+rounds dS to fp16 before dK, a second route onto the same gradient, and no arm separates the two.
+
+**Post hoc, after the review (description; finding 1's test).** Where b is about 0 (70m at 64
+and 128, KBn rms 2 × 10⁻⁵ and 3 × 10⁻⁴; iterations 64 and 128's rows), F16 is already persistent
+(0.93, 0.95) at 144 and 107 ε, while R32 (0.48, 0.48) and H16 (0.70, 0.52; under ε) are not. At
+143000 with the last layer's KBn zeroed, R32 and F16 share a direction (along the 64000–143000
+motion 0.91 and 0.90; persist 0.82 and 0.88), but only F16 is above ε (45 against 0.006). So
+**late, the direction is set by the trained state and any rounding finds it**; **at the onset,
+only fp16 flash gives a gradient Adam can act on**. That is consistent with the kernel starting
+the growth, not only amplifying an existing b. Move at 64 → 128 and 128 → 256 is 0.54 and 0.71
+(G2 does not apply post hoc; description). **Depth (description):** F16's
 persistence rises through the stack: 70m 0.6 → 0.96 at 256; 410m 0.50 in layer 0 → 0.84 in
 layer 23 at 256 and 0.54 → 1.00 at 143000. This matches 8.4's "upper layers only".
 
@@ -646,7 +659,8 @@ rms/τ₁ is 0.044, 0.040, 0.039, 0.039 (A0) and 0.047, 0.035, 0.034, 0.037 (F) 
 gives a random sign at 256 (persist 0.49, 0.4 ε), the state where the growth starts. At 143000 it
 gives a persistent gradient (0.96, 511 ε) that points neither along the motion nor along b
 (0.50, 0.50). So the systematic part at the onset needs fp16, not only the kernel. That fits
-A0. Why bf16 differs (its rounding of O is coarser, but less biased?) is not established.
+A0. Why bf16 differs is not established, and it sits awkwardly with 2510.04212, which found its
+biased rounding in bf16 (finding 2).
 
 **Parked 1: "not explained" by the batches' gradients (frozen rule), explained by D12.** At
 the init, iterations 0 and 1 give ‖g‖ = 3.58, 3.69 (70m) and 25.5, 26.9 (410m). Per coordinate
@@ -656,10 +670,13 @@ the same batches and clip, has step-2 u = 0.9996 (grad norms 3.67, 3.78). No ove
 2¹². **D12:** with one zero-gradient step before training, the bias correction runs one step ahead
 of the moments. That gives 0.848 at the first moving update and 0.916, 0.964, 0.991 over
 (2, 4], (4, 8], (8, 16]. §9.3 observed 0.85, 0.92, 0.96, 0.99, and those intervals were not used to
-derive it. **The candidate source:** DeepSpeed v0.7.0's ZeRO stage 1/2
+derive it. D12 fits *any* one extra zero-gradient step (or a counter started at 1), not
+DeepSpeed's in particular (finding 4); 410m's init gradients ran on 256 rows, not the design's
+1024. **The candidate source:** DeepSpeed v0.7.0's ZeRO stage 1/2
 `initialize_optimizer_states` sets the fp32 partitions' gradients to zero and calls
 `self.optimizer.step()` once at construction; master no longer does (read verbatim through a
-fetch; Pythia ran ZeRO stage 1 on EleutherAI's DeeperSpeed fork, not read). **Consequence for
+fetch; Pythia ran ZeRO stage 1 on EleutherAI's DeeperSpeed fork, which the design said to read
+at Pythia's commit and which was not read). **Consequence for
 §9.3:** the "second gradient 3.4–8.2 × the first" reading is withdrawn. The two gradients are
 equal, and the 0.85 comes from the optimizer's step count, not from the data or the code's
 rounding. It does not bear on E0's cause (E0 is the attention kernel). Candidate (b) of 8.6
@@ -669,7 +686,9 @@ splits accordingly.
 kernel). That the 143000 cells' batch, a stand-in from iteration 4000, gives the true batch's
 gradient. That ZeRO's fp16 reduction across 32 ranks leaves the sign alone. That the one-batch
 sign at 256 explains the growth over 256–512 (move is 0.55–0.68 there: description, G2 failed).
-Why the gradient rises with depth. That DeeperSpeed kept the setup step.
+Why the gradient rises with depth. That DeeperSpeed kept the setup step. Which route (δ or dS)
+carries the bias. 410m's sizes on 256 rows are batch-noise inflated against a 1024-row batch, so
+6.5 ε at 410m @ 256 overstates the step Adam takes (finding 5).
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|

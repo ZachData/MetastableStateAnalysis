@@ -42,9 +42,10 @@ C4 = Path("/run/media/system/HDD_1TB/mets_data/c4")
 ROW, BATCH, ROT = 2049, 1024, 16          # tokens a row; rows an iteration; rotary dims a head
 EPS, BETAS, CLIP = 1e-8, (0.9, 0.95), 1.0
 SCALE0 = 2.0 ** 12                         # DeepSpeed's initial loss scale (Pythia's configs)
-BATCH_IT = {256: 256, 143000: 4000}        # step -> iteration whose rows are read (§10)
+BATCH_IT = {256: 256, 143000: 4000, 64: 64, 128: 128}  # step -> iteration whose rows are read (§10; 64, 128 post hoc, #356 finding 1)
 MOTION = {("pythia-70m", 256): 512, ("pythia-410m", 256): 512,
-          ("pythia-70m", 143000): 64000, ("pythia-410m", 143000): 120000}
+          ("pythia-70m", 143000): 64000, ("pythia-410m", 143000): 120000,
+          ("pythia-70m", 64): 128, ("pythia-70m", 128): 256}   # post hoc (#356 finding 1)
 PEAK = {"pythia-70m": 1e-3, "pythia-410m": 3e-4}
 WARM = 1430
 MICRO = {("pythia-70m", "R64"): 1, ("pythia-70m", "R32"): 2, ("pythia-70m", "H16"): 4,
@@ -152,7 +153,8 @@ def half_grads(m, rows: np.ndarray, arm: str, mb: int, scale: float, plant=None)
     return {"grads": out, "sumsq": ss, "loss": loss_tot, "nonfinite": nonfinite, "acc": acc}
 
 
-def run_grad(model: str, step: int, arm: str, plant: bool = False, rows=None, tag=None) -> Path:
+def run_grad(model: str, step: int, arm: str, plant: bool = False, rows=None, tag=None,
+             zero_kbn: bool = False) -> Path:
     import torch
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.allow_tf32 = False
@@ -165,6 +167,11 @@ def run_grad(model: str, step: int, arm: str, plant: bool = False, rows=None, ta
         rows = rows_of(BATCH_IT[step], n)
     halves = (rows[: len(rows) // 2], rows[len(rows) // 2:])
     m = load(model, step, arm, dev)
+    if zero_kbn:                                 # post hoc (#356 finding 1): the last layer's KBn set to 0
+        import torch as _t
+        L = m.config.num_hidden_layers
+        with _t.no_grad():
+            dict(m.named_parameters())[f"gpt_neox.layers.{L - 1}.attention.query_key_value.bias"].view(-1, 3, 64)[:, 1, ROT:] = 0
     scale = SCALE0 if arm in ("H16", "F16") else 1.0
     pl = None
     if plant:
@@ -191,11 +198,11 @@ def run_grad(model: str, step: int, arm: str, plant: bool = False, rows=None, ta
            "loss": [r["loss"] for r in res], "sumsq_halves": [r["sumsq"] for r in res],
            "global_norm": math.sqrt(full_sumsq),
            "wall_s": round(time.time() - t0, 1), "torch": torch.__version__,
-           "plant": None if pl is None else float(pl[2])}
+           "plant": None if pl is None else float(pl[2]), "zero_kbn": zero_kbn}
     import transformers
     rec["transformers"] = transformers.__version__
     OUT.mkdir(parents=True, exist_ok=True)
-    stem = tag or f"{model}_{step}_{arm}{'_plant' if plant else ''}"
+    stem = tag or f"{model}_{step}_{arm}{'_plant' if plant else ''}{'_zkb' if zero_kbn else ''}"
     np.savez(OUT / f"{stem}.npz", **{f"A|{k}": v for k, v in res[0]["grads"].items()},
              **{f"B|{k}": v for k, v in res[1]["grads"].items()})
     (OUT / f"{stem}.json").write_text(json.dumps(rec, indent=1) + "\n")
@@ -213,13 +220,14 @@ def main(argv=None) -> int:
     g.add_argument("--step", type=int, required=True)
     g.add_argument("--arm", required=True, choices=("R64", "R32", "H16", "F16", "FB16"))
     g.add_argument("--plant", type=float, default=0.0)
+    g.add_argument("--zero-kbn", action="store_true")
     i = sp.add_parser("init")
     i.add_argument("--model", required=True)
     sp.add_parser("read")
     sp.add_parser("beside")
     a = ap.parse_args(argv)
     if a.cmd == "grad":
-        run_grad(a.model, a.step, a.arm, plant=a.plant or False)
+        run_grad(a.model, a.step, a.arm, plant=a.plant or False, zero_kbn=a.zero_kbn)
     elif a.cmd == "init":
         for it in (0, 1):
             run_grad(a.model, 0, "R32", rows=rows_of(it, ROWS[a.model]), tag=f"{a.model}_0_R32_it{it}")

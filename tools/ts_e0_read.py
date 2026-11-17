@@ -188,16 +188,18 @@ def a0_first_step() -> dict:
 
 def read_all() -> dict:
     res = {"frozen_at": "2cc19b5", "gates": gates(), "cells": {}, "parked1": {}}
+    missing = [f"{m}_{s}_{a}" for m, s in CELLS for a in ARMS if load(f"{m}_{s}_{a}")[0] is None]
+    missing += [f"pythia-70m_{s}_R64" for s in (256, 143000) if load(f"pythia-70m_{s}_R64")[0] is None]
+    if missing:                                  # refuse rather than degrade (#356 finding 3)
+        raise SystemExit(f"refusing: records missing: {missing}")
     for model, step in CELLS:
         rc, _ = load(f"{model}_{step}_R32")
-        if rc is None:
-            continue
         c = min(1.0, CLIP / rc["global_norm"])
         dB = motion(model, step)
         st = {a: arm_stats(model, step, a, c, dB) for a in ARMS}
         r = st["R32"]
         readable = (r["move_KBr"]["share"] or 0) >= BAR_MOVE and (r["move_QBn"]["share"] or 0) >= BAR_MOVE
-        labs = {a: arm_label(s, readable) for a, s in st.items() if s is not None}
+        labs = {a: arm_label(s, readable) for a, s in st.items()}
         res["cells"][f"{model}@{step}"] = {"c": c, "motion_interval": dB["interval"], "move_readable": readable,
                                           "arms": st, "arm_labels": labs,
                                           "label": cell_label(labs) if res["gates"]["G1"]["pass"] else "refused (G1)"}
