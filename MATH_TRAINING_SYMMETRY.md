@@ -695,3 +695,80 @@ carries the bias. 410m's sizes on 256 rows are batch-noise inflated against a 10
 | 1 | Does an fp16-flash run grow b_K and a bf16 one not, from the same init? | a training arm (C4's harness with fp16 + flash) to 512 / about 3 h / whether E0 is a property of the fp16 kernel, causally rather than by one-batch gradients |
 | 2 | Does a large b_K matter? It enters every score of a row equally, so not in exact arithmetic; in fp16 it costs score resolution | one forward pass with b_K zeroed at 143000, loss against intact / minutes / whether E0 matters for any reading here or is cosmetic |
 | 3 | 410m at 1024 rows | re-run the 410m cells (~80 min) / whether 410m @ 256's persist 0.84 holds on a full batch |
+
+## 11. Does the large key bias matter? b_K zeroed at 143000 (design; written and pushed before any output)
+
+Opened 2026-11-17 by the user's "Do Blocked 162 (b): the 143000 forward pass with b_K zeroed;
+write the exit condition and budget first" (§10.1 Parked 2). Tier 1, description; nothing
+registered.
+
+**Exit condition.** Every (cell, arm) below carries one label, or a refusal naming its failed
+gate; the unit's answer to Blocked 162 (b) is written; the Stop protocol is done. **Budget: one
+unit, at most 45 GPU-minutes measured.** At the budget it closes at what it knows. If the budget
+binds, 410m's rows drop from 64 to 16, and the run's file records that.
+
+**Why it can matter at all.** "b_K" here is KBn: dims 16–63 of each head's key bias, the
+non-rotary part. It adds q_{i,n} · b_n / √64 to every score of query row i. That is a per-row
+constant, so a softmax cannot see it in exact arithmetic (G0 of §10 confirmed it to float64). A
+finite-precision graph can. The stored key k = W_K x + b_K is rounded at the size of b_K (rms 54
+on 70m's last layer, 16.5 on 410m's), and the score is rounded at the size of the offset. So
+b_K can cost resolution in the part the softmax does see. Whether it does is the question.
+
+**What runs.** HF `GPTNeoXForCausalLM` (transformers 4.44.2) loads the released checkpoint at
+143000 (`data/hf/hub`), forward only. **Input:** Pythia's iteration 4000, rows 0–63 of shard 0
+(`c4_train.py`'s reader, as §10's stand-in batch), the first 513 tokens of each row (512 inputs,
+512 targets; 32 768 predicted tokens a cell). "Zeroed" means KBn = 0 in **every** layer; the
+rotary dims of b_K and everything else are untouched.
+
+| Arm | Precision and attention | Role |
+|---|---|---|
+| R64 | float64, eager | the exact reference; G0, G1 |
+| **R32** | float32, eager, TF32 off | **the precision every forward-pass reading here uses** (`core/models.py`, `trackC_writeup/c4_read.py`, `trackA_force/a5_seeds.py`, …: float32, eager) |
+| H16 | float16, HF's eager attention (fp16 scores and softmax) | Pythia's training precision, HF's graph |
+| F16 | float16, `scaled_dot_product_attention` forced to FLASH (FlashAttention-2) | Pythia's training precision, the flash kernel (§10's arm) |
+
+Cells: {70m, 410m} × 143000. The arms run on the same rows. Each runs intact (I) and zeroed (Z).
+
+**The family (fixed now).** For each cell and each arm A ∈ {R32, H16, F16}, with p the
+next-token distribution and KL taken per predicted token, then averaged:
+
+| Statistic | Definition |
+|---|---|
+| e_I (the arm's own rounding) | KL(p_R64,I ‖ p_A,I) |
+| e_Z | KL(p_R64,I ‖ p_A,Z) |
+| **d (what zeroing does)** | KL(p_A,I ‖ p_A,Z) |
+| **r = d / e_I** | the primary statistic |
+| r_h | max over layers ℓ of m_ℓ(A,I → A,Z) / m_ℓ(R64,I → A,I), where m_ℓ is the median over tokens of ‖Δh_ℓ‖ / ‖h_ℓ‖ for the residual stream entering layer ℓ and the final one |
+| ΔL | mean CE of A,Z minus A,I; and A,I minus R64,I beside it |
+
+**Label per (cell, arm):** **cosmetic** if r ≤ 1 and r_h ≤ 1 (zeroing moves the output less
+than the arm's own rounding does); **matters** if r ≥ 10, or r_h ≥ 10, or one of A,I and A,Z
+gives non-finite logits and the other does not; **comparable** otherwise. Beside the label, the
+direction: e_Z / e_I. Below 0.5, zeroing brings the arm closer to exact, so b_K costs it
+resolution. Above 2, zeroing takes it further from exact.
+
+**Gates, in order.**
+- **G0 (null: exact invariance in this graph).** In R64, d ≤ 10⁻¹² and every m_ℓ(R64,I → R64,Z)
+  ≤ 10⁻¹⁰ at both cells. If it fails, the unit refuses every cell: either the zeroing touched a
+  visible coordinate (an indexing error) or this graph is not invariant.
+- **G1 (positive control: the instrument sees a real change).** In R64, zeroing the *rotary*
+  key bias (dims 0–15, every layer; visible to the loss) gives d_rot ≥ 10 × R32's e_I at both
+  cells. If it fails, the statistic cannot show that a visible bias of b_K's own kind is above
+  float32's floor. A "cosmetic" label is then not supported: such cells read "unreadable",
+  while "matters" can still be read. d_rot is quoted beside every d, as the positive control.
+
+**The answer to Blocked 162 (b), fixed now.** E0 *matters to the readings here* if R32 reads
+"matters" or "comparable" at either cell. It is *cosmetic for them* if R32 reads "cosmetic" at
+both cells. H16 and F16 say whether b_K cost Pythia's own fp16 forward pass resolution. That is
+description: it bears on how Pythia trained, not on any reading here.
+
+**Beside (description, no gate).** At R64 for each layer: KBn's norm, and the per-row score
+offset |q_{i,n} · b_n| / √64 (median and max over tokens and heads), with float16's and float32's
+spacing at that size. Also per layer for the eager arms: the attention rows' total variation
+between I and Z (mean over heads and queries), against the arm's own I-against-R64 floor. F16
+returns no attention weights, so its attention is not read.
+
+**Not in scope.** Weights-only readings that use b_K (B2's QK spectra read W_Q W_Kᵀ; no
+reading here is known to use the key bias). Other steps (256, 1000). Rows longer than 512.
+Readings on the prompt battery (the Pile rows stand in; every reading's forward graph is the same
+float32 eager one). Producer: `tools/ts_e0_bk_zero.py` (records to `data/ts/e0bk/`).
