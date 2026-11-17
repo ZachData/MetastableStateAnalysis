@@ -863,7 +863,7 @@ but the readings (0.004–0.34 on R32) are far from it.
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|
-| 1 | Does any recorded reading move with KBn zeroed? | re-run one floor-sensitive reading at 143000 (A5's V count on 410m, or a C2 centred count at its smallest tolerance) zeroed / minutes / whether "matters" reaches a reported number, and whether readings should zero KBn by default |
+| 1 | Does any recorded reading move with KBn zeroed? **Done: §12.1, A5's V at 143000 holds** | re-run one floor-sensitive reading at 143000 (A5's V count on 410m, or a C2 centred count at its smallest tolerance) zeroed / minutes / whether "matters" reaches a reported number, and whether readings should zero KBn by default |
 | 2 | The same at 256 and 1000 | the two steps where b_K is mid-growth / minutes / whether the floor's rise is dated with E0's growth |
 
 ## 12. Does b_K's floor reach a reported number? A5's V at 143000, KBn zeroed (design; written and pushed before any output)
@@ -946,3 +946,51 @@ but do not decide.
 
 **Not in scope.** 70m (A5's records are 410m seeds). Other seeds and steps. C2's counts. Other
 tolerances. Producer: `tools/ts_e0_bk_reading.py` (records to `data/ts/e0bk_a5/`).
+
+### 12.1 What it found (2026-11-17; one unit, closed at its exit)
+
+Input as frozen: A5's seed-0 record at 143000 (`pythia-410m`, v1's 7 prompts, battery
+`prompts_hash` 976b62d677bc), mets env (torch 2.10.0+cu130, transformers 4.44.2), RTX 3080, TF32
+off. Records `data/ts/e0bk_a5/arms.json` (17 arms × 7 prompts), read `data/ts/e0bk_a5/read.json`
+(`python tools/ts_e0_bk_reading.py read`). **78 GPU-seconds** in all; the budget did not bind.
+
+**Gates.** **K passes:** R32,I reproduces the record bit for bit (E₁ max relative difference 0,
+token ids, V and both picks equal), and its two runs are bit-identical. **G0 passes:** in float64,
+zeroing KBn moves x by 1.6 × 10⁻¹⁵, and nothing it counts. **G1 fails:** no ladder dose up to
+KBn × 1024 moves V at 1e-3, or at 1e-4 or 1e-2. The floor does scale: x's float32 error grows
+from 5.9 × 10⁻⁷ (intact) to 2.3 × 10⁻⁶ (× 2), 1.2 × 10⁻⁵ (× 16), 8.6 × 10⁻⁵ (× 128) and
+1.3 × 10⁻³ (× 1024). In float64, × 1024 moves x by 2 × 10⁻¹², so the ladder changes only rounding.
+
+| Output | R32,I | R32,Z | R64,I | R32,−1 | margin μ (recorded) | μ / δ_I | class |
+|---|---|---|---|---|---|---|---|
+| **V at 1e-3 (the panel's, primary)** | 70 | 70 | 70 | 70 | 2.8 × 10⁻⁴ | 480 | **holds** |
+| V at 1e-4 | 71 | 71 | 71 | 71 | 3.2 × 10⁻⁴ | 542 | holds |
+| V at 1e-2 | 52 | 52 | 52 | 52 | 1.2 × 10⁻⁴ | 208 | holds |
+| D10 prev pick | L5H2 | L5H2 | L5H2 | | gap to L4H9 0.25 | 2.5 × 10⁷ | holds |
+| D10 ind pick | L7H1 | L7H1 | L7H1 | | gap to L8H9 1.25 × 10⁻³ | 6 × 10⁵ | holds |
+
+(For a pick, δ_I is the top score's float32 error: 1.0 × 10⁻⁸ for prev, 2.1 × 10⁻⁹ for ind.)
+
+**Blocked 163 (b), by the frozen rule: E0's floor is below the reported number here, "holds,
+and insensitive to b_K at × 1024"** (G1 failed). **Zeroing KBn by default: not recommended**
+(no s*). In the thresholded quantity itself, the §11 pattern repeats. Float32's error in x is
+5.9 × 10⁻⁷, and zeroing KBn cuts it to 6.3 × 10⁻⁸ (e_Z / e_I = 0.11), so b_K is about 90 % of it.
+But the count's nearest margin is 480 times that error, so the count cannot see it. The flipped
+arm (−KBn: same size, other bits) has error 8.7 × 10⁻⁷ and the same counts.
+
+**What G1's failure means.** The planted effect was meant to show that b_K's own mechanism can
+move this count at some size. It could not, at any dose tested. So "holds" here does not
+measure a margin in units of b_K. It says that this count is robust to every b_K floor the
+ladder produced, including one 2000 times float32's intact error. The largest x error at × 1024
+(1.3 × 10⁻³) is 4.5 times the nearest margin, yet nothing flipped. The rounding concentrates
+on transitions that sit far from a threshold. Which transitions those are was not read
+(`read.json` keeps only flips). G1's top dose was set without placing it against μ / δ_I, which
+the design chose not to look at before freezing (`LESSONS.md` 6).
+
+**Not established.** 70m, whose KBn is 3.3 times larger and whose margins were not read. The
+other seeds and steps. C2's centred counts. Any reading other than these five outputs. Why the
+largest rounding sits away from the thresholds.
+
+| # | Parked | Why / cost / which decision it could change |
+|---|---|---|
+| 1 | The same on 70m's V, or on a C2 centred count at 7.55e-5 | 70m has the larger floor; C2's tolerance is in energy units / minutes / whether any reported count is within b_K's reach; only if a reading is found closer than 480 × its floor |
