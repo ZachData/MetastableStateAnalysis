@@ -515,3 +515,91 @@ computation.
 
 **Recommended next (none scheduled):** 8.6 unit 1 (E0's backward pass) with Parked 1 beside it,
 since both now point at the same question; then Parked 3.
+
+## 10. E0's backward pass, with §9.5 Parked 1 beside (design; written and pushed before any output)
+
+Opened 2026-11-16 by the user's "Open Blocked 161 (a): E0's backward pass with §9.5 Parked 1
+beside it; write the exit condition and budget first". Tier 1, description; nothing registered.
+
+**Exit condition.** Every cell of the family below carries one label (or a refusal naming its
+failed gate), Parked 1 carries one label, and the Stop protocol is done. **Budget: one unit** and
+at most 2 GPU-hours measured; at the budget it closes at what it knows. If the 410m arms alone
+would pass 1.5 h, 410m's batches drop to 256 rows, recorded in the run's file.
+
+**Scan (before freezing).** Namazifar et al. 2302.08626: the key bias is redundant under a
+softmax (arbitrary values change little). **Qiu & Yao 2510.04212 (ICLR 2026): in FlashAttention's
+backward, δ = rowsum(dO ∘ O) from the low-precision O carries a *biased* rounding error, which
+enters dS = P ∘ (dP − δ) as a coefficient on low-rank directions and accumulates as a biased
+update** (studied in bf16; their fix rescales the softmax normaliser). Since Σ_k dS_ik = Σ_k P_k dP_k
+− δ_i Σ_k P_k, any bias in δ lands exactly on the non-rotary key bias's gradient,
+Σ_i (Σ_k dS_ik) q_i. This is a named mechanism for candidate (a), and it lives in the
+attention kernel Pythia trained with (`attention-config` flash on every layer, 70M and 410M
+configs; fp16, loss scale from 2¹², clip 1.0). Read through search summaries only.
+
+**What runs.** HF `GPTNeoXForCausalLM` (transformers 4.44.2, torch 2.10) on the released
+checkpoints, one backward pass per arm, gradients summed over micro-batches in float32 and kept
+for two halves of the batch (rows 0–511 = A, 512–1023 = B). Loss = mean next-token CE on
+float32 logits. No optimizer step.
+
+| Arm | Precision and attention | Where |
+|---|---|---|
+| R64 | float64, eager | 70m only, 64 rows (32 a half); the exact reference |
+| R32 | float32, eager | every cell |
+| H16 | float16 weights and activations, HF's eager attention, loss × 2¹², unscaled in float32 | every cell |
+| F16 | as H16 with attention through `scaled_dot_product_attention` forced to the FLASH backend (FlashAttention-2: δ from the fp16 O, as in 2510.04212; Pythia ran FlashAttention-1, same δ) | every cell |
+
+Cells: {70m, 410m} × {256, 143000}. Batches (Pythia's order, shard 0, `c4_train.py`'s reader):
+at 256, iteration 256's rows (the batch the next update used); at 143000, iteration 4000's rows
+(the true batch is in shard 19, not local; a same-distribution stand-in). Motion Δb: at 256,
+b(512) − b(256); at 143000, b(143000) − b(64000) (70m), b(143000) − b(120000) (410m), the
+nearest local earlier checkpoints.
+
+**The family (fixed now).** The last layer's non-rotary key bias, KBn (dims 16–63 of each head's
+key bias: 384 coordinates on 70m, 768 on 410m). Controls in the same layer: KBr (rotary key bias,
+dims 0–15; visible to the loss) and QBn (non-rotary query bias; visible).
+
+| Statistic | Definition | Chance |
+|---|---|---|
+| size | rms(g_KBn) / rms(g_KBr), and c · rms(g_KBn) against Adam's ε = 10⁻⁸, c = min(1, 1/‖g‖) from R32's global norm (what Adam sees after the clip) | – |
+| persist | share of KBn coordinates with sign(g_A) = sign(g_B) | 0.5 |
+| move | share of KBn coordinates with −sign(g) = sign(Δb) | 0.5 |
+
+An arm at a cell is **systematic** if persist ≥ 0.65, move ≥ 0.65 (when readable) and c · rms(g_KBn)
+≥ ε; **random** if persist < 0.6; **weak** otherwise. (0.65 is ≥ 5 chance-sd at 384 coordinates;
+coordinates are not independent, so the bar is a convention.)
+
+Gates, in order:
+- **G0 (invisibility in HF's graph).** R64's size ratio ≤ 10⁻⁸ at both 70m cells. If it fails, the
+  label is **"visible in exact arithmetic"** and the unit stops: E0's premise is wrong in this code.
+- **G1 (planted effect, the pipeline).** On 70m at 256, R32 with κ⟨w, b_KBn⟩ added to the loss
+  (w a fixed random ±1 vector; κ such that c · rms of the planted gradient is 10ε): agreement of
+  sign(g_KBn) with sign(w) ≥ 0.95, persist ≥ 0.95. Fails → refuse every cell (indexing or sign error).
+- **G2 (move is readable).** move on KBr and QBn under R32 ≥ 0.6 at that cell; otherwise "move
+  unreadable" there and the cell is labelled on persist and size alone.
+
+**E0's label**, per cell, from which arms are systematic:
+(a-HF) H16 systematic, R32 not: fp16 rounding in HF's own graph suffices.
+(a-FA) F16 systematic, H16 and R32 not: the flash kernel's rounding (2510.04212's mechanism).
+(c) R32 systematic: not specific to fp16 (rounding of either width, or a code path in HF's graph).
+(b′) none systematic: the cause is in what these arms leave out (FlashAttention-1 against -2,
+fp16 reduction across 32 ranks, NeoX's code, the batch at 143000); (b) stands, narrowed.
+The unit's label is the cells' common label, or "mixed" with the cells named.
+
+**Beside, weights only (no gate):** C4's arms A0 and F (HF `sdpa`, bf16 autocast, float32 master,
+no loss scaling) — the last layer's KBn rms over τ₁ at 256, 512, 1000, 4000 against the released
+70m's (0.37 at 256, 0.51 at 1000). Whether our harness, with neither fp16 nor NeoX, grew it too.
+
+**Parked 1, beside (description with a stated rule).** At the init (step 0; 70m and 410m), R32
+on iteration 0's and iteration 1's rows (full 1024 each): ‖g₀‖, ‖g₁‖; per coordinate of the
+last block's writer bias, Adam's step-2 update from (c₀g₀, c₁g₁) (β 0.9, 0.95; ε 10⁻⁸; bias
+correction; clip at 1.0 by each global norm), against the observed 70m units (10 of 2⁻²⁴ at rate
+11.73 on 484 of 512 coordinates). **"Explained by the batches' gradients and the clip"** if the
+predicted median u is in [0.80, 0.90] and ≥ 80 % of coordinates predict the observed unit count
+within 1; **"not explained"** if the predicted median ≥ 0.95 (the two gradients alike: the factor
+is in NeoX's step, then read once: DeepSpeed's fp16 step and NeoX's `train_step` at the Pythia
+commit, for skips, scale and clip order); "partial" otherwise. Beside: H16 at the init, whether
+iteration 0 overflows at 2¹² (DeepSpeed would skip it); C4 A0's logged grad norms at iterations
+0–1 and its step-2 writer-bias u (bf16, same batches and clip).
+
+Producer: `tools/ts_e0_backward.py` (records to `data/ts/e0/`). Not in scope: Parked 3's
+init-mean pass; any training; FlashAttention-1 itself (not installed).
