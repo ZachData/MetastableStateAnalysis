@@ -2042,12 +2042,15 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
 - **2026-11-17, training symmetry §12 (b_K against A5's V): a planted effect whose top dose was
   not placed.** G1 scaled KBn up to × 1024 and asked whether the count moved. It never did, so the
   gate failed and "holds" lost its intended unit (headroom in multiples of b_K). The count's
-  nearest margin was 480 × float32's error in the thresholded drops, and the drops that the
-  ladder moved most were not the ones near a threshold. The design chose not to read the
-  record's margins before freezing, to keep the choice of reading blind, and so had nothing to
-  place the top dose against. Rule: **a dose ladder's reach is placed before it freezes, from
-  a quantity that does not reveal the outcome (here, the intact float32 error against the
-  recorded margins), or the ladder runs to a dose that moves the output by construction**.
+  deciding entries sat in early layers, which b_K's rounding does not reach (`MATH_TRAINING_SYMMETRY.md`
+  §12.1). The design chose not to read the record's margins before freezing, to keep the choice
+  of reading blind, and so had nothing to place the top dose against. A first draft of this
+  rule placed it from the largest error against the nearest margin (480×). That rule would
+  have passed × 1024 and failed the same way (`/challenge-pr` on #358, finding 2). Rule: **a
+  dose ladder's reach is placed before it freezes, per entry: each margin against the error at
+  that same entry, from the intact arm only (it does not reveal the edited arm's outcome). Pick
+  the reading by where its deciding entries sit relative to the effect's known locus, or the
+  test has no power whatever the ladder**.
 
 ## 7. Literature found after the construction was built
 

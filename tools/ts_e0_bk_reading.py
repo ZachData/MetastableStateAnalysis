@@ -194,6 +194,8 @@ def run(_a) -> int:
                                      / np.abs(rec[p]["e1"]))) for p in V1)
             print(f"first arm populated: V_1e-3 {v_of(arms[name], 1e-3)} (recorded "
                   f"{v_of(rec, 1e-3)}), E1 max rel diff vs record {e_rel:.2e}", flush=True)
+            if e_rel > K_E1 or any(v_of(arms[name], t) != v_of(rec, t) for t in TAUS):
+                raise SystemExit("refusing: gate K, R32,I is not the recorded graph")
     for name, s in [("R32,Z", 0.0)] + [(f"R32,{s}", float(s)) for s in LADDER]:
         t = time.time()
         arms[name] = run_arm(m, tok, ln, s, dev)

@@ -972,25 +972,31 @@ from 5.9 × 10⁻⁷ (intact) to 2.3 × 10⁻⁶ (× 2), 1.2 × 10⁻⁵ (× 16)
 (For a pick, δ_I is the top score's float32 error: 1.0 × 10⁻⁸ for prev, 2.1 × 10⁻⁹ for ind.)
 
 **Blocked 163 (b), by the frozen rule: E0's floor is below the reported number here, "holds,
-and insensitive to b_K at × 1024"** (G1 failed). **Zeroing KBn by default: not recommended**
-(no s*). In the thresholded quantity itself, the §11 pattern repeats. Float32's error in x is
+and insensitive to b_K at × 1024"** (G1 failed). **Zeroing KBn by default: not triggered by
+this reading** (no s*). That is not a test of top-layer readings (below; `/challenge-pr` on
+#358, finding 1). In the thresholded quantity itself, the §11 pattern repeats. Float32's error in x is
 5.9 × 10⁻⁷, and zeroing KBn cuts it to 6.3 × 10⁻⁸ (e_Z / e_I = 0.11), so b_K is about 90 % of it.
 But the count's nearest margin is 480 times that error, so the count cannot see it. The flipped
 arm (−KBn: same size, other bits) has error 8.7 × 10⁻⁷ and the same counts.
 
-**What G1's failure means.** The planted effect was meant to show that b_K's own mechanism can
-move this count at some size. It could not, at any dose tested. So "holds" here does not
-measure a margin in units of b_K. It says that this count is robust to every b_K floor the
-ladder produced, including one 2000 times float32's intact error. The largest x error at × 1024
-(1.3 × 10⁻³) is 4.5 times the nearest margin, yet nothing flipped. The rounding concentrates
-on transitions that sit far from a threshold. Which transitions those are was not read
-(`read.json` keeps only flips). G1's top dose was set without placing it against μ / δ_I, which
-the design chose not to look at before freezing (`LESSONS.md` 6).
+**Why the test had little power, and why G1 failed (from `arms.json`; added after
+`/challenge-pr` on #358, findings 1 and 3).** Float32's error in x grows with depth. It is
+≈ 10⁻⁸ at transitions 1–13 and 6 × 10⁻⁷ at 22–23, which is §11.1's "layers 0–13 unchanged" seen
+in x. Each count's *nearest* entry sits early: transition 7 for 1e-3, 2 for 1e-4, 16 for 1e-2.
+There the error is 4 × 10⁻⁹ to 3 × 10⁻⁸. So the per-entry headroom is 68 000× at 1e-3, not the
+480× that the table's μ / δ_I gives (δ_I is the top layers' maximum). The top-layer entries have
+headroom 7 600–17 000× intact, and KBn × 1024 brought one (sullivan_ballou, transition 24, at
+1e-3) to about 1×, without a flip. At 1e-2, about × 2700 would flip homer_iliad's transition 16.
+Both D10 picks are early heads too (layers 5 and 7). So this reading's deciding entries are mostly
+where b_K does not act. "Holds" was nearly fixed by where the reading sits. It says nothing about
+a reading whose deciding entries are in the top layers. G1's top dose was set from neither
+quantity (`LESSONS.md` 6).
 
 **Not established.** 70m, whose KBn is 3.3 times larger and whose margins were not read. The
-other seeds and steps. C2's centred counts. Any reading other than these five outputs. Why the
-largest rounding sits away from the thresholds.
+other seeds and steps. C2's centred counts. Any reading whose deciding entries are in the top
+layers.
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|
-| 1 | The same on 70m's V, or on a C2 centred count at 7.55e-5 | 70m has the larger floor; C2's tolerance is in energy units / minutes / whether any reported count is within b_K's reach; only if a reading is found closer than 480 × its floor |
+| 1 | The same on 70m's V, or on a C2 centred count at 7.55e-5 | 70m has the larger floor; C2's tolerance is in energy units / minutes / whether any reported count is within b_K's reach |
+| 2 | A reading whose deciding entries are in the top layers (layers ≥ 14 on 410m) | this one's were early, so the test had little power (finding 1) / minutes once one is named / whether zeroing KBn by default is warranted for such readings |
