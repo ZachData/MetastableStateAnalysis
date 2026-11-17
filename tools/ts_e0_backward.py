@@ -34,7 +34,10 @@ from pathlib import Path
 
 import numpy as np
 
-MAIN = Path("/run/media/system/WDS_500/Mets")
+# the main tree holds data/ (worktrees do not); TS_MAIN overrides (as `ts_weights.py`)
+MAIN = Path(os.environ.get("TS_MAIN") or Path(__import__("subprocess").run(
+    ["git", "rev-parse", "--git-common-dir"], capture_output=True, text=True, check=True,
+    cwd=Path(__file__).resolve().parent).stdout.strip()).resolve().parent)
 HUB = MAIN / "data/hf/hub"
 OUT = MAIN / "data/ts/e0"
 SHARD = Path("/run/media/system/HDD_1TB/mets_data/c4/pile/document-00000-of-00020.bin")

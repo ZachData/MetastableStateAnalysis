@@ -2017,7 +2017,11 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   whole batch took 45 min, and 1024 rows would have fit. Cost: 410m read on a quarter batch
   (§10.1 Parked 3, ~80 min to redo), and a label resting on two of its three statistics. Rule:
   **a gate's control is run on the smoke slice before freezing, and a budget rule's timing is
-  taken on a slice large enough that loading is under a tenth of it**.
+  taken on a slice large enough that loading is under a tenth of it**. (iii) The review-fix
+  commit ran `./scripts/check.sh | tail -1 && git commit`: the pipe's status is `tail`'s, so a
+  failing gate (a main-tree path default, `tests/test_no_hardcoded_repo.py`) was committed and
+  pushed, then fixed in the next commit. Rule: **gate on the script's own exit status, never
+  through a pipe**.
 
 ## 7. Literature found after the construction was built
 
