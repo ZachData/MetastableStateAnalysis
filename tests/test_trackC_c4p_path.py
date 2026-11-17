@@ -28,6 +28,19 @@ def test_merge_states():
     assert p.merge_states([0, 1, 2], ["a", "b", "a"]) == [(0,), (1,), (2,)]
 
 
+def test_weights_sha_equates_signed_zeros_only():
+    """A0₀ and A0₁ differ in signed zeros only (LESSONS.md 3, 2026-11-17)."""
+    torch = pytest.importorskip("torch")
+    a, b, c = (torch.nn.Linear(2, 2, bias=False) for _ in range(3))
+    with torch.no_grad():
+        a.weight.copy_(torch.tensor([[0.0, 1.0], [2.0, 3.0]]))
+        b.weight.copy_(torch.tensor([[-0.0, 1.0], [2.0, 3.0]]))
+        c.weight.copy_(torch.tensor([[0.0, 1.0], [2.0, 3.5]]))
+    ha, hb, hc = p.weights_sha(a), p.weights_sha(b), p.weights_sha(c)
+    assert ha == hb != hc
+    assert p.merge_states([0, 1, 2], [ha, hb, hc]) == [(0, 1), (2,)]
+
+
 def test_deltas_take_the_nearer_neighbour():
     K = np.array([[0, 1, 9], [2, 0, 3], [9, 5, 0]], float)
     assert p.deltas(K).tolist() == [1, 2, 5]
