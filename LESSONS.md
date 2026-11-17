@@ -932,6 +932,11 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   1028–1299, past the toys' 1024-position context. The first run stopped on a shape error, so
   nothing was read wrong (cost: one rerun). Those items are now set beside, like the ¼ bar, and not
   cut. A range measured on one prompt set is not a bound on another.
+- 2026-11-17, C4′ U2: the design addendum, written before output, merged "bit-equal" consecutive
+  A0 states, because A0's first update runs at lr 0. A0₀ and A0₁ are equal in value but differ in
+  19 signed zeros, so their byte hashes differ. A four-model smoke test in scratch caught it
+  before any job's K (cost: one commit). Values are now compared, with −0 = +0. "Unchanged" means
+  equal values, not equal bytes.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a
