@@ -435,7 +435,9 @@ absent for key rows.
   weights**; the drop is over 10 % low at checkpoints 4, 8 and 16, so it was larger. By how much
   is set by fp16 only loosely (finding 4): **3.4 to 8.2 ×**, or 4.6 to 7.9 × if the gradients
   were steady afterwards. The range holds 8, a power of two, which a loss-scale or
-  accumulation step would give. Not explained (Parked 1).
+  accumulation step would give. Not explained (Parked 1). **Corrected 2026-11-16 (§10.1):** the
+  two gradients are equal (ratio 0.998); the 0.85 is Adam's step counter one ahead of its moments
+  (D12), so "3.4 to 8.2 ×" is withdrawn.
 - **How long the unigram push lasts** (D9 b; rms of ū per interval, 1 = a sign step):
 
   | interval | 0–2 | 8–16 | 16–32 | 32–64 | 64–128 | 128–256 | 256–512 | 512–1000 | 2000–4000 |
@@ -508,10 +510,188 @@ computation.
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|
-| 1 | Why Adam's first moving update is 0.85 on every coordinate | a common factor of 3.4–8.2 between two gradients at the same weights points at the training code (clipping, loss scaling, the first batch), as 8.6 unit 1's candidate (b) does / one reading of NeoX's step at the Pythia commit / whether E0's cause is rounding or code |
+| 1 | *(Solved 2026-11-16, §10.1: Adam's step counter one ahead, D12.)* Why Adam's first moving update is 0.85 on every coordinate | a common factor of 3.4–8.2 between two gradients at the same weights points at the training code (clipping, loss scaling, the first batch), as 8.6 unit 1's candidate (b) does / one reading of NeoX's step at the Pythia commit / whether E0's cause is rounding or code |
 | 2 | 70m's final LayerNorm bias moves at 0.36 of a sign step over 64000–143000 in a new direction, with W_U at 2.6 × its earlier rate; 410m shows nothing | the same late event as 8.4's W_U mean jump / weights only, the 143 checkpoints between / whether 70m's 143000 is a usable endpoint for weight-space readings |
 | 3 | The date the common vector overtakes the stream (C4's collapse: A0's trough at 48, F's by step 4) in closed form | needs the mean activations at the init, one forward pass / an hour / a derived date for C4's finding 7, replacing 8.3's floor of step 53 |
 | 4 | 410m's writer push ends about 13 × earlier in τ₁ than 70m's | the common shift per unit τ₁ scales with neurons × layers (8 × between the two) / with 3 / whether early dates should be compared in τ₁ × width |
 
 **Recommended next (none scheduled):** 8.6 unit 1 (E0's backward pass) with Parked 1 beside it,
 since both now point at the same question; then Parked 3.
+
+## 10. E0's backward pass, with §9.5 Parked 1 beside (design; written and pushed before any output)
+
+Opened 2026-11-16 by the user's "Open Blocked 161 (a): E0's backward pass with §9.5 Parked 1
+beside it; write the exit condition and budget first". Tier 1, description; nothing registered.
+
+**Exit condition.** Every cell of the family below carries one label (or a refusal naming its
+failed gate), Parked 1 carries one label, and the Stop protocol is done. **Budget: one unit** and
+at most 2 GPU-hours measured; at the budget it closes at what it knows. If the 410m arms alone
+would pass 1.5 h, 410m's batches drop to 256 rows, recorded in the run's file.
+
+**Scan (before freezing).** Namazifar et al. 2302.08626: the key bias is redundant under a
+softmax (arbitrary values change little). **Qiu & Yao 2510.04212 (ICLR 2026): in FlashAttention's
+backward, δ = rowsum(dO ∘ O) from the low-precision O carries a *biased* rounding error, which
+enters dS = P ∘ (dP − δ) as a coefficient on low-rank directions and accumulates as a biased
+update** (studied in bf16; their fix rescales the softmax normaliser). Since Σ_k dS_ik = Σ_k P_k dP_k
+− δ_i Σ_k P_k, any bias in δ lands exactly on the non-rotary key bias's gradient,
+Σ_i (Σ_k dS_ik) q_i. This is a named mechanism for candidate (a), and it lives in the
+attention kernel Pythia trained with (`attention-config` flash on every layer, 70M and 410M
+configs; fp16, loss scale from 2¹², clip 1.0). Read through search summaries only.
+
+**What runs.** HF `GPTNeoXForCausalLM` (transformers 4.44.2, torch 2.10) on the released
+checkpoints, one backward pass per arm, gradients summed over micro-batches in float32 and kept
+for two halves of the batch (rows 0–511 = A, 512–1023 = B). Loss = mean next-token CE on
+float32 logits. No optimizer step.
+
+| Arm | Precision and attention | Where |
+|---|---|---|
+| R64 | float64, eager | 70m only, 64 rows (32 a half); the exact reference |
+| R32 | float32, eager | every cell |
+| H16 | float16 weights and activations, HF's eager attention, loss × 2¹², unscaled in float32 | every cell |
+| F16 | as H16 with attention through `scaled_dot_product_attention` forced to the FLASH backend (FlashAttention-2: δ from the fp16 O, as in 2510.04212; Pythia ran FlashAttention-1, same δ) | every cell |
+
+Cells: {70m, 410m} × {256, 143000}. Batches (Pythia's order, shard 0, `c4_train.py`'s reader):
+at 256, iteration 256's rows (the batch the next update used); at 143000, iteration 4000's rows
+(the true batch is in shard 19, not local; a same-distribution stand-in). Motion Δb: at 256,
+b(512) − b(256); at 143000, b(143000) − b(64000) (70m), b(143000) − b(120000) (410m), the
+nearest local earlier checkpoints.
+
+**The family (fixed now).** The last layer's non-rotary key bias, KBn (dims 16–63 of each head's
+key bias: 384 coordinates on 70m, 768 on 410m). Controls in the same layer: KBr (rotary key bias,
+dims 0–15; visible to the loss) and QBn (non-rotary query bias; visible).
+
+| Statistic | Definition | Chance |
+|---|---|---|
+| size | rms(g_KBn) / rms(g_KBr), and c · rms(g_KBn) against Adam's ε = 10⁻⁸, c = min(1, 1/‖g‖) from R32's global norm (what Adam sees after the clip) | – |
+| persist | share of KBn coordinates with sign(g_A) = sign(g_B) | 0.5 |
+| move | share of KBn coordinates with −sign(g) = sign(Δb) | 0.5 |
+
+An arm at a cell is **systematic** if persist ≥ 0.65, move ≥ 0.65 (when readable) and c · rms(g_KBn)
+≥ ε; **random** if persist < 0.6; **weak** otherwise. (0.65 is ≥ 5 chance-sd at 384 coordinates;
+coordinates are not independent, so the bar is a convention.)
+
+Gates, in order:
+- **G0 (invisibility in HF's graph).** R64's size ratio ≤ 10⁻⁸ at both 70m cells. If it fails, the
+  label is **"visible in exact arithmetic"** and the unit stops: E0's premise is wrong in this code.
+- **G1 (planted effect, the pipeline).** On 70m at 256, R32 with κ⟨w, b_KBn⟩ added to the loss
+  (w a fixed random ±1 vector; κ such that c · rms of the planted gradient is 10ε): agreement of
+  sign(g_KBn) with sign(w) ≥ 0.95, persist ≥ 0.95. Fails → refuse every cell (indexing or sign error).
+- **G2 (move is readable).** move on KBr and QBn under R32 ≥ 0.6 at that cell; otherwise "move
+  unreadable" there and the cell is labelled on persist and size alone.
+
+**E0's label**, per cell, from which arms are systematic:
+(a-HF) H16 systematic, R32 not: fp16 rounding in HF's own graph suffices.
+(a-FA) F16 systematic, H16 and R32 not: the flash kernel's rounding (2510.04212's mechanism).
+(c) R32 systematic: not specific to fp16 (rounding of either width, or a code path in HF's graph).
+(b′) none systematic: the cause is in what these arms leave out (FlashAttention-1 against -2,
+fp16 reduction across 32 ranks, NeoX's code, the batch at 143000); (b) stands, narrowed.
+The unit's label is the cells' common label, or "mixed" with the cells named.
+
+**Beside, weights only (no gate):** C4's arms A0 and F (HF `sdpa`, bf16 autocast, float32 master,
+no loss scaling) — the last layer's KBn rms over τ₁ at 256, 512, 1000, 4000 against the released
+70m's (0.37 at 256, 0.51 at 1000). Whether our harness, with neither fp16 nor NeoX, grew it too.
+
+**Parked 1, beside (description with a stated rule).** At the init (step 0; 70m and 410m), R32
+on iteration 0's and iteration 1's rows (full 1024 each): ‖g₀‖, ‖g₁‖; per coordinate of the
+last block's writer bias, Adam's step-2 update from (c₀g₀, c₁g₁) (β 0.9, 0.95; ε 10⁻⁸; bias
+correction; clip at 1.0 by each global norm), against the observed 70m units (10 of 2⁻²⁴ at rate
+11.73 on 484 of 512 coordinates). **"Explained by the batches' gradients and the clip"** if the
+predicted median u is in [0.80, 0.90] and ≥ 80 % of coordinates predict the observed unit count
+within 1; **"not explained"** if the predicted median ≥ 0.95 (the two gradients alike: the factor
+is in NeoX's step, then read once: DeepSpeed's fp16 step and NeoX's `train_step` at the Pythia
+commit, for skips, scale and clip order); "partial" otherwise. Beside: H16 at the init, whether
+iteration 0 overflows at 2¹² (DeepSpeed would skip it); C4 A0's logged grad norms at iterations
+0–1 and its step-2 writer-bias u (bf16, same batches and clip).
+
+Producer: `tools/ts_e0_backward.py` (records to `data/ts/e0/`). Not in scope: Parked 3's
+init-mean pass; any training; FlashAttention-1 itself (not installed).
+
+### 10.1 What it found (2026-11-16; one unit, closed at its exit)
+
+Inputs: the released fp16 checkpoints in `data/hf/hub`; Pythia's batches from shard 0 (iteration
+256 at 256, 4000 at 143000, 0 and 1 at the init); 70m on 1024 rows, **410m on 256 rows** (the
+budget rule fired on a timing taken from 8 rows that included model loading; the runs were 45
+minutes in all, so 1024 rows would have fit: `LESSONS.md` 6). Records `data/ts/e0/*.json|npz`,
+labels `data/ts/e0/read.json` (`tools/ts_e0_read.py read`).
+
+**Gates.** G0 passes: R64's KBn/KBr gradient ratio is 2 × 10⁻¹⁶ (256) and 1.5 × 10⁻¹³ (143000), so
+the direction is invisible in HF's graph to float64. G1 passes (planted sign recovered 1.00,
+persist 1.00). **G2 fails at every cell**: the query bias's one-batch gradient is at chance
+against its own motion (0.47–0.64), so by the frozen rule every cell is labelled on persist and
+size alone and move is description. (QBn was a poor control: a visible bias with large
+batch-to-batch noise; KBr, the other control, does pass at 256: 0.74–0.86.)
+
+| Cell | R32: persist, c·rms/ε | H16 | **F16** | F16 size ratio KBn/KBr | F16 move, along b (description) | label |
+|---|---|---|---|---|---|---|
+| 70m @ 256 | 0.81, 6 × 10⁻⁴ (weak) | 0.45, 0.19 (random) | **0.96, 85 (systematic)** | 0.027 | 0.68, 0.83 | (a-FA) |
+| 70m @ 143000 | 0.89, 0.008 (weak) | 0.50, 1.6 (random) | **0.97, 33 (systematic)** | 0.073 | 1.00, 1.00 | (a-FA) |
+| 410m @ 256 | 0.54, 4 × 10⁻⁶ (random) | 0.52, 0.03 (random) | **0.84, 6.5 (systematic)** | 0.067 | 0.55, 0.57 | (a-FA) |
+| 410m @ 143000 | 0.92, 0.06 (weak) | 0.51, 2.5 (random) | **1.00, 202 (systematic)** | 0.84 | 1.00, 1.00 | (a-FA) |
+
+**E0's label: (a-FA), the flash kernel's rounding, at all four cells.** What the label
+establishes (reworded after `/challenge-pr` on #356, findings 1–2): in fp16, the FlashAttention-2
+backward gives the invisible key bias a gradient that keeps its sign from one half-batch to the
+other and is 6–200 ε after the clip (so Adam would take near-full steps on it). That this
+gradient is what grew b is inferred, not tested (G2 failed; Parked 1 is the causal test). At
+143000 it points along the motion and along b on every coordinate of both models, **but float32
+does almost the same there in direction** (0.91, 0.98), 17–130 times below ε. HF's fp16 eager
+graph (fp16 softmax output) gives a gradient of random sign at every cell. **Route not
+isolated:** by D13 (`tools/math_checks/ts_e0.py`) any error in the row term δ lands on this
+gradient. δ = rowsum(dO ∘ O) from the fp16 O is Qiu & Yao 2510.04212's mechanism, but FA2 also
+rounds dS to fp16 before dK, a second route onto the same gradient, and no arm separates the two.
+
+**Post hoc, after the review (description; finding 1's test).** Where b is about 0 (70m at 64
+and 128, KBn rms 2 × 10⁻⁵ and 3 × 10⁻⁴; iterations 64 and 128's rows), F16 is already persistent
+(0.93, 0.95) at 144 and 107 ε, while R32 (0.48, 0.48) and H16 (0.70, 0.52; under ε) are not. At
+143000 with the last layer's KBn zeroed, R32 and F16 share a direction (along the 64000–143000
+motion 0.91 and 0.90; persist 0.82 and 0.88), but only F16 is above ε (45 against 0.006). So
+**late, the direction is set by the trained state and any rounding finds it**; **at the onset,
+only fp16 flash gives a gradient Adam can act on**. That is consistent with the kernel starting
+the growth, not only amplifying an existing b. Move at 64 → 128 and 128 → 256 is 0.54 and 0.71
+(G2 does not apply post hoc; description). **Depth (description):** F16's
+persistence rises through the stack: 70m 0.6 → 0.96 at 256; 410m 0.50 in layer 0 → 0.84 in
+layer 23 at 256 and 0.54 → 1.00 at 143000. This matches 8.4's "upper layers only".
+
+**Beside, weights only (C4's arms; bf16 autocast, HF `sdpa`, no fp16).** The last layer's KBn
+rms/τ₁ is 0.044, 0.040, 0.039, 0.039 (A0) and 0.047, 0.035, 0.034, 0.037 (F) at 256, 512, 1000,
+4000. The released run is at 0.37, 0.42, 0.51, 0.48. Our harness did not grow it. **Post hoc
+(after seeing that, description only):** an FB16 arm (bf16 weights, the same flash kernel) on 70m
+gives a random sign at 256 (persist 0.49, 0.4 ε), the state where the growth starts. At 143000 it
+gives a persistent gradient (0.96, 511 ε) that points neither along the motion nor along b
+(0.50, 0.50). So the systematic part at the onset needs fp16, not only the kernel. That fits
+A0. Why bf16 differs is not established, and it sits awkwardly with 2510.04212, which found its
+biased rounding in bf16 (finding 2).
+
+**Parked 1: "not explained" by the batches' gradients (frozen rule), explained by D12.** At
+the init, iterations 0 and 1 give ‖g‖ = 3.58, 3.69 (70m) and 25.5, 26.9 (410m). Per coordinate
+the clipped gradients' ratio is 0.998 (both), so the textbook Adam step 2 is 1.000. On 70m only
+4 % of coordinates fall within one unit of the observed 10 (the rule's bar is 80 %). C4's A0, with
+the same batches and clip, has step-2 u = 0.9996 (grad norms 3.67, 3.78). No overflow at
+2¹². **D12:** with one zero-gradient step before training, the bias correction runs one step ahead
+of the moments. That gives 0.848 at the first moving update and 0.916, 0.964, 0.991 over
+(2, 4], (4, 8], (8, 16]. §9.3 observed 0.85, 0.92, 0.96, 0.99, and those intervals were not used to
+derive it. D12 fits *any* one extra zero-gradient step (or a counter started at 1), not
+DeepSpeed's in particular (finding 4); 410m's init gradients ran on 256 rows, not the design's
+1024. **The candidate source:** DeepSpeed v0.7.0's ZeRO stage 1/2
+`initialize_optimizer_states` sets the fp32 partitions' gradients to zero and calls
+`self.optimizer.step()` once at construction; master no longer does (read verbatim through a
+fetch; Pythia ran ZeRO stage 1 on EleutherAI's DeeperSpeed fork, which the design said to read
+at Pythia's commit and which was not read). **Consequence for
+§9.3:** the "second gradient 3.4–8.2 × the first" reading is withdrawn. The two gradients are
+equal, and the 0.85 comes from the optimizer's step count, not from the data or the code's
+rounding. It does not bear on E0's cause (E0 is the attention kernel). Candidate (b) of 8.6
+splits accordingly.
+
+**Not established.** That Pythia's FlashAttention-1 behaves like FA2 here (same δ, different
+kernel). That the 143000 cells' batch, a stand-in from iteration 4000, gives the true batch's
+gradient. That ZeRO's fp16 reduction across 32 ranks leaves the sign alone. That the one-batch
+sign at 256 explains the growth over 256–512 (move is 0.55–0.68 there: description, G2 failed).
+Why the gradient rises with depth. That DeeperSpeed kept the setup step. Which route (δ or dS)
+carries the bias. 410m's sizes on 256 rows are batch-noise inflated against a 1024-row batch, so
+6.5 ε at 410m @ 256 overstates the step Adam takes (finding 5).
+
+| # | Parked | Why / cost / which decision it could change |
+|---|---|---|
+| 1 | Does an fp16-flash run grow b_K and a bf16 one not, from the same init? | a training arm (C4's harness with fp16 + flash) to 512 / about 3 h / whether E0 is a property of the fp16 kernel, causally rather than by one-batch gradients |
+| 2 | Does a large b_K matter? It enters every score of a row equally, so not in exact arithmetic; in fp16 it costs score resolution | one forward pass with b_K zeroed at 143000, loss against intact / minutes / whether E0 matters for any reading here or is cosmetic |
+| 3 | 410m at 1024 rows | re-run the 410m cells (~80 min) / whether 410m @ 256's persist 0.84 holds on a full batch |

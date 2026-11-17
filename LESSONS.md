@@ -2006,6 +2006,22 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   the intervention can produce (an overshoot, a second rise), and the reading carries a
   same-event check fixed beforehand (here the set of transitions at the date against the
   plateau's)**.
+- **2026-11-16, training symmetry §10 (E0's backward pass): a gate whose control could not
+  pass, and a budget rule fired on a bad timing.** (i) G2 required the one-batch gradient of two
+  *visible* biases to agree in sign with their own motion over an interval (≥ 0.6) before "move"
+  could count. The query bias sits at 0.47–0.64 at every cell (a visible bias with batch-to-batch
+  noise far above its drift), so G2 failed everywhere and move, the statistic tying the
+  gradient to what training did, became description. A smoke run on 16 rows would have shown it.
+  (ii) The design dropped 410m to 256 rows "if the 410m arms would pass 1.5 h". The estimate
+  (100 min) was extrapolated from 8-row passes whose wall time was mostly model loading. The
+  whole batch took 45 min, and 1024 rows would have fit. Cost: 410m read on a quarter batch
+  (§10.1 Parked 3, ~80 min to redo), and a label resting on two of its three statistics. Rule:
+  **a gate's control is run on the smoke slice before freezing, and a budget rule's timing is
+  taken on a slice large enough that loading is under a tenth of it**. (iii) The review-fix
+  commit ran `./scripts/check.sh | tail -1 && git commit`: the pipe's status is `tail`'s, so a
+  failing gate (a main-tree path default, `tests/test_no_hardcoded_repo.py`) was committed and
+  pushed, then fixed in the next commit. Rule: **gate on the script's own exit status, never
+  through a pipe**.
 
 ## 7. Literature found after the construction was built
 
