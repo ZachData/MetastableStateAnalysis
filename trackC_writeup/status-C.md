@@ -58,7 +58,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-17 · body `7665b798c6`
+- **Reviewed:** 2026-11-17 · body `6286beefe5`
 <!-- /phase-card -->
 
 ## Units
@@ -142,8 +142,10 @@ F in neither. (Corrected after `/challenge-pr` on #359, finding 1: first written
 run sits within δ of A0".)
 
 **The reading (tier 1): F is on "another path" in both windows.** 0 of 16 early steps and 0 of 12
-late steps are on A0's path. The matches are monotone, so F's function moves forward through A0's
-states, but never within A0's own resolution of one:
+late steps are on A0's path. The rule tests the nearest state only. Checked over every state
+(after CodeRabbit on #359), no F step is within δ(g) of any A0 state g either: the smallest
+K(F_s, g) / δ(g) over all 28 × 28 pairs is 1.25. The matches are monotone, so F's function moves
+forward through A0's states, but never within A0's own resolution of one:
 
 | F step | 1 | 8 | 64 | 192 | 256 | 320 | 512 | 1000 | 2000 | 4000 |
 |---|---|---|---|---|---|---|---|---|---|---|
