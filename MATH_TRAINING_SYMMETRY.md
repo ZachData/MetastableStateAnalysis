@@ -785,9 +785,14 @@ which changes no number. 70m was run twice, and the family's statistics are bit-
 and k to float32 (checked on the loaded model: `_attn` receives q, k float32, v float16). So
 **H16 computes its scores and softmax in float32**. What is fp16 is every projection, including
 the stored q and k *before* the rotary step (so b_K is rounded in), the softmax output and the
-value path. "fp16 scores and softmax" was wrong. The family and the rule are unaffected. It
-sharpens §10.1's contrast: H16 against F16 is fp32 scores with fp16 probabilities against FA2's
-fp16 tiles, not fp16 scores against flash.
+value path. "fp16 scores and softmax" was wrong. The family and the rule are unaffected.
+**The same holds for §10's H16** (checked after `/challenge-pr` on #357, finding 4, on §10's own
+loader in train mode with gradient checkpointing: q, k float32, v float16). §10.1 never claimed
+fp16 scores ("fp16 softmax output" is right), and its label stands. But H16 against F16 there is
+HF's fp32 scores, fp32 softmax and fp32 softmax backward, against FA2's kernel: P rounded to fp16
+before PV, and in the backward dS rounded to fp16 and δ taken from the fp16 O. So H16's random
+sign does not test fp16 scores. The two named routes (δ, dS) are both flash-only, and which one
+carries the bias is still not separated.
 
 **Gates.** G0 passes: in float64, zeroing KBn moves the logits by KL 1 × 10⁻¹⁶ (both cells) and
 the residual by ≤ 2 × 10⁻¹³. G1 passes: zeroing the *rotary* key bias costs 1.30 nats of KL on
@@ -803,7 +808,9 @@ the residual by ≤ 2 × 10⁻¹³. G1 passes: zeroing the *rotary* key bias cos
 | 410m F16 | 3.2 × 10⁻⁴ | 3.2 × 10⁻⁴ | 1.01 | 1.11 | **0.036** | −2.2 × 10⁻⁵ | comparable |
 
 No arm produced non-finite logits. **Blocked 162 (b), by the frozen rule: "matters to the
-readings here"** (R32 reads "comparable" at both cells). **What the label means, from the
+readings here"** (R32 reads "comparable" at both cells). **That answer is uninformative: the rule
+could return nothing else** (below; `/challenge-pr` on #357, finding 1). It is recorded, not
+read. Whether E0 matters to any reading here is untested (Parked 1). **What was shown, from the
 direction line the design fixed beside it:** e_Z / e_I is below 0.5 at four of six (both R32
 cells, 410m's fp16 arms). There, **b_K is most of each arm's own rounding error**: 66 % of
 float32's error at 70m's logits, **99.6 % at 410m's**, 97 % of fp16's at 410m. Zeroing KBn
@@ -828,9 +835,8 @@ KBn is large (‖KBn‖ 784–1067 on 70m's layers 3–5, 260–458 on 410m's 18
 **So:** in exact arithmetic b_K is invisible (G0). In the float32 graph every reading here uses, it
 is **the main source of rounding** in the top layers. It raises float32's floor there 25–60 × in
 the residual stream and 50–65 × in the attention, to ≈ 10⁻⁴ relative. Its cost to the loss is
-10⁻⁶ nats. That is the size of change that already separates this repo's interpreters
-(`numbers.json`'s last-ulp drift between the two Pythons). It is far below every effect a reading here
-reports (the positive control's 0.056–1.3 nats). A reading can move only if its output is
+10⁻⁶ nats, far below every effect a reading here reports (the positive control's 0.056–1.3
+nats). A reading can move only if its output is
 sensitive at 10⁻⁴ relative in the top layers: a threshold count with a point near its tolerance,
 or a tie order. Which ones (if any) actually move is **not tested**. **Practical consequence:**
 zeroing KBn before a float32 reading is exact in real arithmetic and removes most of the floor.
@@ -840,11 +846,20 @@ Doing so would change recorded outputs at the last digits, so it is not adopted 
 256, b_K is 0.37 τ₁ on 70m: smaller, not measured). Rows longer than 512 or the prompt battery.
 Why 70m's fp16 error is mostly not b_K. That the stand-in batch is representative.
 
-**The rule could not say "matters" for its own mechanism (`LESSONS.md` 6).** r and r_h compare
-zeroing's effect with the arm's floor. When b_K *is* the floor, zeroing moves the output by
-exactly the floor, so r ≈ 1 by construction. The "matters" band (≥ 10) could fire only on a
-different mechanism, and the "comparable" band read "matters" in the answer rule. The informative
-statistic was the direction line, e_Z / e_I, which the design fixed only as description.
+**The answer rule had one reachable outcome (`LESSONS.md` 6; `/challenge-pr` on #357, finding
+1).** With δ_I and δ_Z the intact and zeroed arms' logit errors against exact, the KLs are
+quadratic to second order. So r = d / e_I ≈ 1 + e_Z / e_I − ρ, with ρ = 2 Cov_p(δ_I, δ_Z) / Var_p(δ_I) (D14,
+`tools/math_checks/ts_bk_zero.py`; second order only).
+The records fit this: on 410m R32, e_Z / e_I = 0.0043 and r = 1.0033 give ρ ≈ 0.001. Take the
+null where b_K plays no part in the rounding. Zeroing still changes the bits, so the errors are
+the same size and uncorrelated, and r ≈ 2: "comparable", which the answer rule maps to "matters".
+If b_K *is* the floor, r ≈ 1: "comparable" again. "Cosmetic" (r ≤ 1 with e_Z ≈ e_I) needs the
+rounding to be nearly bit-identical after the edit, and "matters" (r ≥ 10) needs an effect
+larger than the floor. Neither is what the question posed. So the 162 (b) answer was fixed
+before the run. G0 tested the zeroing, not the label rule: the calibration gate (a planted null
+through the rule) was skipped, and the 1 / 10 / 0.5 / 2 thresholds were set without placing them.
+The informative statistic is e_Z / e_I, fixed only as description. Its 0.5 bar is also unplaced,
+but the readings (0.004–0.34 on R32) are far from it.
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|
