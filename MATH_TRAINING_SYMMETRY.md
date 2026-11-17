@@ -865,3 +865,84 @@ but the readings (0.004–0.34 on R32) are far from it.
 |---|---|---|
 | 1 | Does any recorded reading move with KBn zeroed? | re-run one floor-sensitive reading at 143000 (A5's V count on 410m, or a C2 centred count at its smallest tolerance) zeroed / minutes / whether "matters" reaches a reported number, and whether readings should zero KBn by default |
 | 2 | The same at 256 and 1000 | the two steps where b_K is mid-growth / minutes / whether the floor's rise is dated with E0's growth |
+
+## 12. Does b_K's floor reach a reported number? A5's V at 143000, KBn zeroed (design; written and pushed before any output)
+
+Opened 2026-11-17 by the user's "Do Blocked 163 (b): re-run one floor-sensitive reading at
+143000 with KBn zeroed; write the exit condition and budget first" (§11.1 Parked 1). Tier 1,
+description; nothing registered.
+
+**Exit condition.** The primary count and each beside output carries one class, or a refusal
+naming its failed gate. The ladder's s* is reported, or "not reached". The answer to Blocked
+163 (b) is written, and the Stop protocol is done. **Budget: one unit, at most 20 GPU-minutes
+measured.** At the budget it closes at what it knows. If the budget binds, the ladder is cut
+from the top and the record says so.
+
+**The reading (chosen before any of its margins was looked at).** A5's seed-0 record at 143000
+(`trackA_force/a5_seeds.py` `one_pass`, `pythia-410m` `step143000`, the v1 battery's 7 prompts,
+≤ 512 tokens, float32, eager, TF32 off). **Primary: V at rel_tol 1e-3**, the violations of E₁
+summed over the 7 prompts (at most 168). Its recorded value is the panel's `p1_energy_nviol_b1`
+at 143000, **70**. Beside: V at A5's sensitivity tolerances 1e-4 and 1e-2, and D10 (a)'s picks,
+the top previous-token head and the top induction head at 143000 (`a5_seeds.pick` on
+`head_scores`; a tie order). Why this one: it is a reported number from the same float32 eager
+graph §11 measured, and it is a threshold count. A C2 centred count was the other candidate. It is
+not run: C2 reads the seeds at the early steps, and 163 (b) asks for one reading.
+
+**Arms** (KBn = dims 16–63 of each head's key bias, as `tools/ts_e0_bk_zero.py` `Zero`).
+
+| Arm | What | Role |
+|---|---|---|
+| R32,I | `one_pass` as recorded, run twice | the record; gate K |
+| **R32,Z** | the same, KBn = 0 in every layer | **the question** |
+| R64,I / R64,Z | float64 model, and float64 after it (the cast to float32 dropped; E₁ in float64) | the exact reference; G0 |
+| R32,s | KBn × s, s ∈ {−1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024} | −1: same size, other bits; s ≥ 2: the planted effect, G1 |
+
+Each arm runs on the same token ids. The model is the one A5's run loaded (`from_pretrained_eager`).
+
+**The family (fixed now).** For an arm A and a tolerance τ: V_τ(A), and x(A), the 7 × 24 relative
+drops (E_prev − E_curr) / |E_prev| that the count thresholds.
+
+| Statistic | Definition |
+|---|---|
+| δ_Z | max \|x(R32,Z) − x(R32,I)\|: what zeroing does to the thresholded quantity |
+| δ_I | max \|x(R32,I) − x(R64,I)\|: float32's own error in it |
+| e_Z / e_I | max \|x(R32,Z) − x(R64,I)\| / δ_I: below 1, zeroing brings x closer to exact (§11's direction line, on x) |
+| μ_τ | min \|x(R32,I) − τ\|: the recorded count's margin |
+| s* | the smallest ladder dose s ≥ 2 at which V_1e-3(R32,s) ≠ V_1e-3(R32,I) |
+
+**Class per output (V at each τ; each pick), from three values: R32,I, R32,Z, R64,I.**
+
+| Class | When | Reads |
+|---|---|---|
+| **holds** | all three equal | b_K's floor does not reach this number. μ_τ / δ_I says how far it was |
+| **b_K reaches it** | R32,I ≠ R64,I and R32,Z = R64,I | the recorded number carries float32's error, and zeroing KBn removes it |
+| **floor-fragile** | R32,Z ≠ R64,I | the number sits inside float32's floor even without b_K. Zeroing does not make it exact |
+
+All three are reachable, and which one occurs depends on μ_τ against δ_I and δ_Z, which nothing
+fixes in advance. The null (b_K plays no part in this number's rounding) reads "holds" when
+μ_τ > δ_I and "floor-fragile" otherwise. It never reads "b_K reaches it", except by the chance that
+other bits round back to exact. The flipped arm (s = −1) is the beside check on that chance. This
+answers `/challenge-pr` on #357, finding 1: that rule could return one label.
+
+**Gates, in order.**
+- **K (the record).** R32,I reproduces the recorded `data/trackA/a5/2026-10-20-u1/seed0/records/step143000_*.json`:
+  token ids equal, E₁ max relative difference ≤ 1e-6, every V and both picks equal. Its two runs
+  are bit-identical in x. If K fails, the unit refuses: this is not the recorded graph, or the
+  graph is not deterministic, and equality between arms would then be noise.
+- **G0 (planted null: exact invariance).** R64,Z against R64,I: max \|Δx\| ≤ 1e-12, and every V and
+  pick equal. If it fails, the unit refuses: the zeroing touched a visible coordinate.
+- **G1 (planted effect: b_K's own mechanism can move this count).** V_1e-3(R32,s) ≠ V_1e-3(R32,I)
+  for some ladder s ≤ 1024. If it fails, a "holds" at 1e-3 reads "holds, and insensitive to b_K
+  at ×1024". KBn × s is invisible in exact arithmetic (R64,1024 against R64,I is quoted beside), so
+  the ladder only scales the floor that b_K sets.
+
+**The answer to Blocked 163 (b), fixed now.** E0's floor *reaches a reported number* if the
+primary V reads "b_K reaches it". It is *below the reported number here* if it reads "holds".
+"Floor-fragile" says the count is float32-sensitive whatever b_K does. **Whether readings should
+zero KBn by default:** recommended if the primary reads "b_K reaches it", or s* ≤ 4. s* ≤ 4
+means b_K at 4 × its 410m size would reach the count, and 70m's KBn is 3.3 × 410m's (rms 54
+against 16.5). Otherwise it is not recommended, and nothing changes. The beside outputs inform
+but do not decide.
+
+**Not in scope.** 70m (A5's records are 410m seeds). Other seeds and steps. C2's counts. Other
+tolerances. Producer: `tools/ts_e0_bk_reading.py` (records to `data/ts/e0bk_a5/`).
