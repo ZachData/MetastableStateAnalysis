@@ -863,5 +863,140 @@ but the readings (0.004–0.34 on R32) are far from it.
 
 | # | Parked | Why / cost / which decision it could change |
 |---|---|---|
-| 1 | Does any recorded reading move with KBn zeroed? | re-run one floor-sensitive reading at 143000 (A5's V count on 410m, or a C2 centred count at its smallest tolerance) zeroed / minutes / whether "matters" reaches a reported number, and whether readings should zero KBn by default |
+| 1 | Does any recorded reading move with KBn zeroed? **Done: §12.1, A5's V at 143000 holds** | re-run one floor-sensitive reading at 143000 (A5's V count on 410m, or a C2 centred count at its smallest tolerance) zeroed / minutes / whether "matters" reaches a reported number, and whether readings should zero KBn by default |
 | 2 | The same at 256 and 1000 | the two steps where b_K is mid-growth / minutes / whether the floor's rise is dated with E0's growth |
+
+## 12. Does b_K's floor reach a reported number? A5's V at 143000, KBn zeroed (design; written and pushed before any output)
+
+Opened 2026-11-17 by the user's "Do Blocked 163 (b): re-run one floor-sensitive reading at
+143000 with KBn zeroed; write the exit condition and budget first" (§11.1 Parked 1). Tier 1,
+description; nothing registered.
+
+**Exit condition.** The primary count and each beside output carries one class, or a refusal
+naming its failed gate. The ladder's s* is reported, or "not reached". The answer to Blocked
+163 (b) is written, and the Stop protocol is done. **Budget: one unit, at most 20 GPU-minutes
+measured.** At the budget it closes at what it knows. If the budget binds, the ladder is cut
+from the top and the record says so.
+
+**The reading (chosen before any of its margins was looked at).** A5's seed-0 record at 143000
+(`trackA_force/a5_seeds.py` `one_pass`, `pythia-410m` `step143000`, the v1 battery's 7 prompts,
+≤ 512 tokens, float32, eager, TF32 off). **Primary: V at rel_tol 1e-3**, the violations of E₁
+summed over the 7 prompts (at most 168). Its recorded value is the panel's `p1_energy_nviol_b1`
+at 143000, **70**. Beside: V at A5's sensitivity tolerances 1e-4 and 1e-2, and D10 (a)'s picks,
+the top previous-token head and the top induction head at 143000 (`a5_seeds.pick` on
+`head_scores`; a tie order). Why this one: it is a reported number from the same float32 eager
+graph §11 measured, and it is a threshold count. A C2 centred count was the other candidate. It is
+not run: C2 reads the seeds at the early steps, and 163 (b) asks for one reading.
+
+**Arms** (KBn = dims 16–63 of each head's key bias, as `tools/ts_e0_bk_zero.py` `Zero`).
+
+| Arm | What | Role |
+|---|---|---|
+| R32,I | `one_pass` as recorded, run twice | the record; gate K |
+| **R32,Z** | the same, KBn = 0 in every layer | **the question** |
+| R64,I / R64,Z | float64 model, and float64 after it (the cast to float32 dropped; E₁ in float64) | the exact reference; G0 |
+| R32,s | KBn × s, s ∈ {−1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024} | −1: same size, other bits; s ≥ 2: the planted effect, G1 |
+
+Each arm runs on the same token ids. The model is the one A5's run loaded (`from_pretrained_eager`).
+
+**The family (fixed now).** For an arm A and a tolerance τ: V_τ(A), and x(A), the 7 × 24 relative
+drops (E_prev − E_curr) / |E_prev| that the count thresholds.
+
+| Statistic | Definition |
+|---|---|
+| δ_Z | max \|x(R32,Z) − x(R32,I)\|: what zeroing does to the thresholded quantity |
+| δ_I | max \|x(R32,I) − x(R64,I)\|: float32's own error in it |
+| e_Z / e_I | max \|x(R32,Z) − x(R64,I)\| / δ_I: below 1, zeroing brings x closer to exact (§11's direction line, on x) |
+| μ_τ | min \|x(R32,I) − τ\|: the recorded count's margin |
+| s* | the smallest ladder dose s ≥ 2 at which V_1e-3(R32,s) ≠ V_1e-3(R32,I) |
+
+**Class per output (V at each τ; each pick), from three values: R32,I, R32,Z, R64,I.**
+
+| Class | When | Reads |
+|---|---|---|
+| **holds** | all three equal | b_K's floor does not reach this number. μ_τ / δ_I says how far it was |
+| **b_K reaches it** | R32,I ≠ R64,I and R32,Z = R64,I | the recorded number carries float32's error, and zeroing KBn removes it |
+| **floor-fragile** | R32,Z ≠ R64,I | the number sits inside float32's floor even without b_K. Zeroing does not make it exact |
+
+All three are reachable, and which one occurs depends on μ_τ against δ_I and δ_Z, which nothing
+fixes in advance. The null (b_K plays no part in this number's rounding) reads "holds" when
+μ_τ > δ_I and "floor-fragile" otherwise. It never reads "b_K reaches it", except by the chance that
+other bits round back to exact. The flipped arm (s = −1) is the beside check on that chance. This
+answers `/challenge-pr` on #357, finding 1: that rule could return one label.
+
+**Gates, in order.**
+- **K (the record).** R32,I reproduces the recorded `data/trackA/a5/2026-10-20-u1/seed0/records/step143000_*.json`:
+  token ids equal, E₁ max relative difference ≤ 1e-6, every V and both picks equal. Its two runs
+  are bit-identical in x. If K fails, the unit refuses: this is not the recorded graph, or the
+  graph is not deterministic, and equality between arms would then be noise.
+- **G0 (planted null: exact invariance).** R64,Z against R64,I: max \|Δx\| ≤ 1e-12, and every V and
+  pick equal. If it fails, the unit refuses: the zeroing touched a visible coordinate.
+- **G1 (planted effect: b_K's own mechanism can move this count).** V_1e-3(R32,s) ≠ V_1e-3(R32,I)
+  for some ladder s ≤ 1024. If it fails, a "holds" at 1e-3 reads "holds, and insensitive to b_K
+  at ×1024". KBn × s is invisible in exact arithmetic (R64,1024 against R64,I is quoted beside), so
+  the ladder only scales the floor that b_K sets.
+
+**The answer to Blocked 163 (b), fixed now.** E0's floor *reaches a reported number* if the
+primary V reads "b_K reaches it". It is *below the reported number here* if it reads "holds".
+"Floor-fragile" says the count is float32-sensitive whatever b_K does. **Whether readings should
+zero KBn by default:** recommended if the primary reads "b_K reaches it", or s* ≤ 4. s* ≤ 4
+means b_K at 4 × its 410m size would reach the count, and 70m's KBn is 3.3 × 410m's (rms 54
+against 16.5). Otherwise it is not recommended, and nothing changes. The beside outputs inform
+but do not decide.
+
+**Not in scope.** 70m (A5's records are 410m seeds). Other seeds and steps. C2's counts. Other
+tolerances. Producer: `tools/ts_e0_bk_reading.py` (records to `data/ts/e0bk_a5/`).
+
+### 12.1 What it found (2026-11-17; one unit, closed at its exit)
+
+Input as frozen: A5's seed-0 record at 143000 (`pythia-410m`, v1's 7 prompts, battery
+`prompts_hash` 976b62d677bc), mets env (torch 2.10.0+cu130, transformers 4.44.2), RTX 3080, TF32
+off. Records `data/ts/e0bk_a5/arms.json` (17 arms × 7 prompts), read `data/ts/e0bk_a5/read.json`
+(`python tools/ts_e0_bk_reading.py read`). **78 GPU-seconds** in all; the budget did not bind.
+
+**Gates.** **K passes:** R32,I reproduces the record bit for bit (E₁ max relative difference 0,
+token ids, V and both picks equal), and its two runs are bit-identical. **G0 passes:** in float64,
+zeroing KBn moves x by 1.6 × 10⁻¹⁵, and nothing it counts. **G1 fails:** no ladder dose up to
+KBn × 1024 moves V at 1e-3, or at 1e-4 or 1e-2. The floor does scale: x's float32 error grows
+from 5.9 × 10⁻⁷ (intact) to 2.3 × 10⁻⁶ (× 2), 1.2 × 10⁻⁵ (× 16), 8.6 × 10⁻⁵ (× 128) and
+1.3 × 10⁻³ (× 1024). In float64, × 1024 moves x by 2 × 10⁻¹², so the ladder changes only rounding.
+
+| Output | R32,I | R32,Z | R64,I | R32,−1 | margin μ (recorded) | μ / δ_I | class |
+|---|---|---|---|---|---|---|---|
+| **V at 1e-3 (the panel's, primary)** | 70 | 70 | 70 | 70 | 2.8 × 10⁻⁴ | 480 | **holds** |
+| V at 1e-4 | 71 | 71 | 71 | 71 | 3.2 × 10⁻⁴ | 542 | holds |
+| V at 1e-2 | 52 | 52 | 52 | 52 | 1.2 × 10⁻⁴ | 208 | holds |
+| D10 prev pick | L5H2 | L5H2 | L5H2 | | gap to L4H9 0.25 | 2.5 × 10⁷ | holds |
+| D10 ind pick | L7H1 | L7H1 | L7H1 | | gap to L8H9 1.25 × 10⁻³ | 6 × 10⁵ | holds |
+
+(For a pick, δ_I is the top score's float32 error: 1.0 × 10⁻⁸ for prev, 2.1 × 10⁻⁹ for ind.)
+
+**Blocked 163 (b), by the frozen rule: E0's floor is below the reported number here, "holds,
+and insensitive to b_K at × 1024"** (G1 failed). **Zeroing KBn by default: not triggered by
+this reading** (no s*). That is not a test of top-layer readings (below; `/challenge-pr` on
+#358, finding 1). In the thresholded quantity itself, the §11 pattern repeats. Float32's error in x is
+5.9 × 10⁻⁷, and zeroing KBn cuts it to 6.3 × 10⁻⁸ (e_Z / e_I = 0.11), so b_K is about 90 % of it.
+But the count's nearest margin is 480 times that error, so the count cannot see it. The flipped
+arm (−KBn: same size, other bits) has error 8.7 × 10⁻⁷ and the same counts.
+
+**Why the test had little power, and why G1 failed (from `arms.json`; added after
+`/challenge-pr` on #358, findings 1 and 3).** Float32's error in x grows with depth. It is
+≈ 10⁻⁸ at transitions 1–13 and 6 × 10⁻⁷ at 22–23, which is §11.1's "layers 0–13 unchanged" seen
+in x. Each count's *nearest* entry sits early: transition 7 for 1e-3, 2 for 1e-4, 16 for 1e-2.
+There the error is 4 × 10⁻⁹ to 3 × 10⁻⁸. So the per-entry headroom is 68 000× at 1e-3, not the
+480× that the table's μ / δ_I gives (δ_I is the top layers' maximum). The top-layer entries have
+headroom 7 600–17 000× intact, and KBn × 1024 brought one (sullivan_ballou, transition 24, at
+1e-3) to about 1×, without a flip. At 1e-2, about × 2700 would flip homer_iliad's transition 16.
+Both D10 picks are early heads too (layers 5 and 7). So this reading's deciding entries are mostly
+where b_K does not act. "Holds" was nearly fixed by where the reading sits. It says nothing about
+a reading whose deciding entries are in the top layers. G1's top dose was set from neither
+quantity (`LESSONS.md` 6).
+
+**Not established.** 70m, whose KBn is 3.3 times larger and whose margins were not read. The
+other seeds and steps. C2's centred counts. Any reading whose deciding entries are in the top
+layers.
+
+| # | Parked | Why / cost / which decision it could change |
+|---|---|---|
+| 1 | The same on 70m's V, or on a C2 centred count at 7.55e-5 | 70m has the larger floor; C2's tolerance is in energy units / minutes / whether any reported count is within b_K's reach |
+| 2 | A reading whose deciding entries are in the top layers (layers ≥ 14 on 410m) | this one's were early, so the test had little power (finding 1) / minutes once one is named / whether zeroing KBn by default is warranted for such readings |

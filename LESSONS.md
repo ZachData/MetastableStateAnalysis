@@ -2039,6 +2039,18 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   promote q and k to float32, so the scores are float32. One `_attn` spy on the loaded model showed
   it. Rule: **an arm's precision is checked on the loaded model before the design freezes, not
   taken from the library's reputation**.
+- **2026-11-17, training symmetry §12 (b_K against A5's V): a planted effect whose top dose was
+  not placed.** G1 scaled KBn up to × 1024 and asked whether the count moved. It never did, so the
+  gate failed and "holds" lost its intended unit (headroom in multiples of b_K). The count's
+  deciding entries sat in early layers, which b_K's rounding does not reach (`MATH_TRAINING_SYMMETRY.md`
+  §12.1). The design chose not to read the record's margins before freezing, to keep the choice
+  of reading blind, and so had nothing to place the top dose against. A first draft of this
+  rule placed it from the largest error against the nearest margin (480×). That rule would
+  have passed × 1024 and failed the same way (`/challenge-pr` on #358, finding 2). Rule: **a
+  dose ladder's reach is placed before it freezes, per entry: each margin against the error at
+  that same entry, from the intact arm only (it does not reveal the edited arm's outcome). Pick
+  the reading by where its deciding entries sit relative to the effect's known locus, or the
+  test has no power whatever the ladder**.
 
 ## 7. Literature found after the construction was built
 
