@@ -52,7 +52,7 @@ SEEDS = tuple(f"seed{k}" for k in range(1, 10))
 REPOS = {"rel": ct.BASE, **{f"seed{k}": f"EleutherAI/pythia-70m-seed{k}" for k in range(1, 10)}}
 EARLY_MAX, LATE_MIN = 256, 320
 N_POS = (ct.HELD_OUT[1] - ct.HELD_OUT[0]) * (ct.ROW - 1)         # 131 072
-CHUNK, SUB = 64, 8                                               # positions per chunk, per float64 batch
+CHUNK, SUB, VSPLIT = 64, 8, 48                                   # positions per chunk, per float64 batch; vocab blocks
 BUDGET_H = 3.0
 GATE_SEEDS = 8                                                   # of 9 read "another path"
 READINGS = ("one path", "another path", "mixed")
@@ -249,10 +249,11 @@ def load(k: str, device):
 
 
 def weights_sha(m) -> str:
+    """The parameters' values: + 0.0 maps −0.0 to +0.0 (A0₀ and A0₁ differ only there)."""
     h = hashlib.sha256()
     for n, p in m.named_parameters():
         h.update(n.encode())
-        h.update(p.detach().cpu().numpy().tobytes())
+        h.update((p.detach().cpu().numpy() + np.float32(0.0)).tobytes())
     return h.hexdigest()
 
 
@@ -342,20 +343,24 @@ def k_job(a) -> int:
         W = [torch.from_numpy(np.load(cache_dir(out) / k / "W.npy")).to(device) for k in keys]
         H = [np.load(cache_dir(out) / k / "h.npy", mmap_mode="r") for k in keys]
         V = W[0].shape[0]
+        if V % VSPLIT:
+            raise C4pPathRefused(f"vocabulary {V} not divisible by {VSPLIT}")
         per_row = np.zeros((64, M, M))
         t0 = time.time()
         with torch.no_grad():
             L = torch.empty((M, CHUNK, V), dtype=torch.float32, device=device)
             for r in range(64):
                 acc = torch.zeros((M, M), dtype=torch.float64, device=device)
-                hr = [torch.from_numpy(np.ascontiguousarray(H[i][r])).to(device) for i in range(M)]
+                hr = [torch.from_numpy(np.array(H[i][r])).to(device) for i in range(M)]
                 for c0 in range(0, ct.ROW - 1, CHUNK):
                     for i in range(M):
                         L[i] = torch.log_softmax(torch.nn.functional.linear(hr[i][c0:c0 + CHUNK], W[i]), -1)
                     for b0 in range(0, CHUNK, SUB):
-                        L64 = L[:, b0:b0 + SUB].double().transpose(0, 1).contiguous()      # (SUB, M, V)
-                        C = torch.bmm(L64.exp(), L64.transpose(1, 2))                   # C[i, j] = Σ p_i log p_j
-                        acc += (torch.diagonal(C, dim1=1, dim2=2).unsqueeze(2) - C).sum(0)
+                        # (SUB·VSPLIT, M, V/VSPLIT): the vocabulary in blocks, summed after (2× faster)
+                        L64 = (L[:, b0:b0 + SUB].double().transpose(0, 1).reshape(SUB, M, VSPLIT, V // VSPLIT)
+                               .transpose(1, 2).reshape(SUB * VSPLIT, M, V // VSPLIT))
+                        C = torch.bmm(L64.exp(), L64.transpose(1, 2)).reshape(SUB, VSPLIT, M, M).sum(1)
+                        acc += (torch.diagonal(C, dim1=1, dim2=2).unsqueeze(2) - C).sum(0)   # Σ p_i (log p_i − log p_j)
                     if r == 0 and c0 == (ct.ROW - 1) // 2 - CHUNK:                     # one half-row timed
                         torch.cuda.synchronize()
                         half = time.time() - t0

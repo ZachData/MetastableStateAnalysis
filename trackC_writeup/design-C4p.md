@@ -115,7 +115,7 @@ hash (`f5b158635210`).
 | detail | fixed as | why |
 |---|---|---|
 | A0's grid | all 29 saved steps, 0 and 3500 included; prev / next on that sorted list | "29 A0" in the cost |
-| bit-equal states | consecutive grid steps whose weights are bit-equal form **one state**, labelled by every step in it; δ is taken between states, and "match(s) = s" holds if s is in the state's label | A0's update 1 runs at lr 0 (`train_log.jsonl`), so A0₁ = A0₀ and δ would be 0 by duplication, not by resolution |
+| equal states | consecutive grid steps whose weights are equal in value (−0 = +0) form **one state**, labelled by every step in it; δ is taken between states, and "match(s) = s" holds if s is in the state's label | A0's update 1 runs at lr 0 (`train_log.jsonl`), so A0₁ = A0₀ and δ would be 0 by duplication, not by resolution. First written "bit-equal"; the smoke test found A0₀ and A0₁ differ in 19 signed zeros only, so values are compared |
 | the null's reference | A0 rounded to fp16 (parameters only) for match, r **and** δ | the null's pseudo-F is read against that path, so its resolution is that path's |
 | "non-decreasing up to one grid step" | over **all** of the window's steps, each match's state index ≥ the running maximum of the earlier ones − 1 | a consecutive-pairs check would pass a slow descent |
 | the null's gate condition | the window reads "one path" **and** match(s) = s at ≥ ⅔ of its steps | both are named |
