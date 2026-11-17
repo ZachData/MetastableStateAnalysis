@@ -772,3 +772,81 @@ returns no attention weights, so its attention is not read.
 reading here is known to use the key bias). Other steps (256, 1000). Rows longer than 512.
 Readings on the prompt battery (the Pile rows stand in; every reading's forward graph is the same
 float32 eager one). Producer: `tools/ts_e0_bk_zero.py` (records to `data/ts/e0bk/`).
+
+### 11.1 What it found (2026-11-17; one unit, closed at its exit)
+
+Inputs as frozen: 64 rows × 512 tokens a cell (32 768 predicted tokens), the budget did not bind.
+Records `data/ts/e0bk/pythia-{70m,410m}.json`, labels `data/ts/e0bk/read.json`
+(`python tools/ts_e0_bk_zero.py read`). About 15 GPU-minutes in all (410m 700 s). 410m's first
+attempt ran out of GPU memory with float64 attention maps on the card. They now go to the CPU,
+which changes no number. 70m was run twice, and the family's statistics are bit-identical.
+
+**Correction to the design's arm table.** In transformers 4.44, RoPE's float32 cos / sin promote q
+and k to float32 (checked on the loaded model: `_attn` receives q, k float32, v float16). So
+**H16 computes its scores and softmax in float32**. What is fp16 is every projection, including
+the stored q and k *before* the rotary step (so b_K is rounded in), the softmax output and the
+value path. "fp16 scores and softmax" was wrong. The family and the rule are unaffected. It
+sharpens §10.1's contrast: H16 against F16 is fp32 scores with fp16 probabilities against FA2's
+fp16 tiles, not fp16 scores against flash.
+
+**Gates.** G0 passes: in float64, zeroing KBn moves the logits by KL 1 × 10⁻¹⁶ (both cells) and
+the residual by ≤ 2 × 10⁻¹³. G1 passes: zeroing the *rotary* key bias costs 1.30 nats of KL on
+70m (CE 3.019 → 4.342) and 0.056 on 410m (2.380 → 2.433), 10⁷ times R32's floor on both.
+
+| Cell, arm | e_I (arm vs exact) | d (zeroed vs intact) | **r = d / e_I** | r_h | **e_Z / e_I** | ΔCE (Z − I) | label |
+|---|---|---|---|---|---|---|---|
+| 70m R32 | 1.1 × 10⁻⁷ | 1.4 × 10⁻⁷ | 1.30 | 1.26 | **0.34** | −1.5 × 10⁻⁶ | comparable |
+| 70m H16 | 0.032 | 0.039 | 1.21 | 1.00 | 0.85 | −0.0013 | comparable |
+| 70m F16 | 0.032 | 0.039 | 1.21 | 1.00 | 0.85 | −0.0015 | comparable |
+| 410m R32 | 2.5 × 10⁻⁹ | 2.5 × 10⁻⁹ | 1.00 | 1.06 | **0.0043** | +3.9 × 10⁻⁷ | comparable |
+| 410m H16 | 3.2 × 10⁻⁴ | 3.3 × 10⁻⁴ | 1.01 | 1.19 | **0.033** | −3.1 × 10⁻⁴ | comparable |
+| 410m F16 | 3.2 × 10⁻⁴ | 3.2 × 10⁻⁴ | 1.01 | 1.11 | **0.036** | −2.2 × 10⁻⁵ | comparable |
+
+No arm produced non-finite logits. **Blocked 162 (b), by the frozen rule: "matters to the
+readings here"** (R32 reads "comparable" at both cells). **What the label means, from the
+direction line the design fixed beside it:** e_Z / e_I is below 0.5 at four of six (both R32
+cells, 410m's fp16 arms). There, **b_K is most of each arm's own rounding error**: 66 % of
+float32's error at 70m's logits, **99.6 % at 410m's**, 97 % of fp16's at 410m. Zeroing KBn
+moves the output by about the arm's whole error because it removes that error (d ≈ e_I, and the
+zeroed arm lands next to exact). 70m's fp16 arms (0.85) are in neither band: there fp16's error
+is mostly elsewhere.
+
+**In the residual stream and the attention (description; the zeroed-against-exact columns were
+added after 70m was first seen):**
+
+| | R32 residual, ‖Δh‖/‖h‖ (median), intact → zeroed, vs exact | R32 attention TV, intact → zeroed | where |
+|---|---|---|---|
+| 70m | layer 5: 1.3 × 10⁻⁴ → 2.1 × 10⁻⁶ | layer 4: 5.1 × 10⁻⁴ → 7.9 × 10⁻⁶ | layers 3–5 (of 0–5); 0–2 unchanged |
+| 410m | final: 5 × 10⁻⁵ → 2 × 10⁻⁶ | layers 19–23: ≈ 2 × 10⁻⁴ → 4 × 10⁻⁶ | from layer 14; 0–13 unchanged |
+
+fp16 has the same pattern a thousand times larger: 410m's attention TV is 0.03–0.08 intact against
+0.002–0.003 zeroed at layers 18–23. **The mechanism, beside:** the score offset |q_n · b_n| / 8
+has median 300–46 000 at 70m's layers 3–5 and 1 200–11 000 at 410m's layers 18–23 (max 2 × 10⁵
+and 5 × 10⁴). float32's spacing there is 3 × 10⁻⁵ to 4 × 10⁻³ in a score. The offset sits where
+KBn is large (‖KBn‖ 784–1067 on 70m's layers 3–5, 260–458 on 410m's 18–23; ≤ 190 below).
+
+**So:** in exact arithmetic b_K is invisible (G0). In the float32 graph every reading here uses, it
+is **the main source of rounding** in the top layers. It raises float32's floor there 25–60 × in
+the residual stream and 50–65 × in the attention, to ≈ 10⁻⁴ relative. Its cost to the loss is
+10⁻⁶ nats. That is the size of change that already separates this repo's interpreters
+(`numbers.json`'s last-ulp drift between the two Pythons). It is far below every effect a reading here
+reports (the positive control's 0.056–1.3 nats). A reading can move only if its output is
+sensitive at 10⁻⁴ relative in the top layers: a threshold count with a point near its tolerance,
+or a tie order. Which ones (if any) actually move is **not tested**. **Practical consequence:**
+zeroing KBn before a float32 reading is exact in real arithmetic and removes most of the floor.
+Doing so would change recorded outputs at the last digits, so it is not adopted here.
+
+**Not established.** That any recorded reading moves (no reading was re-run). Other steps (at
+256, b_K is 0.37 τ₁ on 70m: smaller, not measured). Rows longer than 512 or the prompt battery.
+Why 70m's fp16 error is mostly not b_K. That the stand-in batch is representative.
+
+**The rule could not say "matters" for its own mechanism (`LESSONS.md` 6).** r and r_h compare
+zeroing's effect with the arm's floor. When b_K *is* the floor, zeroing moves the output by
+exactly the floor, so r ≈ 1 by construction. The "matters" band (≥ 10) could fire only on a
+different mechanism, and the "comparable" band read "matters" in the answer rule. The informative
+statistic was the direction line, e_Z / e_I, which the design fixed only as description.
+
+| # | Parked | Why / cost / which decision it could change |
+|---|---|---|
+| 1 | Does any recorded reading move with KBn zeroed? | re-run one floor-sensitive reading at 143000 (A5's V count on 410m, or a C2 centred count at its smallest tolerance) zeroed / minutes / whether "matters" reaches a reported number, and whether readings should zero KBn by default |
+| 2 | The same at 256 and 1000 | the two steps where b_K is mid-growth / minutes / whether the floor's rise is dated with E0's growth |
