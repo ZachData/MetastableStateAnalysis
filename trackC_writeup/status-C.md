@@ -45,6 +45,7 @@
   - C4′ U1 (2026-11-15; Blocked 159 all (a), the user's; rule frozen and pushed before output): on `pythia-70m` and PolyPythias seeds 1–9 every top induction head rises between 512 and 1000, so the reference is {1000}; the rule's leave-one-out gate passes 10 of 10 on every schedule (easy: each rise is one grid step); on this grid "consistent with cumulative" means a delay of 1× to about 8× over the seeds, not the summed rate in particular; A1's entry drafted and declined (Blocked 160 (b)), so A1 is tier 1: **the run reads "consistent with cumulative"** (half-rise in (2000, 3000] with 3000 beside, a 2× to 5.9× delay inside the summed rate's (1619, 3162]), a loss clock not excluded; A2: every seed's and the run's heads ≥ 0.5 are in layers 3–4, while C4's F's top head is L2H6; the run's centred set has a T3 majority at 2000–4000 that seed 0 never has, but whether either has a transient turns on the horizon (description) — `trackC_writeup/status-C.md` "C4′ unit 1"
   - C4′ U2 (2026-11-17; Blocked 163 (a), the user's; tier 1; open details fixed and pushed before output): per-token KL on 64 held-out rows between every flat-arm and harness-arm checkpoint. The gate passes in both windows: the released run against the harness arm in fp16 reads "one path" (identity 8 of 9 and 4 of 4; late at exactly the ⅔ bar), and 9 of 9 seeds read "another path". **The flat arm reads "another path" early and late**: 0 of 28 steps are within the harness arm's own step-to-step KL of any of its states, at 1.3–4.6× that resolution. At each shared step from 8 to 256 its residual exceeds every seed's distance from the released run at that step. Late, its ratio over the same-init null's residual falls from 6.7 at 512 to 1.9 at 4000. The matches are monotone and near equal loss. From step 48, in attention and MLP weights its displacement is near orthogonal to the harness arm's (cos 0.06–0.19, against the harness arm's own 0.26–1.0). So C4's item 10 is held: firmly early, with a narrowing margin late — `trackC_writeup/status-C.md` "C4′ unit 2"
   - **C4′ closed 2026-11-17 at its exit** (3 units + close-out, the budget; Blocked 164 (a), the user's; writing only): of C4's post hoc leans, item 9 (induction follows the summed rate, or a function of it; loss not excluded) and item 10 (the flat arm is not the harness arm on another clock: at none of its 28 saved steps within the harness arm's grid resolution of a saved state; over a same-init rerun by a wide margin early and a narrowing one late, in that resolution by 1.25–1.35 at the nearest) are held at tier 1 on one run or pair each; items 6–8 untouched; (b) in `paper/` §7 as one paragraph (14 keys, 2 claims, `paper_check` 0, 37 pages); nothing registered; U2's finer grid carried to ROADMAP C4′, its late window to C4′ (c), whose opening and registration are STATE Blocked 165 — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
+  - C4′ (c) opened 2026-11-17 (STATE Blocked 165 (a), the user's; writing only, nothing computed): a scan and a proposed design for the replicate pair (A0′ and F′ from seed 0's init on another order). It measures A0′'s rerun ratio and re-reads item 6 and R3 on C4's own pair under design-C4's rerun term. Five leans (items 7–10, each stated against A0′) are drafted for registration, gated on C4's pair and on (released, A0). Found: shard 0's unused rows reach 3149 updates, not 4000, and a pair stopped at 1000 reads none of C4's dates; decisions STATE Blocked 166 — `trackC_writeup/status-C.md` "C4′ (c) unit 0"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C2 quotes `P-A5`, Track A's
@@ -53,14 +54,14 @@
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); ROADMAP C4, the schedule intervention (with 3c's Parked 0), separates them on 70m only, 410m by inference (C4 trains `pythia-70m`; corrected 2026-11-08, `/challenge-pr` on #330, finding 3); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - After C4 (closed 2026-11-14): on 70m the dates are not fixed in steps, and on the flat arm they are not the summed rate's either, by a margin the run-to-run spread could cover; the flat arm's counts date a transient, so what sets the dates is open, and so are the spread, whether the schedule chooses the induction heads, and whether induction's date follows the summed rate; 410m is still unseparated. Seven candidates, none scheduled: ROADMAP §8 C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
-  - After C4′ (closed 2026-11-17): induction on warmup01 follows the summed rate or a function of it (rate or loss not told apart), and the flat arm takes another path; open are the run-to-run spread, how much of the late departure two same-init runs show (C4′ (c), the replicate pair, Blocked 165), whether a finer harness grid moves the steps nearest the bar, and every lean's status on a second pair — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
+  - After C4′ (closed 2026-11-17): induction on warmup01 follows the summed rate or a function of it (rate or loss not told apart), and the flat arm takes another path; open are the run-to-run spread, how much of the late departure two same-init runs show (C4′ (c), the replicate pair, designed 2026-11-17, Blocked 166), whether a finer harness grid moves the steps nearest the bar, and every lean's status on a second pair — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-17 · body `098993c800`
+- **Reviewed:** 2026-11-17 · body `46ae3f13a3`
 <!-- /phase-card -->
 
 ## Units
@@ -106,6 +107,46 @@
 | C4′ 1. (a): A1's gate, the draft entry, A3; then the run's scores, A1, A2 | **done 2026-11-15 (Blocked 159 all (a); 160 (b), entry declined): the ten seeds all dated 1000; gate 10 of 10; A1 (tier 1) "consistent with cumulative" (run 0.011 at 1000, 0.43 at 2000, 0.87 at 3000; half-rise in (2000, 3000], a 2× to 5.9× delay, inside the summed rate's (1619, 3162]); a loss clock not excluded; A2: every seed's and the run's heads ≥ 0.5 are in layers 3–4, F's top head is L2H6; A3 written** | `c4p_read.py`, `data/trackC/c4p/2026-11-15-u1/`; "C4′ unit 1" below |
 | C4′ 2. (b): F against A0's path by per-token KL (Blocked 163 (a), the user's) | **done 2026-11-17: tier 1; open details fixed before output (`231cb77`, `c8876cd`); gate passes both windows (null "one path", 8 of 9 and 4 of 4 identity; seeds 9 of 9 "another path"); F "another path" early and late, 0 of 28 steps on the path; r 1.3–4.6 × δ; early r beyond any seed's, late F's r over the same-init null's falls 6.7 → 1.9; `/challenge-pr` on #359 accept with changes, 1–5 taken** | `c4p_path.py`, `data/trackC/c4p/2026-11-17-u2/`; "C4′ unit 2" below |
 | C4′ close-out (Blocked 164 (a), the user's) | **done 2026-11-17: writing only; exit met at the budget (3 units + close-out); C4's items 9 and 10 held, 6–8 untouched; (b) in `paper/` §7 (one paragraph, 14 `c4p.*` keys, 2 claims; `/challenge-pr` on #360 accept with changes, 1–4 taken; `paper_check` 0, 37 pages); Parked carried (ROADMAP C4′, (c)) or dropped; whether (c) opens and is registered is Blocked 165** | "C4′ on one page" below |
+| C4′ (c) 0. the scan and design (Blocked 165 (a), the user's; budget 4 units + close-out) | **done 2026-11-17: writing only, nothing computed; proposed, D1–D4 Blocked 166** | `lit-C4pc.md`, `design-C4pc.md`, `tools/math_checks/c4pc_nearer.py`; "C4′ (c) unit 0" below |
+
+## C4′ (c) unit 0, the scan and design (2026-11-17)
+
+Writing only (Blocked 165 (a), the user's). Nothing trained, computed, downloaded or registered.
+The one read of a record: C4's `close.json` `transitions`, to fill the design's known-answer
+column for L7 and L8. Those transitions were seen at C4's close-out; the per-arm sets at the other
+τ arms were not tabulated there.
+
+- **Scan** (`lit-C4pc.md`, three searches, summaries only): no order-only variance study in
+  pretraining and no replicated warmup-removed run was found. Dodge et al. (fine-tuning) find
+  init and order contribute comparably. 2511.16893 finds induction's emergence set by batch and
+  context and robust over 3 seeds. Kosson et al. tie warmup to the early updates' size. So the
+  design states every lean against A0′, and recommends an order-only replicate.
+- **Design** (`design-C4pc.md`): A0′ and F′ from seed 0's init on order π, C4's harness through a
+  new module (`c4_train.py` untouched). Measured: M1 A0′'s dates and rerun ratio q; M2 R2 and
+  R3 on C4's pair at ρ = max(grid, q) (design-C4's rule; `P-SCH1` not re-scored; V can flip,
+  the centred label cannot); M3 R2′ and R3′, the paired replicate that item 6's wording follows;
+  M4 F′ against F. Registered family, five entries: L7 transient and end set, L8 V one block
+  earlier, L9 induction nearer the summed-rate map than step and than the centred date, L9h the
+  top head's layer, L10 F′ off A0′'s path early and F's late departure beyond A0′'s. Gates: C4's
+  pair (known answer; holds by construction), (released, A0) as the null, a seed null (seeds 1–9
+  against the released run), L10 (b) on the seeds. Registration before either arm's first update.
+- **Found** (each changes Blocked 165's premises): (1) shard 0's unused rows hold 3 224 580 rows,
+  3149 updates, so A0′ cannot reach 4000 on them (math check (3)); (2) C4's rule takes the
+  plateau at 1000–4000 and the gate at 3500, so a pair stopped at 1000 reads none of C4's dates;
+  (3) R3 needs A0′ only (item 6, first written so too, needs the pair: #361, finding 1); (4) the head overlap measures the layer (U1's A2), so L9h is a
+  layer statement. (1) is in `LESSONS.md` 1.
+- **Math check** `tools/math_checks/c4pc_nearer.py`: log-nearer iff below the geometric mean;
+  the threshold t^{3/2}/√(2W), 398 at 768; the label's cap (2W/t)^{1/3}; the shard's row count.
+
+**`/challenge-pr` on #361: accept with changes, findings 1–5 taken** (the PR's thread):
+(1) M2 cannot flip the centred label (its bands meet at ρ 1.647 < 1.727; math check (2b)), only
+V's; (2) §7's item-6 wording follows the paired M3, not the unpaired M2; (3) registration moves
+before any update, since F's transient is a majority at 48–64; (4) the gates for L7–L9h pass by
+construction on both sides, so a seed null (seeds 1–9 against the released run, ≤ 1 of 9 "holds")
+is added; (5) H4′'s tolerance is max(2 %, the seeds' held-out loss gap).
+
+**Parked:** `lit-C4pc.md` 1, Kosson et al.'s full text (could change item 7's wording in §7, not
+the reading; read before U3 or dropped at the close-out).
 
 ## C4′ on one page (closed 2026-11-17)
 
