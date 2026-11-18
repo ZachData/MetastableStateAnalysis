@@ -236,27 +236,37 @@ on its own, with all five reported; D4 (a) is C4's, so H4′ at 1000 is read bef
 
 ## U1 as built (2026-11-18)
 
-Code `c4pc_train.py` (`6517b85f75b0`) and `c4pc_read.py` (`2de07248985b`; pushed as
-`32a57885224d` in `52303d8` before any output of the new arms, then threshold labels added in
-comments only, and the gate re-run); tests `tests/test_trackC_c4pc.py` (11, CPU). Three
-choices made while building, none seen against an output:
+**The registered hash is `c4pc_rules.py`'s `code_sha()`, `d7e674313486`** (the five rules, pure,
+with the frozen instruments they call: `c4_read.py`, `c4_close.py`, `c4p_path.py`). The drivers,
+`c4pc_read.py` (`fcb8d2eb3f91`), grow in U3 (records on the new arms, L10's K wiring, M1–M4, the
+scoring) without moving it. The arms are `c4pc_train.py` (`95e71d5e7147`). The first push
+(`52303d8`) had the rules inside `c4pc_read.py`; `/challenge-pr` on #362 (accept with changes,
+findings 1–4 taken) showed U3's additions would have moved the registered hash, so they were
+split out before registration, with the decline record moved into git (finding 2) and C4's
+divergence rule run inside the training loop (finding 4). No arm had trained. Tests
+`tests/test_trackC_c4pc.py` (13, CPU). Three choices made while building, none seen against an
+output:
 
 1. **The gate pairs use C4's gated τ arms** (9.61e-5, 1e-4, 3e-4; `data/trackC/c4/2026-11-12-u2/
    gate.json`) and read V, since no released run has a step 3500 to gate on.
 2. **`init`** saves an arm's step 0 with no update, so H1′ runs before registration; `train`
-   refuses until every entry is registered or declined (`<root>/declined.json`, the user's).
+   refuses until every entry is in the registry or in `trackC_writeup/c4pc_declined.json`, which
+   counts only when tracked and committed (the user's commit).
 3. **L10's K pass** (the `c4p_path` instrument on keys A0′@29 steps, F′@28, and A0′ against A0's
-   29) is wiring, written in U3 before any K on the new arms; the rule (`c4pc_read.l10`, `l10b`,
+   29) is wiring, written in U3 before any K on the new arms; the rule (`c4pc_rules.l10`, `l10b`,
    `l10b_gate`, and `c4p_path.read_pseudo` unchanged) is frozen here.
 
-**The gates for L7–L9h pass** (`data/trackC/c4pc/2026-11-18-u1/gate.json`, code `2de07248985b`):
-each reads "holds" on C4's pair, "does not hold" on (released, A0), and 0 of 9 seeds hold. **The
-seed null is weak for L9**: on Pythia's 13 steps every seed and the released run date induction
-at 1000 (no grid step lies between 512 and 1000), so (i) fails on every seed by the grid alone
-(1000 against the bar 591). It is weaker for L7 than the effect side too, since Pythia's grid
-has 10 steps ≤ 1000 to the dense grid's 23. Near misses in the seed null: seed 1 has L8's
-pattern at 4000 but not at 1000; seeds 5 and 8 have a top head in layer 4 (L9h's A0′ side), none
-in layer 2.
+**The gates for L7–L9h pass** (`data/trackC/c4pc/2026-11-18-u1/gate.json`, rules `d7e674313486`):
+each reads "holds" on C4's pair, "does not hold" on (released, A0), and 0 of 9 seeds hold.
+**What the seed null shows** (corrected after `/challenge-pr` on #362, finding 3): the rules can
+fire at the nulls' resolution, since C4's own pair re-read on Pythia's 13 steps holds all four
+(L9: F 512 against A0 1000, bar 591; `gate.json` `beside`). So the seed null is not refused by
+the grid alone: it says that order and init spread on one schedule do not separate induction's
+dates at that resolution (every seed and the released run date 1000). It cannot say whether
+spread below one grid interval (512–1000) would. Near misses: seed 1 has L8's pattern at 4000
+but not at 1000; seeds 5 and 8 have a top head in layer 4 (L9h's A0′ side), none in layer 2.
+**L9 is one dense-grid step from failing on a replay of F**: if A0′ dates induction at 640
+instead of 768, the bar is 303 and F's 320 fails (i).
 
 ## The five draft entries (Blocked 167; yours to register or decline)
 
@@ -264,10 +274,10 @@ Ids are the next `P-SCH` numbers, 2–6 (`c4pc_train.ENTRY_IDS`; not written who
 `tools/check_registry.py` fails on an unregistered id in the tree). **Shared fields:** claim
 `H-RESIST` (as `P-SCH1`); phase C, experiment C4′ (c); cost F; evaluable measurement; relevance
 0.6; `registered_provenance` gated; `gate` `data/trackC/c4pc/2026-11-18-u1/gate.json` (record
-path; main tree); `source` this file; **instrument** `c4pc_train.py` `6517b85f75b0` (the arms,
+path; main tree); `source` this file; **instrument** `c4pc_train.py` `95e71d5e7147` (the arms,
 calling `c4_train.py` `1c1e1d2df083`'s recipe unchanged), records by `c4_read records` (C2 unit
-3b's per-state row on the 7 v1 prompts, float32 eager), the rule in `c4pc_read.py`
-`2de07248985b`. **Common to every statement:** *on `pythia-70m` trained from seed 0's init on
+3b's per-state row on the 7 v1 prompts, float32 eager), **the rule `c4pc_rules.py`
+`d7e674313486`**. **Common to every statement:** *on `pythia-70m` trained from seed 0's init on
 order π (seed 20261118, a permutation of C4's 4 096 000 rows) under Pythia's schedule (A0′) and
 with the LR warmup removed (F′: 1e-3 to step 1430, then Pythia's cosine), both to 4000 on C4's
 dense grid*; τ arms are those C4's gate passes on F′ at 3500. **Common falsifier:** the lean does

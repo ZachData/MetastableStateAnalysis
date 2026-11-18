@@ -18,8 +18,13 @@ row π(k); its sha256 and π's are recorded (`perm_meta.json`). Under π = ident
 equal `c4_train.batch_of`'s (`tests/test_trackC_c4pc.py`, CPU).
 
 **The registration guard** (finding 3 on #361): `train` refuses until each of the five entries
-(`ENTRY_IDS`) is in `claims/registry.json` or recorded as declined by the user in
-`<root>/declined.json`. So neither arm takes an update before the user's decision.
+(`ENTRY_IDS`) is in `claims/registry.json` or listed in `trackC_writeup/c4pc_declined.json`, which
+counts only when tracked and committed (the user's commit; finding 2 on #362). So neither arm takes
+an update before the user's decision, and a decline leaves a record in git.
+
+**H3′, divergence** (finding 4 on #362): every `DIVERGE_EVERY` updates the loop runs
+`c4_train.diverged` (C4's rule) on the whole run's losses; a divergence saves the state and stops
+the arm, a refusal.
 
 **H4′** (`h4p`): A0′'s loss on C4's 64 held-out rows (`c4_train.HELD_OUT`, never in π's file)
 against A0's at 1000 and 4000, within `h4_tol()` = max(2 %, the largest |seed − pythia-70m| /
@@ -61,6 +66,8 @@ H4_BASE = 0.02
 H4_CONTROLS = {1000: DATA / "trackC/c4/2026-11-09-u1/h4_controls_1000.json",
                4000: DATA / "trackC/c4pc/2026-11-18-u1/h4_controls_4000.json"}
 REGISTRY = REPO / "claims/registry.json"
+DECLINED = REPO / "trackC_writeup/c4pc_declined.json"   # the user's, committed; absent until then
+DIVERGE_EVERY = 50                                       # the loop checks `c4_train.diverged` this often
 #: the five entries' ids (L7, L8, L9, L9h, L10); spelled in parts because `tools/check_registry.py`
 #: fails on any unregistered id it finds in the tree
 ENTRY_IDS = tuple("P-SCH" + str(n) for n in range(2, 7))
@@ -160,22 +167,50 @@ def sample_check(dst: np.ndarray, src: np.ndarray, p: np.ndarray, n: int = H2_SA
 
 # ---------------------------------------------------------------- registration and tolerance (pure)
 
-def registration(registry: Path = REGISTRY, root: Path = ROOT) -> Dict[str, str]:
-    """Per entry id: 'registered' (in the registry), 'declined' (in ``root``/declined.json, the
-    user's), or 'pending'."""
+def committed(path: Path, repo: Path = REPO) -> bool:
+    """``path`` is tracked by git and equal to HEAD's copy (a decline leaves a record in git)."""
+    import subprocess
+    rel = str(path.resolve().relative_to(repo.resolve()))
+    tracked = subprocess.run(["git", "-C", str(repo), "ls-files", "--error-unmatch", rel],
+                             capture_output=True).returncode == 0
+    clean = subprocess.run(["git", "-C", str(repo), "diff", "--quiet", "HEAD", "--", rel],
+                           capture_output=True).returncode == 0
+    return tracked and clean
+
+
+def registration(registry: Path = REGISTRY, declined: Path = DECLINED, check_git: bool = True) -> Dict[str, str]:
+    """Per entry id: 'registered' (in the registry), 'declined' (in the tracked, committed
+    ``declined`` file, the user's commit; `/challenge-pr` on #362, finding 2), or 'pending'."""
     reg = json.loads(registry.read_text())
     ids = {e.get("id") for e in reg.get("predictions", [])}
-    dec_f = root / "declined.json"
-    dec = set(json.loads(dec_f.read_text()).get("declined", [])) if dec_f.exists() else set()
+    dec = set()
+    if declined.exists():
+        if check_git and not committed(declined):
+            raise C4pcRefused(f"{declined}: a decline counts only when committed (tracked and clean)")
+        dec = set(json.loads(declined.read_text()).get("declined", []))
     return {i: "registered" if i in ids else "declined" if i in dec else "pending" for i in ENTRY_IDS}
 
 
-def require_decided(registry: Path = REGISTRY, root: Path = ROOT) -> Dict[str, str]:
-    st = registration(registry, root)
+def require_decided(registry: Path = REGISTRY, declined: Path = DECLINED, check_git: bool = True) -> Dict[str, str]:
+    st = registration(registry, declined, check_git)
     pend = [i for i, s in st.items() if s == "pending"]
     if pend:
         raise C4pcRefused(f"entries {pend} neither registered nor declined: no update before the user's decision")
     return st
+
+
+def prior_losses(log: Path, start: int) -> list:
+    """Losses of steps 1 … ``start`` from an arm's log (a resumed step's last entry wins), so the
+    divergence check sees the whole run."""
+    by = {}
+    if log.exists():
+        for ln in log.read_text().splitlines():
+            d = json.loads(ln)
+            if "step" in d and "loss" in d:
+                by[int(d["step"])] = float(d["loss"])
+    if sorted(k for k in by if k <= start) != list(range(1, start + 1)):
+        raise C4pcRefused(f"{log}: steps 1..{start} not all logged")
+    return [by[s] for s in range(1, start + 1)]
 
 
 def h4_tol(controls: Dict[int, dict]) -> dict:
@@ -244,7 +279,7 @@ def train(a) -> int:
     """C4's loop (`c4_train.train`) on π's file, for A0p / Fp, after the registration guard."""
     os.environ["HF_HUB_OFFLINE"] = "1"
     root, arm = Path(a.root), a.arm
-    st = require_decided(root=root)
+    st = require_decided()
     pm = root / "perm_meta.json"
     if not pm.exists() or not json.loads(pm.read_text())["pass"]:
         raise C4pcRefused(f"{pm}: run `verify` first (H2′)")
@@ -285,6 +320,7 @@ def train(a) -> int:
     if start == 0 and not ct.ckpt_dir(root, arm, 0).exists():
         ct.save_ckpt(model, ct.ckpt_dir(root, arm, 0))
     fwd = torch.compile(model) if a.compile else model
+    losses = prior_losses(d / "train_log.jsonl", start)
     log = (d / "train_log.jsonl").open("a")
     log.write(json.dumps({"segment": {"from": start, "until": a.until, "code": codes,
                                       "started": time.strftime("%Y-%m-%dT%H:%M:%S")}}) + "\n")
@@ -303,11 +339,18 @@ def train(a) -> int:
         r = {"step": s, **r, "wall_s": round(time.time() - t0, 2)}
         log.write(json.dumps(r) + "\n")
         log.flush()
+        losses.append(r["loss"])
         if s in ct.SAVE_STEPS:
             ct.save_ckpt(model, ct.ckpt_dir(root, arm, s))
         if s in ct.SAVE_STEPS or s - last >= a.resume_every or s == a.until:
             save_state(s)
             last = s
+        if s % DIVERGE_EVERY == 0 or s == a.until:
+            dv = ct.diverged(losses)
+            if dv is not None:                     # C4's refusal, caught while training (finding 4 on #362)
+                save_state(s)
+                log.close()
+                raise C4pcRefused(f"{arm} diverged at step {dv} by c4_train.diverged: stopped at {s}")
         if s % 10 == 0 or s == a.until or s <= 4:
             print(json.dumps({"arm": arm, "step": s, "lr": r["lr"], "loss": round(r["loss"], 5),
                               "grad_norm": round(r["grad_norm"], 4)}), flush=True)

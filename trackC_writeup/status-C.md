@@ -61,7 +61,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-18 · body `4e305b1b5d`
+- **Reviewed:** 2026-11-18 · body `3ab3fc7077`
 <!-- /phase-card -->
 
 ## Units
@@ -113,10 +113,13 @@
 ## C4′ (c) unit 1, the harness, π and the gates (2026-11-18)
 
 Blocked 166 decided all (a) by Claude, on the user's "[your choices]" (`design-C4pc.md` "Decided
-2026-11-18"; yours to overrule). Code `c4pc_train.py` `6517b85f75b0`, `c4pc_read.py`
-`2de07248985b` (pushed as `32a57885224d` in `52303d8` before any output; threshold labels in
-comments since, gate re-run); 11 CPU tests. **No arm has taken an
-update**: `train` refuses until the five entries are registered or declined (Blocked 167).
+2026-11-18"; yours to overrule). **The registered rules: `c4pc_rules.py` `d7e674313486`**;
+drivers `c4pc_read.py` `fcb8d2eb3f91`; arms `c4pc_train.py` `95e71d5e7147`; 13 CPU tests. The
+first push (`52303d8`) kept the rules in `c4pc_read.py`; after `/challenge-pr` on #362 (accept with
+changes, findings 1–4 taken) they were split out, the decline record moved into git, and C4's
+divergence rule put inside the loop, all before any update; H1′ and H2′ ran on `6517b85f75b0`,
+whose `write_permuted`, `verify` and `init` are unchanged since. **No arm has taken an update**:
+`train` refuses until the five entries are registered or declined (Blocked 167).
 
 | check | record | reads |
 |---|---|---|
@@ -125,11 +128,14 @@ update**: `train` refuses until the five entries are registered or declined (Blo
 | H2′ (π's file: 4096 sampled rows against the shard) | `HDD_1TB/mets_data/c4pc/perm_meta.json` | **pass**, 0 mismatches; 16 785 408 000 bytes; π (seed 20261118) sha256 `06887e00e6eb…`, file `b55ea350c548…`; batch 0 `7cc18a4b63be…`, max token 50276 |
 | H4′'s tolerance (max(2 %, the seeds' largest gap at 1000 and 4000)) | `c4/2026-11-09-u1/h4_controls_1000.json`, `c4pc/2026-11-18-u1/h4_controls_4000.json` | **2 %** (the base): the seeds' largest gap is 1.51 % at 1000 (seed 3) and 0.57 % at 4000 (seed 9); warmup01, not a seed, 44.6 % and 12.3 % |
 
-**The seed null's limit** (beside the pass): Pythia's grid has nothing between 512 and 1000, and
-every seed and the released run date induction at 1000, so L9 (i) fails on each seed by the grid
-(1000 against the bar 591); the seed null cannot show whether order spread alone moves induction's
-date by the ratio L9 reads. L7's seed null has 10 grid steps ≤ 1000 against the arms' 23. Near
-misses: seed 1 has L8's pattern at 4000 only; seeds 5 and 8 put the top head in layer 4, none in 2.
+**What the seed null shows** (corrected after finding 3 on #362): C4's own pair re-read on
+Pythia's 13 steps still holds all four (L9: 512 against 1000, bar 591; `gate.json` `beside`), so
+the rules can fire at the nulls' resolution. The seed null therefore says order and init spread
+on one schedule do not separate induction's dates there (every seed and the released run date
+1000). It cannot see spread below one grid interval (512–1000). **L9 is one dense step from
+failing on a replay of F**: an A0′ date of 640 instead of 768 puts the bar at 303, below F's 320.
+Near misses: seed 1 has L8's pattern at 4000 only; seeds 5 and 8 put the top head in layer 4,
+none in 2.
 
 **Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c4pc_read gate --out <dir>` (seconds,
 no GPU); `c4pc_train write-perm --tmp <nvme dir>`, `verify`, `init --arm {A0p,Fp}`; `c4_read

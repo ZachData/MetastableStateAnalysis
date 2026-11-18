@@ -8,7 +8,7 @@ import pytest
 
 pytestmark = pytest.mark.deps  # a1a's imports
 from trackC_writeup import c4_train as ct
-from trackC_writeup import c4pc_read as r
+from trackC_writeup import c4pc_rules as r
 from trackC_writeup import c4pc_train as t
 
 
@@ -49,14 +49,40 @@ def test_write_permuted_small(tmp_path):
 def test_registration_guard(tmp_path):
     reg = tmp_path / "registry.json"
     reg.write_text(json.dumps({"predictions": [{"id": "P-SCH1"}]}))
-    assert set(t.registration(reg, tmp_path).values()) == {"pending"}
+    dec = tmp_path / "declined.json"
+    assert set(t.registration(reg, dec, check_git=False).values()) == {"pending"}
     with pytest.raises(t.C4pcRefused):
-        t.require_decided(reg, tmp_path)
+        t.require_decided(reg, dec, check_git=False)
     reg.write_text(json.dumps({"predictions": [{"id": i} for i in t.ENTRY_IDS[:3]]}))
-    (tmp_path / "declined.json").write_text(json.dumps({"declined": list(t.ENTRY_IDS[3:])}))
-    st = t.require_decided(reg, tmp_path)
+    dec.write_text(json.dumps({"declined": list(t.ENTRY_IDS[3:])}))
+    st = t.require_decided(reg, dec, check_git=False)
     assert list(st.values()) == ["registered"] * 3 + ["declined"] * 2
     assert len(t.ENTRY_IDS) == 5 and t.ENTRY_IDS[0].endswith("2") and t.ENTRY_IDS[-1].endswith("6")
+
+
+def test_decline_must_be_committed(tmp_path):
+    reg = tmp_path / "registry.json"
+    reg.write_text(json.dumps({"predictions": []}))
+    stray = t.REPO / "trackC_writeup" / "c4pc_declined_test_stray.json"      # untracked, in the repo
+    try:
+        stray.write_text(json.dumps({"declined": list(t.ENTRY_IDS)}))
+        assert not t.committed(stray)
+        with pytest.raises(t.C4pcRefused):
+            t.registration(reg, stray)
+    finally:
+        stray.unlink(missing_ok=True)
+    assert not t.DECLINED.exists()                    # nothing declined yet: Blocked 167 is open
+
+
+def test_prior_losses(tmp_path):
+    log = tmp_path / "train_log.jsonl"
+    log.write_text("\n".join(json.dumps(x) for x in (
+        {"segment": {"from": 0}}, {"step": 1, "loss": 10.0}, {"step": 2, "loss": 9.0},
+        {"segment": {"from": 1}}, {"step": 2, "loss": 8.5}, {"step": 3, "loss": 8.0})) + "\n")
+    assert t.prior_losses(log, 3) == [10.0, 8.5, 8.0]
+    assert t.prior_losses(tmp_path / "none.jsonl", 0) == []
+    with pytest.raises(t.C4pcRefused):
+        t.prior_losses(log, 4)
 
 
 def test_h4_tol():
