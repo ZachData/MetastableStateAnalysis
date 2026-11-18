@@ -61,7 +61,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-18 · body `5036785ad2`
+- **Reviewed:** 2026-11-18 · body `446582fa13`
 <!-- /phase-card -->
 
 ## Units
@@ -118,6 +118,9 @@
 | Blocked 167 | decided (a), the user's, 2026-11-18: `P-SCH2` (L7), `3` (L8), `4` (L9), `5` (L9h), `6` (L10) registered as drafted in `design-C4pc.md`, commit `87e996b`, hashes verified then (`c4pc_rules` `d7e674313486`, `c4pc_train` `95e71d5e7147`, `c4_train` `1c1e1d2df083`). One field moved: `gate` stays empty and `calibration_record` null (`check_registry` refuses a gate on a measurement entry, and wants the record tracked); the U1 gate record is cited in `null_construction` with its sha256 `952b73ba…83c0` |
 | the chain | D4 (a), each step gating the next: `train --arm A0p --until 1000` → `h4p --steps 1000` → `train --arm Fp --until 4000` → `train --arm A0p --until 4000` → `h4p --steps 4000`; started 2026-11-18 08:53 CST under `systemd-inhibit`; conda `mets` (torch 2.10.0+cu130, transformers 4.44.2), RTX 3080, n_micro 512, compiled, bf16 autocast, fp32 master |
 | first output | populated: A0′ step 1 loss 11.083 (C4's A0 11.081 on its own batch, same init), ≈ 27 s an update (C4's 26.5) |
+| A0′ → 1000 | done 2026-11-18 16:22 CST (7.5 h; loss 3.648 at 1000, no divergence) |
+| H4′ at 1000 | **passes**: held-out loss A0′ 3.7151, A0 3.7200, rel. diff −0.13 % (tol 2 %; the seeds' gaps 1.51 % at 1000, 0.57 % at 4000); `HDD_1TB/mets_data/c4pc/A0p/h4p_1000.json`. In the chain it ran out of GPU memory (fp32 logits on 8 rows × 2048 × 50 304, 2.31 GiB reserved but free: fragmentation) and stopped it; rerun alone with `PYTORCH_ALLOC_CONF=expandable_segments:True`, an allocator setting, no code or number changed; the chain's last `h4p` carries it |
+| F′ → 4000, then A0′ → 4000, H4′ at 4000 | chain resumed 2026-11-18 16:22 CST; F′ step 1 loss equal to A0′'s (same init, same first batch, the rate not yet applied), steps 2–3 10.115 / 9.509 (C4's F 10.097 / 9.521) |
 | C4's gate at 3500 on F′ | moved to U3: it reads F′'s records, which U3 computes |
 
 Re-run or resume: `bash HDD_1TB/mets_data/c4pc/u2_logs/u2_chain.sh` (each `train` resumes from `resume.pt`; a finished segment prints `nothing_to_train`). Progress in `u2_logs/stages.txt`, the exit in `u2.exit`.
