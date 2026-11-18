@@ -6,7 +6,9 @@
 findings 1–4 taken: (b)'s gate step counts and what it does not test, the null at fp16, what A1's
 label covers, (b)'s cost). U1: A1's gate passed 2026-11-15 (10 of 10 on every schedule); the
 draft entry is "A1's draft entry" below, declined by the user (Blocked 160 (b)), so A1 is tier 1
-and was read 2026-11-15 (`status-C.md` "C4′ unit 1").** Opened
+and was read 2026-11-15 (`status-C.md` "C4′ unit 1"). U2 (b), 2026-11-17 (Blocked 163 (a)): its
+open details fixed before output ("(b) as U2 runs it"); the gate passes in both windows; F reads
+"another path" early and late (`status-C.md` "C4′ unit 2").** Opened
 on Blocked 158 (a), the user's (2026-11-15): C4′ (a), then (b), each with its rule fixed before
 its output; the replicate pair (C4′ (c)) is decided on what they show. Scan: `lit-C4p.md`.
 Nothing below has been computed. Of the inputs, only C6's centred counts on warmup01 (A3's
@@ -105,6 +107,28 @@ and at each position K's cross term for every pair is one matrix product
 (P_F (n_F × V) · log P_A0ᵀ), the entropy terms per model; the controls likewise. Estimated about an
 hour; U2 times one half-row first, refuses to subsample positions, and stops for the user if the
 projected total passes 3 h.
+
+### (b) as U2 runs it (written 2026-11-17, Blocked 163 (a), before any output)
+
+The frozen text leaves six details open. Each is fixed here, before any K is computed. The
+code is `trackC_writeup/c4p_path.py`, a new module, so that U1's records keep `c4p_read`'s
+hash (`f5b158635210`).
+
+| detail | fixed as | why |
+|---|---|---|
+| A0's grid | all 29 saved steps, 0 and 3500 included; prev / next on that sorted list | "29 A0" in the cost |
+| equal states | consecutive grid steps whose weights are equal in value (−0 = +0) form **one state**, labelled by every step in it; δ is taken between states, and "match(s) = s" holds if s is in the state's label | A0's update 1 runs at lr 0 (`train_log.jsonl`), so A0₁ = A0₀ and δ would be 0 by duplication, not by resolution. First written "bit-equal"; the smoke test found A0₀ and A0₁ differ in 19 signed zeros only, so values are compared |
+| the null's reference | A0 rounded to fp16 (parameters only) for match, r **and** δ | the null's pseudo-F is read against that path, so its resolution is that path's |
+| "non-decreasing up to one grid step" | over **all** of the window's steps, each match's state index ≥ the running maximum of the earlier ones − 1 | a consecutive-pairs check would pass a slow descent |
+| the null's gate condition | the window reads "one path" **and** match(s) = s at ≥ ⅔ of its steps | both are named |
+| thresholds | "one path" iff 3·n_on ≥ 2n (and monotone); "another path" iff 3·n_on < n; with n = 4 that is 3 and 2 of 4, as frozen | |
+| the windows on Pythia's grid | early s ≤ 256, late s ≥ 320 (512–4000 there) | |
+| numerics | float32 forward, eager, no TF32; float32 log-softmax as frozen; K's sum over the vocabulary and positions in float64 (Σ p_X (log p_X − log p_Y), p = exp of the float32 log-probs) | the float32 cross term cancels to ~10⁻⁶ a position, more than early δ |
+| beside, the training loss | the logged loss of update t + 1, which is the loss of checkpoint t on batch t; the held-out loss on the 64 rows, from the same pass | |
+
+**Refusals.** F's K is not computed before `gate.json` exists. U2 times the first half-row
+and refuses if the projected total of the K passes exceeds 3 h. Positions are never
+subsampled.
 
 ## Exit condition and budget
 
