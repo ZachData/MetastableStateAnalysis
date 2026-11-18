@@ -1,10 +1,12 @@
 <!-- trackC_writeup/design-C4pc.md -->
 # Track C — design: C4′ (c), the replicate pair
 
-**Status: proposed 2026-11-17 (U0, writing only); revised after `/challenge-pr` on #361 (accept
-with changes, findings 1–5 taken: M2 cannot flip the centred label; §7's item 6 follows the
-paired M3; registration before any update; a seed null for L7–L9h; H4′'s tolerance from the
-seeds); decisions D1–D4 are STATE Blocked 166.**
+**Status: frozen 2026-11-18 on Blocked 166 all (a)** (decided by Claude on the user's "Decide
+Blocked 166 (D1–D4) for C4′ (c)'s design [your choices]"; yours to overrule): both arms to 4000,
+π a permutation of C4's rows, five entries, C4's training order. Proposed 2026-11-17 (U0); revised
+after `/challenge-pr` on #361 (accept with changes, findings 1–5 taken). **U1 built 2026-11-18**
+("U1 as built" below; `status-C.md` "C4′ (c) unit 1"); the five entries are drafted below and
+are STATE Blocked 167, yours. No arm has taken an update.
 Opened on Blocked 165 (a), the user's ("Do Blocked 165 (a): C4′ (c)'s design"). Row:
 `docs/ROADMAP.md` §8 C4′ (c), §10 item 18. Scan: `trackC_writeup/lit-C4pc.md`. Nothing was
 computed, trained, downloaded or registered. The arithmetic below is
@@ -226,6 +228,75 @@ outcome that changes what §7 says (M3 for item 6, M2 for R3, L10 (b) for the la
 | D2 | the order | a seeded permutation of C4's 4 096 000 rows, one 16.8 GB file: varies only the order, no download | (b) fresh rows in Pythia's order: varies the rows too, and shard 1 (30 GB) past update 3149 |
 | D3 | registration | the five entries L7–L10 (the next `P-SCH` numbers, 2–6), by you after U1's gates and before either arm trains at all | (b) one joint entry (all five must hold), which is stricter and says less when it fails; (c) tier 1, rules frozen and pushed |
 | D4 | order of training | C4's: A0′ to 1000 (H4′), F′ to 4000, A0′ to 4000 | (b) both to 4000 back to back, A0′ first |
+
+**Decided 2026-11-18: all (a)**, by Claude on the user's delegation. Why: D1 (a) is the only
+horizon that reads every lean with C4's own definitions, and the 22 GPU-hours over (b) fit before
+mid-December; D2 (a) varies only the order and needs no download; D3 (a) keeps each lean scorable
+on its own, with all five reported; D4 (a) is C4's, so H4′ at 1000 is read before F′ trains.
+
+## U1 as built (2026-11-18)
+
+**The registered hash is `c4pc_rules.py`'s `code_sha()`, `d7e674313486`** (the five rules, pure,
+with the frozen instruments they call: `c4_read.py`, `c4_close.py`, `c4p_path.py`). The drivers,
+`c4pc_read.py` (`fcb8d2eb3f91`), grow in U3 (records on the new arms, L10's K wiring, M1–M4, the
+scoring) without moving it. The arms are `c4pc_train.py` (`95e71d5e7147`). The first push
+(`52303d8`) had the rules inside `c4pc_read.py`; `/challenge-pr` on #362 (accept with changes,
+findings 1–4 taken) showed U3's additions would have moved the registered hash, so they were
+split out before registration, with the decline record moved into git (finding 2) and C4's
+divergence rule run inside the training loop (finding 4). No arm had trained. Tests
+`tests/test_trackC_c4pc.py` (13, CPU). Three choices made while building, none seen against an
+output:
+
+1. **The gate pairs use C4's gated τ arms** (9.61e-5, 1e-4, 3e-4; `data/trackC/c4/2026-11-12-u2/
+   gate.json`) and read V, since no released run has a step 3500 to gate on.
+2. **`init`** saves an arm's step 0 with no update, so H1′ runs before registration; `train`
+   refuses until every entry is in the registry or in `trackC_writeup/c4pc_declined.json`, which
+   counts only when tracked and committed (the user's commit).
+3. **L10's K pass** (the `c4p_path` instrument on keys A0′@29 steps, F′@28, and A0′ against A0's
+   29) is wiring, written in U3 before any K on the new arms; the rule (`c4pc_rules.l10`, `l10b`,
+   `l10b_gate`, and `c4p_path.read_pseudo` unchanged) is frozen here.
+
+**The gates for L7–L9h pass** (`data/trackC/c4pc/2026-11-18-u1/gate.json`, rules `d7e674313486`):
+each reads "holds" on C4's pair, "does not hold" on (released, A0), and 0 of 9 seeds hold.
+**What the seed null shows** (corrected after `/challenge-pr` on #362, finding 3): the rules can
+fire at the nulls' resolution, since C4's own pair re-read on Pythia's 13 steps holds all four
+(L9: F 512 against A0 1000, bar 591; `gate.json` `beside`). So the seed null is not refused by
+the grid alone: it says that order and init spread on one schedule do not separate induction's
+dates at that resolution (every seed and the released run date 1000). It cannot say whether
+spread below one grid interval (512–1000) would. Near misses: seed 1 has L8's pattern at 4000
+but not at 1000; seeds 5 and 8 have a top head in layer 4 (L9h's A0′ side), none in layer 2.
+**L9 is one dense-grid step from failing on a replay of F**: if A0′ dates induction at 640
+instead of 768, the bar is 303 and F's 320 fails (i).
+
+## The five draft entries (Blocked 167; yours to register or decline)
+
+Ids are the next `P-SCH` numbers, 2–6 (`c4pc_train.ENTRY_IDS`; not written whole, since
+`tools/check_registry.py` fails on an unregistered id in the tree). **Shared fields:** claim
+`H-RESIST` (as `P-SCH1`); phase C, experiment C4′ (c); cost F; evaluable measurement; relevance
+0.6; `registered_provenance` gated; `gate` `data/trackC/c4pc/2026-11-18-u1/gate.json` (record
+path; main tree); `source` this file; **instrument** `c4pc_train.py` `95e71d5e7147` (the arms,
+calling `c4_train.py` `1c1e1d2df083`'s recipe unchanged), records by `c4_read records` (C2 unit
+3b's per-state row on the 7 v1 prompts, float32 eager), **the rule `c4pc_rules.py`
+`d7e674313486`**. **Common to every statement:** *on `pythia-70m` trained from seed 0's init on
+order π (seed 20261118, a permutation of C4's 4 096 000 rows) under Pythia's schedule (A0′) and
+with the LR warmup removed (F′: 1e-3 to step 1430, then Pythia's cosine), both to 4000 on C4's
+dense grid*; τ arms are those C4's gate passes on F′ at 3500. **Common falsifier:** the lean does
+not hold with every cell readable. "Unreadable" (no gated τ arm, V refused, an undated event), a
+harness refusal (H1′, H2′, H4′) or a divergence score nothing.
+
+| entry | statement (h1) | h0 |
+|---|---|---|
+| 2 (L7) | At every gated τ arm, F′'s centred count has a transient (a transition violated on > 3.5 of 7 prompts at some grid step ≤ 1000 and not in the 4000 majority set), A0′'s has none, and both 4000 majority sets are {T1, T2}. | The transient and the shared end set were C4's pair's: F′ has none, A0′ has one, or an end set differs. |
+| 3 (L8) | V's majority sets at 1000, 2000 and 4000 are non-empty on both arms, and F′'s lowest transition is one below A0′'s at each. | V's lowest majority transition is not one block earlier on F′ at some of the three steps. |
+| 4 (L9) | Induction's half-rise (the top head's score, `c4_read.date_on`) satisfies (i) t_F′ < t_A0′^{3/2} / √(2W), W = 1430 (nearer the summed-rate map than the step map in log), and (ii) \|ln(t_F′ / m_cum(t_A0′))\| < the same distance for the centred date at every gated τ arm, m_cum(t) = t² / 2W. | Induction's date is no nearer the summed-rate map than the centred date's, or is nearer step. |
+| 5 (L9h) | The top induction head at 4000 is in layer 2 on F′ and in layer 3 or 4 on A0′. | The flat ramp does not move the top head to layer 2. |
+| 6 (L10) | (a) F′ reads "another path" in the early window (1–256) against A0′'s path (`c4p_path`'s per-token KL on C4's 64 held-out rows, A0′ as the reference), and (b) over F's 12 late steps (320–4000), C4′ U2's r_F(s) exceeds r_A0′(s) = min over A0's states of K(A0′_s, A0_t) at ≥ 8 of 12. If (b)'s gate (U3: the released run's null < ⅔ and ≥ 8 of 9 seeds ≥ ⅔) refuses, L10 scores on (a) alone. | F′ is on A0′'s path early, or (with (b) gated) F's late distance from A0 is within an order replicate's. |
+
+`null_construction` for 2–5: the planted (released, A0) pair and seeds 1–9 against the released
+run, on Pythia's 13 steps ≤ 4000 (no schedule differs; "holds" there is a false positive), with
+the seed null's grid limit above. For 6: C4′ U2's gate for (a); (b)'s in U3. `notes` for all:
+70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at
+another order and the same init; bf16 against Pythia's fp16.
 
 ## Worth challenging (for the PR)
 
