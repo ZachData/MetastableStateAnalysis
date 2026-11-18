@@ -813,7 +813,13 @@ KEYS: Dict[str, tuple] = {
     "c4p.gate": ("c4pgate", lambda g: {w: {"readable": g["gate"][w]["readable"], "null": g["gate"][w]["null_reading"],
                                            "seeds": [g["gate"][w]["seeds_another"], g["gate"][w]["seeds_of"]]}
                                        for w in ("early", "late")}),
-    "c4p.null_at": ("c4pgate", lambda g: {str(s): x for s, x in zip(g["null"]["steps"], g["null"]["r"]) if s in (512, 4000)}),
+    "c4p.r_early": ("c4pread", lambda r: _span(x for s, x in zip(r["F"]["steps"], r["F"]["r"]) if s <= 256)),
+    "c4p.nearest_ratio": ("c4pread", lambda r: (lambda xs: [xs[0], xs[3]])(       # the 4 smallest r / δ, first and last
+        sorted(x / r["F"]["delta"][i] for x, i in zip(r["F"]["r"], r["F"]["match_idx"])))),
+    "c4p.null_at": ("c4pgate", lambda g: {str(s): x for s, x in zip(g["null"]["steps"], g["null"]["r"])}),
+    "c4p.null_early_max": ("c4pgate", lambda g: max(x for s, x in zip(g["null"]["steps"], g["null"]["r"]) if s <= 128)),
+    "c4p.null_on": ("c4pgate", lambda g: {w: v["n_on"] for w, v in g["null"]["windows"].items()}),
+    "c4p.null_n": ("c4pgate", lambda g: {w: v["n"] for w, v in g["null"]["windows"].items()}),
     # the largest of the nine seeds' K(released_t, seed_t) at each of Pythia's steps 2-4000
     "c4p.seed_max": ("c4pgate", lambda g: {s: max(v[s] for v in g["beside"]["K_released_seed_same_step"].values())
                                            for s in next(iter(g["beside"]["K_released_seed_same_step"].values()))}),
@@ -1046,9 +1052,13 @@ CLAIMS: List[tuple] = [
      lambda k: all(k["c4p.gate"][w]["readable"] and k["c4p.gate"][w]["null"] == "one path"
                    and k["c4p.gate"][w]["seeds"] == [9, 9] and k["c4p.reading"][w] == "another path" for w in ("early", "late"))
      and k["c4p.n_on"] == 0 and k["c4p.n_steps"] == 28 and k["c4p.ratio"][0] > 1),
-    ("§7 C4′: at each shared step 8-256 the flat arm is farther from every harness state than any seed is from the "
-     "released run at that step (not at 2 and 4); late the same-init null drifts toward it",
-     lambda k: all(k["c4p.r_at"][s] > k["c4p.seed_max"][s] for s in ("8", "16", "32", "64", "128", "256"))
+    ("§7 C4′: at each shared step 8-512 the flat arm is farther from every harness state than any seed is from the "
+     "released run at that step (not at 2 and 4); early the same-init null is far nearer; late it drifts toward it; "
+     "the null on the path at 8 of 9 and 3 of 4 steps; the nearest approaches are the steps 192-384",
+     lambda k: all(k["c4p.r_at"][s] > k["c4p.seed_max"][s] for s in ("8", "16", "32", "64", "128", "256", "512"))
+     and k["c4p.null_early_max"] < 1e-4 and k["c4p.null_at"]["256"] < 0.5 * k["c4p.r_early"][0]
+     and k["c4p.null_on"] == {"early": 8, "late": 3} and k["c4p.null_n"] == {"early": 9, "late": 4}
+     and k["c4p.nearest"] == [192, 256, 320, 384] and k["c4p.nearest_ratio"][0] == k["c4p.ratio"][0]
      and all(k["c4p.r_at"][s] < k["c4p.seed_max"][s] for s in ("2", "4"))
      and k["c4p.null_at"]["512"] < k["c4p.null_at"]["4000"] < k["c4p.r_at"]["4000"]
      and k["c4p.r_at"]["4000"] / k["c4p.null_at"]["4000"] < k["c4p.r_at"]["512"] / k["c4p.null_at"]["512"]),
@@ -1160,7 +1170,6 @@ FORMATS: Dict[str, Callable] = {
     "or": lambda v: _and(sorted(set(v))).replace(" and ", " or "),
     "range": lambda v: f"{_num(v[0])}–{_num(v[1])}",
     "range0": lambda v: f"{_grouped(round(v[0]))}–{_grouped(round(v[1]))}",
-    "range1": lambda v: f"{v[0]:.1f}–{v[1]:.1f}",
     "range2": lambda v: f"{v[0]:.2f}–{v[1]:.2f}",
     "range3": lambda v: f"{v[0]:.3f}–{v[1]:.3f}",
     "date": lambda v: v[:10],

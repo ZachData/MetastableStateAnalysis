@@ -748,7 +748,7 @@
   "where": "§7 C4′ (close-out 2026-11-17): the flat arm's saved steps after 0, none on the harness arm's path"
  },
  {
-  "slot": "{{c4p.ratio|range1}}",
+  "slot": "{{c4p.ratio|range2}}",
   "where": "§7 C4′ (close-out 2026-11-17): the flat arm's distance to its nearest harness state over that state's resolution δ, over all 28 steps"
  },
  {
@@ -778,5 +778,37 @@
  {
   "slot": "{{c4p.nearest|minmax}}",
   "where": "§7 C4′ (close-out 2026-11-17): the four steps whose distance over δ is smallest (the steps nearest the bar)"
+ },
+ {
+  "slot": "{{c4p.null_on[early]}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the null's steps on the path, early window"
+ },
+ {
+  "slot": "{{c4p.null_n[early]}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the null's early steps"
+ },
+ {
+  "slot": "{{c4p.null_on[late]}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the null's steps on the path, late window"
+ },
+ {
+  "slot": "{{c4p.null_n[late]}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the null's late steps"
+ },
+ {
+  "slot": "{{c4p.null_early_max|sci}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the null's largest distance to the harness path through step 128"
+ },
+ {
+  "slot": "{{c4p.null_at[256]|f3}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the null's distance at 256"
+ },
+ {
+  "slot": "{{c4p.r_early|range2}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the flat arm's distance to its nearest harness state at steps 1-256"
+ },
+ {
+  "slot": "{{c4p.nearest_ratio|range2}}",
+  "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the four smallest distances over δ (steps 192-384)"
  }
 ]

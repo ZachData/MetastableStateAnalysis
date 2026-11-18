@@ -44,7 +44,7 @@
   - C4′ opened 2026-11-15 (STATE Blocked 158 (a), the user's; writing only, nothing computed): a scan and a proposed design for two readings without training: induction's date on the released long-warmup 70m by C6's frozen rule, against C4's lean that it follows the summed rate, and whether the flat arm's function at each step is the harness arm's at some step (per-token KL against the harness arm's own step-to-step KL), each gated on the real design points before output; budget 3 units + close-out; decisions STATE Blocked 159 — `trackC_writeup/status-C.md` "C4′ unit 0"
   - C4′ U1 (2026-11-15; Blocked 159 all (a), the user's; rule frozen and pushed before output): on `pythia-70m` and PolyPythias seeds 1–9 every top induction head rises between 512 and 1000, so the reference is {1000}; the rule's leave-one-out gate passes 10 of 10 on every schedule (easy: each rise is one grid step); on this grid "consistent with cumulative" means a delay of 1× to about 8× over the seeds, not the summed rate in particular; A1's entry drafted and declined (Blocked 160 (b)), so A1 is tier 1: **the run reads "consistent with cumulative"** (half-rise in (2000, 3000] with 3000 beside, a 2× to 5.9× delay inside the summed rate's (1619, 3162]), a loss clock not excluded; A2: every seed's and the run's heads ≥ 0.5 are in layers 3–4, while C4's F's top head is L2H6; the run's centred set has a T3 majority at 2000–4000 that seed 0 never has, but whether either has a transient turns on the horizon (description) — `trackC_writeup/status-C.md` "C4′ unit 1"
   - C4′ U2 (2026-11-17; Blocked 163 (a), the user's; tier 1; open details fixed and pushed before output): per-token KL on 64 held-out rows between every flat-arm and harness-arm checkpoint. The gate passes in both windows: the released run against the harness arm in fp16 reads "one path" (identity 8 of 9 and 4 of 4; late at exactly the ⅔ bar), and 9 of 9 seeds read "another path". **The flat arm reads "another path" early and late**: 0 of 28 steps are within the harness arm's own step-to-step KL of any of its states, at 1.3–4.6× that resolution. At each shared step from 8 to 256 its residual exceeds every seed's distance from the released run at that step. Late, its ratio over the same-init null's residual falls from 6.7 at 512 to 1.9 at 4000. The matches are monotone and near equal loss. From step 48, in attention and MLP weights its displacement is near orthogonal to the harness arm's (cos 0.06–0.19, against the harness arm's own 0.26–1.0). So C4's item 10 is held: firmly early, with a narrowing margin late — `trackC_writeup/status-C.md` "C4′ unit 2"
-  - **C4′ closed 2026-11-17 at its exit** (3 units + close-out, the budget; Blocked 164 (a), the user's; writing only): of C4's post hoc leans, item 9 (induction follows the summed rate, or a function of it; loss not excluded) and item 10 (the flat arm is not the harness arm on another clock: at none of its 28 saved steps within the harness arm's grid resolution of a saved state, early by a wide margin, late by a narrowing one over a same-init rerun) are held at tier 1 on one run or pair each; items 6–8 untouched; (b) in `paper/` §7 as one paragraph (9 keys, 2 claims, `paper_check` 0, 37 pages); nothing registered; U2's finer grid carried to ROADMAP C4′, its late window to C4′ (c), whose opening and registration are STATE Blocked 165 — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
+  - **C4′ closed 2026-11-17 at its exit** (3 units + close-out, the budget; Blocked 164 (a), the user's; writing only): of C4's post hoc leans, item 9 (induction follows the summed rate, or a function of it; loss not excluded) and item 10 (the flat arm is not the harness arm on another clock: at none of its 28 saved steps within the harness arm's grid resolution of a saved state; over a same-init rerun by a wide margin early and a narrowing one late, in that resolution by 1.25–1.35 at the nearest) are held at tier 1 on one run or pair each; items 6–8 untouched; (b) in `paper/` §7 as one paragraph (14 keys, 2 claims, `paper_check` 0, 37 pages); nothing registered; U2's finer grid carried to ROADMAP C4′, its late window to C4′ (c), whose opening and registration are STATE Blocked 165 — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C2 quotes `P-A5`, Track A's
@@ -60,7 +60,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-17 · body `b995fe92fe`
+- **Reviewed:** 2026-11-17 · body `098993c800`
 <!-- /phase-card -->
 
 ## Units
@@ -105,7 +105,7 @@
 | C4′ 0. the scan and design (Blocked 158 (a), the user's; budget 3 units + close-out) | **done 2026-11-15: writing only, nothing computed; (a) and (b) designed, each gated on the real design points before output; proposed, D1–D5 Blocked 159** | `lit-C4p.md`, `design-C4p.md`; "C4′ unit 0" below |
 | C4′ 1. (a): A1's gate, the draft entry, A3; then the run's scores, A1, A2 | **done 2026-11-15 (Blocked 159 all (a); 160 (b), entry declined): the ten seeds all dated 1000; gate 10 of 10; A1 (tier 1) "consistent with cumulative" (run 0.011 at 1000, 0.43 at 2000, 0.87 at 3000; half-rise in (2000, 3000], a 2× to 5.9× delay, inside the summed rate's (1619, 3162]); a loss clock not excluded; A2: every seed's and the run's heads ≥ 0.5 are in layers 3–4, F's top head is L2H6; A3 written** | `c4p_read.py`, `data/trackC/c4p/2026-11-15-u1/`; "C4′ unit 1" below |
 | C4′ 2. (b): F against A0's path by per-token KL (Blocked 163 (a), the user's) | **done 2026-11-17: tier 1; open details fixed before output (`231cb77`, `c8876cd`); gate passes both windows (null "one path", 8 of 9 and 4 of 4 identity; seeds 9 of 9 "another path"); F "another path" early and late, 0 of 28 steps on the path; r 1.3–4.6 × δ; early r beyond any seed's, late F's r over the same-init null's falls 6.7 → 1.9; `/challenge-pr` on #359 accept with changes, 1–5 taken** | `c4p_path.py`, `data/trackC/c4p/2026-11-17-u2/`; "C4′ unit 2" below |
-| C4′ close-out (Blocked 164 (a), the user's) | **done 2026-11-17: writing only; exit met at the budget (3 units + close-out); C4's items 9 and 10 held, 6–8 untouched; (b) in `paper/` §7 (one paragraph, 9 `c4p.*` keys, 2 claims; `paper_check` 0, 37 pages); Parked carried (ROADMAP C4′, (c)) or dropped; whether (c) opens and is registered is Blocked 165** | "C4′ on one page" below |
+| C4′ close-out (Blocked 164 (a), the user's) | **done 2026-11-17: writing only; exit met at the budget (3 units + close-out); C4's items 9 and 10 held, 6–8 untouched; (b) in `paper/` §7 (one paragraph, 14 `c4p.*` keys, 2 claims; `/challenge-pr` on #360 accept with changes, 1–4 taken; `paper_check` 0, 37 pages); Parked carried (ROADMAP C4′, (c)) or dropped; whether (c) opens and is registered is Blocked 165** | "C4′ on one page" below |
 
 ## C4′ on one page (closed 2026-11-17)
 
@@ -125,12 +125,17 @@ entry was drafted and declined (Blocked 160 (b)), and (b) was tier 1 by design (
    schedule, but easily (each seed rises in one grid step). The label covers "the summed rate or
    a function of it"; a fixed-loss clock is not excluded (the loss bracket is 0.73 nats wide).
 2. **F is not on A0's path at any saved step** (U2): 0 of 28 F steps are within A0's own
-   step-to-step KL of any saved A0 state (1.3–4.6 δ at the nearest; ≥ 1.25 δ over all states),
-   with the gate passing in both windows (the released run "one path", 9 of 9 seeds "another
-   path"). **Early (1–256) by a wide margin**: at each shared step from 8 to 256, F's distance to
-   its nearest A0 state exceeds every seed's distance from the released run at that step, though
-   F shares A0's init and order. **Late (320–4000) by a narrowing one**: F's r over the same-init
-   null's falls from 6.7 at 512 to 1.9 at 4000, as the null itself drifts off A0.
+   step-to-step KL of any saved A0 state (1.25–4.64 δ at the nearest; ≥ 1.25 δ over all states),
+   with the gate passing in both windows (the released run "one path" at 8 of 9 and 3 of 4 steps,
+   the late window exactly at the ⅔ bar; 9 of 9 seeds "another path"). **Against the same-init
+   null, early (1–256) by a wide margin**: the null is within 9.2 × 10⁻⁵ through 128 and 0.028 at
+   256, F 0.063–0.67; and at each shared step from 8 to 512, F's distance to its nearest A0 state
+   exceeds every seed's distance from the released run at that step (by 1.07× at 8; not at 2 and
+   4). **Late (320–4000) by a narrowing one**: F's r over the null's falls from 6.7 at 512 to 1.9
+   at 4000, as the null itself drifts off A0. **In δ the margin is not wide in either window**:
+   the four nearest approaches, 1.25–1.35 δ, are at 192–384, two of them in the early window.
+   (Corrected after `/challenge-pr` on #360, finding 1: first written "early by a wide margin"
+   with no reference, and Blocked 164 had quoted the early window as "3–5 δ"; it is 1.25–4.64 δ.)
 
 **Beside (description; no label):** A2, every head ≥ 0.5 on the ten seeds and on warmup01 is in
 layer 3 or 4, while F's top head is L2H6 (U1). A3, warmup01's per-transition centred set has a
@@ -147,7 +152,7 @@ equal loss (U2).
 | 7 | the arms' counts rise for different reasons (F's transient), a shared end set {T1, T2}, T2 before T1 | **untouched** as a reading; A3 beside: the end set and T2-before-T1 hold on warmup01, the transient turns on the horizon | U1 "A3" |
 | 8 | V sits one block earlier on F | **untouched** | — |
 | 9 | induction's date follows the summed rate more nearly than the counts | **held** (tier 1, one run; "the summed rate or a function of it", loss not excluded) | U1 "Second half" |
-| 10 | F is not A0 on another clock | **held**: firmly early, with a narrowing margin late | U2 |
+| 10 | F is not A0 on another clock | **held**: against the same-init null, by a wide margin early and a narrowing one late; in δ, by 1.25–1.35 at the nearest (192–384) | U2 |
 
 **Not established.** Whether F's late departure is beyond what two same-init runs on other data
 orders show (the null drifts to 0.19 by 4000; Parked 3 below). Whether a finer A0 grid moves the
@@ -156,11 +161,13 @@ any date. What clock induction follows inside the summed rate's family (rate or 
 Anything on 410m, the paper's model.
 
 **In `paper/`** (this close-out): §7 gains one paragraph after C4's two, "Is the flat arm the
-harness arm on another clock?": the rule (fixed before output, not registered), the gate, none of
-28 steps on the path at 1.3–4.6 times the resolution, early beyond every seed at each step from 8
-to 256, late narrowing (the null's 0.064 → 0.19 against F's 0.43 → 0.36), and the finer-grid
-caveat. 9 `c4p.*` keys from `reading.json` and `gate.json` (no other key moved), 2 claims, 9
-slots; `paper_check` 0; 37 pages, no undefined reference. A1 is not added (Blocked 164 (a) named
+harness arm on another clock?": the rule (fixed before output, not registered), the gate (the
+null's 8 of 9 and 3 of 4, the late window at the bar), none of 28 steps on the path at 1.25–4.64
+times the resolution, the margin against the same-init null (early within 9.2 × 10⁻⁵ through 128
+against F's 0.06–0.67; beyond every seed at each step from 8 to 512, not at 2 and 4; late the
+null's 0.064 → 0.19 against F's 0.43 → 0.36), "not wide anywhere" in δ, and the finer-grid caveat.
+14 `c4p.*` keys from `reading.json` and `gate.json` (no other key moved), 2 claims, 17 slots
+(revised after `/challenge-pr` on #360, findings 1, 2, 4); `paper_check` 0; 37 pages, no undefined reference. A1 is not added (Blocked 164 (a) named
 the (b) sentence only); the abstract and §1 are not touched.
 
 **Units at close:**
@@ -226,7 +233,7 @@ floor: |K| ≤ 1.6 × 10⁻⁹ between models that differ only by rounding. A0's
 | early (1–256) | "one path", 8 of 9 on | 8 of 9 | 9 of 9 (1 of 8 steps on, each seed) |
 | late (512–4000) | "one path", 3 of 4 on, **exactly the ⅔ bar** (4000 off: r 0.19 > δ 0.15) | 4 of 4 | 9 of 9 (0–1 of 4 on) |
 
-The null's r is ≤ 9 × 10⁻⁵ through 128, then rises: 0.028 (256), 0.064 (512), 0.11 (1000), 0.14
+The null's r is ≤ 9.2 × 10⁻⁵ through 128 (written "≤ 9 × 10⁻⁵" until the close-out), then rises: 0.028 (256), 0.064 (512), 0.11 (1000), 0.14
 (2000), 0.19 (4000). So a rerun with A0's init and order drifts away from A0, and by 4000 it is
 off A0's path itself. A seed's distance to the released run at the same step,
 K(released_t, seed_t), is 0.16–0.47 (0.40 at steps 2–16, a minimum of 0.16–0.20 at 256).
@@ -249,17 +256,18 @@ forward through A0's states, but never within A0's own resolution of one:
 | r / δ(match) | 1.7 | 3.0 | 2.1 | 1.3 | 1.3 | 1.3 | 1.7 | 1.9 | 1.4 | 2.4 |
 | summed-rate map (A0 step) | 54 | 152 | 428 | 742 | 856 | 957 | 1211 | 1716 | 2716 | past 4000 |
 
-**Early** (1–256), r is 0.063–0.67, against the null's ≤ 9 × 10⁻⁵ through 128. At each shared
+**Early** (1–256), r is 0.063–0.67, against the null's ≤ 9.2 × 10⁻⁵ through 128. At each shared
 step from 8 to 256, F's r exceeds every seed's distance from the released run at that step
 (at 8, 0.43 against 0.40; at 128, 0.33 against 0.19), although F shares A0's init and data order.
 (Reworded at the close-out: first written "F's r (0.33–0.67) exceeds … (≤ 0.40)", two ranges
-that overlap; the comparison is per step.) The early reading has a wide margin.
+that overlap; the comparison is per step.) The early reading has a wide margin over the
+same-init null, not in δ (see the close-out, `/challenge-pr` on #360, finding 1).
 **Late** (320–4000), r is 0.34–0.47, while the same-init null's r rises toward it. F's r over the
 null's is 6.7 at 512, 3.5 at 1000, 2.7 at 2000 and 1.9 at 4000. So late, "another path" is beyond
 a same-init rerun's spread, but by a factor that falls, and part of it may be two runs drifting
 apart (`/challenge-pr` on #359, finding 2). The closest approach to the path is 1.3–1.4 δ, at
 192–384, just before and at F's induction (320). The lean (C4 item 10, "F is not A0 on another
-clock") **is held**: firmly early, with a narrowing margin late. (First written "r 0.06–0.45,
+clock") **is held**: firmly early against the same-init null (not in δ; close-out), with a narrowing margin late. (First written "r 0.06–0.45,
 the size of a seed's distance"; corrected, finding 3.) No window reads "one
 path", so the clock beside is not read; the matches are printed above only as description. They
 run later than the step map and earlier than the summed-rate map at every step through 1000.

@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "b9a8d9324e30",
+ "code": "cc6cac144b69",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -10051,10 +10051,53 @@
    },
    "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
   },
+  "c4p.r_early": {
+   "value": [
+    0.06331287834597918,
+    0.6696664650408091
+   ],
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.nearest_ratio": {
+   "value": [
+    1.2502792253707773,
+    1.3510688591179154
+   ],
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
   "c4p.null_at": {
    "value": {
+    "1": 0.0,
+    "2": -1.6037218365089461e-09,
+    "4": 2.9053154817178088e-05,
+    "8": 7.795385692881392e-05,
+    "16": 7.634518072689168e-05,
+    "32": 1.2822879999721036e-05,
+    "64": 1.3741650475853542e-05,
+    "128": 9.244153602321421e-05,
+    "256": 0.027963427954192953,
     "512": 0.06356865751931015,
+    "1000": 0.11382506827896793,
+    "2000": 0.13800466785303322,
     "4000": 0.1904770306145959
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
+  },
+  "c4p.null_early_max": {
+   "value": 9.244153602321421e-05,
+   "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
+  },
+  "c4p.null_on": {
+   "value": {
+    "early": 8,
+    "late": 3
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
+  },
+  "c4p.null_n": {
+   "value": {
+    "early": 9,
+    "late": 4
    },
    "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
   },

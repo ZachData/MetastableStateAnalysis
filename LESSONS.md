@@ -32,6 +32,11 @@ world moves, nobody updates the line, and the next session acts on it.
   side overlap. `/challenge-pr` on #359 did not catch it; the close-out's claim check, keyed on
   the records, refused the range-against-range version. Rule: **a comparison quoted with two
   ranges says whether it holds per step or between the ranges; key it before it is copied.**
+  Same close-out, `/challenge-pr` on #360 (finding 1): Blocked 164 told the user the early window
+  was "3–5 δ" (it is 1.25–4.64 δ, with the two nearest approaches inside it), and the user chose
+  the option that put "early by a wide margin" into `paper/`; "wide" was true only against the
+  same-init null and named no reference. Rule: **a margin word ("wide", "firm") names its
+  reference, and a number in a Blocked option is read from the record, not from the unit's prose.**
 - 2026-11-15 (training-symmetry register, #353): the register quoted block J's "0.5005 at step
   512" from `FUTURE_IDEAS.md` §2 B; the record (`qk_symmetry_sweep.json`) has 0.500542 at step 0
   and 0.500665 at 512, and its "2 % of the way to identity" was 4.5 %. The same PR proposed a
