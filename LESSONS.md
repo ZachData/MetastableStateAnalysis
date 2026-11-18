@@ -1129,6 +1129,10 @@ commits after it changed `status-C.md` without re-stamping the card. Each segmen
 progress note, not a Stop, so no one ran the check; `check.sh` also stops at the first stale file,
 so each fix showed the next. Found at U2's Stop; all four regenerated there. A registry edit runs
 the three renderers in the same commit; a mid-unit progress commit runs `check.sh` too.
+2026-11-18, again: `P-SCH2`–`6`'s registration (`87e996b`) was committed after only
+`tools/check_registry.py`, so the renderers went stale once more; caught by the next commit's
+`check.sh lint`, before any merge. A registration commit runs `./scripts/check.sh lint`, not the
+registry check alone.
 
 **The rule now.** At session start, `./scripts/status.sh` for `main` and the
 nightly smoke; a known red step must not gate the steps after it. Status: 📋

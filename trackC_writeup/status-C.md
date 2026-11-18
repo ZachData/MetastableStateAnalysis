@@ -48,7 +48,7 @@
   - C4′ (c) opened 2026-11-17 (STATE Blocked 165 (a), the user's; writing only, nothing computed): a scan and a proposed design for the replicate pair (A0′ and F′ from seed 0's init on another order). It measures A0′'s rerun ratio and re-reads item 6 and R3 on C4's own pair under design-C4's rerun term. Five leans (items 7–10, each stated against A0′) are drafted for registration, gated on C4's pair and on (released, A0). Found: shard 0's unused rows reach 3149 updates, not 4000, and a pair stopped at 1000 reads none of C4's dates; decisions STATE Blocked 166 — `trackC_writeup/status-C.md` "C4′ (c) unit 0"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
-- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C2 quotes `P-A5`, Track A's
+- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update, unread (`trackC_writeup/status-C.md` "C4′ (c) unit 2"); C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
@@ -61,7 +61,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-18 · body `3ab3fc7077`
+- **Reviewed:** 2026-11-18 · body `5036785ad2`
 <!-- /phase-card -->
 
 ## Units
@@ -109,6 +109,18 @@
 | C4′ close-out (Blocked 164 (a), the user's) | **done 2026-11-17: writing only; exit met at the budget (3 units + close-out); C4's items 9 and 10 held, 6–8 untouched; (b) in `paper/` §7 (one paragraph, 14 `c4p.*` keys, 2 claims; `/challenge-pr` on #360 accept with changes, 1–4 taken; `paper_check` 0, 37 pages); Parked carried (ROADMAP C4′, (c)) or dropped; whether (c) opens and is registered is Blocked 165** | "C4′ on one page" below |
 | C4′ (c) 0. the scan and design (Blocked 165 (a), the user's; budget 4 units + close-out) | **done 2026-11-17: writing only, nothing computed; proposed, D1–D4 Blocked 166** | `lit-C4pc.md`, `design-C4pc.md`, `tools/math_checks/c4pc_nearer.py`; "C4′ (c) unit 0" below |
 | C4′ (c) 1. harness, π, rules, gates, entries drafted (Blocked 166 all (a), Claude on the user's delegation) | **done 2026-11-18: gates for L7–L9h pass; no arm has trained; registration Blocked 167** | `c4pc_train.py`, `c4pc_read.py`, `data/trackC/c4pc/2026-11-18-u1/`; "C4′ (c) unit 1" below |
+| C4′ (c) 2. registration, then the arms (Blocked 167 (a), the user's) | **training from 2026-11-18: `P-SCH2`–`6` registered (`87e996b`) before any update; the chain running** | "C4′ (c) unit 2" below |
+
+## C4′ (c) unit 2, registration and the arms (2026-11-18; in progress)
+
+| step | state |
+|---|---|
+| Blocked 167 | decided (a), the user's, 2026-11-18: `P-SCH2` (L7), `3` (L8), `4` (L9), `5` (L9h), `6` (L10) registered as drafted in `design-C4pc.md`, commit `87e996b`, hashes verified then (`c4pc_rules` `d7e674313486`, `c4pc_train` `95e71d5e7147`, `c4_train` `1c1e1d2df083`). One field moved: `gate` stays empty and `calibration_record` null (`check_registry` refuses a gate on a measurement entry, and wants the record tracked); the U1 gate record is cited in `null_construction` with its sha256 `952b73ba…83c0` |
+| the chain | D4 (a), each step gating the next: `train --arm A0p --until 1000` → `h4p --steps 1000` → `train --arm Fp --until 4000` → `train --arm A0p --until 4000` → `h4p --steps 4000`; started 2026-11-18 08:53 CST under `systemd-inhibit`; conda `mets` (torch 2.10.0+cu130, transformers 4.44.2), RTX 3080, n_micro 512, compiled, bf16 autocast, fp32 master |
+| first output | populated: A0′ step 1 loss 11.083 (C4's A0 11.081 on its own batch, same init), ≈ 27 s an update (C4's 26.5) |
+| C4's gate at 3500 on F′ | moved to U3: it reads F′'s records, which U3 computes |
+
+Re-run or resume: `bash HDD_1TB/mets_data/c4pc/u2_logs/u2_chain.sh` (each `train` resumes from `resume.pt`; a finished segment prints `nothing_to_train`). Progress in `u2_logs/stages.txt`, the exit in `u2.exit`.
 
 ## C4′ (c) unit 1, the harness, π and the gates (2026-11-18)
 
