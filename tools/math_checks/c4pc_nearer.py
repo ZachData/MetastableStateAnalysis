@@ -4,7 +4,8 @@ Proves: (1) for 0 < a < b, a date x > 0 is nearer a than b in log distance
 (|ln x/a| < |ln x/b|) iff x < sqrt(a b); (2) with a = m_cum(t) = t^2 / 2W and b = t (a < b iff
 t < 2W), that threshold is t^(3/2) / sqrt(2W); at W = 1430 and t = 768 (A0's induction date) it is
 about 398, so on C4's dense grid F at 384 or earlier (C4 read 320) is nearer the summed-rate map
-and F at 512 would not be; (3) the rows
+and F at 512 would not be; (2b) C4's label exists only for ρ < (2W / t_A0)^{1/3}, 1.647 at the
+centred date 640 (below item 6's margin 1.727) and 1.953 at V's 384 (above V's 1.466); (3) the rows
 of shard 0 left after C4's training rows and H4's held-out rows hold 3149 whole updates of 1024
 rows, fewer than 4000.
 
@@ -36,6 +37,18 @@ assert abs(m768 - 206.2) < 0.05
 # numeric spot check of (1) on C4's pair: 320 nearer 206.2 than 768
 assert abs(math.log(320 / m768)) < abs(math.log(320 / 768))
 assert abs(math.log(512 / m768)) > abs(math.log(512 / 768))
+
+# (2b) M2's cap (/challenge-pr on #361, finding 1): `c4_read.separable` needs t rho^3 < 2W, so a
+# label exists only for rho < (2W/t)^(1/3): 1.647 at the centred date 640 (below item 6's margin
+# 1.727, so the centred label cannot become "cumulative"), 1.953 at V's 384 (above V's 1.466).
+rho = sp.symbols("rho", positive=True)
+cap = sp.solve(sp.Eq((t * rho) ** 2 / (2 * W), t / rho), rho)[0]
+assert sp.simplify(cap - (2 * W / t) ** sp.Rational(1, 3)) == 0
+cap640, cap384 = (float(cap.subs({t: tt, W: 1430})) for tt in (640, 384))
+margin640 = 640 / math.sqrt(2 * 1430 * 48)        # c4_close.rho_star(640, 48, "cumulative")
+margin384 = 384 / math.sqrt(2 * 1430 * 24)
+assert abs(cap640 - 1.647) < 1e-3 and abs(margin640 - 1.727) < 1e-3 and cap640 < margin640
+assert abs(cap384 - 1.953) < 1e-3 and abs(margin384 - 1.466) < 1e-3 and margin384 < cap384
 
 # (3) shard 0's unused rows
 ROW_BYTES = 2049 * 2

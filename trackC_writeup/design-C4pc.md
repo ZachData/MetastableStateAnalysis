@@ -1,7 +1,10 @@
 <!-- trackC_writeup/design-C4pc.md -->
 # Track C — design: C4′ (c), the replicate pair
 
-**Status: proposed 2026-11-17 (U0, writing only); decisions D1–D4 are STATE Blocked 166.**
+**Status: proposed 2026-11-17 (U0, writing only); revised after `/challenge-pr` on #361 (accept
+with changes, findings 1–5 taken: M2 cannot flip the centred label; §7's item 6 follows the
+paired M3; registration before any update; a seed null for L7–L9h; H4′'s tolerance from the
+seeds); decisions D1–D4 are STATE Blocked 166.**
 Opened on Blocked 165 (a), the user's ("Do Blocked 165 (a): C4′ (c)'s design"). Row:
 `docs/ROADMAP.md` §8 C4′ (c), §10 item 18. Scan: `trackC_writeup/lit-C4pc.md`. Nothing was
 computed, trained, downloaded or registered. The arithmetic below is
@@ -20,7 +23,8 @@ does three things C4 could not:
    is excluded only by a factor of 1.73 in A0's date, against a tolerance that is the grid's).
 2. **It re-reads R2 and R3 under design-C4's rule as written**, whose tolerance includes "A0's
    rerun ratio if one exists" (`design-C4.md` "The predictions on the flat arm"). No rerun
-   existed, so `c4_read.rho_at` never implemented the term. A0′ is that rerun.
+   existed, so `c4_read.rho_at` never implemented the term. A0′ is that rerun. Only V's label
+   can change this way; the centred label cannot (M2).
 3. **It tests C4's leans on a held-out pair, with their rules fixed and registered before
    either arm trains** (items 7–10: the transient and the shared end set, V one block earlier,
    induction's date and the heads' layer, F′ off A0′'s path, and F's late departure against a
@@ -39,10 +43,12 @@ It reaches nothing on `pythia-410m`, the paper's model.
    3500. So on a pair stopped at 1000, R2, R3, item 6, the end sets (item 7), V's sets (item 8)
    and induction's date (item 9) can be read only under new rules with their own gates, not
    C4's. D1 below.
-3. **Item 6 and R3 need A0′ only.** Both turn on A0's date: R3 is "neither" by one count on
-   A0's side (`status-C.md` "C4 on one page" item 4), and item 6 is the tolerance on A0's date.
-   With A0′'s dates, C4's own F is re-read against A0 at ρ = max(the grid's ratio, A0's rerun
-   ratio), design-C4's rule.
+3. **R3 needs A0′ only; item 6 needs the pair.** R3 is "neither" by one count on A0's side
+   (`status-C.md` "C4 on one page" item 4); with A0′'s dates, C4's own F is re-read against A0 at
+   ρ = max(the grid's ratio, A0's rerun ratio), design-C4's rule (M2), and V's label can flip.
+   The centred label cannot flip that way, since its bands meet at ρ 1.647, below item 6's margin
+   of 1.727 (M2; `/challenge-pr` on #361, finding 1). Item 6 is read from the paired replicate
+   (M3), which needs F′ to 4000 too.
 4. **The heads' overlap count mostly measures the layer** (C4′ U1's A2: every head ≥ 0.5 on the
    ten 70m seeds and on warmup01 is in layer 3 or 4; F's top head is L2H6). So item 9's head
    lean is stated as the **layer** of the top head, not as an overlap count.
@@ -75,7 +81,7 @@ unchanged.
 | reading | (a) both to 4000, ≈ 59 h | (b) A0′ to 4000, F′ to 1000, ≈ 37 h | (c) both to 1000, ≈ 15 h |
 |---|---|---|---|
 | M1 A0′'s dates, the rerun ratio | yes | yes | no (found 2) |
-| M2 item 6 and R3 on C4's pair | yes | yes | no |
+| M2 R3 on C4's pair (V can flip; the centred label cannot) | yes | yes | no |
 | M3 R2′ and R3′ on the new pair | yes | no (F′ undated) | no |
 | L7, L8, L9, L9h | yes | no (each needs 4000 or the gate at 3500) | no |
 | L10a, F′ off A0′'s path early | yes | yes | yes |
@@ -91,8 +97,8 @@ instrument needing its own gate. That costs more design than (a)'s extra GPU hou
 |---|---|---|
 | H1′ init | the released step 0 | bit-equal (C4's `h1`) |
 | H2′ rows | the source shard | the file's row k equals shard row π(k) at every k (lengths, and the bytes at 4096 sampled k, seed fixed); its sha256 recorded; under π = identity, `c4pc_train`'s batches equal `c4_train.batch_of`'s (a CPU test) |
-| H3′ divergence | C4's rule (`c4_train.diverged`) | each arm's first 64 steps' loss looked at before it trains further; a divergence is a refusal |
-| H4′ loss | A0 at 1000 and 4000, on the 64 held-out rows | A0′ within 2 % (C4's H4 tolerance); outside is a refusal and nothing is read |
+| H3′ divergence | C4's rule (`c4_train.diverged`) | each arm's loss watched as it trains (after registration, finding 3); a divergence is a refusal |
+| H4′ loss | A0 at 1000 and 4000, on the 64 held-out rows | A0′ within max(2 %, the largest gap between `pythia-70m` and seeds 1–9 on the same rows at 1000 and 4000), the tolerance computed in U1 before A0′ trains (finding 5: 2 % was set for a same-order copy, and an order replicate may differ more); outside is a refusal and nothing is read |
 
 ## The readings
 
@@ -107,14 +113,25 @@ are C4's and C4′'s, unchanged, on the new arms' records: `c4_read` (records on
 | | what | rule |
 |---|---|---|
 | M1 | A0′'s date on V and each τ arm, and its rerun ratio q = max(t_A0′ / t_A0, t_A0 / t_A0′) | `date_on` on the dense grid |
-| M2 | **item 6 and R3 on C4's own pair**: F's dates against A0's at ρ = max(`rho_at`(t_A0), q) | design-C4's rule with its rerun term. `P-SCH1` is not re-scored: its registered instrument names the grid's ratios only |
+| M2 | **R2 and R3 on C4's own pair**: F's dates against A0's at ρ = max(`rho_at`(t_A0), q) | design-C4's rule with its rerun term. `P-SCH1` is not re-scored: its registered instrument names the grid's ratios only |
 | M3 | R2′ and R3′: F′ against A0′, as C4 read F against A0 | `label`, `centred_label`, at ρ = max(grid, q) |
 | M4 | F′'s rerun ratio against F, per count | as M1 |
 
-What M2 can change: item 6's margin is 1.73 for the centred date (1.47 for V). **If q reaches it,
-§7's "neither" becomes "consistent with cumulative" under the design's own rule**; if q stays
-under 1.25, the margin is beyond a measured spread of one rerun. One rerun is a spread of one
-draw, and M2 says that.
+**What M2 can and cannot change** (corrected after `/challenge-pr` on #361, finding 1). `label`
+stops at "A0 past the separable range" once the two bands meet, at ρ ≥ (2W / t_A0)^{1/3}. For
+the centred date (t_A0 = 640) that cap is 1.647, below item 6's margin of 1.727. **So M2's
+centred label is "neither" (q < 1.647) or "A0 past the separable range" (q ≥ 1.647). It can
+never read "consistent with cumulative".** "Past the separable range" would say the measured
+spread makes step and the summed rate indistinguishable at that date. For V (t_A0 = 384, cap 1.95,
+margin 1.47) **R3 can flip** to "consistent with cumulative" if q ≥ 1.47 (A0′'s V date at 256 or
+earlier, or 512 or later). Beside, q is printed against `rho_star` for each count, as numbers.
+One rerun is a spread of one draw, and M2 says so.
+
+**M2 is unpaired, and it reports; it does not relabel** (finding 2). F and A0 share init and
+order, so the right spread for "F against A0" is a paired one: M3 (F′ against A0′, same init,
+another order) is the replicate of C4's comparison. **§7's item-6 wording follows M3's label and
+dates**, with M2 beside. `P-SCH1` was registered with the grid's ρ and stays scored as read, and
+M2 changes no sentence of §7 by itself.
 
 ### The registered family (D3): five entries, each scored alone, all five reported
 
@@ -147,18 +164,33 @@ real design points before it freezes.
 | L10 (a) | C4′ U2's gate (seeds 1–9, "another path" 9 of 9) | U2's (the released run against fp16-rounded A0, "one path") | passed 2026-11-17 (`data/trackC/c4p/2026-11-17-u2/gate.json`); stands unchanged |
 | L10 (b) | seeds 1–9 as pseudo-F against A0 on their late steps (512–4000, 4): r_seed(s) > r_A0′(s) | the released run against fp16-rounded A0 (U2's null path) | the null reads "beyond A0′" at < ⅔ of its 4 late steps and ≥ 8 of 9 seeds at ≥ ⅔. If refused, (b) is reported as description and L10 scores on (a) alone |
 
-**What the effect side does not test.** C4's pair is where the leans were formed, so "holds" there
-is a check that the code computes the lean as C4 read it, not evidence for it. The null side is
-the test that the rule can read "does not hold".
+**What these gates do not test** (finding 4: both sides pass by construction). C4's pair is where
+the leans were formed, so "holds" there only checks that the code computes the lean as C4 read
+it. The (released, A0) null is nearly an identity, so "does not hold" there only checks that the
+rule does not fire on a copy. **Neither side tests whether run-to-run variation alone can read
+"holds".** So a third gate is added for L7, L8, L9 and L9h:
+
+| entry | null with real variation | passes iff |
+|---|---|---|
+| L7, L8, L9, L9h | each of `pythia-70m-seed1..9` as pseudo-F′ against the released `pythia-70m` as pseudo-A0′: same schedule, another init and order, on the 13 Pythia grid steps ≤ 4000 (records and heads cached from C6 U0 and C4′ U1). No schedule differs, so every "holds" is a false positive | ≤ 1 of 9 seeds reads "holds", per entry |
+
+An entry whose seed null fails is reported as description and scores nothing. L9 is computed with
+m_cum's W as on A0′. For a pseudo-pair on one schedule, (i) asks whether one run's date is below
+the other's to the 3/2 power over √(2W). It is a test of the rule on two dates that differ only by
+spread. L10 (b)'s seed gate already has real variation on its effect side.
 
 ## Order of work and refusals
 
-1. U1: `c4pc_train.py`, π's file, H1′–H2′; `c4pc_read.py` and its tests; the gates for L7–L9h;
-   the five entries drafted (fields as `P-SCH1`'s; ids the next free `P-SCH` numbers, 2–6, since
-   A1's draft was declined unregistered); each arm to step 64 and H3′. **The user registers (D3
-   (a)) before either arm trains past 64.**
-2. U2 (runner): A0′ to 1000 and H4′; F′ to 4000 and C4's gate at 3500 on F′; A0′ 1000 → 4000;
-   H4′ at 4000. C4's order (D4).
+1. U1: `c4pc_train.py`, π's file, H1′–H2′ (no training step); `c4pc_read.py` and its tests;
+   the gates for L7–L9h (known answer, the (released, A0) null and the seed null); H4′'s
+   tolerance; the five entries drafted (fields as `P-SCH1`'s; ids the next free `P-SCH` numbers,
+   2–6, since A1's draft was declined unregistered). **The user registers (D3 (a)) before either
+   arm takes its first update** (finding 3: in C4, F's transient was already a majority at 48 and
+   64, so a look at step 64 would have shown part of L7's answer). `c4pc_train` refuses to train
+   until each entry is in `claims/registry.json` or recorded as declined, and `c4pc_read` refuses
+   to score before the same.
+2. U2 (runner): A0′ to 1000 and H4′; F′ to 4000, its loss watched for divergence, and C4's gate at
+   3500 on F′; A0′ 1000 → 4000; H4′ at 4000. C4's order (D4).
 3. U3: records, induction and heads on both new arms; the K passes (F′ × A0′, A0′ × A0; about an
    hour, as U2's); L10 (b)'s gate; then M1–M4 and L7–L10.
 
@@ -175,7 +207,7 @@ about 3 days of runner time and 3–4 sessions, which fits before mid-December.
 
 **Exit:** the five entries scored, or each refused by its gate, and M1–M4 written. Items 6–10
 are marked held, broken or untouched in a close-out page. `paper/` §7 gets a sentence for each
-outcome that changes what §7 says (M2 for item 6 and R3; L10 (b) for the late window). **Budget:
+outcome that changes what §7 says (M3 for item 6, M2 for R3, L10 (b) for the late window). **Budget:
 4 units + close-out** (U0 this design, U1, U2, U3). At the budget it closes at what it knows.
 
 ## Carried in
@@ -190,9 +222,9 @@ outcome that changes what §7 says (M2 for item 6 and R3; L10 (b) for the late w
 
 | | question | (a), recommended | others |
 |---|---|---|---|
-| D1 | horizon | both arms to 4000, ≈ 59 GPU-hours: every lean is read with C4's own definitions | (b) A0′ to 4000, F′ to 1000, ≈ 37 h: M1, M2, L10 only; (c) both to 1000, ≈ 15 h: L10 (a) only, unless new rules are designed |
+| D1 | horizon | both arms to 4000, ≈ 59 GPU-hours: every lean is read with C4's own definitions | (b) A0′ to 4000, F′ to 1000, ≈ 37 h: M1, M2 (R3 can flip, the centred label cannot), L10 only, and not M3, the paired spread §7's item-6 wording follows; (c) both to 1000, ≈ 15 h: L10 (a) only, unless new rules are designed |
 | D2 | the order | a seeded permutation of C4's 4 096 000 rows, one 16.8 GB file: varies only the order, no download | (b) fresh rows in Pythia's order: varies the rows too, and shard 1 (30 GB) past update 3149 |
-| D3 | registration | the five entries L7–L10 (the next `P-SCH` numbers, 2–6), by you after U1's gates and before either arm trains past 64 | (b) one joint entry (all five must hold), which is stricter and says less when it fails; (c) tier 1, rules frozen and pushed |
+| D3 | registration | the five entries L7–L10 (the next `P-SCH` numbers, 2–6), by you after U1's gates and before either arm trains at all | (b) one joint entry (all five must hold), which is stricter and says less when it fails; (c) tier 1, rules frozen and pushed |
 | D4 | order of training | C4's: A0′ to 1000 (H4′), F′ to 4000, A0′ to 4000 | (b) both to 4000 back to back, A0′ first |
 
 ## Worth challenging (for the PR)

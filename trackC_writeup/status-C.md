@@ -61,7 +61,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-17 · body `c67bdd7982`
+- **Reviewed:** 2026-11-17 · body `46ae3f13a3`
 <!-- /phase-card -->
 
 ## Units
@@ -122,19 +122,28 @@ column for L7 and L8. Those transitions were seen at C4's close-out; the per-arm
   context and robust over 3 seeds. Kosson et al. tie warmup to the early updates' size. So the
   design states every lean against A0′, and recommends an order-only replicate.
 - **Design** (`design-C4pc.md`): A0′ and F′ from seed 0's init on order π, C4's harness through a
-  new module (`c4_train.py` untouched). Measured: M1 A0′'s dates and rerun ratio q; M2 item 6 and
-  R3 on C4's pair at ρ = max(grid, q) (design-C4's rule; `P-SCH1` not re-scored); M3 R2′ and R3′;
+  new module (`c4_train.py` untouched). Measured: M1 A0′'s dates and rerun ratio q; M2 R2 and
+  R3 on C4's pair at ρ = max(grid, q) (design-C4's rule; `P-SCH1` not re-scored; V can flip,
+  the centred label cannot); M3 R2′ and R3′, the paired replicate that item 6's wording follows;
   M4 F′ against F. Registered family, five entries: L7 transient and end set, L8 V one block
   earlier, L9 induction nearer the summed-rate map than step and than the centred date, L9h the
   top head's layer, L10 F′ off A0′'s path early and F's late departure beyond A0′'s. Gates: C4's
-  pair (known answer; holds by construction), (released, A0) as the null, L10 (b) on the seeds.
+  pair (known answer; holds by construction), (released, A0) as the null, a seed null (seeds 1–9
+  against the released run), L10 (b) on the seeds. Registration before either arm's first update.
 - **Found** (each changes Blocked 165's premises): (1) shard 0's unused rows hold 3 224 580 rows,
   3149 updates, so A0′ cannot reach 4000 on them (math check (3)); (2) C4's rule takes the
   plateau at 1000–4000 and the gate at 3500, so a pair stopped at 1000 reads none of C4's dates;
-  (3) item 6 and R3 need A0′ only; (4) the head overlap measures the layer (U1's A2), so L9h is a
+  (3) R3 needs A0′ only (item 6, first written so too, needs the pair: #361, finding 1); (4) the head overlap measures the layer (U1's A2), so L9h is a
   layer statement. (1) is in `LESSONS.md` 1.
 - **Math check** `tools/math_checks/c4pc_nearer.py`: log-nearer iff below the geometric mean;
-  the threshold t^{3/2}/√(2W), 398 at 768; the shard's row count.
+  the threshold t^{3/2}/√(2W), 398 at 768; the label's cap (2W/t)^{1/3}; the shard's row count.
+
+**`/challenge-pr` on #361: accept with changes, findings 1–5 taken** (the PR's thread):
+(1) M2 cannot flip the centred label (its bands meet at ρ 1.647 < 1.727; math check (2b)), only
+V's; (2) §7's item-6 wording follows the paired M3, not the unpaired M2; (3) registration moves
+before any update, since F's transient is a majority at 48–64; (4) the gates for L7–L9h pass by
+construction on both sides, so a seed null (seeds 1–9 against the released run, ≤ 1 of 9 "holds")
+is added; (5) H4′'s tolerance is max(2 %, the seeds' held-out loss gap).
 
 **Parked:** `lit-C4pc.md` 1, Kosson et al.'s full text (could change item 7's wording in §7, not
 the reading; read before U3 or dropped at the close-out).
