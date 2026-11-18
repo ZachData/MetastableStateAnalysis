@@ -54,14 +54,14 @@
 - **Open threads:**
   - Whether the dates are fixed in steps (or tokens) or wait for a cumulative LR dose (F1, standing by Blocked 101 (a) for 410m; narrowed by C6 for 70m's centred date only, where a fixed count of updates is excluded); 3b could not separate them on Pythia's grid; 3c, on GPT-2 small, reads step for E₁'s larger stage, a first stage in the dose's band, no centred date, and a frozen label that turns on the window and one re-init unit (description only); ROADMAP C4, the schedule intervention (with 3c's Parked 0), separates them on 70m only, 410m by inference (C4 trains `pythia-70m`; corrected 2026-11-08, `/challenge-pr` on #330, finding 3); V on 70m's long-warmup run is unread (its gate refused), a reopen candidate in ROADMAP C6 — `trackC_writeup/status-C.md` "C6 on one page (closed 2026-11-01)"
   - After C4 (closed 2026-11-14): on 70m the dates are not fixed in steps, and on the flat arm they are not the summed rate's either, by a margin the run-to-run spread could cover; the flat arm's counts date a transient, so what sets the dates is open, and so are the spread, whether the schedule chooses the induction heads, and whether induction's date follows the summed rate; 410m is still unseparated. Seven candidates, none scheduled: ROADMAP §8 C4′ — `trackC_writeup/status-C.md` "C4 on one page (closed 2026-11-14)"
-  - After C4′ (closed 2026-11-17): induction on warmup01 follows the summed rate or a function of it (rate or loss not told apart), and the flat arm takes another path; open are the run-to-run spread, how much of the late departure two same-init runs show (C4′ (c), the replicate pair, designed 2026-11-17, Blocked 166), whether a finer harness grid moves the steps nearest the bar, and every lean's status on a second pair — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
+  - After C4′ (closed 2026-11-17): induction on warmup01 follows the summed rate or a function of it (rate or loss not told apart), and the flat arm takes another path; open are the run-to-run spread, how much of the late departure two same-init runs show (C4′ (c), the replicate pair, frozen 2026-11-18 on Blocked 166 all (a), U1 built, its five entries Blocked 167), whether a finer harness grid moves the steps nearest the bar, and every lean's status on a second pair — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
   - When the tokens' mean, and the falls V counts, become basis-aligned: the level equals a random basis's at 2000 and is below it at 4000 on every seed; the falls at 2000–8000 not read (records on disk, no forward pass; C5's Parked, carried at its close): ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C5 on M2, on one page (closed 2026-10-24)"
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-17 · body `46ae3f13a3`
+- **Reviewed:** 2026-11-18 · body `4e305b1b5d`
 <!-- /phase-card -->
 
 ## Units
@@ -108,6 +108,33 @@
 | C4′ 2. (b): F against A0's path by per-token KL (Blocked 163 (a), the user's) | **done 2026-11-17: tier 1; open details fixed before output (`231cb77`, `c8876cd`); gate passes both windows (null "one path", 8 of 9 and 4 of 4 identity; seeds 9 of 9 "another path"); F "another path" early and late, 0 of 28 steps on the path; r 1.3–4.6 × δ; early r beyond any seed's, late F's r over the same-init null's falls 6.7 → 1.9; `/challenge-pr` on #359 accept with changes, 1–5 taken** | `c4p_path.py`, `data/trackC/c4p/2026-11-17-u2/`; "C4′ unit 2" below |
 | C4′ close-out (Blocked 164 (a), the user's) | **done 2026-11-17: writing only; exit met at the budget (3 units + close-out); C4's items 9 and 10 held, 6–8 untouched; (b) in `paper/` §7 (one paragraph, 14 `c4p.*` keys, 2 claims; `/challenge-pr` on #360 accept with changes, 1–4 taken; `paper_check` 0, 37 pages); Parked carried (ROADMAP C4′, (c)) or dropped; whether (c) opens and is registered is Blocked 165** | "C4′ on one page" below |
 | C4′ (c) 0. the scan and design (Blocked 165 (a), the user's; budget 4 units + close-out) | **done 2026-11-17: writing only, nothing computed; proposed, D1–D4 Blocked 166** | `lit-C4pc.md`, `design-C4pc.md`, `tools/math_checks/c4pc_nearer.py`; "C4′ (c) unit 0" below |
+| C4′ (c) 1. harness, π, rules, gates, entries drafted (Blocked 166 all (a), Claude on the user's delegation) | **done 2026-11-18: gates for L7–L9h pass; no arm has trained; registration Blocked 167** | `c4pc_train.py`, `c4pc_read.py`, `data/trackC/c4pc/2026-11-18-u1/`; "C4′ (c) unit 1" below |
+
+## C4′ (c) unit 1, the harness, π and the gates (2026-11-18)
+
+Blocked 166 decided all (a) by Claude, on the user's "[your choices]" (`design-C4pc.md` "Decided
+2026-11-18"; yours to overrule). Code `c4pc_train.py` `6517b85f75b0`, `c4pc_read.py`
+`2de07248985b` (pushed as `32a57885224d` in `52303d8` before any output; threshold labels in
+comments since, gate re-run); 11 CPU tests. **No arm has taken an
+update**: `train` refuses until the five entries are registered or declined (Blocked 167).
+
+| check | record | reads |
+|---|---|---|
+| L7–L9h gates (effect C4's pair; null (released, A0); seeds 1–9 against released) | `data/trackC/c4pc/2026-11-18-u1/gate.json` | **all four pass**: effect holds, null readable and not holding, 0 of 9 seeds hold |
+| H1′ (step 0 of A0′, F′ bit-equal to the released) | `HDD_1TB/mets_data/c4pc/{A0p,Fp}/h1.json` | **pass**, 76 tensors each, none unequal |
+| H2′ (π's file: 4096 sampled rows against the shard) | `HDD_1TB/mets_data/c4pc/perm_meta.json` | **pass**, 0 mismatches; 16 785 408 000 bytes; π (seed 20261118) sha256 `06887e00e6eb…`, file `b55ea350c548…`; batch 0 `7cc18a4b63be…`, max token 50276 |
+| H4′'s tolerance (max(2 %, the seeds' largest gap at 1000 and 4000)) | `c4/2026-11-09-u1/h4_controls_1000.json`, `c4pc/2026-11-18-u1/h4_controls_4000.json` | **2 %** (the base): the seeds' largest gap is 1.51 % at 1000 (seed 3) and 0.57 % at 4000 (seed 9); warmup01, not a seed, 44.6 % and 12.3 % |
+
+**The seed null's limit** (beside the pass): Pythia's grid has nothing between 512 and 1000, and
+every seed and the released run date induction at 1000, so L9 (i) fails on each seed by the grid
+(1000 against the bar 591); the seed null cannot show whether order spread alone moves induction's
+date by the ratio L9 reads. L7's seed null has 10 grid steps ≤ 1000 against the arms' 23. Near
+misses: seed 1 has L8's pattern at 4000 only; seeds 5 and 8 put the top head in layer 4, none in 2.
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c4pc_read gate --out <dir>` (seconds,
+no GPU); `c4pc_train write-perm --tmp <nvme dir>`, `verify`, `init --arm {A0p,Fp}`; `c4_read
+h4-controls --step 4000` (`PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`: the first try ran
+out of GPU memory from fragmentation).
 
 ## C4′ (c) unit 0, the scan and design (2026-11-17)
 

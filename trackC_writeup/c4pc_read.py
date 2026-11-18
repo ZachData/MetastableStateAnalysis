@@ -55,13 +55,14 @@ from trackC_writeup import c6_warmup as cw
 W = ct.W
 GRID = tuple(ct.GRID)
 PYTHIA = tuple(cr.PYTHIA)
-END_SET = (1, 2)                     # {T1, T2}
-TRANSIENT_MAX = 1000
+# every constant below is placed (design-C4pc.md "The registered family", "The gates")
+END_SET = (1, 2)                     # {T1, T2}, C4's end set (placed)
+TRANSIENT_MAX = 1000                 # placed (design)
 V_STEPS = (1000, 2000, 4000)
 L9H_F, L9H_A = (2,), (3, 4)
-LATE_FRAC = 2 / 3
-SEED_NULL_MAX = 1                    # of 9 seeds may read "holds"
-L10B_SEEDS = 8                       # of 9 at ≥ ⅔ on the effect side
+LATE_FRAC = 2 / 3                    # placed (design)
+SEED_NULL_MAX = 1                    # of 9 seeds may read "holds" (placed, design)
+L10B_SEEDS = 8                       # of 9 at ≥ ⅔ on the effect side (placed, design)
 ENTRIES = ("L7", "L8", "L9", "L9h", "L10")
 # the gates' inputs (all main-tree records, read only)
 C4_U2 = DATA / "trackC/c4/2026-11-12-u2"            # A0 and F records, gate.json
