@@ -742,5 +742,41 @@
  {
   "slot": "{{c4.n_heads|list}}",
   "where": "§7 C4 (close-out 2026-11-14): heads at the bar at step 4000 on each of the harness arm, the flat arm and the released run"
+ },
+ {
+  "slot": "{{c4p.n_steps}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the flat arm's saved steps after 0, none on the harness arm's path"
+ },
+ {
+  "slot": "{{c4p.ratio|range1}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the flat arm's distance to its nearest harness state over that state's resolution δ, over all 28 steps"
+ },
+ {
+  "slot": "{{c4p.r_at[128]|f2}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the flat arm's distance to its nearest harness state at step 128 (nats)"
+ },
+ {
+  "slot": "{{c4p.seed_max[128]|f2}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the largest of the nine seeds' distances from the released run at step 128"
+ },
+ {
+  "slot": "{{c4p.null_at[512]|f3}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the released run's distance to its nearest harness state (fp16) at 512, the same-init null"
+ },
+ {
+  "slot": "{{c4p.null_at[4000]|f2}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the same at 4000"
+ },
+ {
+  "slot": "{{c4p.r_at[512]|f2}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the flat arm's distance to its nearest harness state at 512"
+ },
+ {
+  "slot": "{{c4p.r_at[4000]|f2}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the same at 4000"
+ },
+ {
+  "slot": "{{c4p.nearest|minmax}}",
+  "where": "§7 C4′ (close-out 2026-11-17): the four steps whose distance over δ is smallest (the steps nearest the bar)"
  }
 ]

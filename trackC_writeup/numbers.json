@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "9395bf84c6f7",
+ "code": "b9a8d9324e30",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -34,7 +34,9 @@
   "data:trackC/c6/2026-11-01-u1b/reading.json": "e6c16e77b314a08d6cefca3ef1d4f27cd3882820f72055416f185e0f46188a21",
   "data:trackC/c6/2026-11-01-u1/calibration_127a.json": "069794c05f4fe5faccb1ccb0a4a5c8b51ea6d385422c5feaadd14175051a0e0c",
   "data:trackC/c4/2026-11-12-u2/reading.json": "08e53d047cf31c14fb66b5567c0bc03126c09463a5728451fc1747287ea04aca",
-  "data:trackC/c4/2026-11-14-close/close.json": "cc5a4e9dfbb74163551a2499d51b3ffc6d4c7ec176082b5bfa6c577947921a0b"
+  "data:trackC/c4/2026-11-14-close/close.json": "cc5a4e9dfbb74163551a2499d51b3ffc6d4c7ec176082b5bfa6c577947921a0b",
+  "data:trackC/c4p/2026-11-17-u2/reading.json": "25ef5d0cbaa8fdc79fbd713d10e2100b743e2d5136883cb39e4981c9f761a6c1",
+  "data:trackC/c4p/2026-11-17-u2/gate.json": "528eaa4b293b4c86fd4bda256c44e04fb6d252ca70396c320ff170f548afef2b"
  },
  "keys": {
   "cfg.train_iters": {
@@ -9979,6 +9981,99 @@
     4
    ],
    "record": "data:trackC/c4/2026-11-14-close/close.json"
+  },
+  "c4p.reading": {
+   "value": {
+    "early": "another path",
+    "late": "another path"
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.n_steps": {
+   "value": 28,
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.n_on": {
+   "value": 0,
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.ratio": {
+   "value": [
+    1.2502792253707773,
+    4.635507886460831
+   ],
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.nearest": {
+   "value": [
+    192,
+    256,
+    320,
+    384
+   ],
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.r_at": {
+   "value": {
+    "2": 0.09475425778892965,
+    "4": 0.18075267693500338,
+    "8": 0.42762288445941204,
+    "16": 0.5873426238382283,
+    "32": 0.4826654838240542,
+    "64": 0.40197385611274894,
+    "128": 0.3283481735473311,
+    "256": 0.42464463932267854,
+    "512": 0.42621850775137626,
+    "1000": 0.4005236158747279,
+    "2000": 0.37797708044580586,
+    "4000": 0.35646021002611117
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/reading.json"
+  },
+  "c4p.gate": {
+   "value": {
+    "early": {
+     "readable": true,
+     "null": "one path",
+     "seeds": [
+      9,
+      9
+     ]
+    },
+    "late": {
+     "readable": true,
+     "null": "one path",
+     "seeds": [
+      9,
+      9
+     ]
+    }
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
+  },
+  "c4p.null_at": {
+   "value": {
+    "512": 0.06356865751931015,
+    "4000": 0.1904770306145959
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
+  },
+  "c4p.seed_max": {
+   "value": {
+    "2": 0.4000551442452576,
+    "4": 0.4000423004883256,
+    "8": 0.39975620463102424,
+    "16": 0.39938030026832627,
+    "32": 0.38667624762638353,
+    "64": 0.31096978678437165,
+    "128": 0.19385231319358853,
+    "256": 0.19740346962749705,
+    "512": 0.3162295666488033,
+    "1000": 0.47028566425632506,
+    "2000": 0.41422132260789096,
+    "4000": 0.3965746720209282
+   },
+   "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
   }
  }
 }

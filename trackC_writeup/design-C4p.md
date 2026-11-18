@@ -8,7 +8,9 @@ label covers, (b)'s cost). U1: A1's gate passed 2026-11-15 (10 of 10 on every sc
 draft entry is "A1's draft entry" below, declined by the user (Blocked 160 (b)), so A1 is tier 1
 and was read 2026-11-15 (`status-C.md` "C4′ unit 1"). U2 (b), 2026-11-17 (Blocked 163 (a)): its
 open details fixed before output ("(b) as U2 runs it"); the gate passes in both windows; F reads
-"another path" early and late (`status-C.md` "C4′ unit 2").** Opened
+"another path" early and late (`status-C.md` "C4′ unit 2"). **Closed 2026-11-17 at its exit**
+(Blocked 164 (a)): items 9 and 10 held, 6–8 untouched; (c) is STATE Blocked 165 (`status-C.md`
+"C4′ on one page").** Opened
 on Blocked 158 (a), the user's (2026-11-15): C4′ (a), then (b), each with its rule fixed before
 its output; the replicate pair (C4′ (c)) is decided on what they show. Scan: `lit-C4p.md`.
 Nothing below has been computed. Of the inputs, only C6's centred counts on warmup01 (A3's

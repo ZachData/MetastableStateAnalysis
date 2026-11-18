@@ -49,4 +49,6 @@ heads). (b)'s KL match is the test of the function, with loss beside.
 
 1. **2509.26643's full text** (why: its phase dates on PolyPythias 70m could serve as (b)'s
    seed scale directly; cost: one reading; could change: whether (b) needs its own seed KL
-   pass). Read before U2's code is written.
+   pass). Read before U2's code is written. **Dropped at C4′'s close-out (2026-11-17):** not read
+   before U2; U2 computed the seed scale itself (all nine seeds at the 12 shared steps), so the
+   reading could no longer change (b) (`status-C.md` "C4′ on one page").
