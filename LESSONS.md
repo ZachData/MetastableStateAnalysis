@@ -20,6 +20,13 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-11-17 (C4′ (c)'s design): ROADMAP C4′ and Blocked 165 costed (c) as "on the unused
+  3.2M rows of shard 0", with A0′ "to 4000, about 40 GPU-hours", and said R3 might be settled by
+  a pair stopped at 1000. The user chose (a) on that text. The rows reach 3149 updates, not 4000
+  (one division), and C4's date rule needs both arms to 4000 (its plateau and gate), so the 16
+  GPU-hour pair reads none of C4's dates. The design caught both before anything ran. Rule:
+  **a cost or feasibility line in a Blocked option is checked against the data and the rule it
+  relies on before the option is offered** (the same rule as the 164 instance below, for costs).
 - 2026-11-17 (C4′'s close-out): `lit-C4p.md` Parked 1 said "read before U2's code is written"
   (2509.26643's full text, as a seed scale for (b)). U2 wrote its code and ran without reading
   it, and nothing said so. U2's own seed pass made the reading moot, so nothing was lost, but the
