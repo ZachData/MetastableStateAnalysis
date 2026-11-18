@@ -3165,6 +3165,25 @@ existed, and its prediction failed.
 
 ---
 
+## 3.85 Track C's C4′ closed: induction on the long-warmup 70m is consistent with the summed rate's band, and the flat arm takes another path (2026-11-17)
+
+**`trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"** holds the numbers. Two of
+§3.84's post hoc leans were read without training, each by a rule fixed and gated before its
+output; nothing was registered (tier 1).
+
+- On `pythia-70m-warmup01`, a run C4 did not train, induction's date reads "consistent with
+  cumulative" against the ten 70m seeds: a delay inside the summed rate's band, which a
+  fixed-loss clock fits as well.
+- The flat arm is not the harness arm on another clock: at none of its 28 saved steps is its
+  next-token function within the harness arm's grid resolution of a saved state. Against a
+  same-init rerun the margin is wide early and narrows late, as the rerun also drifts; in the
+  grid's resolution it is 1.25–1.35 at the nearest, so a finer grid could move those steps. One
+  paragraph in `paper/` §7.
+- Both are one run or one pair on 70m. Turning them into registered findings is C4′ (c), the
+  replicate pair (`STATE.md` Blocked 165).
+
+---
+
 ## 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23)
 
 **`trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"** holds the detail; this

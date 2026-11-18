@@ -95,6 +95,10 @@ RECORDS = {
     # post hoc description (`c4_close.py`: per-transition counts, the induction witness per head)
     "c4read": "data:trackC/c4/2026-11-12-u2/reading.json",
     "c4close": "data:trackC/c4/2026-11-14-close/close.json",
+    # C4′ (§7; the close-out, 2026-11-17): U2's reading of the flat arm against the harness arm's
+    # path (`c4p_path.py`, per-token KL on 64 held-out rows) and its gate (the null and the seeds)
+    "c4pread": "data:trackC/c4p/2026-11-17-u2/reading.json",
+    "c4pgate": "data:trackC/c4p/2026-11-17-u2/gate.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -798,10 +802,34 @@ KEYS: Dict[str, tuple] = {
     "c4.grid_ok": ("c4close", lambda c: tuple(c["grid"]) == _C4GRID),
     "c4.head_bar": ("c4close", lambda c: c["head_bar"]),
     "c4.n_heads": ("c4close", lambda c: sorted({len(c["induction"][arm]["heads_at_bar_4000"]) for arm in ("A0", "F", "released")})),
+    # C4′ U2, (b) (tier 1; rule fixed before output, `design-C4p.md` "(b) as U2 runs it")
+    "c4p.reading": ("c4pread", lambda r: r["reading"]),
+    "c4p.n_steps": ("c4pread", lambda r: len(r["F"]["steps"])),
+    "c4p.n_on": ("c4pread", lambda r: sum(bool(x) for x in r["F"]["on"])),
+    "c4p.ratio": ("c4pread", lambda r: _span(x / r["F"]["delta"][i] for x, i in zip(r["F"]["r"], r["F"]["match_idx"]))),
+    "c4p.nearest": ("c4pread", lambda r: sorted(s for _, s in sorted(
+        (x / r["F"]["delta"][i], s) for s, x, i in zip(r["F"]["steps"], r["F"]["r"], r["F"]["match_idx"]))[:4])),
+    "c4p.r_at": ("c4pread", lambda r: {str(s): x for s, x in zip(r["F"]["steps"], r["F"]["r"]) if s in _C4PGRID}),
+    "c4p.gate": ("c4pgate", lambda g: {w: {"readable": g["gate"][w]["readable"], "null": g["gate"][w]["null_reading"],
+                                           "seeds": [g["gate"][w]["seeds_another"], g["gate"][w]["seeds_of"]]}
+                                       for w in ("early", "late")}),
+    "c4p.r_early": ("c4pread", lambda r: _span(x for s, x in zip(r["F"]["steps"], r["F"]["r"]) if s <= 256)),
+    "c4p.nearest_ratio": ("c4pread", lambda r: (lambda xs: [xs[0], xs[3]])(       # the 4 smallest r / δ, first and last
+        sorted(x / r["F"]["delta"][i] for x, i in zip(r["F"]["r"], r["F"]["match_idx"])))),
+    "c4p.null_at": ("c4pgate", lambda g: {str(s): x for s, x in zip(g["null"]["steps"], g["null"]["r"])}),
+    "c4p.null_early_max": ("c4pgate", lambda g: max(x for s, x in zip(g["null"]["steps"], g["null"]["r"]) if s <= 128)),
+    "c4p.null_on": ("c4pgate", lambda g: {w: v["n_on"] for w, v in g["null"]["windows"].items()}),
+    "c4p.null_n": ("c4pgate", lambda g: {w: v["n"] for w, v in g["null"]["windows"].items()}),
+    # the largest of the nine seeds' K(released_t, seed_t) at each of Pythia's steps 2-4000
+    "c4p.seed_max": ("c4pgate", lambda g: {s: max(v[s] for v in g["beside"]["K_released_seed_same_step"].values())
+                                           for s in next(iter(g["beside"]["K_released_seed_same_step"].values()))}),
 }
 #: C4's dense grid (`c4_train.GRID`; a claim checks the close-out record's equals it)
 _C4GRID = (0, 1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128, 160, 192, 256, 320, 384, 512, 640, 768,
            1000, 1250, 1500, 2000, 3000, 4000)
+
+
+_C4PGRID = (2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000)   # Pythia's steps the seeds share with F
 
 
 def _c4_arms(c: dict) -> List[str]:
@@ -1019,6 +1047,21 @@ CLAIMS: List[tuple] = [
      "harness arm's date", lambda k: k["c4.rho_star"]["step"][0] > 10 and k["c4.rho"][1] < k["c4.rho_star"]["cumulative"][0]
      and k["c4.rho_star"]["cumulative"][1] < 2 and k["c4.loss"]["F"] < k["c4.loss"]["A0"] and k["c4.grid_ok"] is True
      and k["c4.n_heads"] == [4]),
+    ("§7 C4′: the gate passes in both windows (the null one path, every seed another) and the flat arm reads "
+     "another path in both, on the path at none of its steps, every nearest state beyond the resolution",
+     lambda k: all(k["c4p.gate"][w]["readable"] and k["c4p.gate"][w]["null"] == "one path"
+                   and k["c4p.gate"][w]["seeds"] == [9, 9] and k["c4p.reading"][w] == "another path" for w in ("early", "late"))
+     and k["c4p.n_on"] == 0 and k["c4p.n_steps"] == 28 and k["c4p.ratio"][0] > 1),
+    ("§7 C4′: at each shared step 8-512 the flat arm is farther from every harness state than any seed is from the "
+     "released run at that step (not at 2 and 4); early the same-init null is far nearer; late it drifts toward it; "
+     "the null on the path at 8 of 9 and 3 of 4 steps; the nearest approaches are the steps 192-384",
+     lambda k: all(k["c4p.r_at"][s] > k["c4p.seed_max"][s] for s in ("8", "16", "32", "64", "128", "256", "512"))
+     and k["c4p.null_early_max"] < 1e-4 and k["c4p.null_at"]["256"] < 0.5 * k["c4p.r_early"][0]
+     and k["c4p.null_on"] == {"early": 8, "late": 3} and k["c4p.null_n"] == {"early": 9, "late": 4}
+     and k["c4p.nearest"] == [192, 256, 320, 384] and k["c4p.nearest_ratio"][0] == k["c4p.ratio"][0]
+     and all(k["c4p.r_at"][s] < k["c4p.seed_max"][s] for s in ("2", "4"))
+     and k["c4p.null_at"]["512"] < k["c4p.null_at"]["4000"] < k["c4p.r_at"]["4000"]
+     and k["c4p.r_at"]["4000"] / k["c4p.null_at"]["4000"] < k["c4p.r_at"]["512"] / k["c4p.null_at"]["512"]),
 ]
 
 
