@@ -646,3 +646,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-18 | C4′ (c) U1 (Blocked 166 all (a), Claude's): harness, π's file, the five rules and gates (L7–L9h pass), H1′ H2′ H4′; entries drafted (Blocked 167); after /challenge-pr (accept with changes; 1-4 taken: rules split to their own hash, committed declines, divergence in the loop) · subagents: general-purpose opus-5-5 1.3M, runner haiku-5-5 245k · runner batches, main calls: 30 (haiku-5-5) | 77 | 274k | 15.7M | 75k | #362 |
 | 2026-11-19 | C4′ (c) U2: resumed after the user's stop (F′ from 612; card re-stamped) | 27 | 92k | 2.0M | 18k | — |
 | 2026-11-20 | C4′ (c) U2: resumed F′ at 2575 (11-20 04:59); paused at A0′ 2059 (11-20 23:45) | 31 | 86k | 2.1M | 13k | — |
+| 2026-11-21 | C4′ (c) U2: resumed A0′ at 2050 (11-21 09:45; step 2051 reproduces) | 20 | 79k | 1.4M | 13k | — |
