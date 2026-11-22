@@ -3165,6 +3165,28 @@ existed, and its prediction failed.
 
 ---
 
+## 3.86 Track C's C4′ (c) closed: on a replicate pair four of five registered leans hold; the centred date is neither on both pairs, E1's reads the summed rate on the second (2026-11-22)
+
+**`trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"** holds the numbers.
+A second pair (harness and flat arm, same init, another order of the same rows) was trained to
+4000 on 70m, with five of §3.84–3.85's leans registered before its first update (`P-SCH2`–`6`).
+
+- **The order-only spread is a grid step at most.** The centred date is unchanged, and E1's moves
+  one step. So C4's labels stand ("neither" on both counts).
+- **On the replicate the centred label is again "neither", but E1's reads "consistent with the
+  summed rate"**, robust to a one-step move. So on 70m E1's date is not shown to separate the
+  summed rate from training, while the centred date is.
+- **Registered:** four hold:
+  - E1 one block earlier on the flat arm;
+  - induction nearer the summed rate than the centred date;
+  - the flat arm's top head in layer 2;
+  - the flat arm off the harness arm's path early. Late it is beyond a reordering's distance at every step, but by ≤ 1.32 from 1500, so the departure is early.
+- **Registered, fails:** "the harness arm has no transient" (`P-SCH2`). The replicate harness arm has a one-step one.
+- One init, one reordering, 70m. One paragraph in `paper/` §7. Scoring in the registry is the
+  user's (`STATE.md` Blocked 168).
+
+---
+
 ## 3.85 Track C's C4′ closed: induction on the long-warmup 70m is consistent with the summed rate's band, and the flat arm takes another path (2026-11-17)
 
 **`trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"** holds the numbers. Two of

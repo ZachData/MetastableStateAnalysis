@@ -440,7 +440,9 @@ def score(a) -> int:
                      "scored": bool(gate_pass[e] and h is not None), "status": cells[e]["status"]}
     res = {"code": code_sha(), "rules": rl.code_sha(), "registration": sc["registration"], "gate3500": g35,
            "arms": list(arms), "scores": scores, "cells": cells, "L10_Fp_vs_A0p": fp,
-           "L10b": {"gate": lg["gate"], "as_read": b_desc, "scored": bool(lg["gate"]["pass"])}}
+           "L10b": {"gate": lg["gate"], "as_read": b_desc, "scored": bool(lg["gate"]["pass"]),
+                    "steps": list(L10B_LATE), "r_F": _late(u2r["F"], L10B_LATE),
+                    "r_A0p": _late(lg["A0p_vs_A0"], L10B_LATE)}}
     ct._jdump(out / "scores.json", json.loads(json.dumps(res, default=_np)))
     for e, s in scores.items():
         print(e.ljust(4), json.dumps(s))

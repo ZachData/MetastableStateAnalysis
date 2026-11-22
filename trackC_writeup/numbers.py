@@ -99,6 +99,10 @@ RECORDS = {
     # path (`c4p_path.py`, per-token KL on 64 held-out rows) and its gate (the null and the seeds)
     "c4pread": "data:trackC/c4p/2026-11-17-u2/reading.json",
     "c4pgate": "data:trackC/c4p/2026-11-17-u2/gate.json",
+    # C4′ (c) (§7; the close-out, 2026-11-22): U3's scores of the five registered leans
+    # (`c4pc_read.py score`) and the measured readings M1–M4 (`measure`) on the replicate pair
+    "c4pcscore": "data:trackC/c4pc/2026-11-22-u3/scores.json",
+    "c4pcmeas": "data:trackC/c4pc/2026-11-22-u3/measured.json",
 }
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
@@ -823,6 +827,35 @@ KEYS: Dict[str, tuple] = {
     # the largest of the nine seeds' K(released_t, seed_t) at each of Pythia's steps 2-4000
     "c4p.seed_max": ("c4pgate", lambda g: {s: max(v[s] for v in g["beside"]["K_released_seed_same_step"].values())
                                            for s in next(iter(g["beside"]["K_released_seed_same_step"].values()))}),
+    # C4′ (c) (§7; the close-out, 2026-11-22): the replicate pair's five registered scores and M1–M4
+    "c4pc.holds": ("c4pcscore", lambda s: {e: v["holds"] for e, v in s["scores"].items()}),
+    "c4pc.n_hold": ("c4pcscore", lambda s: sum(v["holds"] is True for v in s["scores"].values())),
+    "c4pc.n_entries": ("c4pcscore", lambda s: len(s["scores"])),
+    "c4pc.scored": ("c4pcscore", lambda s: all(v["scored"] and v["gate_pass"] for v in s["scores"].values())),
+    "c4pc.arms": ("c4pcscore", lambda s: s["arms"]),
+    "c4pc.l7": ("c4pcscore", lambda s: {"F_transient": [v["F_transient"] for v in s["cells"]["L7"]["per_arm"].values()],
+                                        "A0_transient": [v["A0_transient"] for v in s["cells"]["L7"]["per_arm"].values()],
+                                        "ends": [list(t) for t in sorted({tuple(v[e]) for v in s["cells"]["L7"]["per_arm"].values()
+                                                                          for e in ("F_end", "A0_end")})]}),
+    "c4pc.l8": ("c4pcscore", lambda s: {t: [min(v["F"]), min(v["A0"])] for t, v in s["cells"]["L8"]["per_step"].items()}),
+    "c4pc.ind": ("c4pcscore", lambda s: {"F": s["cells"]["L9"]["t_F"], "A0": s["cells"]["L9"]["t_A0"]}),
+    "c4pc.top_layer": ("c4pcscore", lambda s: {"F": s["cells"]["L9h"]["F_top"][0], "A0": s["cells"]["L9h"]["A0_top"][0]}),
+    "c4pc.l10a": ("c4pcscore", lambda s: {k: s["L10_Fp_vs_A0p"]["windows"]["early"][k] for k in ("reading", "n_on", "n")}),
+    "c4pc.l10b": ("c4pcscore", lambda s: {"n_beyond": s["L10b"]["as_read"]["n_beyond"], "n": s["L10b"]["as_read"]["n"],
+                                          "gate": s["L10b"]["gate"]["pass"]}),
+    "c4pc.l10b_ratio": ("c4pcscore", lambda s: {str(t): f / a for t, f, a in zip(s["L10b"]["steps"], s["L10b"]["r_F"],
+                                                                                   s["L10b"]["r_A0p"])}),
+    "c4pc.l10b_late_max": ("c4pcscore", lambda s: max(f / a for t, f, a in zip(s["L10b"]["steps"], s["L10b"]["r_F"],
+                                                                               s["L10b"]["r_A0p"]) if t >= 1500)),
+    "c4pc.v_a0p": ("c4pcmeas", lambda m: m["M1"]["u"]["t_A0p"]),
+    "c4pc.cen_a0p": ("c4pcmeas", lambda m: sorted({m["M1"][k]["t_A0p"] for k in m["gate3500"]["arms_gated"]
+                                                   if m["gate3500"]["arms_gated"][k]})),
+    "c4pc.q": ("c4pcmeas", lambda m: {k: v["q"] for k, v in m["M1"].items()}),
+    "c4pc.labels": ("c4pcmeas", lambda m: {f"{n}_{r}": (m[n][r]["label"] if m[n][r] else None)
+                                           for n in ("M2", "M3") for r in ("R2_centred", "R3_V")}),
+    "c4pc.m3_v": ("c4pcmeas", lambda m: {"F": m["M3"]["per_key"]["u"]["t_f"], "A0": m["M3"]["per_key"]["u"]["t_a0"]}),
+    "c4pc.m3_v_band": ("c4pcmeas", lambda m: m["M3"]["per_key"]["u"]["bands"]["cumulative"]),
+    "c4pc.m3_cen_f": ("c4pcmeas", lambda m: sorted({m["M3"]["per_key"][k]["t_f"] for k in m["M3"]["R2_centred"]["arms"]})),
 }
 #: C4's dense grid (`c4_train.GRID`; a claim checks the close-out record's equals it)
 _C4GRID = (0, 1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128, 160, 192, 256, 320, 384, 512, 640, 768,
@@ -1062,6 +1095,32 @@ CLAIMS: List[tuple] = [
      and all(k["c4p.r_at"][s] < k["c4p.seed_max"][s] for s in ("2", "4"))
      and k["c4p.null_at"]["512"] < k["c4p.null_at"]["4000"] < k["c4p.r_at"]["4000"]
      and k["c4p.r_at"]["4000"] / k["c4p.null_at"]["4000"] < k["c4p.r_at"]["512"] / k["c4p.null_at"]["512"]),
+    ("§7 C4′ (c): every entry gated and scored; four of five hold; the fifth (the transient) fails only because "
+     "the replicate harness arm has a transient at two of the three gated tolerances, while the flat arm's "
+     "transient and both arms' end set replicate C4's",
+     lambda k: k["c4pc.scored"] is True and k["c4pc.n_entries"] == 5 and k["c4pc.n_hold"] == 4
+     and k["c4pc.holds"]["L7"] is False and len(k["c4pc.arms"]) == 3
+     and all(k["c4pc.l7"]["F_transient"]) and sum(bool(x) for x in k["c4pc.l7"]["A0_transient"]) == 2
+     and k["c4pc.l7"]["ends"] == [[1, 2]]),
+    ("§7 C4′ (c): the flat arm's lowest dropping transition one block earlier at 1000, 2000 and 4000; induction at "
+     "the first pair's dates; the flat arm's top head in layer 2, the harness arm's in layer 3",
+     lambda k: all(f == a - 1 for f, a in k["c4pc.l8"].values()) and sorted(k["c4pc.l8"]) == ["1000", "2000", "4000"]
+     and k["c4pc.ind"] == k["c4.ind"] and k["c4pc.top_layer"] == {"F": 2, "A0": 3}),
+    ("§7 C4′ (c): early the flat arm is on the replicate harness arm's path at none of its steps; late the first flat "
+     "arm is farther from the first harness arm than the replicate harness arm at every step, by more than 7 at 320 "
+     "but by less than 1.35 at every step from 1500",
+     lambda k: k["c4pc.l10a"]["reading"] == "another path" and k["c4pc.l10a"]["n_on"] == 0
+     and k["c4pc.l10b"]["gate"] is True and k["c4pc.l10b"]["n_beyond"] == k["c4pc.l10b"]["n"] == 12
+     and k["c4pc.l10b_ratio"]["320"] > 7 and 1 < k["c4pc.l10b_late_max"] < 1.35
+     and all(v > 1 for v in k["c4pc.l10b_ratio"].values())),
+    ("§7 C4′ (c): the replicate harness arm's centred date equals the first's and its E1 date is one grid step "
+     "earlier; the first pair's labels stay neither; the replicate's centred label is neither and its E1 label is "
+     "the summed rate's, with the flat arm's date inside that band",
+     lambda k: k["c4pc.cen_a0p"] == [640] and k["c4pc.v_a0p"] == 320 and k["c4.v_a0"] == 384
+     and all(k["c4pc.q"][a] == 1.0 for a in k["c4pc.arms"])
+     and k["c4pc.labels"] == {"M2_R2_centred": "neither", "M2_R3_V": "neither", "M3_R2_centred": "neither",
+                              "M3_R3_V": "consistent with cumulative"}
+     and k["c4pc.m3_v_band"][0] <= k["c4pc.m3_v"]["F"] <= k["c4pc.m3_v_band"][1] and k["c4pc.m3_cen_f"] == [48]),
 ]
 
 
