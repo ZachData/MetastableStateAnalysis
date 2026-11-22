@@ -2189,6 +2189,13 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 ## 8. Git and PR mechanics
 
 **Instances.**
+- 2026-11-22 (C4′ (c) U3): two guards that "count only when tracked and committed" were both
+  ignored by `.gitignore`'s deny-by-default allowlist: U3's pin `c4pc_gate3500.json`, and U1's
+  `c4pc_declined.json` (#362). So a decline could never have been committed without `-f`. U1's
+  test checked only an untracked stray, never that the real path could be tracked. The pin's
+  first `git add` was refused, and `require_pin` refused too, so nothing was read on an
+  unpinned gate. Both are now allowlisted. Rule: **a guard that depends on a file being
+  committed gets `git check-ignore -v <path>` run on its real path when the guard is built.**
 - 2026-11-09 (found by the user): `9388a24`, "Merge branch 'main' into claude/claim-c-close"
   (#296), settled `docs/ROADMAP.md`, `LESSONS.md` and `docs/cost_log.md` on main's side and
   dropped what the branch had added: ROADMAP row C7 (from `9e80f74`), a lesson-6 instance
