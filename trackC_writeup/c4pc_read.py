@@ -268,7 +268,10 @@ def heads(a) -> int:
     out = Path(a.out)
     require_pin(out)
     for arm in a.arm:
-        if (out / f"heads_{arm}.json").exists():
+        f = out / f"heads_{arm}.json"
+        if f.exists():
+            if json.loads(f.read_text())["code"] != cc.code_sha():
+                raise C4pcReadRefused(f"{f}: code ≠ c4_close {cc.code_sha()} (`/challenge-pr` on #364, finding 3)")
             continue
         cc.heads(SimpleNamespace(model=arm, root=a.root, out=str(out)))
     return 0

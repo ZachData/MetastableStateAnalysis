@@ -2399,6 +2399,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-11-22 (C4′ (c) U3, #364, `/challenge-pr` findings 1, 2): the write-up called the
+  replicate's V reading "a one-step reading" and C4's "neither" stable. The record says the
+  reverse: R3′ survives a one-step move of either arm, and C4's 24 sits at the band's edge.
+  The same write-up softened nothing on L7's thin miss, but left out that L10 (b)'s hold rests on
+  factors ≤ 1.32 from 1500 on. Rule: **a robustness word ("one-step", "thin") is checked by
+  moving each input one grid step, and a hold is described as thinly as a miss.**
 - 2026-11-02, T5 U3's split, the batch (#305, `/challenge-pr` findings 1, 2): the write-up called
   the MLP write's pooled mean "the MLPs' token-constant write" and read "the constant writes are
   equal in size at the end states" from it. On summed components every path counts only through

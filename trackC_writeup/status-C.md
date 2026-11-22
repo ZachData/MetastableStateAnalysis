@@ -47,7 +47,7 @@
   - **C4′ closed 2026-11-17 at its exit** (3 units + close-out, the budget; Blocked 164 (a), the user's; writing only): of C4's post hoc leans, item 9 (induction follows the summed rate, or a function of it; loss not excluded) and item 10 (the flat arm is not the harness arm on another clock: at none of its 28 saved steps within the harness arm's grid resolution of a saved state; over a same-init rerun by a wide margin early and a narrowing one late, in that resolution by 1.25–1.35 at the nearest) are held at tier 1 on one run or pair each; items 6–8 untouched; (b) in `paper/` §7 as one paragraph (14 keys, 2 claims, `paper_check` 0, 37 pages); nothing registered; U2's finer grid carried to ROADMAP C4′, its late window to C4′ (c), whose opening and registration are STATE Blocked 165 — `trackC_writeup/status-C.md` "C4′ on one page (closed 2026-11-17)"
   - C4′ (c) opened 2026-11-17 (STATE Blocked 165 (a), the user's; writing only, nothing computed): a scan and a proposed design for the replicate pair (A0′ and F′ from seed 0's init on another order). It measures A0′'s rerun ratio and re-reads item 6 and R3 on C4's own pair under design-C4's rerun term. Five leans (items 7–10, each stated against A0′) are drafted for registration, gated on C4's pair and on (released, A0). Found: shard 0's unused rows reach 3149 updates, not 4000, and a pair stopped at 1000 reads none of C4's dates; decisions STATE Blocked 166 — `trackC_writeup/status-C.md` "C4′ (c) unit 0"
   - C4′ (c) U2 (2026-11-18 to 2026-11-22; `P-SCH2`–`6` registered first by the user, Blocked 167 (a)): A0′ and F′ trained to 4000 on order π without diverging (four stops, each resumed with the re-trained step's loss reproduced); H4′ passes at 1000 (−0.13 %) and 4000 (−0.096 %, tol 2 %), so A0′ is read as a harness arm; nothing read — `trackC_writeup/status-C.md` "C4′ (c) unit 2"
-  - C4′ (c) U3 (2026-11-22): C4's gate at 3500 on F′ as frozen (V and τ 9.61e-5, 1e-4, 3e-4), pinned in git before any record; of the five registered leans, L7 does not hold (A0′ has a one-step transient {T3} at 640), L8, L9, L9h and L10 hold; M2 leaves C4's R2 and R3 "neither"; M3 (the replicate) reads V "consistent with cumulative" on a one-step margin and the centred count "neither"; scoring in the registry is Blocked 168 — `trackC_writeup/status-C.md` "C4′ (c) unit 3"
+  - C4′ (c) U3 (2026-11-22): C4's gate at 3500 on F′ as frozen (V and τ 9.61e-5, 1e-4, 3e-4), pinned in git before any record; of the five registered leans, L7 does not hold (A0′ has a one-step transient {T3} at 640), L8, L9, L9h and L10 hold; M2 leaves C4's R2 and R3 "neither"; M3 (the replicate) reads V "consistent with cumulative", robust to a one-step move of either arm, with C4's "neither" the reading at the band's edge, and the centred count "neither"; L10 (b) holds at 12 of 12, but from 1500 on by a factor ≤ 1.32; scoring in the registry is Blocked 168 — `trackC_writeup/status-C.md` "C4′ (c) unit 3"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -63,7 +63,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-22 · body `7bd7a3f8a5`
+- **Reviewed:** 2026-11-22 · body `5fed4a3780`
 <!-- /phase-card -->
 
 ## Units
@@ -152,14 +152,27 @@ unchanged); instruments `c4_read` `220161b9159b`, `c4_close` `019846e1561b`, `c4
 | M4 | F′'s dates against F's | V 32 against 24 (q 1.33); centred equal (48, 48, 48, 64) |
 | beside | A0′ on A0's path (`l10b_gate.json` `A0p_vs_A0`) | early "one path", 16 of 16 on, all at their own step; late "mixed", 6 of 12 |
 
-**What this does not establish.** One order replicate is one draw of the spread. On V,
-C4's pair and the replicate fall on opposite sides of the band's edge, from a one-step move on
-each arm, so R3′'s "cumulative" is a one-step reading, not a measured spread. That the centred
-dates match exactly on both arms is at the dense grid's resolution (the 512–640–768 steps). L7's
-miss is a one-step, 5-of-7 event on A0′. The rule as registered counts it, and calling it noise
-would be a post hoc reading. L10 (b) holds at every late step, but its factor falls to 1.2 by
-3500. Items 6–10 are not yet marked held or broken, and `paper/` §7 is not edited: both are the
-close-out's.
+**What this does not establish.** One order replicate is one draw of the spread.
+
+- **On V the fragile reading is C4's "neither", not the replicate's "cumulative"** (corrected
+  after `/challenge-pr` on #364, finding 1; the first push said the reverse). C4's pair sits at
+  the band's lower edge (F's 24 against 29.0). R3′ holds if either arm moves one grid step either
+  way: A0′ 256 or 384, F′ 24 or 48. Both cross pairings also read cumulative (F against A0′,
+  24 / 320; F′ against A0, 32 / 384).
+- That the centred dates match exactly on both arms is at the dense grid's resolution (the
+  512–640–768 steps).
+- L7's miss is a one-step, 5-of-7 event on A0′. The rule as registered counts it, and calling
+  it noise would be a post hoc reading.
+- **L10 (b)'s hold is thin, and its departure is early** (finding 2). r_F / r_A0′ is 7.5, 6.8,
+  3.8, 2.8, 2.1, 2.0 and 1.7 at 320–1250, then 1.28, 1.32, 1.16, 1.19 and 1.17 at 1500–4000. The
+  rule needs 8 of 12, so the hold depends on at least one of those last five. From 1500 on, F is
+  about as far from A0 as one order replicate is.
+- Items 6–10 are not yet marked held or broken, and `paper/` §7 is not edited: both are the
+  close-out's. Item 10's wording should say the departure is early.
+
+**Provenance of the 3500 gate** (finding 3): the record names no checkpoint. The alias root's
+links (`gate3500/root/F` → `HDD_1TB/mets_data/c4pc/Fp`, `A0` → `…/A0p`) are what bind it to F′.
+`heads` now refuses a reused file whose code is not `c4_close`'s (this run's are `019846e1561b`).
 
 **Not done here:** scoring `P-SCH2`–`6` in the registry is a `notes` sentence per entry, as
 `P-SCH1`'s was (Blocked 157 (a)), and the commit is the user's (STATE Blocked 168). The drafts,
