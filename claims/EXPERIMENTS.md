@@ -14,7 +14,7 @@ gate → what that gate is worth. It is the file to read when the question is
 
 ## Where the evidence stands
 
-- **41** registered predictions across **8** phases and **5** claims.
+- **46** registered predictions across **8** phases and **5** claims.
 - **11** can carry an e-value right now (`e-value`, active, relevance ≥ r0).
 - **19** are dormant — pre-registered, falsifier intact, instrument archived.
 - **1** withdrawn by the user, kept and uncounted: `CLAIM-C`.
@@ -28,7 +28,7 @@ gate → what that gate is worth. It is the file to read when the question is
 | `6` | 12 | 4 | 2 | 0 | `H-OPERATOR` |
 | `7` | 9 | 4 | 4 | 0 | `H-BRIDGE` |
 | `A` | 1 | 1 | 1 | 1 | `H-RESIST` |
-| `C` | 1 | 0 | 0 | 0 | `H-RESIST` |
+| `C` | 6 | 0 | 0 | 0 | `H-RESIST` |
 | `1c` | 4 | 1 | 1 | 0 | `H-RESIST` |
 | `2d` | 2 | 2 | 2 | 0 | `H-OPERATOR` |
 | `5b` | 9 | 2 | 0 | 0 | `H-BRIDGE` |
@@ -97,6 +97,11 @@ null that was tried and found invalid, kept visible rather than dropped.
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
 |---|---|---|---|---|---|---|---|---|
 | C4 | `P-SCH1` | `H-RESIST` | measurement | active | — | — | — | None: one seed per arm, a label against bands set by the grid, not by a measured run-to-run spread (no A0 rerun). |
+| C4′ (c) | `P-SCH2` | `H-RESIST` | measurement | active | — | — | — | Calibration (not a p-value): the planted effect C4's pair (F, A0) reads 'holds'; the planted null (released pythia-70m, A0) as (F', A0') reads 'does… |
+| C4′ (c) | `P-SCH3` | `H-RESIST` | measurement | active | — | — | — | Calibration (not a p-value): the planted effect C4's pair (F, A0) reads 'holds'; the planted null (released pythia-70m, A0) as (F', A0') reads 'does… |
+| C4′ (c) | `P-SCH4` | `H-RESIST` | measurement | active | — | — | — | Calibration (not a p-value): the planted effect C4's pair (F, A0) reads 'holds'; the planted null (released pythia-70m, A0) as (F', A0') reads 'does… |
+| C4′ (c) | `P-SCH5` | `H-RESIST` | measurement | active | — | — | — | Calibration (not a p-value): the planted effect C4's pair (F, A0) reads 'holds'; the planted null (released pythia-70m, A0) as (F', A0') reads 'does… |
+| C4′ (c) | `P-SCH6` | `H-RESIST` | measurement | active | — | — | — | Calibration (not a p-value): (a) C4' U2's gate, passed 2026-11-17 (seeds 1-9 'another path' 9 of 9; the released run against fp16-rounded A0 'one pat… |
 
 ### Phase 1c — `p1c_frames/`
 
@@ -156,7 +161,7 @@ behaviour of the construction (`claims/calibration/`).
 | `H-BUDGET` | **none** | 0 | 0 | 1 | not adjudicated |
 | `H-EMERGE` | `1` | 1 | 1 | 1 | not adjudicated |
 | `H-OPERATOR` | `6`, `2d` | 14 | 4 | 1 | not adjudicated |
-| `H-RESIST` | `1`, `A`, `C`, `1c` | 7 | 2 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
+| `H-RESIST` | `1`, `A`, `C`, `1c` | 12 | 2 | 1587 | reject_null (notes: `claims/FALSIFICATION.md`) |
 | `H-TRANSFER` | `1` | 1 | 0 | 1 | not adjudicated |
 
 ## Gaps
