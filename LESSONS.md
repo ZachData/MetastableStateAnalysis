@@ -44,6 +44,15 @@ world moves, nobody updates the line, and the next session acts on it.
   the option that put "early by a wide margin" into `paper/`; "wide" was true only against the
   same-init null and named no reference. Rule: **a margin word ("wide", "firm") names its
   reference, and a number in a Blocked option is read from the record, not from the unit's prose.**
+- 2026-11-22 (C4′ (c) U2, #363): `status-C.md`'s re-run line ("`bash u2_chain.sh`; the exit
+  in `u2.exit`") was written at launch and never revisited. Each of the four resumes rewrote the
+  script to hold only its own segment, so at the end a fresh run would have trained A0′ to 4000
+  and skipped F′ and H4′ at 1000, and `u2.exit` never existed. Separately, the resume row quoted
+  F′'s re-training gap from steps 614–620 (≈ 1e-5); the full window reaches 2.4e-4 at 636.
+  STATE's Blocked 167 also stayed open after it was decided. All three caught by `/challenge-pr`
+  on #363, which listed the folder and recomputed the gaps from `train_log.jsonl`. Rule: **a
+  script edited in place on each resume is a log, not a re-run recipe. The recipe is written
+  out as the whole command sequence, and a gap is quoted over the whole window.**
 - 2026-11-15 (training-symmetry register, #353): the register quoted block J's "0.5005 at step
   512" from `FUTURE_IDEAS.md` §2 B; the record (`qk_symmetry_sweep.json`) has 0.500542 at step 0
   and 0.500665 at 512, and its "2 % of the way to identity" was 4.5 %. The same PR proposed a
