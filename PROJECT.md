@@ -3182,8 +3182,8 @@ A second pair (harness and flat arm, same init, another order of the same rows) 
   - the flat arm's top head in layer 2;
   - the flat arm off the harness arm's path early. Late it is beyond a reordering's distance at every step, but by ≤ 1.32 from 1500, so the departure is early.
 - **Registered, fails:** "the harness arm has no transient" (`P-SCH2`). The replicate harness arm has a one-step one.
-- One init, one reordering, 70m. One paragraph in `paper/` §7. Scoring in the registry is the
-  user's (`STATE.md` Blocked 168).
+- One init, one reordering, 70m. One paragraph in `paper/` §7, and §1's flat-arm sentence
+  corrected to match. Scoring in the registry is the user's (`STATE.md` Blocked 168).
 
 ---
 

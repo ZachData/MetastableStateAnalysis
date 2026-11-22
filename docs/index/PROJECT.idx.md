@@ -81,7 +81,7 @@ Indent marks depth: none = `##`, `·` = `###`, `··` = `####`; a bold **A.** ro
 | 3113 | 16 | 259 | 3.82 Track S's S4 closed: on HAPAX's pair the energy counts rise with or without induction; the count does not fit the one healthy released… |
 | 3129 | 18 | 333 | 3.83 Track C's C7 (i) closed: on Pythia-410m, no terminal escape from clustering by Isobe et al.'s own criterion, and their Assumption 3.1 … |
 | 3147 | 21 | 374 | 3.84 Track C's C4 closed: with the LR ramp removed on 70m the registered prediction fails; the dates are not fixed in steps, and the flat a… |
-| 3168 | 22 | 368 | 3.86 Track C's C4′ (c) closed: on a replicate pair four of five registered leans hold; the centred date is neither on both pairs, E1's read… |
+| 3168 | 22 | 380 | 3.86 Track C's C4′ (c) closed: on a replicate pair four of five registered leans hold; the centred date is neither on both pairs, E1's read… |
 | 3190 | 19 | 288 | 3.85 Track C's C4′ closed: induction on the long-warmup 70m is consistent with the summed rate's band, and the flat arm takes another path … |
 | 3209 | 18 | 274 | 3.71 Track C's C2 closed: a complete draft on the energy break, every number from a record; the schedule not separated (2026-10-23) |
 | 3227 | 23 | 371 | 3.70 V at β = 1 is close to a count of the layers at which the tokens' mean norm falls, at every step (2026-10-23) |

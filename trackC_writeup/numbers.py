@@ -1108,19 +1108,20 @@ CLAIMS: List[tuple] = [
      and k["c4pc.ind"] == k["c4.ind"] and k["c4pc.top_layer"] == {"F": 2, "A0": 3}),
     ("§7 C4′ (c): early the flat arm is on the replicate harness arm's path at none of its steps; late the first flat "
      "arm is farther from the first harness arm than the replicate harness arm at every step, by more than 7 at 320 "
-     "but by less than 1.35 at every step from 1500",
+     "but by less than a third at every step from 1500",
      lambda k: k["c4pc.l10a"]["reading"] == "another path" and k["c4pc.l10a"]["n_on"] == 0
      and k["c4pc.l10b"]["gate"] is True and k["c4pc.l10b"]["n_beyond"] == k["c4pc.l10b"]["n"] == 12
-     and k["c4pc.l10b_ratio"]["320"] > 7 and 1 < k["c4pc.l10b_late_max"] < 1.35
+     and k["c4pc.l10b_ratio"]["320"] > 7 and 1 < k["c4pc.l10b_late_max"] < 4 / 3
      and all(v > 1 for v in k["c4pc.l10b_ratio"].values())),
     ("§7 C4′ (c): the replicate harness arm's centred date equals the first's and its E1 date is one grid step "
      "earlier; the first pair's labels stay neither; the replicate's centred label is neither and its E1 label is "
-     "the summed rate's, with the flat arm's date inside that band",
+     "the summed rate's, with the flat arm's date inside that band and the first pair's just below it",
      lambda k: k["c4pc.cen_a0p"] == [640] and k["c4pc.v_a0p"] == 320 and k["c4.v_a0"] == 384
      and all(k["c4pc.q"][a] == 1.0 for a in k["c4pc.arms"])
      and k["c4pc.labels"] == {"M2_R2_centred": "neither", "M2_R3_V": "neither", "M3_R2_centred": "neither",
                               "M3_R3_V": "consistent with cumulative"}
-     and k["c4pc.m3_v_band"][0] <= k["c4pc.m3_v"]["F"] <= k["c4pc.m3_v_band"][1] and k["c4pc.m3_cen_f"] == [48]),
+     and k["c4pc.m3_v_band"][0] <= k["c4pc.m3_v"]["F"] <= k["c4pc.m3_v_band"][1] and k["c4pc.m3_cen_f"] == [48]
+     and k["c4.v_f"] < k["c4.v_band"]["cumulative"][0]),
 ]
 
 

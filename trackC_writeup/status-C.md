@@ -48,7 +48,7 @@
   - C4′ (c) opened 2026-11-17 (STATE Blocked 165 (a), the user's; writing only, nothing computed): a scan and a proposed design for the replicate pair (A0′ and F′ from seed 0's init on another order). It measures A0′'s rerun ratio and re-reads item 6 and R3 on C4's own pair under design-C4's rerun term. Five leans (items 7–10, each stated against A0′) are drafted for registration, gated on C4's pair and on (released, A0). Found: shard 0's unused rows reach 3149 updates, not 4000, and a pair stopped at 1000 reads none of C4's dates; decisions STATE Blocked 166 — `trackC_writeup/status-C.md` "C4′ (c) unit 0"
   - C4′ (c) U2 (2026-11-18 to 2026-11-22; `P-SCH2`–`6` registered first by the user, Blocked 167 (a)): A0′ and F′ trained to 4000 on order π without diverging (four stops, each resumed with the re-trained step's loss reproduced); H4′ passes at 1000 (−0.13 %) and 4000 (−0.096 %, tol 2 %), so A0′ is read as a harness arm; nothing read — `trackC_writeup/status-C.md` "C4′ (c) unit 2"
   - C4′ (c) U3 (2026-11-22): C4's gate at 3500 on F′ as frozen (V and τ 9.61e-5, 1e-4, 3e-4), pinned in git before any record; of the five registered leans, L7 does not hold (A0′ has a one-step transient {T3} at 640), L8, L9, L9h and L10 hold; M2 leaves C4's R2 and R3 "neither"; M3 (the replicate) reads V "consistent with cumulative", robust to a one-step move of either arm, with C4's "neither" the reading at the band's edge, and the centred count "neither"; L10 (b) holds at 12 of 12, but from 1500 on by a factor ≤ 1.32; scoring in the registry is Blocked 168 — `trackC_writeup/status-C.md` "C4′ (c) unit 3"
-  - **C4′ (c) closed 2026-11-22 at its exit** (4 units + close-out, the budget): items 8, 9, 10 held by registered entries (10 thin after 1500, so "early"); item 7 broken as registered (A0′ has a one-step transient), its F′ side replicating; item 6 held for the centred count (order spread 1.0) and broken on V, where the replicate reads "consistent with cumulative"; Kosson et al. read, a mechanism-level reference for item 7, no cell moved; one paragraph in `paper/` §7 — `trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"
+  - **C4′ (c) closed 2026-11-22 at its exit** (4 units + close-out, the budget): items 8, 9, 10 held by registered entries (10 thin after 1500, so "early"); item 7 broken as registered (A0′ has a one-step transient), its F′ side replicating; item 6 (that the exclusion is fragile) split: not borne out for the centred count (order spread 1.0, the replicate "neither"), borne out on V, where the replicate reads "consistent with cumulative"; Kosson et al. read, a mechanism-level reference for item 7, no cell moved; one paragraph in `paper/` §7, and §1's sentence on the flat arm corrected to match — `trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -65,7 +65,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-22 · body `0f617b0374`
+- **Reviewed:** 2026-11-22 · body `81e673b5a6`
 <!-- /phase-card -->
 
 ## Units
@@ -151,7 +151,7 @@ GPU-hours of training and 15 minutes of reads.
 
 | item | lean | C4′ (c) | where |
 |---|---|---|---|
-| 6 | the label's margin: the summed rate excluded only by 1.73 in A0's date | **held for the centred count**: the order spread is 1.0 there, below 1.73, and the replicate is "neither" too. **On V, broken as a separation**: the replicate reads "consistent with cumulative", so on V the summed rate is not excluded on 70m | M1–M3 |
+| 6 | the label's margin: the summed rate excluded only by 1.73 in A0's date, so the exclusion may not survive a measured spread | **split** (the lean is that the exclusion is fragile; corrected after `/challenge-pr` on #365, finding 2, which found the first wording inverted). **Not borne out for the centred count**: the order spread is 1.0, below 1.73, and the replicate is "neither" too, so the exclusion survives one draw. **Borne out on V**: the replicate reads "consistent with cumulative", so on V the summed rate is not excluded on 70m | M1–M3 |
 | 7 | F's transient, a shared end set {T1, T2}, T2 before T1; the harness arm has no transient | **broken as registered** (`P-SCH2` fails): A0′ has a one-step transient. F′'s transient, the end set and the order replicate (description) | U3 L7 |
 | 8 | V one block earlier on F | **held** (`P-SCH3`, registered) | U3 L8 |
 | 9 | induction follows the summed rate more nearly than the counts; F's top head in layer 2 | **held** (`P-SCH4`, `P-SCH5`, registered) | U3 L9, L9h |
@@ -160,8 +160,11 @@ GPU-hours of training and 15 minutes of reads.
 **Not established.**
 - The spread from one reordering is one draw. q = 1.0 on the centred count is at the dense
   grid's resolution (512–640–768).
-- L7's miss and V's "cumulative" each turn on one grid step on one arm. A second replicate, or
-  a finer grid near 256–640, could move either.
+- L7's miss turns on one grid step (640) on A0′. V's "cumulative" survives a one-step move of
+  either arm, but both pairs sit near the band's lower edge. A second replicate could move
+  either. A finer grid would have to be on A0′, which means re-training it over that span, and
+  that is not costed. The parked finer grid (U2's Parked 2) is on A0 near 192–384 and sees
+  neither (corrected after `/challenge-pr` on #365, finding 3).
 - After 1500, F's late distance from A0 is not shown to exceed what a reordering gives.
 - Cause. What clock induction follows within the summed rate's family (rate or loss).
 - Another init. Anything on 410m, the paper's model.
@@ -185,7 +188,14 @@ The record side: 20 `c4pc.*` keys from `scores.json` and `measured.json` (two ne
 4 claims, 14 slots and 1 literal (1500). `numbers produce` (`.venv`) re-read the registry
 (changed by `87e996b`); no other key moved. `paper_check` 0; 37 pages, no undefined reference.
 `scores.json` was re-written at this close-out to carry r_F and r_A0′ per late step (the five
-scores and cells unchanged; `c4pc_read` `320a41794f52`). The abstract and §1 are not touched.
+scores and cells unchanged; `c4pc_read` `320a41794f52`). The abstract is not touched. In §1,
+one sentence is corrected to match (after `/challenge-pr` on #365, finding 1): it said the flat
+arm dates both counts earlier than either map and that the harness schedule shows no transient.
+It now says that holds for the centred count on two pairs, that E1's is undetermined on the first
+and compatible with the summed rate on the second, and that the harness arm's transient is at most
+brief. §7's C4 paragraph now says "the centred date" where it said "them". The new paragraph says
+"farther, but by less than a third" late and "both pairs near the band's lower edge". The claims
+check both, and not the one-step robustness, which `status-C.md` U3 checks by hand.
 
 **Units at close:**
 
@@ -201,8 +211,8 @@ scores and cells unchanged; `c4pc_read` `320a41794f52`). The abstract and §1 ar
 - U0, `lit-C4pc.md` Parked 1 (Kosson et al.): **read here** (above). Not read before U3's
   reading as the scan asked; it could change wording only, and it did not.
 - Carried in and not taken: the two `c2_seeds` refusals and U2's Parked 2 (the finer A0 grid,
-  ≈ 1 h) **stay with ROADMAP §8 C4′**, unscheduled. The finer grid now also bears on L7's
-  one-step transient and on V's one-step margin.
+  ≈ 1 h) **stay with ROADMAP §8 C4′**, unscheduled. The finer grid is on A0, so it bears
+  on C4′'s nearest approaches (192–384), not on L7's transient or M3 (both on A0′).
 - U1–U3: no Parked items.
 
 **Re-run.** U3: its section below. This page's numbers:
@@ -214,7 +224,8 @@ scores and cells unchanged; `c4pc_read` `320a41794f52`). The abstract and §1 ar
 **Input:** A0′ and F′ (`HDD_1TB/mets_data/c4pc/{A0p,Fp}/ckpt/`, the 29 saved steps, `c4pc_train`
 `95e71d5e7147`); v1's 7 prompts; C4's 64 held-out rows; C4's pair and C4′ U2's K records (main
 tree). Out: `data/trackC/c4pc/2026-11-22-u3/` (main tree). Code `c4pc_read.py` `9b6646587037`
-(pushed `8a40fb8` before any output); rules `c4pc_rules.py` `d7e674313486` (the registered hash,
+(pushed `8a40fb8` before any output; `scores.json` re-written at the close-out by `320a41794f52`,
+which adds r_F and r_A0′ per late step and leaves the scores unchanged); rules `c4pc_rules.py` `d7e674313486` (the registered hash,
 unchanged); instruments `c4_read` `220161b9159b`, `c4_close` `019846e1561b`, `c4p_path`
 `8dffeea7c9ed`, all unchanged. GPU (RTX 3080), float32 eager, K in float64.
 
