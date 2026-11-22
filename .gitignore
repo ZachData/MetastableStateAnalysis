@@ -37,6 +37,9 @@
 !trackN_neurons/n1_gate_u1.json
 # Its post hoc sizing for Blocked 145 (n1_capture.py sizing, 3 KB).
 !trackN_neurons/n1_sizing_u1.json
+# C4′ (c)'s guards (trackC_writeup/c4pc_read.py, c4pc_train.py): each counts only when tracked and committed.
+!trackC_writeup/c4pc_gate3500.json
+!trackC_writeup/c4pc_declined.json
 # C2's numbers table and figures (trackC_writeup/numbers.py): rendered from records, tracked so the draft renders on any checkout.
 !trackC_writeup/numbers.json
 !trackC_writeup/fig/*.svg

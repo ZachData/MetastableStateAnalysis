@@ -1,0 +1,31 @@
+{
+ "record": "/run/media/system/WDS_500/Mets/data/trackC/c4pc/2026-11-22-u3/gate3500/gate.json",
+ "sha256": "6f12d0b7002532171d89fbd8970d35d48084484e241c26650bf6aceb072fe9ff",
+ "code_c4_read": "220161b9159b",
+ "arm": "Fp (F\u2032), through the alias root A0 \u2192 A0p, F \u2192 Fp",
+ "step": 3500,
+ "mode": "as frozen",
+ "u_read": true,
+ "arms_gated": {
+  "9.61e-05": true,
+  "0.0001": true,
+  "0.0003": true,
+  "0.00478": false
+ },
+ "b_dose": "0.5",
+ "null_vs_3b": [
+  {
+   "9.61e-05": 0.0,
+   "0.0001": 0.0,
+   "0.0003": 0.0,
+   "0.00478": 0.0
+  },
+  {
+   "9.61e-05": 0.0,
+   "0.0001": 0.0,
+   "0.0003": 0.0,
+   "0.00478": 0.0
+  }
+ ],
+ "pinned": "2026-11-22T09:52:32"
+}
