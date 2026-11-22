@@ -192,7 +192,10 @@ spread. L10 (b)'s seed gate already has real variation on its effect side.
    until each entry is in `claims/registry.json` or recorded as declined, and `c4pc_read` refuses
    to score before the same.
 2. U2 (runner): A0′ to 1000 and H4′; F′ to 4000, its loss watched for divergence, and C4's gate at
-   3500 on F′; A0′ 1000 → 4000; H4′ at 4000. C4's order (D4).
+   3500 on F′; A0′ 1000 → 4000; H4′ at 4000. C4's order (D4). **The 3500 gate moved to U3**
+   (U2 as run; `/challenge-pr` on #363, finding 4): it runs first there, its record is pinned in
+   the committed `trackC_writeup/c4pc_gate3500.json`, and `c4pc_read.require_scorable` refuses
+   to score without that pin.
 3. U3: records, induction and heads on both new arms; the K passes (F′ × A0′, A0′ × A0; about an
    hour, as U2's); L10 (b)'s gate; then M1–M4 and L7–L10.
 
