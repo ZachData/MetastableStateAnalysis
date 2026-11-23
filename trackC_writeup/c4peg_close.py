@@ -33,11 +33,15 @@ from trackC_writeup import c4peg_read as e
 PAIRS = {"A0|F": ("A0", "F"), "A0p|Fp": ("A0p", "Fp"), "A0|A0p": ("A0", "A0p"), "F|Fp": ("F", "Fp")}
 STEPS = (1, 4, 16, 24, 48, 128, 256, 384, 640, 1000, 2000, 4000)
 STATES = (3, 6)
+REFS = ("seed1", "seed2")                    # other inits at 4000: the read's own scale (`/challenge-pr` on #370)
+PREV_SETS = {"A0": (("L2H1",),), "A0p": (("L2H1",),),
+             "F": (("L1H7",), ("L1H3",), ("L1H3", "L1H7")),
+             "Fp": (("L1H6",), ("L1H3",), ("L1H3", "L1H6"))}   # each arm's top previous-token heads, alone
 
 
 def code_sha() -> str:
     h = hashlib.sha256()
-    for f in ("trackC_writeup/c4peg_close.py", "trackC_writeup/c4peg_read.py"):
+    for f in ("trackC_writeup/c4peg_close.py", "trackC_writeup/c4peg_read.py", "trackC_writeup/c4peg_g.py"):
         h.update((REPO / f).read_bytes())
     return h.hexdigest()[:12]
 
@@ -50,15 +54,51 @@ def partial_rank(z1: np.ndarray, z2: np.ndarray, ell: np.ndarray) -> float:
     return float(a @ b / (np.linalg.norm(a) * np.linalg.norm(b)))
 
 
+def _wu_gamma(arm: str, step: int):
+    if arm in REFS:
+        from trackC_writeup import c4peg_g as g
+        m = g.load(arm, step, "cpu")
+        sd = {k: v.detach().numpy() for k, v in m.state_dict().items()}
+    else:
+        from safetensors.numpy import load_file
+        sd = load_file(str(ct.ckpt_dir(e.CKPT_ROOT[arm], arm, step) / "model.safetensors"))
+    return sd["embed_out.weight"].astype(np.float64), sd["gpt_neox.final_layer_norm.weight"].astype(np.float64)
+
+
 def readout(arm: str, step: int, l: int, mbar: np.ndarray, sup: np.ndarray) -> np.ndarray:
-    from safetensors.numpy import load_file
-    sd = load_file(str(ct.ckpt_dir(e.CKPT_ROOT[arm], arm, step) / "model.safetensors"))
-    WU = sd["embed_out.weight"].astype(np.float64)
-    M = WU if l == e.N_STATES - 1 else WU * sd["gpt_neox.final_layer_norm.weight"].astype(np.float64)[None, :]
+    WU, gam = _wu_gamma(arm, step)
+    M = WU if l == e.N_STATES - 1 else WU * gam[None, :]
     return M[sup] @ np.asarray(mbar, np.float64)
 
 
+REF_REPOS = {"seed1": "EleutherAI/pythia-70m-seed1", "seed2": "EleutherAI/pythia-70m-seed2"}
+
+
+def _register_refs() -> None:
+    from trackC_writeup import c4peg_g as g
+    for k, v in REF_REPOS.items():
+        g.REPOS.setdefault(k, v)
+
+
+def ref_mbar(kind: str, step: int = 4000) -> np.ndarray:
+    """m̄ (7 states × 512) of a released model, as U1 computes it for the arms (v1's 7 prompts)."""
+    import os
+    from trackC_writeup import c4peg_g as g
+    from trackA_force.a1a import V1
+    from trackA_force.a5_seeds import TOKENIZER
+    from transformers import AutoTokenizer
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    tok = AutoTokenizer.from_pretrained(TOKENIZER[0], revision=TOKENIZER[1])
+    m = g.load(kind, step, "cpu")
+    ms = []
+    for p in V1:
+        hs, _, _ = e.forward(m, tok, p, "cpu")
+        ms.append([e.unit_mean(h) for h in hs])
+    return np.mean(np.asarray(ms), 0)
+
+
 def logits(a) -> int:
+    _register_refs()
     u1 = Path(a.u1)
     cnt, c_sha = e.load_counts(u1)
     sup = np.flatnonzero(cnt > 0)
@@ -66,11 +106,22 @@ def logits(a) -> int:
     mb = {arm: {s: np.asarray(json.loads((u1 / arm / f"step{s}.json").read_text())["mbar"]) for s in STEPS}
           for arm in e.ARMS}
     res = {"code": code_sha(), "counts_sha256": c_sha, "post_hoc": True, "rows": []}
+    chk = float(np.max(np.abs(ref_mbar("A0") - mb["A0"][4000])))     # known answer: this path is U1's
+    if chk > 1e-5:
+        raise RuntimeError(f"ref_mbar(A0) differs from U1's record by {chk}")
+    res["known_answer_mbar_A0"] = chk
+    for k in REFS:
+        mb[k] = {4000: ref_mbar(k)}
     for s in STEPS:
         for l in STATES:
-            z = {arm: readout(arm, s, l, mb[arm][s][l], sup) for arm in e.ARMS}
-            row = {"step": s, "state": l, "r_f": {arm: e.spearman(z[arm], ell) for arm in e.ARMS}}
-            for k, (x, y) in PAIRS.items():
+            arms = e.ARMS + (REFS if s == 4000 else ())
+            z = {arm: readout(arm, s, l, mb[arm][s][l], sup) for arm in arms}
+            row = {"step": s, "state": l, "r_f": {arm: e.spearman(z[arm], ell) for arm in arms}}
+            pairs = dict(PAIRS)
+            if s == 4000:
+                pairs.update({f"{x}|{r}": (x, r) for r in REFS for x in e.ARMS})
+                pairs["seed1|seed2"] = REFS
+            for k, (x, y) in pairs.items():
                 row[k] = {"r": e.spearman(z[x], z[y]), "r_given_f": partial_rank(z[x], z[y], ell)}
             res["rows"].append(row)
             print(json.dumps({"step": s, "state": l, **{k: [round(row[k]["r"], 3), round(row[k]["r_given_f"], 3)]
@@ -138,7 +189,9 @@ def g3(a) -> int:
             raise RuntimeError(f"{arm}: second-copy loss {l2} ≠ U2's {u2['arms'][arm]['base']['ind']}")
         g0 = l1 - l2
         rows = {}
-        for name, d in u2["arms"][arm]["sets"].items():
+        named = dict(u2["arms"][arm]["sets"])
+        named.update({"prev:" + "+".join(s): {"heads": list(s)} for s in PREV_SETS[arm]})
+        for name, d in named.items():
             hk = g.ablate(m, d["heads"], means)
             try:
                 b1, b2 = copy_losses(m, seq, device)
@@ -152,6 +205,7 @@ def g3(a) -> int:
         top = np.unravel_index(np.argsort(-pt, axis=None)[:3], pt.shape)
         print(json.dumps({"arm": arm, "gain": round(g0, 3), "own": round(rows["own"]["share"], 3),
                           "other": round(rows["other"]["share"], 3), "random_top3": [round(v, 3) for v in rnd[:3]],
+                          "prev": {k: round(v["share"], 3) for k, v in rows.items() if k.startswith("prev:")},
                           "prev_token_top3": [f"L{l}H{h} {pt[l, h]:.2f}" for l, h in zip(*top)]}), flush=True)
         del m
         torch.cuda.empty_cache()

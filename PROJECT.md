@@ -3165,7 +3165,7 @@ existed, and its prediction failed.
 
 ---
 
-## 3.87 Track C's C4′ (e)+(g) closed: two schedules from one init end in different basins and on non-transferable heads, yet their final readouts agree (2026-11-23)
+## 3.87 Track C's C4′ (e)+(g) closed: two schedules from one init end in different basins, on non-transferable heads, with mid-stack readouts as far apart as another init's (2026-11-23)
 
 **`trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"** holds the numbers.
 No training. Both C4 pairs (harness and flat arm, same init, two orderings) on 70m, tier 1.
@@ -3177,10 +3177,13 @@ No training. Both C4 pairs (harness and flat arm, same init, two orderings) on 7
   flat one has a middle stage where the MLP writes against it.
 - **Different basins:** the loss rises 3.56 nats on the line between the two end states, beyond
   the reorderings' 1.03 (flat) and 0.13 (Pythia's). Warmup keeps orderings connected.
-- **Same readout, different coordinates** (post hoc): mid-state mean directions are near
-  orthogonal, but the final means rank the vocabulary as alike as two orderings do (r 0.977).
-- **Heads:** ablating the other schedule's induction-head indices does nothing. Random sets that
-  hit as hard hold each arm's previous-token head (post hoc).
+- **Different readouts mid-stack** (post hoc): the mean directions are near orthogonal, and read
+  through W_U they rank the vocabulary alike at 0.81, against two orderings' 0.92–0.94 and another
+  init's 0.71–0.81. At the final state any two trained models agree (0.97–0.98), so that read
+  separates nothing.
+- **Heads:** ablating the other schedule's induction-head indices does nothing. Each arm's
+  previous-token heads alone remove as much copying as its induction heads (post hoc), so the
+  frozen own-heads test is unresolved.
 - One init, 70m, no permutation alignment.
 
 ---

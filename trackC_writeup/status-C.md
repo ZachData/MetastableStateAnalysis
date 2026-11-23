@@ -52,7 +52,7 @@
   - C4′ (e)+(g) opened 2026-11-23 (STATE Blocked 169 (d), the user's: "(e) and (g) first"; writing only, nothing computed): a scan and a proposed design that reads the four trained arms. (e): the tokens' mean through W_U against unigram log-frequency, the exact split of each fall of ‖m‖² into its mode (removal or dilution) and writer (attention or MLP), and the arms' mean directions against the replicate's. (g): the loss barrier between the two schedules' end states, scaled by the replicate pairs, and each arm's induction heads mean-ablated. Leans stated before output (g1: warmup helps order-only connectivity); budget 3 units + close-out; (e) frozen on Blocked 170 D1, D2 (a) (Claude, on the user's "continue here"); (g)'s D3, D4 are Blocked 171 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 0"
   - C4′ (e)+(g) U1, (e) (2026-11-23; tier 1; rules pushed before output): on all four arms the tokens' mean, read through the unembedding, is aligned with log unigram frequency at every readable step. The alignment is weak in the harness arm's earliest window and strong later; it is nearest just before or at V's date (78–90 % of the least-squares reference mid-stack), and F gets there about 12× earlier. The mean is written mostly by the MLPs. At the block where V's falls sit, both schedules start with the MLP diluting the mean and end with attention diluting it; only the flat schedule has a stage between (128–640) where the MLP writes against the mean, and the replicate shows the same stages. The two schedules' mean directions are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94), though both carry the unigram prior; revised after `/challenge-pr` on #367 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 1"
   - C4′ (e)+(g) U2, (g) (2026-11-23; tier 1; rules pushed before output): the two schedules' end states, from one init, are not one basin. The held-out loss rises 3.56 nats along the straight line between them at 4000 (2.45 at 1000), against 0.13 between two orderings on Pythia's schedule and 1.03 on the flat one, so warmup keeps reorderings connected and the schedules sit beyond the order-only spread; the replicate pair gives the same. Mean-ablating each arm's induction heads breaks induction, ablating the other schedule's indices does nothing; on the first pair one random set, holding a single early head, hurts as much, so the frozen 'own heads carry induction' fails there, but on a loss saturated at a uniform guess, so it is unresolved (revised after `/challenge-pr` on #369) — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 2"
-  - **C4′ (e)+(g) closed 2026-11-23 at its exit and budget** (3 units + close-out): the tokens' mean carries the unigram prior on both schedules; at V's block both end with attention diluting it; the two schedules' end states sit in different basins and their mean directions are near orthogonal, yet their final readouts rank the vocabulary as alike as two orderings do (post hoc); the other schedule's induction-head indices do nothing when ablated, and the random sets that matched the own heads hold each arm's previous-token head (post hoc) — `trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"
+  - **C4′ (e)+(g) closed 2026-11-23 at its exit and budget** (3 units + close-out): the tokens' mean carries the unigram prior on both schedules; at V's block both end with attention diluting it; the two schedules' end states sit in different basins, their mean directions are near orthogonal, and mid-stack their readouts differ about as much as another init's (post hoc); the other schedule's induction-head indices do nothing when ablated, and each arm's previous-token heads alone remove as much copying as its induction heads, so g3 is unresolved (post hoc; revised after `/challenge-pr` on #370) — `trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -69,7 +69,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `c2191df27b`
+- **Reviewed:** 2026-11-23 · body `6a872a04df`
 <!-- /phase-card -->
 
 ## Units
@@ -123,7 +123,7 @@
 | C4′ (e)+(g) 0. the scan and design (Blocked 169, the user's: "(e) and (g) first"; budget 3 units + close-out) | **done 2026-11-23: writing only, nothing computed; (e) frozen on Blocked 170 D1, D2 (a) (Claude, on the user's "continue here"); (g)'s D3, D4 are Blocked 171** | `lit-C4peg.md`, `design-C4peg.md`; "C4′ (e)+(g) unit 0" below |
 | C4′ (e)+(g) 1. (e) on the four arms | **done 2026-11-23: tier 1; every known answer exact; e1 held on both pairs; e2 held on A0, broken on F as pooled, while by step both end in attention's dilution and F alone has an MLP-removal stage; e3's end half broken; revised after `/challenge-pr` on #367** | `c4peg_read.py`; "C4′ (e)+(g) unit 1" below |
 | C4′ (e)+(g) 2. (g) on the four arms (Blocked 171 D3 (a), D4 (a), E (a), Claude on the user's "do the next 5 items") | **done 2026-11-23: tier 1; G1 gated and readable; (A0, F) "beyond it" (B 3.56 nats against S 1.03), pair 2 the same; g1 held, g2 held; g3 broken as frozen on A0 and F (one random set as harmful as the own heads), held on A0′ and F′, unresolved since the induction loss saturates; the other schedule's indices carry nothing on any arm; revised after `/challenge-pr` on #369** | `c4peg_g.py`; "C4′ (e)+(g) unit 2" below |
-| C4′ (e)+(g) close-out (two post hoc reads, minutes) | **done 2026-11-23: at the budget (3 units + close-out); the schedules' final-state means predict the same tokens as closely as two orderings do; g3's random maxima are each arm's previous-token head** | `c4peg_close.py`; "C4′ (e)+(g) on one page (closed 2026-11-23)" below |
+| C4′ (e)+(g) close-out (two post hoc reads, minutes) | **done 2026-11-23: at the budget (3 units + close-out); at mid-stack the schedules' means read through W_U agree no more than another init's (the final state is at the read's ceiling for any two models); g3 unresolved on both pairs, each arm's previous-token heads alone remove as much of the copy gain as its induction heads; revised after `/challenge-pr` on #370** | `c4peg_close.py`; "C4′ (e)+(g) on one page (closed 2026-11-23)" below |
 
 ## C4′ (e)+(g) on one page (closed 2026-11-23)
 
@@ -137,24 +137,25 @@ nothing registered (Blocked 170 D4, 171 D4 (a)). 70m only, two pairs of one init
 |---|---|---|
 | 1 | The tokens' mean, read through the unembedding, correlates with log unigram frequency at every readable window on all four arms, weakly in A0's collapse window and strongly from about A0's 128 and F's 8. It is closest to the least-squares direction just before or at V's date. | e1 held |
 | 2 | At V's block both schedules start with the MLP diluting the mean and end with attention diluting it; only the flat schedule has a middle stage (128–640) where the MLP writes against it. | e2 held on A0, broken on F as pooled |
-| 3 | The two schedules' mean directions at mid states are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94). **Post hoc (close-out):** their final-state means rank the vocabulary alike, r 0.977 (0.966 with the unigram ranks removed), the same as two orderings (0.977–0.981). At state 3 it is 0.81 (0.69) against 0.92–0.94 (0.87–0.91). So the end directions differ in coordinates and agree in what they predict. | e3 end half broken (coordinates) |
+| 3 | The two schedules' mean directions at mid states are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94). **Post hoc (close-out), read through W_U at 4000:** at state 3 the schedules rank the vocabulary alike at r 0.81 (0.69 with the unigram ranks removed), against two orderings' 0.92–0.94 (0.87–0.91) and another init's (`pythia-70m-seed1`, `-seed2`) 0.71–0.81 (0.53–0.68). So mid-stack the schedules differ in readout about as much as different inits do, not only in coordinates. At the final state every pair of trained models agrees at 0.968–0.981, other inits included, so that read cannot tell schedules apart (first written "agree in what they predict"; withdrawn after `/challenge-pr` on #370, finding 1). Beside: the per-context KL between F and A0 at 4000 is 0.36 against A0's own last step's 0.15 (U2). | e3 end half broken |
 | 4 | The schedules' end states, from one init, are not one basin: the held-out loss rises 3.56 nats on the line between A0 and F (pair 2: 3.54), beyond the order-only spread (1.03 flat, 0.13 Pythia's). | g2 held |
 | 5 | Warmup keeps two orderings linearly connected on 70m; the flat schedule does not (0.13 against 1.03 at 4000). | g1 held |
-| 6 | Mean-ablating the other schedule's induction heads does nothing on any arm (copy gain −6 % to +4 %). The own heads remove 64–86 % of it. **Post hoc (close-out):** the random sets that remove as much hold each arm's previous-token head (A0, A0′ L2H1, score 0.94–0.95; F L1H7 0.91 and L1H3 0.89; F′'s worst holds L1H3 0.87). The frozen null did not exclude induction's upstream half. | g3 broken as frozen on pair 1 (held on pair 2); the clean reading is post hoc |
+| 6 | Mean-ablating the other schedule's induction heads does nothing on any arm (copy gain −6 % to +4 %). The own heads remove 64–86 % of it. **Post hoc (close-out):** each arm's previous-token heads, ablated alone, remove as much or more: L2H1 (score 0.94–0.95) 68 % on A0 and 75 % on A0′; on the flat arms two heads share the job, L1H7 and L1H3 on F (36 % and 18 % alone, 79 % together), L1H6 and L1H3 on F′ (39 %, 18 %, 81 %). The random sets that matched the own heads are the ones holding these. The frozen null did not exclude induction's upstream half, so both pair 1's break and pair 2's hold (A0′ by 0.01) are the null's. | g3 unresolved on both pairs (broken as frozen on pair 1, held on pair 2) |
 
 **For C4's items.** Item 8 (V one block earlier on F): the mean that V counts is the unigram
 direction's carrier, and its falls at V's block end as attention's dilution on both schedules. The
 earlier block is not a different writer at the end, only a different path to it. Item 10 (F off
-A0's path): the paths end in different basins whose final readouts agree, through head sets
-whose indices do not transfer.
+A0's path): the paths end in different basins, with mid-stack readouts as far apart as another
+init's, through induction circuits (previous-token and induction heads) whose indices do not
+transfer.
 
-**Not established.** Whether a permutation of units connects A0 and F. Whether the arms'
-agreement holds on real text rather than the mean's logit lens (finding 3 reads m̄ only, at mid
-states a logit lens). Cause for any of E2's writers (a read-out, not an intervention). The
+**Not established.** Whether a permutation of units connects A0 and F. How the arms'
+predictions differ on real text (finding 3 reads m̄ only, a logit lens at mid states). Cause for any of E2's writers (a read-out, not an intervention). The
 previous-token heads' role beyond their score. Anything on 410m.
 
 **Parked, each carried or dropped:**
-1. U1's Parked 1, the cross-arm logits: **done** at this close-out (finding 3), post hoc.
+1. U1's Parked 1, the cross-arm logits: **done** at this close-out (finding 3), post hoc, with
+   two other inits as its scale (added after `/challenge-pr` on #370).
 2. U2's Parked 1, an unsaturated g3: **done** at this close-out (finding 6), post hoc.
 3. Permutation alignment of A0 and F (the design's "Worth challenging" 4): **carried to ROADMAP
    C4′**, unscheduled (minutes to hours; could change finding 4's "not one basin").
@@ -166,7 +167,9 @@ reads).
 
 **Re-run (the close-out's reads):** `METS_DATA=<main>/data python -m trackC_writeup.c4peg_close
 logits --u1 <U1 dir> --out <dir>` (CPU), and `… g3 --u2 <U2 dir> --out <dir>` (GPU, `HF_HOME` as
-U2). Records `data/trackC/c4peg/2026-11-23-close/` (code `e42f8bc4b2ff`).
+U2). Records `data/trackC/c4peg/2026-11-23-close/` (code `f427728524d1`; the first pass, without
+the other inits and the previous-token sets, set aside as `-close-v0`). Known answer: m̄ of A0 at
+4000 recomputed on CPU equals U1's record to 9 × 10⁻⁹.
 
 ## C4′ (e)+(g) unit 2, (g): do the end states differ in function? (2026-11-23)
 
