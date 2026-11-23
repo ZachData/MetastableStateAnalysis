@@ -2937,6 +2937,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   gap. Cost: the 30-minute GPU pass re-run (every other value reproduced exactly). Rule, sharpened:
   **the code's record schema is checked against the design's "beside" rows before the first
   output**, not only before the exit is claimed.
+- 2026-11-23, C4′ (e)+(g) close-out (#370, `/challenge-pr` finding 1), a repeat of the 2026-11-16
+  rule. "The schedules' final readouts agree" (r 0.977) had its forced-agreement check (the
+  unigram ranks partialled out) but no null: two models of another init agree at 0.968–0.972, so
+  the read sits at its ceiling and says nothing about schedules. The headline went into a PR
+  title, §3.87 and STATE before review. Rule unchanged; it was skipped because the reference
+  pair (another init) needed a forward pass the arms' records did not hold. That cost is minutes.
 
 ## 12. Deleted, then needed
 

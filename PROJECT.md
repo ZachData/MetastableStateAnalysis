@@ -3165,6 +3165,29 @@ existed, and its prediction failed.
 
 ---
 
+## 3.87 Track C's C4′ (e)+(g) closed: two schedules from one init end in different basins, on non-transferable heads, with mid-stack readouts as far apart as another init's (2026-11-23)
+
+**`trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"** holds the numbers.
+No training. Both C4 pairs (harness and flat arm, same init, two orderings) on 70m, tier 1.
+
+- **The common direction is the unigram prior.** On all four arms the tokens' mean, read through
+  the unembedding, correlates with log unigram frequency from early on. So §4's "the count's drops
+  are falls of the mean" are falls of the unigram prior's carrier.
+- **Who writes its falls at V's block:** both schedules end with attention diluting the mean. The
+  flat one has a middle stage where the MLP writes against it.
+- **Different basins:** the loss rises 3.56 nats on the line between the two end states, beyond
+  the reorderings' 1.03 (flat) and 0.13 (Pythia's). Warmup keeps orderings connected.
+- **Different readouts mid-stack** (post hoc): the mean directions are near orthogonal, and read
+  through W_U they rank the vocabulary alike at 0.81, against two orderings' 0.92–0.94 and another
+  init's 0.71–0.81. At the final state any two trained models agree (0.97–0.98), so that read
+  separates nothing.
+- **Heads:** ablating the other schedule's induction-head indices does nothing. Each arm's
+  previous-token heads alone remove as much copying as its induction heads (post hoc), so the
+  frozen own-heads test is unresolved.
+- One init, 70m, no permutation alignment.
+
+---
+
 ## 3.86 Track C's C4′ (c) closed: on a replicate pair four of five registered leans hold; the centred date is neither on both pairs, E1's reads the summed rate on the second (2026-11-22)
 
 **`trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"** holds the numbers.
