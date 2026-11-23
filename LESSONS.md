@@ -1157,6 +1157,14 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-23, C4′ (d)+(f) U0 (#371, `/challenge-pr` findings 1, 2): the design built its dose and
+  step bands from F's onset as a point (48) with C4's ρ floor (1.25). F's grid holds 32, 48 and 64,
+  so the onset is an interval, C4's own `rho_at` widens to 1.5 there, and at a half rate the two
+  bands meet: (d)'s headline arm could not have told a dose from a step. The onset was also 64,
+  not 48, at one of the three gated arms, which moved F⅒'s band past the proposed horizon. Both
+  were readable from records already on disk. Rule: **a band built from a reference date carries
+  that date's grid interval, and the design checks the bands are disjoint on the reference's
+  actual grid, per gated arm, before choosing horizons**.
 - 2026-11-23, C4′ (e) U1 (#367, `/challenge-pr` findings 1, 2): lean e2 pooled every fall "from
   V's date to 4000". That window is 22 saved steps on F and 11 on A0, so F's early stage outweighed
   its end state. Pooled, it read "split by schedule"; by step, both schedules end in the same
