@@ -1,12 +1,12 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "cc6cac144b69",
+ "code": "a6ded57c6bb2",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
   "data:trackA/a5/2026-10-20-u1/seed0/plan.json": "1df0690389258e2f8f31f8e9c2ecff106c41371527bb45261468a03e51f14da8",
   "repo:claims/audits/p_a5_real_run.json": "e812fccb0d859a71ce8260b83068f54264b4b273d5866e4763f2930cab28d40f",
-  "repo:claims/registry.json": "11fbafae3814cd11c71c44d3fada437d8e2bfbb9cda3174a6fbd509dbc137664",
+  "repo:claims/registry.json": "a11f7b25e972bab1f0000e9ceda414b7df5ac41b4e0c226c3f72adfd901128c8",
   "data:trackA/a3/2026-10-20-A3u5/a3_rows.json": "25c0867c40b29ccc1647532dce27b550836d20857a4d109c0e7b93d305472302",
   "data:trackS/s2/2026-10-21-u2/readings.json": "c5ecf6863def480db4ff96bf8eea3275af3ad558f17d84402c9d3ae279232baa",
   "data:trackS/s2/2026-10-21-u2/gate_read.json": "4e03ca7c7a9262ae9b5055462be8ed2f15726b8522fd59cd695d48ffd4a2f7c6",
@@ -36,7 +36,9 @@
   "data:trackC/c4/2026-11-12-u2/reading.json": "08e53d047cf31c14fb66b5567c0bc03126c09463a5728451fc1747287ea04aca",
   "data:trackC/c4/2026-11-14-close/close.json": "cc5a4e9dfbb74163551a2499d51b3ffc6d4c7ec176082b5bfa6c577947921a0b",
   "data:trackC/c4p/2026-11-17-u2/reading.json": "25ef5d0cbaa8fdc79fbd713d10e2100b743e2d5136883cb39e4981c9f761a6c1",
-  "data:trackC/c4p/2026-11-17-u2/gate.json": "528eaa4b293b4c86fd4bda256c44e04fb6d252ca70396c320ff170f548afef2b"
+  "data:trackC/c4p/2026-11-17-u2/gate.json": "528eaa4b293b4c86fd4bda256c44e04fb6d252ca70396c320ff170f548afef2b",
+  "data:trackC/c4pc/2026-11-22-u3/scores.json": "c46276924bdcd8b0e20bf87e9afd09f00e09f84150bd20a8b94dc02c80124052",
+  "data:trackC/c4pc/2026-11-22-u3/measured.json": "d02a76b1d111b74e29e6a01e16687c01011827f4be899ba0352d14e7abf11feb"
  },
  "keys": {
   "cfg.train_iters": {
@@ -10117,6 +10119,190 @@
     "4000": 0.3965746720209282
    },
    "record": "data:trackC/c4p/2026-11-17-u2/gate.json"
+  },
+  "c4pc.holds": {
+   "value": {
+    "L7": false,
+    "L8": true,
+    "L9": true,
+    "L9h": true,
+    "L10": true
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.n_hold": {
+   "value": 4,
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.n_entries": {
+   "value": 5,
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.scored": {
+   "value": true,
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.arms": {
+   "value": [
+    "9.61e-05",
+    "0.0001",
+    "0.0003"
+   ],
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.l7": {
+   "value": {
+    "F_transient": [
+     [
+      3,
+      4,
+      5
+     ],
+     [
+      3,
+      4,
+      5
+     ],
+     [
+      3,
+      4,
+      5
+     ]
+    ],
+    "A0_transient": [
+     [
+      3
+     ],
+     [
+      3
+     ],
+     []
+    ],
+    "ends": [
+     [
+      1,
+      2
+     ]
+    ]
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.l8": {
+   "value": {
+    "1000": [
+     1,
+     2
+    ],
+    "2000": [
+     1,
+     2
+    ],
+    "4000": [
+     1,
+     2
+    ]
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.ind": {
+   "value": {
+    "F": 320,
+    "A0": 768
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.top_layer": {
+   "value": {
+    "F": 2,
+    "A0": 3
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.l10a": {
+   "value": {
+    "reading": "another path",
+    "n_on": 0,
+    "n": 16
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.l10b": {
+   "value": {
+    "n_beyond": 12,
+    "n": 12,
+    "gate": true
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.l10b_ratio": {
+   "value": {
+    "320": 7.480610985724814,
+    "384": 6.8099784565546475,
+    "512": 3.826357260014035,
+    "640": 2.8076804081960667,
+    "768": 2.0710274511642393,
+    "1000": 1.9888124669692964,
+    "1250": 1.7010652484736437,
+    "1500": 1.279203332456968,
+    "2000": 1.3180627579193238,
+    "3000": 1.164676385934913,
+    "3500": 1.1858734701718576,
+    "4000": 1.1748769897980287
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.l10b_late_max": {
+   "value": 1.3180627579193238,
+   "record": "data:trackC/c4pc/2026-11-22-u3/scores.json"
+  },
+  "c4pc.v_a0p": {
+   "value": 320,
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c4pc.cen_a0p": {
+   "value": [
+    640
+   ],
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c4pc.q": {
+   "value": {
+    "u": 1.2,
+    "9.61e-05": 1.0,
+    "0.0001": 1.0,
+    "0.0003": 1.0,
+    "0.00478": 1.0
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c4pc.labels": {
+   "value": {
+    "M2_R2_centred": "neither",
+    "M2_R3_V": "neither",
+    "M3_R2_centred": "neither",
+    "M3_R3_V": "consistent with cumulative"
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c4pc.m3_v": {
+   "value": {
+    "F": 32,
+    "A0": 320
+   },
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c4pc.m3_v_band": {
+   "value": [
+    22.914685314685315,
+    55.94405594405595
+   ],
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c4pc.m3_cen_f": {
+   "value": [
+    48
+   ],
+   "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
   }
  }
 }

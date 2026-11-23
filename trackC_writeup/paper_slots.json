@@ -810,5 +810,20 @@
  {
   "slot": "{{c4p.nearest_ratio|range2}}",
   "where": "§7 C4′ (close-out 2026-11-17, after /challenge-pr on #360): the four smallest distances over δ (steps 192-384)"
- }
+ },
+ {"slot": "{{c4pc.cen_a0p|uniq}}", "where": "§7 C4′ (c) (close-out 2026-11-22): the replicate harness arm's centred date on every gated tolerance"},
+ {"slot": "{{c4pc.v_a0p}}", "where": "§7 C4′ (c): the replicate harness arm's E1 date"},
+ {"slot": "{{c4.v_a0}}", "where": "§7 C4′ (c): the first harness arm's E1 date, beside the replicate's"},
+ {"slot": "{{c4pc.m3_cen_f|uniq}}", "where": "§7 C4′ (c): the replicate flat arm's centred date"},
+ {"slot": "{{c4pc.m3_v[F]}}", "where": "§7 C4′ (c): the replicate flat arm's E1 date"},
+ {"slot": "{{c4pc.m3_v_band|range0}}", "where": "§7 C4′ (c): the summed rate's band for E1 on the replicate pair"},
+ {"slot": "{{c4pc.ind[F]}}", "where": "§7 C4′ (c): induction's half-rise on the replicate flat arm"},
+ {"slot": "{{c4pc.ind[A0]}}", "where": "§7 C4′ (c): induction's half-rise on the replicate harness arm"},
+ {"slot": "{{c4pc.top_layer[F]}}", "where": "§7 C4′ (c): the replicate flat arm's top induction head's layer at 4000"},
+ {"slot": "{{c4pc.top_layer[A0]}}", "where": "§7 C4′ (c): the replicate harness arm's top induction head's layer at 4000"},
+ {"slot": "{{c4pc.l10a[n]}}", "where": "§7 C4′ (c): the replicate flat arm's early steps (1-256), none on the replicate harness arm's path"},
+ {"slot": "{{c4pc.l10b[n]}}", "where": "§7 C4′ (c): the late steps (320-4000) at which the first flat arm is beyond the replicate harness arm's distance"},
+ {"slot": "{{c4pc.l10b_ratio[320]|f1}}", "where": "§7 C4′ (c): that factor at step 320"},
+ {"slot": "{{c4pc.l10b_late_max|f2}}", "where": "§7 C4′ (c): the largest factor at steps 1500-4000"},
+ {"literal": "1500", "why": "§7 C4′ (c): a step of C4's dense grid (`c4_train.GRID`), the first after which the factor stays below 1.35; the claim on `c4pc.l10b_late_max` reads steps ≥ 1500"}
 ]

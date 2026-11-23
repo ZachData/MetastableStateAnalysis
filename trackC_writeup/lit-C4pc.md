@@ -57,3 +57,8 @@ can see. Nothing found predicts the order-only spread of C2's counts' dates.
 1. **Kosson et al.'s full text** (why: if it dates a no-warmup transient in GPT training, item 7
    has an outside reference; cost: one reading; could change: item 7's wording in `paper/` §7,
    not the reading). Read before U3's reading, or dropped at the close-out with why.
+   **Read at the close-out, 2026-11-22** (after U3's reading, not before; arXiv HTML v1, §6 on
+   from a summary): it dates no transient by step. It shows large early ℓ2 and angular updates
+   and a "large, sudden" representation change without warmup (GPT-2 124M, OpenWebText), and
+   nothing on data order or heads. So item 7 gets a mechanism-level reference, not a dated one,
+   and no cell moved (`status-C.md` "C4′ (c) on one page").

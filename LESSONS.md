@@ -20,6 +20,12 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-11-22 (C4′ (c)'s close-out): the same lapse again, five days after the rule below was
+  written. `lit-C4pc.md` Parked 1 (Kosson et al.) said "read before U3's reading"; U3 read and
+  scored without it and noted it as "goes to the close-out" only after the scores. It changed
+  no cell, since the item said it could change wording only. The rule was written as a rule,
+  but no step of U3's start ran it. Rule (made operational): **a Parked item addressed to a
+  unit is quoted in that unit's first commit message, with its disposition.**
 - 2026-11-17 (C4′ (c)'s design): ROADMAP C4′ and Blocked 165 costed (c) as "on the unused
   3.2M rows of shard 0", with A0′ "to 4000, about 40 GPU-hours", and said R3 might be settled by
   a pair stopped at 1000. The user chose (a) on that text. The rows reach 3149 updates, not 4000
