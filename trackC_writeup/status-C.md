@@ -49,6 +49,7 @@
   - C4′ (c) U2 (2026-11-18 to 2026-11-22; `P-SCH2`–`6` registered first by the user, Blocked 167 (a)): A0′ and F′ trained to 4000 on order π without diverging (four stops, each resumed with the re-trained step's loss reproduced); H4′ passes at 1000 (−0.13 %) and 4000 (−0.096 %, tol 2 %), so A0′ is read as a harness arm; nothing read — `trackC_writeup/status-C.md` "C4′ (c) unit 2"
   - C4′ (c) U3 (2026-11-22): C4's gate at 3500 on F′ as frozen (V and τ 9.61e-5, 1e-4, 3e-4), pinned in git before any record; of the five registered leans, L7 does not hold (A0′ has a one-step transient {T3} at 640), L8, L9, L9h and L10 hold; M2 leaves C4's R2 and R3 "neither"; M3 (the replicate) reads V "consistent with cumulative", robust to a one-step move of either arm, with C4's "neither" the reading at the band's edge, and the centred count "neither"; L10 (b) holds at 12 of 12, but from 1500 on by a factor ≤ 1.32; scoring in the registry is Blocked 168 — `trackC_writeup/status-C.md` "C4′ (c) unit 3"
   - **C4′ (c) closed 2026-11-22 at its exit** (4 units + close-out, the budget): items 8, 9, 10 held by registered entries (10 thin after 1500, so "early"); item 7 broken as registered (A0′ has a one-step transient), its F′ side replicating; item 6 (that the exclusion is fragile) split: not borne out for the centred count (order spread 1.0, the replicate "neither"), borne out on V, where the replicate reads "consistent with cumulative"; Kosson et al. read, a mechanism-level reference for item 7, no cell moved; one paragraph in `paper/` §7, and §1's sentence on the flat arm corrected to match — `trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"
+  - C4′ (e)+(g) opened 2026-11-23 (STATE Blocked 169 (d), the user's: "(e) and (g) first"; writing only, nothing computed): a scan and a proposed design that reads the four trained arms. (e): the tokens' mean through W_U against unigram log-frequency, the exact split of each fall of ‖m‖² into renormalisation, attention and MLP, and the arms' mean directions against the replicate's. (g): the loss barrier between the two schedules' end states, scaled by the replicate pairs, and each arm's induction heads mean-ablated. Leans stated before output (g1: warmup helps order-only connectivity); budget 3 units + close-out; decisions STATE Blocked 170 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 0"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -65,7 +66,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-22 · body `81e673b5a6`
+- **Reviewed:** 2026-11-23 · body `8a160052a9`
 <!-- /phase-card -->
 
 ## Units
@@ -116,6 +117,29 @@
 | C4′ (c) 2. registration, then the arms (Blocked 167 (a), the user's) | **done 2026-11-22: `P-SCH2`–`6` registered (`87e996b`) before any update; both arms to 4000 without divergence; H4′ passes at 1000 (−0.13 %) and 4000 (−0.096 %); nothing read** | "C4′ (c) unit 2" below |
 | C4′ (c) 3. the 3500 gate pinned, records, heads, K, the five scores, M1–M4 | **done 2026-11-22: gate as frozen (V read, τ 9.61e-5, 1e-4, 3e-4); L7 does not hold; L8, L9, L9h, L10 hold; M3's V reads "consistent with cumulative", its centred count "neither"; scoring the entries is Blocked 168** | "C4′ (c) unit 3" below |
 | C4′ (c) close-out (writing only) | **done 2026-11-22: items 6–10 marked; Kosson et al. read; one paragraph in `paper/` §7 (20 keys, 4 claims, `paper_check` 0)** | "C4′ (c) on one page (closed 2026-11-22)" below |
+| C4′ (e)+(g) 0. the scan and design (Blocked 169, the user's: "(e) and (g) first"; budget 3 units + close-out) | **done 2026-11-23: writing only, nothing computed; proposed, D1–D4 Blocked 170** | `lit-C4peg.md`, `design-C4peg.md`; "C4′ (e)+(g) unit 0" below |
+
+## C4′ (e)+(g) unit 0, the scan and design (2026-11-23)
+
+Blocked 169, decided by the user 2026-11-23: of ROADMAP C4′'s unscheduled rows, the two that need
+no training, **(e)** (what the tokens' common direction is and what writes it) and **(g)** (whether
+the two end states differ in function), come first, then (d) and (f). One design for both, as
+C4′ (a)+(b) had. Writing only; no forward pass, no record read beyond what earlier units showed.
+
+| item | where |
+|---|---|
+| scan: five searches, every outside row [S]; Altıntaş et al. (Adam breaks linear connectivity, warmup restores it) gives lean g1 before output; 2609.02959's least-squares unigram direction is E1's planted effect | `lit-C4peg.md` |
+| design: E1 (the mean through W_U against log unigram frequency, gated per checkpoint), E2 (the exact split of each fall of ‖m‖² into renormalisation, attention, MLP), E3 (cosine between the arms' means, scaled by the replicate pair); G1 (the barrier along the line, null released vs A0, effect seed 1), G2 (mean-ablating each arm's heads ≥ 0.5, against 20 random layer-matched sets) | `design-C4peg.md` |
+| cells, fixed now | all 29 steps on A0, F, A0′, F′; four windows per arm (the collapse, V's date, the centred date, 4000) |
+| leans, stated now (from the scan) | e1–e3, g1–g3 (`design-C4peg.md`) |
+| exit, budget | the design's "Exit condition and budget": 3 units + close-out, GPU under 2 h |
+| decisions | D1–D4, STATE Blocked 170 |
+
+**Checked against the tree:** pair 2's π permutes rows below `HELD_OUT` (`c4pc_train` refuses
+otherwise), so one set of unigram counts and one held-out set serve both pairs. The checkpoints'
+config: `use_parallel_residual` true, no tied embeddings, float32. Pythia's `embed_out` has no bias.
+
+**Parked:** `lit-C4peg.md` Parked 1 (2609.02959's full text; read before U1's code, D1).
 
 ## C4′ (c) on one page (closed 2026-11-22)
 
