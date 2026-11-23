@@ -1,10 +1,11 @@
 <!-- trackC_writeup/design-C4pdf.md -->
 # Track C — design: C4′ (d) and (f), the transient's dose and a schedule switch
 
-**Status: proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #371 (accept
-with changes, findings 1–5 taken: the reference onset per gated arm, interval bands on a dense
-grid with a refusal when they meet, (f)'s labels, rule T in updates, two slips). Decisions D1–D4
-are STATE Blocked 172.**
+**Status: frozen 2026-11-23 on Blocked 172 D1 (a), D2 (a), D3 (b), D4 (a)** (Claude, on the
+user's "continue for the next 5 state items"; "Decided 2026-11-23" below), the rules pushed in
+code before any output. Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on
+#371 (accept with changes, findings 1–5 taken: the reference onset per gated arm, interval bands
+on a dense grid with a refusal when they meet, (f)'s labels, rule T in updates, two slips).
 Opened on Blocked 169, decided by the user 2026-11-23: "(e) and (g) first", then (d), (f). (e)+(g)
 closed in #370. (d) and (f) both train short new runs from states C4 already holds, and both ask
 what sets F's transient, so they share one design and one harness. Scan: `lit-C4pdf.md`.
@@ -239,6 +240,27 @@ until you make it. Against it: one run per rate, 70m only, ρ₀ placed and not 
 bands disjoint by a thin margin (r < 0.512 at r = ½). D2 (a) stays recommended after #371's
 finding 3 because it answers the question asked (the early state or not), and says plainly that
 it does not separate the jump from the restart; D2 (b) does, for 3.8 h more.
+
+## Decided 2026-11-23 (Blocked 172)
+
+**D1 (a), D2 (a), D3 (b), D4 (a), by Claude on the user's "continue for the next 5 state items"**
+(as recommended; the user's to overrule). D3 (b) is a recommendation that the user register d1
+and d2; the registration itself is the user's commit, and `c4pdf_train` refuses any update on F½
+or F⅒ until `trackC_writeup/c4pdf_entries.json` (the user's, committed) names each reading's
+registered id or "declined". F¹ and the branches are tier 1 and run first (D4 (a)).
+
+**Frozen in code before any output** (U1): `c4pdf_rules.py` (the rules; its `code_sha()` is the
+hash a registered entry names), `c4pdf_train.py` (the arms, H-d, H-f), `c4pdf_read.py` (the
+gates, records, heads, reads). Details fixed with the code, none of which the text above left
+open in a way that could move a label:
+- the branches load A0's step-256 weights into `c4_train.build`'s model (sdpa, train mode) with a
+  strict state-dict load, then a fresh `make_opt`;
+- the top head's series is the maximum over the 48 heads at each state (as `c4pc_read.pair_inputs`);
+- G-d1 and G-d2 stretch F's series onto grid D at horizon 1000; G-f reads F's grid ≤ 256 (which
+  is the offsets K) and A0's 256, 320, 384, 512;
+- a branch's transient span and onset are in absolute steps (only differences enter rule T);
+- the reference (t⁻, t) is F¹'s onset and the state before it on F¹'s grid, per gated τ arm; if F¹
+  has no transient at a gated arm, the read refuses.
 
 ## Worth challenging (for the PR)
 
