@@ -6,7 +6,7 @@ step band [t⁻/ρ₀, tρ₀] and a dose band [t⁻/(rρ₀), tρ₀/r], disjoi
 grid (t⁻ = 32, t = 48; or 48, 64) the transient's bands meet at r = ½ and not at r = ⅒, and on F¹'s
 grid D (t⁻ = t − 4) they are disjoint at both rates for t from 48 to 64; induction's (256, 320] is
 disjoint at r = ½ by a thin margin (< 0.512); (3) the band values the design quotes, and that 1000
-passes every transient dose band (to 800) and F½'s induction band (to 800); (4) grid D has 65
+passes every transient dose band (to 800) and F½'s induction band (to 800); (4) grid D has 77
 states, ends at 1000 and holds the dose bands' interior states; (5) A0 (a linear ramp over W = 1430)
 reaches F's onset dose (48 peak-steps) at t = √(2W·48) ≈ 370.5, at ≈ 0.259 of the peak; (6) the
 GPU estimate at 26.5 s an update.
@@ -50,8 +50,9 @@ assert abs(bands(32, 48, 0.1)[1][0] - 256) < 1e-9 and abs(bands(48, 64, 0.1)[1][
 assert 1000 > 800
 
 # (4) grid D
-D = sorted(set(range(0, 129, 4)) | set(range(144, 257, 16)) | set(range(288, 993, 32)) | {1000})
-assert len(D) == 65 and D[-1] == 1000
+D = sorted(set(range(0, 129, 4)) | set(range(144, 657, 16)) | set(range(688, 977, 32)) | {1000})
+assert len(D) == 77 and D[-1] == 1000                    # widened after /challenge-pr on #372
+assert all(b - a <= 16 for a, b in zip(D, D[1:]) if b <= 656)       # F⅒'s dose window to 650 at 16
 assert [x for x in D if 352 <= x <= 600] and [x for x in D if 70.4 <= x <= 120]
 
 # (5) A0 crosses 48 peak-steps

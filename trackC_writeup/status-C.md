@@ -71,7 +71,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `aece8f175f`
+- **Reviewed:** 2026-11-23 · body `2f85064c06`
 <!-- /phase-card -->
 
 ## Units
@@ -127,7 +127,7 @@
 | C4′ (e)+(g) 2. (g) on the four arms (Blocked 171 D3 (a), D4 (a), E (a), Claude on the user's "do the next 5 items") | **done 2026-11-23: tier 1; G1 gated and readable; (A0, F) "beyond it" (B 3.56 nats against S 1.03), pair 2 the same; g1 held, g2 held; g3 broken as frozen on A0 and F (one random set as harmful as the own heads), held on A0′ and F′, unresolved since the induction loss saturates; the other schedule's indices carry nothing on any arm; revised after `/challenge-pr` on #369** | `c4peg_g.py`; "C4′ (e)+(g) unit 2" below |
 | C4′ (e)+(g) close-out (two post hoc reads, minutes) | **done 2026-11-23: at the budget (3 units + close-out); at mid-stack the schedules' means read through W_U agree no more than another init's (the final state is at the read's ceiling for any two models); g3 unresolved on both pairs, each arm's previous-token heads alone remove as much of the copy gain as its induction heads; revised after `/challenge-pr` on #370** | `c4peg_close.py`; "C4′ (e)+(g) on one page (closed 2026-11-23)" below |
 | C4′ (d)+(f) 0. the scan and design (Blocked 169's order; budget 4 units + close-out) | **done 2026-11-23: writing only, nothing trained; proposed, D1–D4 Blocked 172** | `lit-C4pdf.md`, `design-C4pdf.md`, `tools/math_checks/c4pdf_bands.py`; "C4′ (d)+(f) unit 0" below |
-| C4′ (d)+(f) 1. frozen (Blocked 172, Claude on the user's delegation); rules, driver, reader; gates; F¹; entries drafted | **done 2026-11-23: gates G-T, G-d1, G-I, G-d2, G-f pass; H-d fails (not bit-reproducible past update 1), F¹ a near-replicate; references (44, 48], (48, 52], (48, 52]; G-d1 re-run on them passes; registration Blocked 173** | `c4pdf_rules.py`, `c4pdf_train.py`, `c4pdf_read.py`, `data/trackC/c4pdf/2026-11-23-u1/`; "C4′ (d)+(f) unit 1" below |
+| C4′ (d)+(f) 1. frozen (Blocked 172, Claude on the user's delegation); rules, driver, reader; gates; F¹; entries drafted | **done 2026-11-23: gates G-T, G-d1, G-I, G-d2, G-f pass; H-d fails (not bit-reproducible past update 1), F¹ a near-replicate; references (44, 48], (48, 52], (48, 52]; G-d1 re-run on them passes; registration Blocked 173** | `c4pdf_rules.py`, `c4pdf_train.py`, `c4pdf_read.py`, `data/trackC/c4pdf/2026-11-23-u1b/` (revised after `/challenge-pr` on #372); "C4′ (d)+(f) unit 1" below |
 
 ## C4′ (d)+(f) unit 1, the rules, the gates and the reference run (2026-11-23)
 
@@ -150,8 +150,8 @@ A0′, F′ (`data/trackC/c4pc/2026-11-22-u3`), C4's gated τ arms (9.61e-5, 1e-
 | H-d | **fail**: F¹'s update-1 loss equals F's to every digit, but its weights differ from update 4 (76 tensors, max abs 0.0017 at 4, 0.067 at 128) |
 | G-d1 on F¹'s reference | pass: "dose" at ½ and ⅒ at every arm |
 
-**F¹ as the reference.** C4's harness is not bit-reproducible past one update (bf16 backward on the
-GPU; `LESSONS.md` 4). By the design's gate row F¹ is then a near-replicate of F; its cells differ
+**F¹ as the reference.** C4's harness does not reproduce F's weights by update 4, the first state compared after 0 (cause
+not tested; `LESSONS.md` 4). By the design's gate row F¹ is then a near-replicate of F; its cells differ
 from F's at 3–6 of 72 on the 12 shared states. Its transient begins at **48 at τ 9.61e-5 and 52 at
 1e-4 and 3e-4** (F's coarse 64 at 3e-4 lies in (48, 64]), so the references are (44, 48], (48, 52],
 (48, 52]. F½'s windows: step [35.2, 60] / [38.4, 65], dose [70.4, 120] / [76.8, 130]; F⅒'s dose
@@ -170,6 +170,19 @@ computed inline and saved as `reference.json` (sha256 `ff097573de52…`); U3's `
 reference from the records.
 
 **Parked:** none new. `lit-C4pdf.md` Parked 1 stays before U2's records.
+
+**After `/challenge-pr` on #372** (accept with changes; reviewed `97c6523`). Taken before any new
+arm trained, rules re-pushed first (`2ab4b14`, rules `284f0d10f5ba`, driver `84662428cf73`), gates
+and reference re-run and passing (`data/trackC/c4pdf/2026-11-23-u1b/`; the first record set aside):
+(1) the drafts named a driver hash that had moved; they now name the code that will run. (2) d1
+scored "dose or step" while the code could return "mixed"; the entry now scores presence only
+(`d1_presence`), labels beside. (3) F¹'s reference at 1e-4, (48, 52], excludes F's and F′'s 48, and
+G-d1's re-run passes by 2 updates at 3e-4: stated in the design and the d1 notes; a second F¹
+replicate (≈ 0.9 h) is put to the user in Blocked 173. (4) a band label now needs the whole interval
+(previous state, event] inside the band, and grid D is every 16 updates over 144–656 (77 states).
+(5) the registration guard has a test. (6) H-d's failure is stated as measured (the weights differ
+by update 4), its cause untested; D2 (b) and (c)'s bit-equal rebuild is void. (7) the grid above
+656 (every 32) can miss a transient shorter than 32 updates there; stated in the d1 notes.
 
 ## C4′ (d)+(f) unit 0, the scan and design (2026-11-23)
 

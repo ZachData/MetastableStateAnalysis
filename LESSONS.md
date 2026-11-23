@@ -991,8 +991,9 @@ not fixed).
 - 2026-11-23, C4′ (d)+(f) U1 (H-d): the design asked F¹, a re-run of C4's flat arm on the same
   harness, to equal F bit for bit, on the strength of "the first re-trained step's loss
   reproduced to every digit" (C4′ (c) U2). That was a one-update check. F¹'s update-1 loss does
-  equal F's, but its weights differ at update 4 (max |Δ| 0.0017) and the gap grows (0.067 at 128):
-  the bf16 backward on the GPU is not deterministic. One hour of GPU was spent on a run whose
+  equal F's, but its weights differ at update 4, the first state compared (max |Δ| 0.0017), and the
+  gap grows (0.067 at 128); the cause was not tested, and an earlier status entry had already
+  recorded non-deterministic kernels. One hour of GPU was spent on a run whose
   stated check could not pass; it still serves as the reference, as a near-replicate. In the same
   unit H-d's code listed F's states 1 and 2, which F¹'s grid never saves; the runner caught it
   before any output was misread. Rule: **"reproducible" is measured at the horizon a design needs
