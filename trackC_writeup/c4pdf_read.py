@@ -89,6 +89,44 @@ def bar_of(sides: Dict[str, dict]) -> dict:
     return {"plateaus": plats, "half_rise": dates, "P_bar": pbar, "b": pbar / 2}
 
 
+def _lab_on(tr: dict, ref, r: float) -> dict:
+    pv = rl.previous(rl.GRID_D, tr["onset"]) if tr["present"] else None
+    return rl.label_onset(tr, ref, r, rl.HORIZON, prev=pv)
+
+
+def _lab_ind(date, r: float) -> dict:
+    return rl.label_induction(date, r, rl.HORIZON, prev=rl.previous(rl.GRID_D, date) if date else None)
+
+
+def reference_g_d1(out: Path, gate_dir: Path) -> dict:
+    """F¹'s reference per gated arm and G-d1 re-run on it (H-d's gate row), from F¹'s records."""
+    g = json.loads((gate_dir / "gate.json").read_text())
+    arms = tuple(g["gated_arms"])
+    st = [s for s in rl.GRID_D if s <= pt.UNTIL["F1"]]
+    recs = load_recs(out, "F1", st)
+    F = trained("F", arms)
+    ref, gd, ok = {}, {}, True
+    for k in arms:
+        tr = rl.transient(cc.per_transition(recs, k, st), st)
+        if not tr["present"]:
+            raise C4pdfReadRefused(f"F1 has no transient at {k}")
+        ref[k] = {"transient": tr, "ref": [rl.previous(st, tr["onset"]), tr["onset"]]}
+        gd[k] = {}
+        for r in (0.5, 0.1):
+            s2 = rl.stretch(F["mats"][k], GRID_CUT, rl.GRID_D, r)
+            gd[k][str(r)] = _lab_on(rl.transient(s2, rl.GRID_D), tuple(ref[k]["ref"]), r)
+            ok &= gd[k][str(r)]["label"] == "dose"
+    return {"rules": rl.code_sha(), "gated_arms": list(arms), "reference": ref,
+            "G-d1_F1_ref": {"per_arm": gd, "pass": bool(ok)}}
+
+
+def reference(a) -> int:
+    res = reference_g_d1(Path(a.out), Path(a.gate))
+    ct._jdump(Path(a.out) / "reference.json", _np(res))
+    print(json.dumps({k: v["ref"] for k, v in res["reference"].items()} | {"G-d1": res["G-d1_F1_ref"]["pass"]}))
+    return 0
+
+
 def gate(a) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -110,9 +148,9 @@ def gate(a) -> int:
         row = {}
         for r in (0.5, 0.1):
             st = rl.stretch(sides["F"]["mats"][k], GRID_CUT, rl.GRID_D, r)
-            row[f"stretched_{r}"] = rl.label_onset(rl.transient(st, rl.GRID_D), coarse, r, rl.HORIZON)
+            row[f"stretched_{r}"] = _lab_on(rl.transient(st, rl.GRID_D), coarse, r)
         un = rl.stretch(sides["F"]["mats"][k], GRID_CUT, rl.GRID_D, 1.0)
-        row["unstretched_0.1"] = rl.label_onset(rl.transient(un, rl.GRID_D), coarse, 0.1, rl.HORIZON)
+        row["unstretched_0.1"] = _lab_on(rl.transient(un, rl.GRID_D), coarse, 0.1)
         ok &= (row["stretched_0.1"]["label"] == "dose" and row["stretched_0.5"]["label"] == "refused"
                and row["unstretched_0.1"]["label"] == "step")
         gd1[k] = {"coarse_ref": coarse, **row}
@@ -127,9 +165,9 @@ def gate(a) -> int:
     gd2 = {}
     for r in (0.5, 0.1):
         st = rl.stretch(topF, GRID_CUT, rl.GRID_D, r)[:, 0]
-        gd2[f"stretched_{r}"] = rl.label_induction(rl.bar_date(st, rl.GRID_D, bar["b"]), r, rl.HORIZON)
+        gd2[f"stretched_{r}"] = _lab_ind(rl.bar_date(st, rl.GRID_D, bar["b"]), r)
         un = rl.stretch(topF, GRID_CUT, rl.GRID_D, 1.0)[:, 0]
-        gd2[f"unstretched_{r}"] = rl.label_induction(rl.bar_date(un, rl.GRID_D, bar["b"]), r, rl.HORIZON)
+        gd2[f"unstretched_{r}"] = _lab_ind(rl.bar_date(un, rl.GRID_D, bar["b"]), r)
     res["G-d2"] = {**gd2, "pass": bool(gd2["stretched_0.5"]["label"] == "dose" and gd2["stretched_0.1"]["label"] == "not step"
                                        and gd2["unstretched_0.5"]["label"] == "step" and gd2["unstretched_0.1"]["label"] == "step")}
     # G-f
@@ -247,16 +285,20 @@ def read(a) -> int:
     res["reference"] = ref
     if not a.f_only:
         sides = {arm: _new(out, root, arm, arms) for arm in ("Fh", "Ft")}
-        per = {k: {arm: {**rl.label_onset(rl.transient(sides[arm]["mats"][k], sides[arm]["states"]), ref[k],
-                                          rl.RATES[arm], rl.HORIZON),
-                         "transient": rl.transient(sides[arm]["mats"][k], sides[arm]["states"])}
-                   for arm in ("Fh", "Ft")} for k in arms}
-        res["d1"] = {**rl.d1_joint(per, arms), "cells": per}
+        per = {}
+        for k in arms:
+            per[k] = {}
+            for arm in ("Fh", "Ft"):
+                tr = rl.transient(sides[arm]["mats"][k], sides[arm]["states"])
+                pv = rl.previous(sides[arm]["states"], tr["onset"]) if tr["present"] else None
+                per[k][arm] = {**rl.label_onset(tr, ref[k], rl.RATES[arm], rl.HORIZON, prev=pv), "transient": tr}
+        res["d1"] = {"entry": rl.d1_presence(per, arms), **rl.d1_joint(per, arms), "cells": per}
         d2 = {}
         for arm in ("Fh", "Ft"):
             dt = rl.bar_date(sides[arm]["top"], sides[arm]["states"], g["G-I"]["b"])
+            pv = rl.previous(sides[arm]["states"], dt) if dt else None
             sc = np.asarray(sides[arm]["heads"][str(rl.HORIZON)])
-            d2[arm] = {**rl.label_induction(dt, rl.RATES[arm], rl.HORIZON),
+            d2[arm] = {**rl.label_induction(dt, rl.RATES[arm], rl.HORIZON, prev=pv),
                        "beside_top_head_at_1000": list(map(int, np.unravel_index(int(np.argmax(sc)), sc.shape)))}
         res["d2"] = d2
     br = {arm: _new(out, root, arm, arms) for arm in ("BP", "BO")}
@@ -281,13 +323,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         q.add_argument("--out", required=True)
         q.add_argument("--root", default=str(pt.ROOT))
         q.add_argument("--arm", nargs="+", choices=pt.ARMS, required=True)
+    q = sub.add_parser("reference")
+    q.add_argument("--out", required=True)
+    q.add_argument("--gate", required=True)
     q = sub.add_parser("read")
     q.add_argument("--out", required=True)
     q.add_argument("--root", default=str(pt.ROOT))
     q.add_argument("--gate", required=True)
     q.add_argument("--f-only", action="store_true")
     a = p.parse_args(argv)
-    return {"gate": gate, "records": records, "heads": heads, "read": read}[a.cmd](a)
+    return {"gate": gate, "records": records, "heads": heads, "reference": reference, "read": read}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,6 @@
 """C4′ (d)+(f)'s pure rules (trackC_writeup/c4pdf_rules.py; design-C4pdf.md "The readings")."""
+import json
+
 import numpy as np
 import pytest
 
@@ -12,8 +14,24 @@ def _mat(rows):
 
 
 def test_grid_d():
-    assert len(rl.GRID_D) == 65 and rl.GRID_D[0] == 0 and rl.GRID_D[-1] == 1000
-    assert 128 in rl.GRID_D and 124 in rl.GRID_D and 144 in rl.GRID_D and 288 in rl.GRID_D
+    assert len(rl.GRID_D) == 77 and rl.GRID_D[0] == 0 and rl.GRID_D[-1] == 1000
+    assert {124, 128, 144, 400, 416, 640, 656, 688, 976} <= set(rl.GRID_D)
+    assert 672 not in rl.GRID_D and 130 not in rl.GRID_D
+
+
+def test_interval_labels():
+    # a point at 416 is in the dose band [409.6, 800], but (400, 416] is not wholly inside it
+    assert rl.label_induction(416, 0.5, 1000)["label"] == "dose"
+    assert rl.label_induction(416, 0.5, 1000, prev=400)["label"] == "neither"
+    assert rl.label_induction(432, 0.5, 1000, prev=416)["label"] == "dose"
+    assert rl.label_onset({"present": True, "onset": 96}, (44, 48), 0.5, 1000, prev=92)["label"] == "dose"
+    assert rl.label_onset({"present": True, "onset": 64}, (44, 48), 0.5, 1000, prev=60)["label"] == "neither"
+
+
+def test_d1_presence():
+    cell = lambda h, t: {"Fh": {"transient": {"present": h}}, "Ft": {"transient": {"present": t}}}
+    assert rl.d1_presence({"a": cell(True, False), "b": cell(True, False)}, ["a", "b"])["holds"]
+    assert not rl.d1_presence({"a": cell(True, False), "b": cell(True, True)}, ["a", "b"])["holds"]
 
 
 def test_transient_span_counts_updates():
@@ -68,3 +86,20 @@ def test_f_and_stretch():
     assert st[1].tolist() == m[1].tolist() and st[3].tolist() == m[2].tolist()
     with pytest.raises(rl.C4pdfRuleRefused):
         rl.previous([0, 4], 0)
+
+
+def test_registration_guard(tmp_path):
+    from trackC_writeup import c4pdf_train as pt
+    reg = tmp_path / "registry.json"
+    reg.write_text(json.dumps({"predictions": [{"id": "X-1"}]}))
+    ent = tmp_path / "entries.json"
+    assert pt.registration(ent, reg, check_git=False) == {"d1": "pending", "d2": "pending"}
+    with pytest.raises(pt.C4pdfRefused):
+        pt.require_decided(entries=ent, registry=reg, check_git=False)
+    ent.write_text(json.dumps({"d1": "X-1", "d2": "X-2"}))           # X-2 not in the registry
+    assert pt.registration(ent, reg, check_git=False) == {"d1": "registered as X-1", "d2": "pending"}
+    with pytest.raises(pt.C4pdfRefused):
+        pt.require_decided(entries=ent, registry=reg, check_git=False)
+    ent.write_text(json.dumps({"d1": "X-1", "d2": "declined"}))
+    assert pt.require_decided(entries=ent, registry=reg, check_git=False) == {"d1": "registered as X-1", "d2": "declined"}
+    assert set(pt.GUARDED) == {"Fh", "Ft"}

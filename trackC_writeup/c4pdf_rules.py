@@ -34,8 +34,10 @@ RHO0 = 1.25                         # C4's RHO_MIN (placed there as the grid's; 
 RATES = {"Fh": 0.5, "Ft": 0.1}
 HORIZON = 1000                      # F½ and F⅒ (D1 (a))
 IND_REF = (256, 320)                # F's induction date's interval on F's grid (design "d2")
-#: grid D: every 4 updates to 128, every 16 to 256, every 32 to 992, and 1000 (design "The arms")
-GRID_D = tuple(sorted(set(range(0, 129, 4)) | set(range(144, 257, 16)) | set(range(288, 993, 32)) | {1000}))
+#: grid D (placed, design "The arms"; widened after `/challenge-pr` on #372, findings 4 and 7, before
+#: any new arm trained): every 4 updates to 128, every 16 to 656 (covering F⅒'s onset dose window
+#: and d2's 400 / 409.6 edge), every 32 from 688 to 976, and 1000
+GRID_D = tuple(sorted(set(range(0, 129, 4)) | set(range(144, 657, 16)) | set(range(688, 977, 32)) | {1000}))
 #: the branches' offsets from 256 (C4's early grid)
 OFFSETS = (0, 1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128, 160, 192, 256)
 BRANCH_FROM = 256
@@ -108,8 +110,15 @@ def _in(x: float, b: Tuple[float, float]) -> bool:
     return b[0] <= x <= b[1]
 
 
-def label_onset(tr: dict, ref: Tuple[int, int], r: float, horizon: int) -> dict:
-    """d1 at one arm and one τ arm. ``ref`` = (t⁻, t) from F¹."""
+def _within(prev: float, x: float, b: Tuple[float, float]) -> bool:
+    """The arm's event lies in (prev, x]: the whole interval is inside ``b`` (`/challenge-pr` on
+    #372, finding 4: a point read at x could have crossed anywhere after prev)."""
+    return b[0] <= prev and x <= b[1]
+
+
+def label_onset(tr: dict, ref: Tuple[int, int], r: float, horizon: int, prev: Optional[int] = None) -> dict:
+    """d1 at one arm and one τ arm. ``ref`` = (t⁻, t) from F¹; ``prev`` the arm's state before its
+    onset (the onset lies in (prev, onset]); without it the onset is read as a point."""
     b = bands(ref[0], ref[1], r)
     if not b["separable"]:
         return {"label": "refused", **b}
@@ -118,8 +127,9 @@ def label_onset(tr: dict, ref: Tuple[int, int], r: float, horizon: int) -> dict:
             return {"label": "none", **b}
         return {"label": "unreadable (horizon inside the dose band)", **b}
     x = tr["onset"]
-    lab = "step" if _in(x, b["step"]) else "dose" if _in(x, b["dose"]) else "neither"
-    return {"label": lab, "onset": x, **b}
+    lo = x if prev is None else prev
+    lab = "step" if _within(lo, x, b["step"]) else "dose" if _within(lo, x, b["dose"]) else "neither"
+    return {"label": lab, "onset": x, "prev": prev, **b}
 
 
 JOINT = {("dose", "dose"): "a dose clock, no threshold down to a tenth of the peak",
@@ -145,8 +155,9 @@ def bar_date(top: Sequence[float], states: Sequence[int], b: float) -> Optional[
     return None
 
 
-def label_induction(date: Optional[int], r: float, horizon: int, ref: Tuple[int, int] = IND_REF) -> dict:
-    """d2 at one arm."""
+def label_induction(date: Optional[int], r: float, horizon: int, ref: Tuple[int, int] = IND_REF,
+                    prev: Optional[int] = None) -> dict:
+    """d2 at one arm; the date lies in (prev, date] (a point without ``prev``)."""
     b = bands(ref[0], ref[1], r)
     if not b["separable"]:
         return {"label": "refused", **b}
@@ -156,12 +167,21 @@ def label_induction(date: Optional[int], r: float, horizon: int, ref: Tuple[int,
         if horizon > b["step"][1]:
             return {"label": "not step", **b}
         return {"label": "unreadable", **b}
-    lab = "step" if _in(date, b["step"]) else "dose" if _in(date, b["dose"]) else "neither"
-    return {"label": lab, "date": date, **b}
+    lo = date if prev is None else prev
+    lab = "step" if _within(lo, date, b["step"]) else "dose" if _within(lo, date, b["dose"]) else "neither"
+    return {"label": lab, "date": date, "prev": prev, **b}
 
 
 F_TABLE = {(True, False): "not the early state's", (False, False): "the early state's",
            (True, True): "the restart's", (False, True): "unreadable (the control has a transient)"}
+
+
+def d1_presence(per_arm: Dict[str, Dict[str, dict]], arms: Sequence[str]) -> dict:
+    """d1 as an entry scores it (`/challenge-pr` on #372, finding 2): F½ has a transient and F⅒
+    none, at every gated τ arm; the onset labels are beside, not scored."""
+    cells = {k: {"Fh": bool(per_arm[k]["Fh"]["transient"]["present"]),
+                 "Ft": bool(per_arm[k]["Ft"]["transient"]["present"])} for k in arms}
+    return {"holds": all(c["Fh"] and not c["Ft"] for c in cells.values()), "cells": cells}
 
 
 def f_label(tr_p: dict, tr_o: dict) -> str:
