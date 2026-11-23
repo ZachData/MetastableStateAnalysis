@@ -1,7 +1,9 @@
 <!-- trackC_writeup/design-C4peg.md -->
 # Track C — design: C4′ (e) and (g), no training
 
-**Status: proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
+**Status: (e) frozen 2026-11-23 on Blocked 170 D1, D2 (a)** (Claude, on the user's "Let's just
+continue here"; "Decided 2026-11-23" below) **and read in U1; (g) waits on D3, D4 (STATE Blocked
+171).** Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
 with changes, findings 1–5 taken: G2's random sets and the four arms' head lists, E2's dilution
 term, G1's scale floor, the C5 promise dropped, each lean's source marked); decisions D1–D4 are
 STATE Blocked 170.**
@@ -208,6 +210,38 @@ U1 (e), U2 (g), close-out). GPU under 2 hours in all. At the budget it closes at
 | D2 | the replicate pair in (e) | read both pairs together, tier 1: pair 2 is the order-only scale for E3, and its E1 and E2 a replication reported cell by cell. The [scan] leans were not formed on either pair; the [arms] halves were formed on pair 1 by C4 | hold pair 2 back: develop on pair 1, then you register the leans that formed there and pair 2 is read against them (E3 waits for it; + 1 unit) |
 | D3 | the ablation | mean ablation over the held-out positions | zero ablation (harsher; moves the residual off its distribution) |
 | D4 | registration | none: (e) and (g) are description with their rules fixed here, tier 1. Of the leans, e1, e2, g1 and e3's end half come from the scan; g2, g3 and e3's collapse half were formed on C4's pair, which these units read again, so those cannot be held-out readings here | register g1 (the one [scan] lean in (g)) before U2; it is stated before output, and its pairs exist |
+
+## Decided 2026-11-23 (Blocked 170)
+
+**D1 and D2 (a), by Claude on the user's "Let's just continue here" after Blocked 170 was put**
+(the user's to overrule): D1 Spearman primary, D2 both pairs together at tier 1. (e) is frozen
+with the details below, fixed before any output. D2 is spent, since U1 read pair 2. First
+recorded as "all (a)". After `/challenge-pr` on #367, finding 3 ("continue here" may have meant
+only "stay in this session"), **D3 and D4, which (g) needs, went back to the user as STATE
+Blocked 171** before U2.
+
+### (e) as U1 runs it (written 2026-11-23, before any output)
+
+2609.02959 was read before the code, as D1 required (its §3.1–3.5, App. B, C, G; `lit-C4peg.md`
+Parked 1). It fits d with unregularised least squares on the centred unembedding rows against
+centred log-frequency. It excludes zero counts and scores with nKL and R². It never argues
+against rank correlation, so **Spearman stays primary**. The details the frozen text left open:
+
+| detail | fixed as | why |
+|---|---|---|
+| uᵢ | **hᵢ/‖hᵢ‖, plain L2** (`core.models.layernorm_to_sphere`; C2 5b: "both plain L2"). The design's "P centres over the 512 coordinates" was wrong; P is the identity | the code the records use |
+| state 6 | HF's last hidden state, after the final LN; the code refuses unless it equals LN_f(h₅ + a₅ + f₅) to 10⁻⁵ relative | the parallel residual and the LN's place are checked, not assumed |
+| E1's readout | states 0–5: z(x) = W_U(γ_f ⊙ x); state 6: z(x) = W_U x (already through the LN). u\*, the 1000 random directions and the gate are computed for each readout | reading a post-LN state through γ again would apply it twice |
+| u\* | OLS on the support, the readout's rows centred (W̃ = W − w̄) and ℓ̃ = ℓ − ℓ̄ (2609.02959, App. B) | the paper's fit; centring changes no Spearman |
+| ties | average ranks (log f has many ties among rare tokens) | |
+| the support | tokens with count ≥ 1, as frozen; beside, the paper's top 0.7 \|V\| by count | |
+| beside, nKL | KL(p_uni ‖ softmax(β z)) / KL(p_uni ‖ uniform) on the support, β fitted by a scalar search over [−200, 200]; for m̄_l and u\*; R² for u\* | the paper's metric, scale fitted since m̄ has no scale |
+| E2 at T5 | the components pass through the LN's linear part, c ↦ γ_f ⊙ (c − c̄)/σᵢ (σᵢ from the pre-LN state, eps 1e-5), and b_f is the term B. R then includes the LN's re-weighting of the old stream, not dilution alone; dilution's writer is read from the pre-LN norm growth | P = I elsewhere, so this is the only non-trivial map |
+| E2's cells for e2 | T2 on A0 and A0′, T1 on F and F′ (V's transitions: C4 item 8, `P-SCH3`), at every step from the arm's V date to 4000; "mostly attention" iff attention is the writer at > ½ of those cells' falls | |
+| E3's windows | the same-step cosines summarised on each arm's windows of the pair (A0's steps and F's steps), and at C4 item 10's seven event pairs on pair 1 only (pair 2's events are not all dated) | a cosine is one cell for two arms |
+| unigram counts | `c4_train.open_rows()`, rows [0, `N_ROWS`), columns 1–2048 (the labels), `np.bincount` per 16 384-row chunk, `minlength` 50 304; saved with its sha256 | |
+| known answers | every recomputed per-prompt e1 equals C4's or C4′ (c)'s record at the same (arm, step, prompt) to 10⁻⁵ relative; the components sum to m_l and the shares to 1 to 10⁻⁵ | refuse rather than degrade |
+| code | `trackC_writeup/c4peg_read.py`, with pure tests; pushed before any output | |
 
 ## Worth challenging (for the PR)
 

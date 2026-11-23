@@ -1157,6 +1157,14 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-23, C4′ (e) U1 (#367, `/challenge-pr` findings 1, 2): lean e2 pooled every fall "from
+  V's date to 4000". That window is 22 saved steps on F and 11 on A0, so F's early stage outweighed
+  its end state. Pooled, it read "split by schedule"; by step, both schedules end in the same
+  mode. Lean e3's collapse half compared the arms at the same step while A0 had not yet moved
+  from its init, so it could only measure F's drift. Both were fixed before the freeze could have
+  caught them, and the records already held the per-step answer. Rule: **a lean pooled over a
+  window says how many steps each arm puts in it, and a same-step comparison checks that both
+  arms have moved**.
 - 2026-11-08, S4 U1 (a refusal blamed on the steps when it was the toy's; caught by the gate's
   first late run, before any date): in U1, R2 and R3 refused the gate at steps 1–2 because plant B
   was not seen by the uncentred count. The writeup set those records aside as "steps that test
@@ -2413,6 +2421,10 @@ a wrong premise, the check inherits it.
   only when they write. Cost: none; both fixed before the freeze. Rule: **a control drawn from a
   pool is drawn once by hand from the real records before the design names it**, and every term
   of an exact split is asked "can it be non-zero without the others?" before it gets a cause's name.
+  The same design also said `layernorm_to_sphere` centres the coordinates. It is a plain L2
+  normalisation, as the function's one line shows. The reviewer missed it too, and U1 found it
+  while writing "as U1 runs it", before any output. Rule: **a design that names a function's
+  behaviour quotes its body**.
 - 2026-11-22 (C4′ (c) U3, #364, `/challenge-pr` findings 1, 2): the write-up called the
   replicate's V reading "a one-step reading" and C4's "neither" stable. The record says the
   reverse: R3′ survives a one-step move of either arm, and C4's 24 sits at the band's edge.
