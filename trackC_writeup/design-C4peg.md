@@ -54,10 +54,10 @@ bias b_f is left out: it adds the constant W_U b_f, read separately as its own r
 
 | item | fixed as |
 |---|---|
-| the effect (planted, per checkpoint) | **u\*** = the least-squares solution of (W_U diag γ_f) u ≈ log f − mean (2609.02959's direction, at this checkpoint's W_U); r(u\*) is the ceiling a direction reaches |
+| the effect (planted, per checkpoint) | **u\*** = the least-squares solution of (W_U diag γ_f) u ≈ log f − mean (2609.02959's direction, at this checkpoint's W_U); r(u\*) is the least-squares reference, not an upper bound on r (least squares does not maximise a rank correlation; first written "the ceiling", corrected 2026-11-23 after CodeRabbit on #367; no rule reads it as a bound) |
 | the null (planted, per checkpoint) | 1000 Gaussian directions in ℝ⁵¹² (seeded); q = their 99.9th percentile of r |
 | **gate**, per checkpoint | readable iff r(u\*) > q **and** r(u\*) > the 99th percentile of r(u\*_π) over 100 permutations π of log f across tokens (a fitted direction finds some fit to anything) |
-| a cell's label (arm, step, state) | **"aligned"** iff r(m̄_l) > q; **"anti-aligned"** iff r(m̄_l) < −q; else "not aligned"; "unreadable" if the gate fails. The fraction of the ceiling, r(m̄_l)/r(u\*), is reported beside, with no bar |
+| a cell's label (arm, step, state) | **"aligned"** iff r(m̄_l) > q; **"anti-aligned"** iff r(m̄_l) < −q; else "not aligned"; "unreadable" if the gate fails. The fraction of the least-squares reference, r(m̄_l)/r(u\*), is reported beside, with no bar |
 | beside | r(W_U b_f), the final LN bias's own; cos(m̄_l, γ_f-weighted u\*); r per prompt |
 
 **E2, what writes the mean.** Pythia uses a parallel residual: h_{l+1} = h_l + a_l + f_l, the
