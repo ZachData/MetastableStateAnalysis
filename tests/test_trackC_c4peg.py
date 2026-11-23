@@ -117,3 +117,22 @@ def test_labels_and_windows():
     assert e.window_reads(["aligned", "aligned", "not aligned"], "aligned") is True
     assert e.window_reads(["aligned", "not aligned", "not aligned"], "aligned") is False
     assert e.window_reads(["aligned", "unreadable"], "aligned") is None
+
+
+def test_per_prompt_r_is_each_prompts_own_reading():
+    rng = np.random.default_rng(11)
+    WU = rng.normal(size=(300, 8))
+    g = rng.uniform(0.5, 1.5, size=8)
+    cnt = rng.integers(0, 50, size=300)
+    sup = cnt > 0
+    ell = np.log(cnt[sup] / cnt.sum())
+    m = {"p": rng.normal(size=(7, 8)), "q": rng.normal(size=(7, 8))}
+    out = e.e1_per_prompt(WU, g, m, cnt)
+    for p in m:
+        for l in range(7):
+            assert np.isclose(out["gamma"][p][l], e.spearman((WU * g)[sup] @ m[p][l], ell))
+            assert np.isclose(out["plain"][p][l], e.spearman(WU[sup] @ m[p][l], ell))
+    recs = [{"e1_per_prompt": out, "e1": {"readouts": {"gamma": {"q": 0.0}, "plain": {"q": 0.0}}}}]
+    s = e.per_prompt_r(recs, 3)
+    assert s["n"] == 2 and s["min"] <= s["max"]
+    assert s["above_q"] == sum(out["gamma"][p][3] > 0 for p in m)
