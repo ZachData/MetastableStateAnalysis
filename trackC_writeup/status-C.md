@@ -53,6 +53,7 @@
   - C4′ (e)+(g) U1, (e) (2026-11-23; tier 1; rules pushed before output): on all four arms the tokens' mean, read through the unembedding, is aligned with log unigram frequency at every readable step. The alignment is weak in the harness arm's earliest window and strong later; it is nearest just before or at V's date (78–90 % of the least-squares reference mid-stack), and F gets there about 12× earlier. The mean is written mostly by the MLPs. At the block where V's falls sit, both schedules start with the MLP diluting the mean and end with attention diluting it; only the flat schedule has a stage between (128–640) where the MLP writes against the mean, and the replicate shows the same stages. The two schedules' mean directions are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94), though both carry the unigram prior; revised after `/challenge-pr` on #367 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 1"
   - C4′ (e)+(g) U2, (g) (2026-11-23; tier 1; rules pushed before output): the two schedules' end states, from one init, are not one basin. The held-out loss rises 3.56 nats along the straight line between them at 4000 (2.45 at 1000), against 0.13 between two orderings on Pythia's schedule and 1.03 on the flat one, so warmup keeps reorderings connected and the schedules sit beyond the order-only spread; the replicate pair gives the same. Mean-ablating each arm's induction heads breaks induction, ablating the other schedule's indices does nothing; on the first pair one random set, holding a single early head, hurts as much, so the frozen 'own heads carry induction' fails there, but on a loss saturated at a uniform guess, so it is unresolved (revised after `/challenge-pr` on #369) — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 2"
   - **C4′ (e)+(g) closed 2026-11-23 at its exit and budget** (3 units + close-out): the tokens' mean carries the unigram prior on both schedules; at V's block both end with attention diluting it; the two schedules' end states sit in different basins, their mean directions are near orthogonal, and mid-stack their readouts differ about as much as another init's (post hoc); the other schedule's induction-head indices do nothing when ablated, and each arm's previous-token heads alone remove as much copying as its induction heads, so g3 is unresolved (post hoc; revised after `/challenge-pr` on #370) — `trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"
+  - C4′ (d)+(f) opened 2026-11-23 (STATE Blocked 169's order, after (e)+(g); writing only, nothing trained): a scan and a proposed design. (d): flat arms at a half and a tenth of the peak, the transient's onset and induction's date read against a step and a dose band; (f): A0's step-256 weights continued at the peak against the same restart at A0's own rate. The ROADMAP's horizons were too short for the dose clock (F⅒'s transient band [384, 600]); A0 passes F's onset dose at 0.26 of the peak with no transient. Decisions D1–D4, STATE Blocked 172 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 0"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -69,7 +70,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `6a872a04df`
+- **Reviewed:** 2026-11-23 · body `70e87b4061`
 <!-- /phase-card -->
 
 ## Units
@@ -124,6 +125,36 @@
 | C4′ (e)+(g) 1. (e) on the four arms | **done 2026-11-23: tier 1; every known answer exact; e1 held on both pairs; e2 held on A0, broken on F as pooled, while by step both end in attention's dilution and F alone has an MLP-removal stage; e3's end half broken; revised after `/challenge-pr` on #367** | `c4peg_read.py`; "C4′ (e)+(g) unit 1" below |
 | C4′ (e)+(g) 2. (g) on the four arms (Blocked 171 D3 (a), D4 (a), E (a), Claude on the user's "do the next 5 items") | **done 2026-11-23: tier 1; G1 gated and readable; (A0, F) "beyond it" (B 3.56 nats against S 1.03), pair 2 the same; g1 held, g2 held; g3 broken as frozen on A0 and F (one random set as harmful as the own heads), held on A0′ and F′, unresolved since the induction loss saturates; the other schedule's indices carry nothing on any arm; revised after `/challenge-pr` on #369** | `c4peg_g.py`; "C4′ (e)+(g) unit 2" below |
 | C4′ (e)+(g) close-out (two post hoc reads, minutes) | **done 2026-11-23: at the budget (3 units + close-out); at mid-stack the schedules' means read through W_U agree no more than another init's (the final state is at the read's ceiling for any two models); g3 unresolved on both pairs, each arm's previous-token heads alone remove as much of the copy gain as its induction heads; revised after `/challenge-pr` on #370** | `c4peg_close.py`; "C4′ (e)+(g) on one page (closed 2026-11-23)" below |
+| C4′ (d)+(f) 0. the scan and design (Blocked 169's order; budget 4 units + close-out) | **done 2026-11-23: writing only, nothing trained; proposed, D1–D4 Blocked 172** | `lit-C4pdf.md`, `design-C4pdf.md`, `tools/math_checks/c4pdf_bands.py`; "C4′ (d)+(f) unit 0" below |
+
+## C4′ (d)+(f) unit 0, the scan and design (2026-11-23)
+
+Blocked 169, decided by the user 2026-11-23: (e) and (g) first, then (d) and (f); (e)+(g) closed
+in #370. One design for both, since both ask what sets F's transient and both train short runs on
+C4's harness. Writing only; nothing trained, no record read beyond what earlier units showed.
+
+| item | where |
+|---|---|
+| scan: six searches, every outside row [S]; the catapult line (a threshold set by the early state's curvature) and Gupta et al.'s direct-to-peak spike on a trained Pythia give (f) two leans pointing opposite ways, both stated before output; fresh Adam moments matter for tens of updates (Ibrahim et al.), which is F's window, so (f) keeps a restart control | `lit-C4pdf.md` |
+| design: arms F½ and F⅒ (flat at a half and a tenth of the peak, C4's order and init), branches B_P and B_O from A0's step-256 weights with fresh AdamW (the peak; A0's own rate); rule T (a transient is ≥ 2 consecutive states with a majority outside {T1, T2}); d1 the onset against step and dose bands, d2 induction by a bar rule, f by the branches' pair | `design-C4pdf.md` |
+| arithmetic | `tools/math_checks/c4pdf_bands.py`: the bands disjoint for r < 1/ρ², the grid steps in each, the horizons, A0's crossing of F's onset dose |
+| leans, stated now | d1 (a threshold between a tenth and a half), d1′ (F½'s onset in the dose band; no source), d2 (F½'s induction in the dose band), d3 (F⅒ none by 768); f-state and f-rate, opposite |
+| exit, budget | 4 units + close-out; GPU ≈ 17 h at D1 (a), D2 (a) |
+| decisions | D1–D4, STATE Blocked 172 |
+
+**Found while writing:** (1) the ROADMAP row's horizons (F½ to 768, F⅒ to 384) cannot read its own
+question: under the dose clock F⅒'s transient falls in [384, 600] and F½'s induction band reaches
+800, so D1 (a) proposes 1000 and 768. (2) A0's summed rate reaches F's onset dose (48 peak-steps)
+at step 370, at 0.26 of the peak, with no transient there: a pure dose clock for the transient is
+already argued against unless the state matters, which is (f)'s question. (3) Checkpoints hold
+weights only (`resume.pt` is A0's at 4000), so A0's moments at 256 would have to be rebuilt by
+re-training (D2 (b), (c)).
+
+**Checked against the tree:** A0's `step256/model.safetensors` exists (fp32, 282 MB);
+`c4_train.lr_flat` and `lr_pythia` take no rate factor, so a new driver is needed and `c4_train`
+stays unedited; `HDD_1TB` has 123 GB free (the runs need ≈ 22 GB).
+
+**Parked:** `lit-C4pdf.md` Parked 1 (Gupta et al.'s full text; read before U2's records are read).
 
 ## C4′ (e)+(g) on one page (closed 2026-11-23)
 
