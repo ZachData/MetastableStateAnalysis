@@ -1,8 +1,9 @@
 <!-- trackC_writeup/design-C4peg.md -->
 # Track C — design: C4′ (e) and (g), no training
 
-**Status: frozen 2026-11-23 on Blocked 170 all (a)** (Claude, on the user's "Let's just continue
-here"; "Decided 2026-11-23" below). Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
+**Status: (e) frozen 2026-11-23 on Blocked 170 D1, D2 (a)** (Claude, on the user's "Let's just
+continue here"; "Decided 2026-11-23" below) **and read in U1; (g) waits on D3, D4 (STATE Blocked
+171).** Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
 with changes, findings 1–5 taken: G2's random sets and the four arms' head lists, E2's dilution
 term, G1's scale floor, the C5 promise dropped, each lean's source marked); decisions D1–D4 are
 STATE Blocked 170.**
@@ -212,10 +213,12 @@ U1 (e), U2 (g), close-out). GPU under 2 hours in all. At the budget it closes at
 
 ## Decided 2026-11-23 (Blocked 170)
 
-**All (a), by Claude on the user's "Let's just continue here" after Blocked 170 was put**
-(the user's to overrule): D1 Spearman primary, D2 both pairs together at tier 1, D3 mean
-ablation, D4 nothing registered. The design is frozen with the details below, fixed before any
-output.
+**D1 and D2 (a), by Claude on the user's "Let's just continue here" after Blocked 170 was put**
+(the user's to overrule): D1 Spearman primary, D2 both pairs together at tier 1. (e) is frozen
+with the details below, fixed before any output. D2 is spent, since U1 read pair 2. First
+recorded as "all (a)". After `/challenge-pr` on #367, finding 3 ("continue here" may have meant
+only "stay in this session"), **D3 and D4, which (g) needs, went back to the user as STATE
+Blocked 171** before U2.
 
 ### (e) as U1 runs it (written 2026-11-23, before any output)
 
