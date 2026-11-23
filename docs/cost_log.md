@@ -659,3 +659,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-23 | C4′ (e)+(g) close-out (two post hoc reads; same session as #368 and #369, so this row is the session's running total, #369's /challenge-pr included) · subagents: general-purpose opus-5-5 1.1M | 124 | 272k | 23.4M | 68k | #370 |
   - Over 2× the running median: the same one-session cause as #369's row (the user's "do the next 5 items"); its 17.8M is inside this 23.4M, not added to it.
 | 2026-11-23 | C4′ (d)+(f) U0 (scan, design; /challenge-pr on #371 answered) · subagents: general-purpose opus-5-5 2.3M | 61 | 260k | 11.5M | 74k | #371 |
+| 2026-11-23 | C4′ (d)+(f) U1 (rules, gates, F¹; same session as #371, running total) · subagents: general-purpose opus-5-5 2.3M, runner haiku-5-5 900k · runner batches, main calls: 15 (haiku-5-5) | 111 | 364k | 27.3M | 97k | #372 |
+  - Over 2× the running median: one session for U0, its review, U1 and an explainer page at the user's "continue for the next 5 state items"; the starting STATE alone was ~140 KB, read through a saved file (`LESSONS.md` 9).

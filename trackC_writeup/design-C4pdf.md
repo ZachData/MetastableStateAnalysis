@@ -196,7 +196,7 @@ induction score on each branch (A0 reaches b near 768).
 | G-I | the bar rule on A0, F, A0′, F′ cut at 1000: 768, 320, 768, 320 | |
 | G-d2 | F's top-head series stretched by 1/r: "dose" at ½; at ⅒, "not formed by 1000" | F unstretched: "step" at both |
 | G-f | F's states 0–256 read as offsets: a transient | A0's states 256–512 as offsets (only 256, 320, 384, 512 exist): none |
-| H-d | F¹ equals F's saved weights bit for bit at every F state ≤ 128 (1, 2, 4, …, 128); then G-d1 is re-run with F¹'s reference: "dose" at ½ and ⅒ | |
+| H-d | F¹ equals F's saved weights bit for bit at every state both saved (0, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128; corrected after F¹ trained, the first text listed 1 and 2, which grid D does not save); then G-d1 is re-run with F¹'s reference: "dose" at ½ and ⅒ | |
 | H-f | a branch's state at k = 0 equals A0's step-256 file bit for bit; its batch k is A0's batch 256 + k (row hashes) | |
 
 G-d1 and G-d2 are plants built from the effect arm itself: they test that the code reads a stretched
@@ -261,6 +261,63 @@ open in a way that could move a label:
 - a branch's transient span and onset are in absolute steps (only differences enter rule T);
 - the reference (t⁻, t) is F¹'s onset and the state before it on F¹'s grid, per gated τ arm; if F¹
   has no transient at a gated arm, the read refuses.
+
+## The two draft entries (D3 (b); yours to register or decline)
+
+**F¹ in U1 (before any draft below is registered):** H-d **failed**. F¹'s update-1 loss equals F's to
+every digit, but at update 4 the weights already differ (76 tensors, max |Δ| 0.0017, growing to
+0.067 at 128): C4's harness is not bit-reproducible past its first update (bf16 autocast's backward
+on the GPU). As the gate row says, F¹ is then a near-replicate of F and its onset the reference,
+recorded so. F¹'s per-transition cells differ from F's at 3–6 of 72 cells on the 12 shared states.
+**The references (t⁻, t]:** (44, 48] at τ 9.61e-5, (48, 52] at 1e-4 and at 3e-4 (F's coarse grid
+had 48, 48, 64: 52 lies in (48, 64]). G-d1 re-run with them: F stretched reads "dose" at ½ and ⅒
+at every gated arm (`data/trackC/c4pdf/2026-11-23-u1/reference.json`, sha256 `ff097573de52…`).
+So F½'s windows are step [35.2, 60] or [38.4, 65] and dose [70.4, 120] or [76.8, 130]; F⅒'s dose
+window reaches 650, inside the horizon. H-d is dropped from both drafts' falsifiers below.
+
+Drafted in U1 after the gates passed (`data/trackC/c4pdf/2026-11-23-u1/gate.json`, sha256
+`558d25ec99e9749aa250d061123fb179efaa0db112c827271246b1759885fd7e`, rules `bc45f4a54d84`) and
+before F½ or F⅒ took an update. To register: add both to `claims/registry.json` with the next two
+`P-SCH` numbers, then commit `trackC_writeup/c4pdf_entries.json` as `{"d1": "<id>", "d2": "<id>"}`
+(or `"declined"` for either); `c4pdf_train` refuses F½ and F⅒ until that file is committed.
+
+**d1** (claim H-RESIST; experiment "C4′ (d)+(f)"; relevance 0.6, as `P-SCH2`–`6`):
+- *statement:* On pythia-70m trained from seed 0's init on C4's data order at a flat rate of
+  0.5e-3 (F½) and of 0.1e-3 (F⅒), each to 1000 with states on grid D (every 4 updates to 128,
+  every 16 to 256, every 32 to 992, and 1000), at every centred τ arm C4's gate passed on F
+  (9.61e-5, 1e-4, 3e-4): F½ has a transient and F⅒ has none by 1000 (rule T: a run of
+  consecutive saved states, each with a transition outside {T1, T2} majority violated, spanning
+  ≥ 16 updates), with F½'s onset labelled "dose" or "step" against bands built from F¹'s onset
+  interval (t⁻, t] with ρ₀ = 1.25 (`c4pdf_rules.d1_joint`: "a threshold between a tenth and a half
+  of the peak", either row).
+- *h0:* the transient's presence does not change between a tenth and a half of the peak (both arms
+  have one, or neither has).
+- *h1:* the statement.
+- *falsifier:* F⅒ has a transient by 1000, or F½ has none, at a gated arm. A "refused", "neither"
+  or "unreadable" label at any gated arm, H-f failing, or a divergence scores nothing.
+- *instrument:* `c4pdf_train.py` `f46abc7de0e8` (calling `c4_train.py` `1c1e1d2df083` unchanged),
+  records by `c4_read._records_of`, matrices by `c4_close.per_transition`, the rule
+  `c4pdf_rules.py` `bc45f4a54d84`.
+- *null_construction:* calibration, not a p-value: F and F′ read a transient at every gated arm,
+  A0 and A0′ none (G-T); F stretched by 1/r onto grid D reads "dose" at ⅒ (G-d1). The record above.
+- *notes:* 70m only; one run per rate; ρ₀ is placed, not measured; "none by 1000" on F⅒ does not
+  separate a threshold from a clock slower than the dose; rule T's span was placed after seeing
+  A0′'s one-state run at 640. Registered after U1's gates and F¹, before F½'s or F⅒'s first update.
+
+**d2** (claim H-RESIST; same experiment and relevance):
+- *statement:* On F½ as in d1, induction's date (the first saved state at which the maximum over
+  the 48 heads of `c4_close`'s induction score reaches b = ½ P̄ = 0.4819, P̄ the median of A0's,
+  F's, A0′'s and F′'s `c4_read.date_on` plateaus) lies in the dose band [409.6, 800], built from
+  F's date interval (256, 320] with ρ₀ = 1.25 (`c4pdf_rules.label_induction`).
+- *h0:* the date lies in the step band [204.8, 400], or F½ does not reach b by 1000.
+- *h1:* the statement.
+- *falsifier:* the date is ≤ 400, or after 800, or b is not reached by 1000. A
+  divergence scores nothing.
+- *instrument:* as d1; heads by `c4pdf_read.heads` (`c4_close.heads`' sequences, seed and scorer).
+- *null_construction:* calibration: the bar rule returns 768, 320, 768, 320 on A0, F, A0′, F′
+  (G-I); F's series stretched by 2 reads "dose", unstretched "step" (G-d2). The record above.
+- *notes:* the bands are disjoint by a thin margin (r < 0.512 at r = ½); F⅒'s induction (d3) is not
+  in the entry, since its dose band is past 1000.
 
 ## Worth challenging (for the PR)
 

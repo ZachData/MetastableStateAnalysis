@@ -226,9 +226,10 @@ def bit_equal(a: Dict[str, np.ndarray], b: Dict[str, np.ndarray]) -> dict:
 
 
 def hd(a) -> int:
-    """H-d: F1 against F at every F state ≤ 128."""
+    """H-d: F1 against F at every state both saved (F's grid ∩ grid D, ≤ 128: 12 states).
+    Fixed 2026-11-23 after F1 trained: the first version listed F's states 1 and 2, which F1 does not save."""
     root = Path(a.root)
-    steps = [s for s in ct.SAVE_STEPS if s <= UNTIL["F1"]]
+    steps = [s for s in ct.SAVE_STEPS if s <= UNTIL["F1"] and s in save_steps("F1")]   # the states both saved
     res = {str(s): bit_equal(_sd(ct.ckpt_dir(root, "F1", s)), _sd(ct.ckpt_dir(C4_ROOT, "F", s))) for s in steps}
     out = {"gate": "H-d", "pass": all(v["equal"] for v in res.values()), "per_step": res, "code": code_sha()}
     ct._jdump(Path(a.out) / "hd.json", out)
