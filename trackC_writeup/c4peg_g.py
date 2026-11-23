@@ -59,6 +59,7 @@ K_F = DATA / "trackC/c4p/2026-11-17-u2/K_F.npz"            # C4′ (b), beside, 
 CKPT_ROOT = {"A0": ct.ROOT, "F": ct.ROOT, "A0p": ct.HDD / "c4pc", "Fp": ct.HDD / "c4pc"}
 REPOS = {"rel": ct.BASE, "seed1": "EleutherAI/pythia-70m-seed1"}
 EXACT_TOL = 1e-5
+BATCH = 2                                                   # placed: rows per forward (8 ran out of the 3080's memory)
 
 
 class C4pegGRefused(RuntimeError):
@@ -193,8 +194,8 @@ def held_loss(model, x: np.ndarray, device) -> float:
     tot, n = 0.0, 0
     xt = torch.from_numpy(x).to(device)
     with torch.no_grad():
-        for k in range(0, len(xt), 8):
-            r = xt[k:k + 8]
+        for k in range(0, len(xt), BATCH):
+            r = xt[k:k + BATCH]
             lg = model(input_ids=r[:, :-1]).logits.float()
             tot += float(F.cross_entropy(lg.reshape(-1, lg.shape[-1]), r[:, 1:].reshape(-1), reduction="sum"))
             n += r[:, 1:].numel()
@@ -206,12 +207,16 @@ def induction_loss(model, seq: np.ndarray, device) -> float:
     import torch
     import torch.nn.functional as F
     L = seq.shape[1] // 2
+    tot, n = 0.0, 0
     with torch.no_grad():
-        x = torch.from_numpy(seq).to(device)
-        lg = model(input_ids=x).logits.float()
-        pred = lg[:, L:2 * L - 1]
-        tgt = x[:, L + 1:2 * L]
-        return float(F.cross_entropy(pred.reshape(-1, pred.shape[-1]), tgt.reshape(-1)))
+        xs = torch.from_numpy(seq).to(device)
+        for k in range(0, len(xs), 16):
+            x = xs[k:k + 16]
+            pred = model(input_ids=x).logits.float()[:, L:2 * L - 1]
+            tgt = x[:, L + 1:2 * L]
+            tot += float(F.cross_entropy(pred.reshape(-1, pred.shape[-1]), tgt.reshape(-1), reduction="sum"))
+            n += tgt.numel()
+    return tot / n
 
 
 def interpolate_into(model, sd_x: dict, sd_y: dict, alpha: float) -> None:
@@ -297,8 +302,8 @@ def dense_means(model, x: np.ndarray, device) -> List[np.ndarray]:
     try:
         xt = torch.from_numpy(x).to(device)
         with torch.no_grad():
-            for k in range(0, len(xt), 8):
-                model(input_ids=xt[k:k + 8, :-1])
+            for k in range(0, len(xt), BATCH):
+                model(input_ids=xt[k:k + BATCH, :-1])
     finally:
         for h in hooks:
             h.remove()

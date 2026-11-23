@@ -253,7 +253,7 @@ details the frozen text left open:
 | detail | fixed as | why |
 |---|---|---|
 | θ(α) | every `named_parameters()` tensor interpolated in float32 (LN included); buffers from X | the design's "every parameter" |
-| L(α) | mean next-token cross-entropy over the 64 held-out rows' 131 072 targets, float32 eager, batches of 8 rows (`c4_train.held_loss`'s reading, summed then divided) | C4′ (b)'s rows and precision |
+| L(α) | mean next-token cross-entropy over the 64 held-out rows' 131 072 targets, float32 eager, batches of 2 rows (summed then divided; 8 rows, `c4_train.held_loss`'s batch, ran out of memory before any output) | C4′ (b)'s rows and precision |
 | known answer | L(0) and L(1) equal each endpoint's own loss to 10⁻⁵ relative, or refuse | the interpolation path is checked |
 | B | max over the 11-point grid of the excess over the chord (≥ 0, since the endpoints give 0); ± 0.05 around the grid's maximum, beside, never in a label | as frozen |
 | released, seed 1 | `EleutherAI/pythia-70m` and `pythia-70m-seed1` at revision `step4000` (fp16-stored weights read in float32) | the null's noise includes that rounding, as in C4′ (b) |
