@@ -656,3 +656,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   - Over 2× the running median (23.2M against about 7.6M): the session's total, U0 (#366, 8.3M at its row) plus U1 in one session at the user's "Let's just continue here", so every U1 call re-read U0's context and the challenge's (`LESSONS.md` 9).
 | 2026-11-23 | C4′ (e)+(g) U2 (g) + #368 (CodeRabbit on #367; U1's records regenerated): (A0, F) beyond the order-only spread, g1, g2 held, g3 broken as frozen on pair 1 | 102 | 240k | 17.8M | 63k | #369 |
   - Over 2× the running median (17.8M against about 7.6M): one session for #368 and U2 at the user's "do the next 5 items", with two 30-minute GPU waits inside it (`LESSONS.md` 9).
+| 2026-11-23 | C4′ (e)+(g) close-out (two post hoc reads; same session as #368 and #369, so this row is the session's running total, #369's /challenge-pr included) · subagents: general-purpose opus-5-5 1.1M | 124 | 272k | 23.4M | 68k | #370 |
+  - Over 2× the running median: the same one-session cause as #369's row (the user's "do the next 5 items"); its 17.8M is inside this 23.4M, not added to it.
