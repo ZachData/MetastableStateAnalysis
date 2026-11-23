@@ -2413,6 +2413,10 @@ a wrong premise, the check inherits it.
   only when they write. Cost: none; both fixed before the freeze. Rule: **a control drawn from a
   pool is drawn once by hand from the real records before the design names it**, and every term
   of an exact split is asked "can it be non-zero without the others?" before it gets a cause's name.
+  The same design also said `layernorm_to_sphere` centres the coordinates. It is a plain L2
+  normalisation, as the function's one line shows. The reviewer missed it too, and U1 found it
+  while writing "as U1 runs it", before any output. Rule: **a design that names a function's
+  behaviour quotes its body**.
 - 2026-11-22 (C4′ (c) U3, #364, `/challenge-pr` findings 1, 2): the write-up called the
   replicate's V reading "a one-step reading" and C4's "neither" stable. The record says the
   reverse: R3′ survives a one-step move of either arm, and C4's 24 sits at the band's edge.
