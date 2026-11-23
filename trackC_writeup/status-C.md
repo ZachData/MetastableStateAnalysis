@@ -51,6 +51,7 @@
   - **C4′ (c) closed 2026-11-22 at its exit** (4 units + close-out, the budget): items 8, 9, 10 held by registered entries (10 thin after 1500, so "early"); item 7 broken as registered (A0′ has a one-step transient), its F′ side replicating; item 6 (that the exclusion is fragile) split: not borne out for the centred count (order spread 1.0, the replicate "neither"), borne out on V, where the replicate reads "consistent with cumulative"; Kosson et al. read, a mechanism-level reference for item 7, no cell moved; one paragraph in `paper/` §7, and §1's sentence on the flat arm corrected to match — `trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"
   - C4′ (e)+(g) opened 2026-11-23 (STATE Blocked 169 (d), the user's: "(e) and (g) first"; writing only, nothing computed): a scan and a proposed design that reads the four trained arms. (e): the tokens' mean through W_U against unigram log-frequency, the exact split of each fall of ‖m‖² into its mode (removal or dilution) and writer (attention or MLP), and the arms' mean directions against the replicate's. (g): the loss barrier between the two schedules' end states, scaled by the replicate pairs, and each arm's induction heads mean-ablated. Leans stated before output (g1: warmup helps order-only connectivity); budget 3 units + close-out; (e) frozen on Blocked 170 D1, D2 (a) (Claude, on the user's "continue here"); (g)'s D3, D4 are Blocked 171 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 0"
   - C4′ (e)+(g) U1, (e) (2026-11-23; tier 1; rules pushed before output): on all four arms the tokens' mean, read through the unembedding, is aligned with log unigram frequency at every readable step. The alignment is weak in the harness arm's earliest window and strong later; it is nearest just before or at V's date (78–90 % of the least-squares reference mid-stack), and F gets there about 12× earlier. The mean is written mostly by the MLPs. At the block where V's falls sit, both schedules start with the MLP diluting the mean and end with attention diluting it; only the flat schedule has a stage between (128–640) where the MLP writes against the mean, and the replicate shows the same stages. The two schedules' mean directions are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94), though both carry the unigram prior; revised after `/challenge-pr` on #367 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 1"
+  - C4′ (e)+(g) U2, (g) (2026-11-23; tier 1; rules pushed before output): the two schedules' end states, from one init, are not one basin. The held-out loss rises 3.56 nats along the straight line between them at 4000 (2.45 at 1000), against 0.13 between two orderings on Pythia's schedule and 1.03 on the flat one, so warmup keeps reorderings connected and the schedules sit beyond the order-only spread; the replicate pair gives the same. Mean-ablating each arm's induction heads breaks induction, ablating the other schedule's indices does nothing; on the first pair one random set, holding a single early head, hurts as much, so the frozen 'own heads carry induction' fails there — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 2"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -67,7 +68,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `da0e65bb18`
+- **Reviewed:** 2026-11-23 · body `0fe906c2a7`
 <!-- /phase-card -->
 
 ## Units
@@ -120,6 +121,83 @@
 | C4′ (c) close-out (writing only) | **done 2026-11-22: items 6–10 marked; Kosson et al. read; one paragraph in `paper/` §7 (20 keys, 4 claims, `paper_check` 0)** | "C4′ (c) on one page (closed 2026-11-22)" below |
 | C4′ (e)+(g) 0. the scan and design (Blocked 169, the user's: "(e) and (g) first"; budget 3 units + close-out) | **done 2026-11-23: writing only, nothing computed; (e) frozen on Blocked 170 D1, D2 (a) (Claude, on the user's "continue here"); (g)'s D3, D4 are Blocked 171** | `lit-C4peg.md`, `design-C4peg.md`; "C4′ (e)+(g) unit 0" below |
 | C4′ (e)+(g) 1. (e) on the four arms | **done 2026-11-23: tier 1; every known answer exact; e1 held on both pairs; e2 held on A0, broken on F as pooled, while by step both end in attention's dilution and F alone has an MLP-removal stage; e3's end half broken; revised after `/challenge-pr` on #367** | `c4peg_read.py`; "C4′ (e)+(g) unit 1" below |
+| C4′ (e)+(g) 2. (g) on the four arms (Blocked 171 D3 (a), D4 (a), E (a), Claude on the user's "do the next 5 items") | **done 2026-11-23: tier 1; G1 gated and readable; (A0, F) "beyond it" (B 3.56 nats against S 1.03), pair 2 the same; g1 held, g2 held; g3 broken as frozen on A0 and F (one random set as harmful as the own heads), held on A0′ and F′; the other schedule's indices carry nothing on any arm** | `c4peg_g.py`; "C4′ (e)+(g) unit 2" below |
+
+## C4′ (e)+(g) unit 2, (g): do the end states differ in function? (2026-11-23)
+
+Tier 1, description; nothing registered (Blocked 171 D4 (a)). Rules and code pushed before any
+output (`c4peg_g.py`, `bc84cd0`; the batch cut from 8 rows to 2 after an out-of-memory stop that
+wrote nothing, `design-C4peg.md` "(g) as U2 runs it"). Records `data/trackC/c4peg/2026-11-23-u2/`
+(`g1.json`, `g2.json`, `reading_g.json`; main tree, untracked), code `c4peg_g` at the records'
+hash. GPU about 25 minutes.
+
+**Known answers:** every interpolation's endpoints reproduce each checkpoint's own held-out loss to
+10⁻⁵ (A0 3.1070 and A0′ 3.1041 equal H4′'s records); an empty ablation through the hooks leaves
+the induction loss unchanged; the own sets and the 11-head union equal the design's.
+
+**G1, the loss along the line** (held-out rows, nats; B is the excess over the chord, at α 0.5
+unless stated; ± 0.05 beside agrees to ≤ 0.2):
+
+| pair | step | L(0), L(1) | L(0.5) | B | role |
+|---|---|---|---|---|---|
+| (A0, F) | 4000 | 3.107, 3.058 | 6.638 | **3.56** | the question |
+| (A0′, F′) | 4000 | 3.104, 3.061 | 6.618 | 3.54 | beside, pair 2 |
+| (A0, A0′) | 4000 | 3.107, 3.104 | 3.240 | 0.13 | order-only scale, Pythia's schedule |
+| (F, F′) | 4000 | 3.058, 3.061 | 4.094 | 1.03 | order-only scale, flat |
+| (released, A0) | 4000 | 3.099, 3.107 | 3.129 | 0.026 | null |
+| (A0, seed 1) | 4000 | 3.107, 3.108 | 9.476 | 6.37 | effect (another init and order) |
+| (A0, F) | 1000 | 3.720, 3.373 | 5.850 | 2.45 (α 0.4) | beside |
+| (A0′, F′) | 1000 | 3.715, 3.376 | 5.878 | 2.45 (α 0.4) | beside |
+| (A0, A0′) | 1000 | 3.720, 3.715 | 3.699 | 0.00 | beside: linearly connected |
+| (F, F′) | 1000 | 3.373, 3.376 | 3.817 | 0.44 | beside |
+
+The gate passes (6.37 > 0.1 and > 4 × 0.026). S = max(0.13, 1.03, 0.026, 0.01) = 1.03, so **(A0, F)
+reads "beyond it"** (3.56 > 2S), and pair 2 the same (3.54). **g1 held**: B(F, F′) − B(A0, A0′) =
+0.90 > 0.026, so on 70m warmup leaves two orderings linearly connected (0.13 at 4000, 0.00 at
+1000) where the flat schedule does not (1.03, 0.44), as Altıntaş et al. found. **g2 held**: the two
+schedules from one init end in different basins, about half as far apart in barrier as another
+init and order (3.56 against 6.37), and the barrier is already 2.45 at 1000. Beside: K(F₄₀₀₀,
+A0₄₀₀₀) = 0.36 against A0's own last step 0.15 (C4′ (b)'s `K_F.npz`).
+
+**G2, the heads mean-ablated** (Δ of the induction loss, nats; base A0 2.67, F 4.58, A0′ 2.02, F′
+3.65; random sets 20 per arm, outside the 11-head union):
+
+| arm | own set | Δ own | Δ other's indices | random: median, max | own > every random? |
+|---|---|---|---|---|---|
+| A0 | L3H0, 1, 5, 6 | 9.94 | 0.15 | −0.02, **10.09** | **no** (by 0.15) |
+| F | L2H6, L3H3, 4, 7 | 6.62 | −0.12 | 0.14, **7.49** | **no** (by 0.87) |
+| A0′ | A0's four | 8.79 | −0.43 | 0.12, 8.73 | yes (by 0.06) |
+| F′ | L2H2, 5, 6, L3H7, L4H1 | 6.68 | 0.22 | 0.20, 4.12 | yes (by 2.56) |
+
+The held-out loss moves little under any of these (own sets +0.22 to +0.37). **The other
+schedule's indices carry nothing on any arm** (|Δ| ≤ 0.43, a loss fall at most). As frozen, **g3
+broke on A0 and F and held on A0′ and F′**: on A0 and F one of the 20 random sets hurts induction
+as much as the own heads. Post hoc: those sets share one early head. On A0 the two worst (10.09,
+8.23) both hold L2H1, and on A0′ the three worst (8.73, 8.03, 7.98) all do. On F the worst sets
+hold L1H7, L0H6 and L1H5. Every other random set is near 0. So the rule's "max of 20" is met by
+an upstream head that induction needs (a previous-token head is the likely job; its score was not
+measured), not by a spread of heads. Read that way, both schedules' own sets carry induction, and
+neither carries the other's indices. The ratio Δ(own)^F / Δ(own)^A0 is 0.67, and F′/A0′ is 0.76.
+The flat arms' base induction loss is higher (F 4.58 against A0 2.67; F′ 3.65 against A0′ 2.02),
+so they induce less well on random repeats at 4000.
+
+**Leans:** g1 held; g2 held (both pairs); g3 broken as frozen on pair 1 (held on pair 2), with the
+post hoc reading above. Nothing registered.
+
+**What it says for C4's item 10** (F off A0's path): the end states are not one basin. The
+straight line between them rises 3.56 nats, about 3.4 times the larger reordering's barrier, and
+it was already 2.45 at 1000. "The schedule chooses the heads" goes past their indices: each arm's
+induction runs through its own heads, and the other's head indices do nothing when ablated.
+
+**Not established.** Whether a permutation of units connects A0 and F (no alignment was tried;
+the design's "Worth challenging" 4). The early head's job on each arm. Anything on 410m.
+
+**Parked:** 1. **The upstream head behind g3's random max** (why: it decides whether g3's break is
+the rule's or the arms'; cost: minutes, a previous-token score per head at 4000; could change: how
+the close-out words g3). To the close-out, post hoc.
+
+**Re-run:** `METS_DATA=<main>/data HF_HOME=<HDD_1TB>/mets_data/hf python -m trackC_writeup.c4peg_g
+{g2,g1,read} --out <dir>` (the `mets` env; GPU for g1, g2).
 
 ## C4′ (e)+(g) unit 1, (e): the common direction (2026-11-23)
 
