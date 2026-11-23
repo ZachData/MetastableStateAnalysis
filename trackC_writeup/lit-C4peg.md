@@ -13,7 +13,7 @@ marks a work cited from prior knowledge, not checked here. Not repeated: `lit-C4
 
 | work | what [S] | bearing |
 |---|---|---|
-| 2609.02959, "The Direction of Ignorance" | a unigram prior is encoded along one unembedding direction, found by least squares of log-frequencies on the unembedding; scored by a normalised KL (0 exact, 1 uniform); learned early in training, across families | (e)'s planted effect: that least-squares direction is the ceiling a mean direction can reach through W_U. Its "early" is (e)'s question on two schedules |
+| 2609.02959, "The Direction of Ignorance" | a unigram prior is encoded along one unembedding direction, found by least squares of log-frequencies on the unembedding; scored by a normalised KL (0 exact, 1 uniform); learned early in training, across families | (e)'s planted effect: that least-squares direction is the reference a mean direction is compared with through W_U (not an upper bound on its rank correlation). Its "early" is (e)'s question on two schedules |
 | Kobayashi et al. 2305.18294 | GPT-2's prediction head (LN bias, W_U) handles word frequency, promoting frequent tokens | the final LN's bias alone can write a unigram prior; (e) reads it separately from the mean |
 | Biś et al., NAACL 2021 | anisotropy is a drift in a common direction, driven by rare tokens' updates through the softmax | a mechanism in the embedding; (e)'s embedding share at state 0 tests whether the mean starts there |
 | 2306.07656; Godey et al. 2401.12143 | drift does not explain transformers' anisotropy; it is tied to attention's sharpness | the alternative: attention writes the common direction. (e)'s component split separates the two |

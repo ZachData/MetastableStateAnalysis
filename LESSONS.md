@@ -2931,6 +2931,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   **a reading that agrees gets its null and its forced-agreement check before it gets a sentence**
   (the calibration gate, applied to description too). Also: the unit's exit condition was written
   with the results, not before.
+- 2026-11-23, C4′ (e) U1 (#367, CodeRabbit), a repeat of the 2026-11-14 rule. `design-C4peg.md`'s
+  E1 table names "r per prompt" beside, and `c4peg_read.py` discarded each prompt's m before
+  computing it, so the records could not supply it; neither the author nor `/challenge-pr` saw the
+  gap. Cost: the 30-minute GPU pass re-run (every other value reproduced exactly). Rule, sharpened:
+  **the code's record schema is checked against the design's "beside" rows before the first
+  output**, not only before the exit is claimed.
 
 ## 12. Deleted, then needed
 

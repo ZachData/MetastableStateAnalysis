@@ -50,7 +50,7 @@
   - C4′ (c) U3 (2026-11-22): C4's gate at 3500 on F′ as frozen (V and τ 9.61e-5, 1e-4, 3e-4), pinned in git before any record; of the five registered leans, L7 does not hold (A0′ has a one-step transient {T3} at 640), L8, L9, L9h and L10 hold; M2 leaves C4's R2 and R3 "neither"; M3 (the replicate) reads V "consistent with cumulative", robust to a one-step move of either arm, with C4's "neither" the reading at the band's edge, and the centred count "neither"; L10 (b) holds at 12 of 12, but from 1500 on by a factor ≤ 1.32; scoring in the registry is Blocked 168 — `trackC_writeup/status-C.md` "C4′ (c) unit 3"
   - **C4′ (c) closed 2026-11-22 at its exit** (4 units + close-out, the budget): items 8, 9, 10 held by registered entries (10 thin after 1500, so "early"); item 7 broken as registered (A0′ has a one-step transient), its F′ side replicating; item 6 (that the exclusion is fragile) split: not borne out for the centred count (order spread 1.0, the replicate "neither"), borne out on V, where the replicate reads "consistent with cumulative"; Kosson et al. read, a mechanism-level reference for item 7, no cell moved; one paragraph in `paper/` §7, and §1's sentence on the flat arm corrected to match — `trackC_writeup/status-C.md` "C4′ (c) on one page (closed 2026-11-22)"
   - C4′ (e)+(g) opened 2026-11-23 (STATE Blocked 169 (d), the user's: "(e) and (g) first"; writing only, nothing computed): a scan and a proposed design that reads the four trained arms. (e): the tokens' mean through W_U against unigram log-frequency, the exact split of each fall of ‖m‖² into its mode (removal or dilution) and writer (attention or MLP), and the arms' mean directions against the replicate's. (g): the loss barrier between the two schedules' end states, scaled by the replicate pairs, and each arm's induction heads mean-ablated. Leans stated before output (g1: warmup helps order-only connectivity); budget 3 units + close-out; (e) frozen on Blocked 170 D1, D2 (a) (Claude, on the user's "continue here"); (g)'s D3, D4 are Blocked 171 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 0"
-  - C4′ (e)+(g) U1, (e) (2026-11-23; tier 1; rules pushed before output): on all four arms the tokens' mean, read through the unembedding, is aligned with log unigram frequency at every readable step. The alignment is weak in the harness arm's earliest window and strong later; it is nearest just before or at V's date (78–90 % of the least-squares ceiling mid-stack), and F gets there about 12× earlier. The mean is written mostly by the MLPs. At the block where V's falls sit, both schedules start with the MLP diluting the mean and end with attention diluting it; only the flat schedule has a stage between (128–640) where the MLP writes against the mean, and the replicate shows the same stages. The two schedules' mean directions are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94), though both carry the unigram prior; revised after `/challenge-pr` on #367 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 1"
+  - C4′ (e)+(g) U1, (e) (2026-11-23; tier 1; rules pushed before output): on all four arms the tokens' mean, read through the unembedding, is aligned with log unigram frequency at every readable step. The alignment is weak in the harness arm's earliest window and strong later; it is nearest just before or at V's date (78–90 % of the least-squares reference mid-stack), and F gets there about 12× earlier. The mean is written mostly by the MLPs. At the block where V's falls sit, both schedules start with the MLP diluting the mean and end with attention diluting it; only the flat schedule has a stage between (128–640) where the MLP writes against the mean, and the replicate shows the same stages. The two schedules' mean directions are near orthogonal by 4000 (cos 0.14 against a reordering's 0.94), though both carry the unigram prior; revised after `/challenge-pr` on #367 — `trackC_writeup/status-C.md` "C4′ (e)+(g) unit 1"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -67,7 +67,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `cc804f5db9`
+- **Reviewed:** 2026-11-23 · body `da0e65bb18`
 <!-- /phase-card -->
 
 ## Units
@@ -149,10 +149,11 @@ split and the component means are exact to ≤ 2 × 10⁻⁸. At step 0 the gate
 **E1: the mean reads "aligned" with log unigram frequency at every readable window, on all four
 arms** (e1 held, pair 2 replicating). The alignment is weak in A0's collapse window: r 0.03–0.34
 at state 6 over 24–64, which passes the null's bar (at step 24 by 0.002 at mid states) but is
-nowhere near the ceiling. It is strong (r ≥ 0.6, ≥ 0.7 of the ceiling) from about A0's 128 and
+far below the least-squares reference. It is strong (r ≥ 0.6, ≥ 0.7 of the reference) from about A0's 128 and
 F's 8 on (corrected after `/challenge-pr` on #367, finding 4: first headed "the mean is the
 unigram direction"). Spearman r of m̄ through W_U against log f, mid state 3 and final state 6,
-with the ceiling r(u\*) and the null's bar q:
+with the least-squares reference r(u\*) (not an upper bound on r; first called "the ceiling",
+corrected after CodeRabbit on #367) and the null's bar q:
 
 | arm, step | r(u\*) | q | r, state 3 | r, state 6 | ‖m̄‖², state 3 |
 |---|---|---|---|---|---|
@@ -166,12 +167,28 @@ with the ceiling r(u\*) and the null's bar q:
 | A0′, F′ 4000 | 0.89 | 0.34–0.35 | 0.63, 0.61 | 0.58, 0.58 | |
 
 On both schedules the mean turns towards the unigram direction as the cloud collapses. It is
-nearest it (0.78–0.90 of the ceiling at state 3, nKL 0.06 at state 6) just before or at V's date,
+nearest it (0.78–0.90 of the least-squares reference at state 3, nKL 0.06 at state 6) just before or at V's date,
 and it drifts off it as ‖m̄‖² falls. F does this about 12× earlier (peak 16–24 against 192–256).
 The bar q rises to 0.35 because random directions read through a trained W_U already correlate
 with frequency, and every mid-state r stays above it. The embeddings' mean is not aligned
 (|r| ≤ 0.22). The final LN's bias reads r 0.71–0.94 by itself (from 128 on A0, from 8 on F),
 beside.
+
+**Per prompt** (the design's beside row; the code had dropped it, CodeRabbit on #367, so the
+records were regenerated with it, every other value equal to the first pass's): each prompt's own
+r at state 3 (γ readout) / state 6, and how many (prompt, step) cells are above that checkpoint's q
+at state 3 / 6:
+
+| arm | collapse | V's date | centred | 4000 |
+|---|---|---|---|---|
+| A0 | 0.02–0.25 / 0.03–0.33; 28 / 28 of 28 | 0.39–0.70 / 0.54–0.74; 7 / 7 of 7 | 0.32–0.57 / 0.42–0.61; 6 / 7 of 7 | 0.48–0.59 / 0.42–0.56; 7 / 7 of 7 |
+| F | 0.03–0.86 / 0.03–0.90; 35 / 35 of 42 | 0.47–0.79 / 0.72–0.89; 7 / 7 of 7 | 0.36–0.74 / 0.56–0.84; 4 / 7 of 7 | 0.44–0.60 / 0.39–0.56; 7 / 7 of 7 |
+| A0′ | 0.02–0.25 / 0.03–0.33; 28 / 28 of 28 | 0.49–0.76 / 0.57–0.83; 7 / 7 of 7 | 0.30–0.56 / 0.45–0.59; 6 / 7 of 7 | 0.44–0.57 / 0.41–0.58; 7 / 7 of 7 |
+| F′ | 0.03–0.85 / 0.03–0.90; 35 / 35 of 42 | 0.35–0.82 / 0.65–0.89; 4 / 7 of 7 | 0.32–0.75 / 0.56–0.85; 4 / 7 of 7 | 0.45–0.62 / 0.41–0.56; 7 / 7 of 7 |
+
+At state 6 every prompt is above q at every step after F's step 1 (the 7 cells below in F's and
+F′'s collapse window are all step 1, where m̄ is still the init's); at state 3 a few prompts fall
+below q at the centred date and at F′'s V date. So the aligned m̄ is not one or two prompts' doing.
 
 **E2: what writes the mean, and its falls.** The mean is written mostly by the MLPs on both arms
 (shares at state 3: A0 at 384 f1 0.30, f2 0.23, f0 0.23; F at 24 f1 0.46, f0 0.34; at 4000 f0
@@ -218,8 +235,10 @@ m̄₃(0)) 1.000, 1.000, 0.999, 0.989), so a same-step cosine there measures onl
 moved. The one stage-matched pair, ρ_mid's peak (A0 48, F 4), reads 0.62–0.86 over states 1–6,
 and the design gives it no scale. **The end half's break is real**: by 4000 the two directions
 are near orthogonal (0.14), while a reordering keeps 0.94. The lean was "one corpus, one prior,
-so one direction". Both still read the unigram prior through their own W_U (E1), which suggests
-the shared thing is the function, not the coordinates (Parked 1). The other event-matched pairs
+so one direction". Both readouts still correlate with log unigram frequency through their own
+W_U (E1), despite their different mean coordinates; whether they predict the same tokens is not
+read, so shared function is open (Parked 1; worded after CodeRabbit on #367, which caught a
+first "suggests the shared thing is the function"). The other event-matched pairs
 give 0.21–0.81.
 
 **Leans:** e1 held (both pairs; weak in A0's collapse window); e2 held on A0 and A0′ and broke on
@@ -240,7 +259,7 @@ Anything on 410m.
 
 **Parked:**
 1. **Cross-arm logit agreement** (why: e3's end half broke on coordinates while E1 holds on both,
-   and the two together suggest "different basis, same function"; cost: minutes, from the
+   and the two together leave "different basis, same function" open; cost: minutes, from the
    records' m̄ and each checkpoint's W_U, post hoc; could change: how the close-out words e3's
    break). To the close-out, marked post hoc.
 

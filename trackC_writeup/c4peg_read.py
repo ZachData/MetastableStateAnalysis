@@ -289,11 +289,24 @@ def counts(a) -> int:
     return 0
 
 
-def load_counts(out: Path) -> np.ndarray:
+def load_counts(out: Path) -> Tuple[np.ndarray, str]:
+    """The counts and their sha256 (each record stores it; resume and read refuse on a mismatch)."""
     meta = json.loads((out / "unigram_counts.json").read_text())
     if hashlib.sha256((out / "unigram_counts.npy").read_bytes()).hexdigest() != meta["sha256"]:
         raise C4pegRefused("unigram_counts.npy does not match its sha256")
-    return np.load(out / "unigram_counts.npy")
+    return np.load(out / "unigram_counts.npy"), meta["sha256"]
+
+
+def e1_per_prompt(WU: np.ndarray, gamma: np.ndarray, m_prompts: Dict[str, Sequence], cnt: np.ndarray) -> dict:
+    """The design's beside row "r per prompt": r(m_l) of each prompt's own mean, both readouts,
+    every state ({readout: {prompt: [r per state]}})."""
+    sup = np.flatnonzero(cnt > 0)
+    ell = np.log(cnt[sup] / cnt.sum())
+    out = {}
+    for name, M in (("gamma", WU * gamma[None, :]), ("plain", WU)):
+        Ms = np.asarray(M[sup], np.float64)
+        out[name] = {p: [spearman(Ms @ np.asarray(x, np.float64), ell) for x in m] for p, m in m_prompts.items()}
+    return out
 
 
 # ---------------------------------------------------------------- the GPU pass
@@ -373,7 +386,7 @@ def e1_checkpoint(WU: np.ndarray, gamma: np.ndarray, mbar: np.ndarray, cnt: np.n
             z = Ms @ x
             r = spearman(z, ell)
             nk, b = nkl(z, p_sup)
-            states.append({"r": r, "label": label_e1(r, q, readable), "frac_ceiling": r / r_star,
+            states.append({"r": r, "label": label_e1(r, q, readable), "frac_ls_ref": r / r_star,
                            "r_top": spearman(z[top], ell[top]), "nkl": nk, "beta": b,
                            "cos_ustar": cos(x, u)})
         out["readouts"][name] = {"q": q, "null_max": float(rnull.max()), "r_star": r_star, "r2_star": r2,
@@ -391,7 +404,7 @@ def arm(a) -> int:
     from transformers import AutoTokenizer
     torch, device = c._torch_setup()
     out = Path(a.out)
-    cnt = load_counts(out)
+    cnt, c_sha = load_counts(out)
     tok = AutoTokenizer.from_pretrained(TOKENIZER[0], revision=TOKENIZER[1])
     arm_ = a.arm
     steps = [s for s in STEPS if a.steps is None or s in a.steps]
@@ -399,6 +412,8 @@ def arm(a) -> int:
     for s in steps:
         f_out = out / arm_ / f"step{s}.json"
         if f_out.exists():
+            if json.loads(f_out.read_text()).get("counts_sha256") != c_sha:
+                raise C4pegRefused(f"{f_out}: not written from these counts; move it aside")
             continue
         d = ct.ckpt_dir(CKPT_ROOT[arm_], arm_, s)
         if not d.exists():
@@ -439,10 +454,11 @@ def arm(a) -> int:
             raise C4pegRefused(f"{arm_} step {s}: known answers fail {bad}")
         mbar = np.mean([np.array(per_prompt[p]["m"]) for p in V1], 0)            # (7, 512)
         cbar = [{k: np.mean([cm[l][k] for cm in comp_means], 0) for k in comp_means[0][l]} for l in range(N_STATES)]
-        rec = {"arm": arm_, "step": s, "code": code_sha(), "ckpt": str(d), "worst": worst,
+        rec = {"arm": arm_, "step": s, "code": code_sha(), "counts_sha256": c_sha, "ckpt": str(d), "worst": worst,
                "mbar": mbar.tolist(), "mbar_norm2": [float(x @ x) for x in mbar],
                "shares": [shares(cbar[l]) for l in range(N_STATES)],
                "e1": e1_checkpoint(WU, ln["gamma"], mbar, cnt, torch, device),
+               "e1_per_prompt": e1_per_prompt(WU, ln["gamma"], {p: per_prompt[p]["m"] for p in V1}, cnt),
                "r_ln_bias": spearman(WU[cnt > 0] @ ln["beta"], np.log(cnt[cnt > 0] / cnt.sum())),
                "per_prompt": {p: {"split": per_prompt[p]["split"]} for p in V1}}
         ct._jdump(f_out, rec)
@@ -474,6 +490,15 @@ def e1_label(rec: dict, l: int) -> str:
     return rec["e1"]["readouts"][ro]["states"][l]["label"]
 
 
+def per_prompt_r(recs: Sequence[dict], l: int) -> dict:
+    """Beside: each prompt's own r at state l (its assigned readout) over a window's checkpoints;
+    "above_q" counts (prompt, step) cells above that checkpoint's null bar q."""
+    ro = "plain" if l == N_STATES - 1 else "gamma"
+    rs = [(r_p[l], rec["e1"]["readouts"][ro]["q"]) for rec in recs for r_p in rec["e1_per_prompt"][ro].values()]
+    return {"min": min(r for r, _ in rs), "max": max(r for r, _ in rs), "above_q": sum(r > q for r, q in rs),
+            "n": len(rs)}
+
+
 def read_all(R: Dict[str, Dict[int, dict]]) -> dict:
     res = {"e1": {}, "e2": {}, "e3": {}, "leans": {}}
     # E1 windows
@@ -484,7 +509,8 @@ def read_all(R: Dict[str, Dict[int, dict]]) -> dict:
             res["e1"][a_][w] = {
                 "steps": ws,
                 "per_state": [{"labels": [e1_label(R[a_][s], l) for s in ws],
-                               "aligned": window_reads([e1_label(R[a_][s], l) for s in ws], "aligned")}
+                               "aligned": window_reads([e1_label(R[a_][s], l) for s in ws], "aligned"),
+                               "per_prompt": per_prompt_r([R[a_][s] for s in ws], l)}
                               for l in range(N_STATES)]}
     # E2 counts
     for a_ in ARMS:
@@ -553,11 +579,15 @@ def read(a) -> int:
     codes = {r["code"] for d in R.values() for r in d.values()}
     if len(codes) != 1:
         raise C4pegRefused(f"records from several code versions: {codes}")
+    _, c_sha = load_counts(out)
+    stale = [f"{a_}:{s}" for a_ in ARMS for s, r in R[a_].items() if r.get("counts_sha256") != c_sha]
+    if stale:
+        raise C4pegRefused(f"records not written from these counts: {stale[:5]} ({len(stale)})")
     res = read_all(R)
     res.update(code=code_sha(), record_code=codes.pop(),
                inputs={a_: hashlib.sha256(b"".join((out / a_ / f"step{s}.json").read_bytes() for s in STEPS))
                        .hexdigest()[:16] for a_ in ARMS},
-               counts_sha256=json.loads((out / "unigram_counts.json").read_text())["sha256"])
+               counts_sha256=c_sha)
     ct._jdump(out / "reading.json", res)
     print(json.dumps(res["leans"], indent=1), flush=True)
     return 0
