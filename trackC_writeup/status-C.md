@@ -66,7 +66,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `8a160052a9`
+- **Reviewed:** 2026-11-23 · body `a320e7138e`
 <!-- /phase-card -->
 
 ## Units
@@ -138,6 +138,16 @@ C4′ (a)+(b) had. Writing only; no forward pass, no record read beyond what ear
 **Checked against the tree:** pair 2's π permutes rows below `HELD_OUT` (`c4pc_train` refuses
 otherwise), so one set of unigram counts and one held-out set serve both pairs. The checkpoints'
 config: `use_parallel_residual` true, no tied embeddings, float32. Pythia's `embed_out` has no bias.
+
+**After `/challenge-pr` on #366** (accept with changes, reviewed `649e7db`; all five taken):
+(1) G2's random sets, as first written (layer-matched, score < 0.2), could not be built. A0 had
+one such set, mostly F's heads; A0′ had none. The head records give A0′ = A0's four and F′ five
+(L2H2, L2H5, L2H6, L3H7, L4H1). The sets are now drawn outside the 11-head union and are not
+layer-matched. (2) E2's R is the writes' dilution, not a writer, so falls are labelled mode
+(removal or dilution) × writer. (3) G1's scale is floored at the null's barrier and 0.01 nats,
+and the labels are renamed to "within / beyond the order-only spread". (4) The C5 promise is
+dropped, since nothing here measures coordinate-basis alignment. (5) Each lean is marked [scan]
+or [arms], and D4 says which leans could be registered. `LESSONS.md` 11 gains the instance.
 
 **Parked:** `lit-C4peg.md` Parked 1 (2609.02959's full text; read before U1's code, D1).
 

@@ -1,7 +1,10 @@
 <!-- trackC_writeup/design-C4peg.md -->
 # Track C — design: C4′ (e) and (g), no training
 
-**Status: proposed 2026-11-23 (U0, writing only); decisions D1–D4 are STATE Blocked 170.**
+**Status: proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
+with changes, findings 1–5 taken: G2's random sets and the four arms' head lists, E2's dilution
+term, G1's scale floor, the C5 promise dropped, each lean's source marked); decisions D1–D4 are
+STATE Blocked 170.**
 Opened on Blocked 169, decided by the user 2026-11-23: "(e) and (g) first", then (d), (f). (e) and
 (g) need no training and read the four arms C4 and C4′ (c) already trained, so they share one
 design, as C4′ (a) and (b) did. Scan: `lit-C4peg.md`. **Nothing below has been computed.** Of the
@@ -19,7 +22,9 @@ differently**. The ROADMAP rows (§8 C4′):
 - **(e)** Read the mean's direction through the unembedding against the corpus's unigram
   log-frequencies. Measure each component's share of the mean and of its falls. Take the cosine
   between the arms' mean directions. Could give §4's "the count's drops are falls of the mean" a
-  mechanism; feeds C5's "when the mean becomes basis-aligned".
+  mechanism. The row also says it "feeds C5's 'when the mean becomes basis-aligned'". **Not taken
+  here** (`/challenge-pr` on #366, finding 4): C5's question is alignment with the coordinate
+  basis on 410m's seeds, and nothing below measures that. It stays with ROADMAP C5.
 - **(g)** Compare F and A0 at 4000 by the loss along the line between them and by ablating each
   arm's induction heads. Could change whether "the schedule chooses the heads" matters beyond the
   heads' indices.
@@ -66,11 +71,23 @@ means of P(aᵢ), P(fᵢ). For a transition T_l (state l → l+1), the change sp
 At T5 (into the final LN's output) the components are mapped through γ_f/σᵢ, and the bias b_f is
 a fourth term B.
 
+**R is not a separate cause** (`/challenge-pr` on #366, finding 2). It is the mean diluted by what
+attention and the MLP write, so it is non-zero only when they write. A fall caused entirely by
+attention writing large vectors off the mean reads R ≪ 0 and A ≈ 0 (the review's toy: R −0.553,
+A −0.0003). So the split names a **mode**, and the writer is found separately in each mode:
+
+- **removal**: the writes oppose the mean (A or M most negative). The writer is that term's
+  component.
+- **dilution**: the writes grow the tokens' norms off the mean (R most negative). The writer is
+  the component that grows them more. Per token, ‖P(hᵢ^{l+1})‖² − ‖P(hᵢ^l)‖² = gᵃᵢ + gᶠᵢ splits
+  exactly, as A and M do (gᵃ = 2⟨P h, P a⟩ + ‖P a‖² + ⟨P a, P f⟩, gᶠ likewise), and the writer is
+  the larger of the token means of gᵃ, gᶠ.
+
 | item | fixed as |
 |---|---|
 | a fall | a (prompt, transition) cell with Δ‖m‖² < 0, per prompt (V's cells are per prompt) |
-| a fall's writer | the most negative of R, A, M (, B): **"renormalisation"**, **"attention"**, **"MLP"** (, "LN bias") |
-| the counts | per arm, window and transition, the number of falls by writer |
+| a fall's label | mode × writer: **"removal, attention"**, **"removal, MLP"**, **"dilution, attention"**, **"dilution, MLP"** (, "LN bias" at T5) |
+| the counts | per arm, window and transition, the number of falls by label; the writer's total (removal + dilution) beside each |
 | the shares of the mean | s_c = ⟨m_c, m̄_l⟩/‖m̄_l‖² for c ∈ {embedding, a_0 … a_5, f_0 … f_5 (, b_f)}, each with its weights at state l, so Σ s_c = 1 |
 | refusals | the components' sum ≠ m_l beyond 10⁻⁵ relative, or Σ s_c ≠ 1 beyond 10⁻⁵: refused. Each record's e1 must equal C4's record at that (arm, step, prompt) within 10⁻⁶ relative (the known answer): refused otherwise |
 
@@ -96,15 +113,17 @@ labels are summarised in four windows per arm:
 A window reads "aligned" (E1) or "shared" (E3) at a state iff ≥ ⅔ of its steps do. E2's counts
 are not labelled.
 
-**The leans, stated now** (from the scan, not from these arms' data):
+**The leans, stated now.** Each lean is marked with its source: **[scan]** from the literature,
+**[arms]** formed on C4's pair, which these units read again (`/challenge-pr` on #366, finding 5).
 
-- **e1**: at the final state, the mean is "aligned" on both arms in every window where the gate is
-  readable (2609.02959: learned early; Pythia has no output bias).
-- **e2**: at the transitions where V's falls sit (T2 on A0, T1 on F, from V's date on), the falls'
-  writer is mostly attention, not renormalisation (2401.12143 against drift). This is a lean only;
-  a "renormalisation" majority breaks it.
-- **e3**: at the end, the mid states (2–4) read "shared" (one corpus, so one unigram prior). In the
-  collapse window they read "schedule-specific" (item 10: F takes another path early).
+- **e1 [scan]**: at the final state, the mean is "aligned" on both arms in every window where the
+  gate is readable (2609.02959: learned early; Pythia has no output bias).
+- **e2 [scan]**: at the transitions where V's falls sit (T2 on A0, T1 on F, from V's date on), the
+  falls' writer (removal and dilution together) is mostly attention, not the MLP (2401.12143 ties
+  the common direction to attention). An MLP majority breaks it. No lean is stated on the mode.
+- **e3**: at the end, the mid states (2–4) read "shared" **[scan]** (one corpus, so one unigram
+  prior). In the collapse window they read "schedule-specific" **[arms]** (C4 item 10: F takes
+  another path early, read on this pair).
 
 **Cost.** 4 arms × 29 steps × 7 prompts, one forward pass each with hooks on every block's attention
 and MLP outputs: minutes on the 3080. E1's nulls are 1000 directions × 50 304 tokens, one matrix
@@ -124,30 +143,44 @@ in 0, 0.1, …, 1, and L(α) = the held-out loss in float32. The barrier is **B(
 | (released, A0) at 4000 | the null: same init, order and schedule; the harness's noise |
 | (A0, `pythia-70m-seed1`) at 4000 | the effect: another init and order; no alignment |
 | **gate** | readable iff B(effect) > 0.1 nats **and** B(effect) > 4 B(null) |
-| **the label** | **"one basin"** iff B(A0, F) ≤ max(B(A0, A0′), B(F, F′)); **"another basin"** iff B(A0, F) > 2 max(…); else "between" |
+| the scale | **S = max(B(A0, A0′), B(F, F′), B(null), 0.01 nats)**: the order-only spread, never below the harness's noise or a fixed floor (`/challenge-pr` on #366, finding 3: the replicate barriers may be near 0, so a ratio to them alone would read noise as structure) |
+| **the label** | **"within the order-only spread"** iff B(A0, F) ≤ S; **"beyond it"** iff B(A0, F) > 2S; else "between". Every barrier is reported in nats beside its label. If S is itself large (> 0.1 nats), "within" means only that the schedules differ no more than the orders do, not that the pair is connected |
 | beside | K(F₄₀₀₀, A0₄₀₀₀) from C4′ (b)'s `K_F.npz` (not recomputed); the endpoints' losses; the same barrier at 1000 for the four C4 pairs |
 
 **G2, the heads ablated.** Each arm's heads with an induction score ≥ 0.5 at 4000
-(`c4_close.HEAD_BAR`): A0 L3H6, L3H1, L3H5, L3H0; F L2H6, L3H4, L3H3, L3H7. A0′'s and F′'s sets come
-from C4′ (c) U3's head records and are written into the code before any ablation runs. **The
-ablation is a mean ablation:** the head's slice of the attention output, before the dense
-projection, is replaced by its mean over the held-out positions.
+(`c4_close.HEAD_BAR`), read from the head records (`data/trackC/c4/2026-11-14-close/heads_{A0,F}.json`,
+`data/trackC/c4pc/2026-11-22-u3/heads_{A0p,Fp}.json`; checked 2026-11-23 after `/challenge-pr` on
+#366, finding 1):
+
+| arm | heads ≥ 0.5 at 4000 |
+|---|---|
+| A0 | L3H0, L3H1, L3H5, L3H6 |
+| A0′ | L3H0, L3H1, L3H5, L3H6 (A0's four) |
+| F | L2H6, L3H3, L3H4, L3H7 |
+| F′ | L2H2, L2H5, L2H6, L3H7, L4H1 (five; two shared with F) |
+
+The union is 11 of the 48 heads. **The ablation is a mean ablation:** the head's slice of the
+attention output, before the dense projection, is replaced by its mean over the held-out
+positions.
 
 | item | fixed as |
 |---|---|
 | the induction loss | the mean next-token loss on the second copy of 64 sequences of 64 random tokens repeated twice (C4's `IND_LEN`, a new seed, `IND_N` raised to 64) |
-| sets ablated on arm X | X's own set; the other schedule's indices (A0's on F, F's on A0, and likewise on the replicate pair); 20 random sets of 4 heads, layer-matched to X's own set, drawn from heads with score < 0.2 at 4000 (seeded) |
+| sets ablated on arm X | X's own set; the other schedule's set of the same pair (F's on A0, A0's on F; F′'s on A0′, A0′'s on F′); 20 random sets of X's own set's size, drawn (seeded) from the heads with score < 0.2 on X **and outside the 11-head union**, so no random set holds an induction head of any arm. **Not layer-matched**: layer 3 holds 6 of the union's heads and A0′ has 3 heads below 0.2 there, so a matched set cannot be drawn (finding 1). Each random set's layers are reported beside |
 | Δ | the induction loss with the set ablated, minus without; the held-out loss's Δ beside |
 | per arm, the label | **"own heads carry induction"** iff Δ(own) > the max of the 20 random Δ. **"index carries it too"** iff Δ(other's indices) > that max as well |
 | the arms' comparison | Δ(own)^F / Δ(own)^A0 beside Δ(own)^F′ / Δ(own)^A0′; no bar (a ratio of two pairs) |
 
-**The leans, stated now:**
+**The leans, stated now** (sources marked as for e1–e3):
 
-- **g1** (Altıntaş et al., `lit-C4peg.md` §3): B(F, F′) > B(A0, A0′), so warmup helps order-only
-  connectivity on 70m.
-- **g2** (C4 item 10, `P-SCH6`): (A0, F) reads "another basin" or "between", not "one basin".
-- **g3**: on every arm the own heads carry induction and the other schedule's indices do not. So
-  the two schedules end on different heads that do the same job.
+- **g1 [scan]** (Altıntaş et al., `lit-C4peg.md` §3): B(F, F′) − B(A0, A0′) > max(B(null), 0.01
+  nats), so warmup helps order-only connectivity on 70m. A smaller difference reads "not told
+  apart".
+- **g2 [arms]** (C4 item 10, `P-SCH6`, read on these arms): (A0, F) reads "beyond it" or
+  "between", not "within the order-only spread".
+- **g3 [arms]** (C4's disjoint head sets): on every arm the own heads carry induction and the
+  other schedule's set does not, so the two schedules end on different heads that do the same job.
+  On (A0′, F′) the other set shares L2H6 and L3H7 with F's, so g3 there is partly an index test.
 
 **Cost.** G1: 5 pairs × 11 α (+ 4 refinements) × 131 072 positions, a few seconds a point. G2: 4 arms
 × 23 sets × 2 losses. Under 30 minutes of GPU together.
@@ -156,8 +189,7 @@ projection, is replaced by its mean over the held-out positions.
 
 **Exit:** E1–E3 computed on the four arms, with each window labelled or refused by its gate. G1's
 gate decided and (A0, F) labelled or refused. G2's labels on the four arms. Each lean e1–e3 and
-g1–g3 marked held, broken or unreadable. C4's items 8 and 10 and C5's open "when the mean becomes
-basis-aligned" each say what (e) and (g) added. **Budget: 3 units + close-out** (U0 this design,
+g1–g3 marked held, broken or unreadable. C4's items 8 and 10 each say what (e) and (g) added. **Budget: 3 units + close-out** (U0 this design,
 U1 (e), U2 (g), close-out). GPU under 2 hours in all. At the budget it closes at what it knows.
 
 ## Carried in
@@ -173,9 +205,9 @@ U1 (e), U2 (g), close-out). GPU under 2 hours in all. At the budget it closes at
 | | question | (a), recommended | (b) |
 |---|---|---|---|
 | D1 | E1's statistic | Spearman of the logits through W_U against log f, gated per checkpoint by u\* and random directions; 2609.02959's normalised KL beside, its full text read before U1's code, and swapped in as primary only if the reading shows the rank correlation misreads it (decided before any output) | the normalised KL primary now |
-| D2 | the replicate pair in (e) | read both pairs together, tier 1: pair 2 is the order-only scale for E3, and its E1 and E2 a replication reported cell by cell | hold pair 2 back: develop on pair 1, then you register the leans that formed there and pair 2 is read against them (E3 waits for it; + 1 unit) |
+| D2 | the replicate pair in (e) | read both pairs together, tier 1: pair 2 is the order-only scale for E3, and its E1 and E2 a replication reported cell by cell. The [scan] leans were not formed on either pair; the [arms] halves were formed on pair 1 by C4 | hold pair 2 back: develop on pair 1, then you register the leans that formed there and pair 2 is read against them (E3 waits for it; + 1 unit) |
 | D3 | the ablation | mean ablation over the held-out positions | zero ablation (harsher; moves the residual off its distribution) |
-| D4 | registration | none: (e) and (g) are description with their rules fixed here, tier 1 (the leans are the scan's, not formed on these arms) | register g1–g3 before U2 (the leans are stated before output, and the scale pairs already exist) |
+| D4 | registration | none: (e) and (g) are description with their rules fixed here, tier 1. Of the leans, e1, e2, g1 and e3's end half come from the scan; g2, g3 and e3's collapse half were formed on C4's pair, which these units read again, so those cannot be held-out readings here | register g1 (the one [scan] lean in (g)) before U2; it is stated before output, and its pairs exist |
 
 ## Worth challenging (for the PR)
 
@@ -183,9 +215,11 @@ U1 (e), U2 (g), close-out). GPU under 2 hours in all. At the budget it closes at
    states the model never reads its states through W_U. "Aligned" means the direction would
    predict frequent tokens if it reached the output, not that it does. The alternative, a tuned
    lens per state, needs training, and it was rejected.
-2. **E2's writer is the most negative term.** A fall made of a large negative A and a positive M
-   reads "attention" even when the net change is small. The shares are reported beside so that
-   such cases show.
+2. **E2's label is the most negative term**, with dilution's writer taken from the norm growth.
+   A fall made of a large negative A and a positive M reads "removal, attention" even when the net
+   change is small. The shares are reported beside so that such cases show. (First written with
+   R as a third writer, "renormalisation"; `/challenge-pr` on #366, finding 2, showed it is the
+   writes' dilution, not a cause of its own.)
 3. **E3's "schedule-specific" margin of 0.1** is chosen, not measured. The replicate cosines are
    the scale and the margin only keeps "between" from vanishing. Rejected: no margin, which makes
    every cell binary at the replicate's minimum.

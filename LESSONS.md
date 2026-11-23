@@ -2405,6 +2405,14 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-11-23 (C4′ (e)+(g) U0, #366, `/challenge-pr` findings 1, 2): the design's control for
+  ablating induction heads drew "20 random sets of 4, layer-matched, from heads with score < 0.2"
+  without opening the head records. Those records were on disk. A0 had one such set, and three of
+  its four heads were F's induction heads; A0′ had none; F′ has five heads ≥ 0.5, not four. The same
+  design named R (the mean's dilution) a third writer beside attention and the MLP, though R moves
+  only when they write. Cost: none; both fixed before the freeze. Rule: **a control drawn from a
+  pool is drawn once by hand from the real records before the design names it**, and every term
+  of an exact split is asked "can it be non-zero without the others?" before it gets a cause's name.
 - 2026-11-22 (C4′ (c) U3, #364, `/challenge-pr` findings 1, 2): the write-up called the
   replicate's V reading "a one-step reading" and C4's "neither" stable. The record says the
   reverse: R3′ survives a one-step move of either arm, and C4's 24 sits at the band's edge.
