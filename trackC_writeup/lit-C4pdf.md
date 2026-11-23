@@ -38,7 +38,7 @@ summed rate than the counts, held on the replicate pair).
 | work | what [S] | bearing |
 |---|---|---|
 | Gupta et al. 2308.04014 (continual pre-training: how to (re)warm, on Pythia-410M) | re-warming first raises the loss; **starting directly at the maximum rate gives a large initial loss spike** ("chaotic phase", "stability gap") with no lasting cost | a lean for (f): a jump to the peak on a trained state is itself a disturbance. It is a loss spike after the Pile, not a dated early transient; whether their moments were reset is not in the summary |
-| Ibrahim et al. 2403.08763 (simple and scalable continual pre-training) | re-warming plus re-decay plus replay matches retraining; **dropping the optimiser's states made no difference**, since β 0.9 and 0.95 forget the old state quickly | (f)'s fresh moments matter for the first tens of updates only. That is exactly the window in which F's transient began (48), so the restart is a confound there, not a negligible one |
+| Ibrahim et al. 2403.08763 (simple and scalable continual pre-training) | re-warming plus re-decay plus replay matches retraining; **dropping the optimiser's states made no difference**, since β 0.9 and 0.95 forget the old state quickly | (f)'s fresh moments matter for the first tens of updates only. That is exactly the window in which F's transient began (48–64), so the restart is a confound there, not a negligible one |
 | Cohen et al. 2207.14484 (adaptive gradient methods at the edge of stability) | Adam's preconditioned sharpness settles near 38/η (β₁ 0.9); instability inflates the second moment, which lets it move on | a lean for (f): a fivefold rise in η (A0's 0.18 of the peak at 256 to the peak) puts the state far past its threshold, so a spike is expected at any state on the edge. Whether A0 at 256 is on the edge is not known |
 | 2604.14108, 2601.16979 | a mid-training rise in the rate acts as a catapult, then training restabilises near the new threshold; critical sharpness tracked on OLMo-2 through mid-training | the same lean, at scale; neither dates a representation-level transient |
 
@@ -57,7 +57,7 @@ summed rate than the counts, held on the replicate pair).
    adaptive-edge line say a jump to the peak disturbs a trained state anyway (f: "the rate's"). The
    design reads which, and does not take a side in advance.
 2. **The restart is a confound in exactly F's window** (Ibrahim et al.: fresh moments matter for
-   tens of updates; F's transient began at 48). So (f) keeps an own-rate branch with the same
+   tens of updates; F's transient began at 48–64). So (f) keeps an own-rate branch with the same
    restart as its control, and compares the peak branch with F (also a fresh Adam at the peak),
    which changes only the state.
 3. **The transient's rule reads a threshold or a dose, not a mechanism.** None of the works dates a
@@ -68,5 +68,6 @@ summed rate than the counts, held on the replicate pair).
 
 1. **Gupta et al. 2308.04014's full text** (why: whether their direct-to-peak spike was with fresh
    or carried moments, and how many steps it lasted on Pythia-410M; cost: one reading; could change:
-   (f)'s wording, and whether the kept-moment branch (D2 (c)) is worth its hours). Read before U3's
-   reading, so its answer cannot be fitted to (f)'s result.
+   (f)'s wording, and whether the kept-moment branch (D2 (b)) is worth its hours). Read before U2's
+   records are read, so its answer cannot be fitted to (f)'s result (made consistent with the design
+   after `/challenge-pr` on #371, finding 5).
