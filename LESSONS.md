@@ -2189,6 +2189,13 @@ before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate 
 ## 8. Git and PR mechanics
 
 **Instances.**
+- 2026-11-22 (C4′ (c) U3): two guards that "count only when tracked and committed" were both
+  ignored by `.gitignore`'s deny-by-default allowlist: U3's pin `c4pc_gate3500.json`, and U1's
+  `c4pc_declined.json` (#362). So a decline could never have been committed without `-f`. U1's
+  test checked only an untracked stray, never that the real path could be tracked. The pin's
+  first `git add` was refused, and `require_pin` refused too, so nothing was read on an
+  unpinned gate. Both are now allowlisted. Rule: **a guard that depends on a file being
+  committed gets `git check-ignore -v <path>` run on its real path when the guard is built.**
 - 2026-11-09 (found by the user): `9388a24`, "Merge branch 'main' into claude/claim-c-close"
   (#296), settled `docs/ROADMAP.md`, `LESSONS.md` and `docs/cost_log.md` on main's side and
   dropped what the branch had added: ROADMAP row C7 (from `9e80f74`), a lesson-6 instance
@@ -2392,6 +2399,12 @@ re-reads it through the reasoning that produced it. Where that reasoning holds
 a wrong premise, the check inherits it.
 
 **Instances.**
+- 2026-11-22 (C4′ (c) U3, #364, `/challenge-pr` findings 1, 2): the write-up called the
+  replicate's V reading "a one-step reading" and C4's "neither" stable. The record says the
+  reverse: R3′ survives a one-step move of either arm, and C4's 24 sits at the band's edge.
+  The same write-up softened nothing on L7's thin miss, but left out that L10 (b)'s hold rests on
+  factors ≤ 1.32 from 1500 on. Rule: **a robustness word ("one-step", "thin") is checked by
+  moving each input one grid step, and a hold is described as thinly as a miss.**
 - 2026-11-02, T5 U3's split, the batch (#305, `/challenge-pr` findings 1, 2): the write-up called
   the MLP write's pooled mean "the MLPs' token-constant write" and read "the constant writes are
   equal in size at the end states" from it. On summed components every path counts only through

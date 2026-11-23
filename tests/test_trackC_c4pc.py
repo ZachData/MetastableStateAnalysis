@@ -172,3 +172,77 @@ def test_gate_entry():
     assert not r.gate_entry(h, n, {"a": h, "b": h})["pass"]
     assert not r.gate_entry(h, u, {"a": n})["pass"]                    # the null must be readable
     assert not r.gate_entry(u, n, {"a": n})["pass"]
+
+
+# ---------------------------------------------------------------- U3: the 3500 pin, the K wiring, M2/M3's ρ
+
+def _gate_rec(out, code):
+    from trackC_writeup import c4pc_read as pr
+    rec = pr.gate3500_record(out)
+    rec.parent.mkdir(parents=True)
+    rec.write_text(json.dumps({"code": code, "u_read": True, "mode": "as frozen",
+                               "arms_gated": {"9.61e-05": True, "0.0001": False}}))
+    return rec
+
+
+def test_pin_refusals(tmp_path):
+    """No score before the 3500 gate's record exists, matches the pin and the pin is committed."""
+    from trackC_writeup import c4_read as cr
+    from trackC_writeup import c4pc_read as pr
+    pin = tmp_path / "pin.json"
+    with pytest.raises(pr.C4pcReadRefused, match="pin first"):
+        pr.require_pin(tmp_path, pin, check_git=False)
+    pin.write_text(json.dumps({"sha256": "0" * 64}))
+    with pytest.raises(pr.C4pcReadRefused, match="gate first"):
+        pr.require_pin(tmp_path, pin, check_git=False)
+    rec = _gate_rec(tmp_path, cr.code_sha())
+    with pytest.raises(pr.C4pcReadRefused, match="re-run after the pin"):
+        pr.require_pin(tmp_path, pin, check_git=False)
+    pin.write_text(json.dumps({"sha256": pr._sha256(rec)}))
+    got = pr.require_pin(tmp_path, pin, check_git=False)
+    assert got["u_read"] and got["arms_gated"]["9.61e-05"] and not got["arms_gated"]["0.0001"]
+    rec.write_text(json.dumps({"code": "stale", "u_read": True, "mode": "", "arms_gated": {}}))
+    pin.write_text(json.dumps({"sha256": pr._sha256(rec)}))
+    with pytest.raises(pr.C4pcReadRefused, match="c4_read"):
+        pr.require_pin(tmp_path, pin, check_git=False)
+
+
+def test_untracked_pin_refused(tmp_path):
+    from trackC_writeup import c4_read as cr
+    from trackC_writeup import c4pc_read as pr
+    rec = _gate_rec(tmp_path, cr.code_sha())
+    stray = t.REPO / "trackC_writeup" / "c4pc_gate3500_test_stray.json"   # untracked, in the repo
+    try:
+        stray.write_text(json.dumps({"sha256": pr._sha256(rec)}))
+        with pytest.raises(pr.C4pcReadRefused, match="committed"):
+            pr.require_pin(tmp_path, stray)
+    finally:
+        stray.unlink(missing_ok=True)
+
+
+def test_wired_restores_and_keys():
+    from trackC_writeup import c4p_path as cp
+    from trackC_writeup import c4pc_read as pr
+    before = (cp.job_keys, cp.load, cp.JOBS)
+    with pr.wired():
+        assert cp.JOBS == pr.PC_JOBS
+        k = cp.job_keys("Fp")
+        assert len(k) == 57 and k[0] == "A0p@0" and k[-1] == "Fp@4000" and "Fp@3500" in k
+        k = cp.job_keys("A0p")
+        assert k[:29] == [f"A0@{s}" for s in cp.A0_STEPS] and k[29] == "A0p@1"
+        assert cp.job_keys("null")[0].startswith("A0h@")                  # the old jobs still resolve
+    assert (cp.job_keys, cp.load, cp.JOBS) == before
+    assert pr.L10B_LATE == (320, 384, 512, 640, 768, 1000, 1250, 1500, 2000, 3000, 3500, 4000)
+    assert pr.L10B_GATE_LATE == (512, 1000, 2000, 4000)
+
+
+def test_label_at_is_c4s_label_at_the_grid_rho():
+    from trackC_writeup import c4_read as cr
+    from trackC_writeup import c4pc_read as pr
+    d = lambda s: {"step": s, "status": "dated"}
+    for tf, ta in ((24, 384), (48, 640), (320, 768), (100, 256)):
+        assert pr.label_at(d(tf), d(ta), cr.rho_at(ta)) == cr.label(d(tf), d(ta))
+    # the design's M2 note: V (t_A0 384) flips to cumulative at q ≥ 1.47; centred (640) passes 1.647
+    assert pr.label_at(d(24), d(384), 1.5)["label"] == "consistent with cumulative"
+    assert pr.label_at(d(48), d(640), 1.7)["label"] == "A0 past the separable range"
+    assert pr.ratio(256, 384) == 1.5 and pr.ratio(None, 384) is None
