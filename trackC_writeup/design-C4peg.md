@@ -2,8 +2,8 @@
 # Track C — design: C4′ (e) and (g), no training
 
 **Status: (e) frozen 2026-11-23 on Blocked 170 D1, D2 (a)** (Claude, on the user's "Let's just
-continue here"; "Decided 2026-11-23" below) **and read in U1; (g) waits on D3, D4 (STATE Blocked
-171).** Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
+continue here"; "Decided 2026-11-23" below) **and read in U1; (g) frozen 2026-11-23 on Blocked 171 D3 (a), D4 (a), E (a)** (Claude, on the
+user's "do the next 5 items in state in whichever order you recommend"; "(g) as U2 runs it" below). Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #366 (accept
 with changes, findings 1–5 taken: G2's random sets and the four arms' head lists, E2's dilution
 term, G1's scale floor, the C5 promise dropped, each lean's source marked); decisions D1–D4 are
 STATE Blocked 170.**
@@ -242,6 +242,30 @@ against rank correlation, so **Spearman stays primary**. The details the frozen 
 | unigram counts | `c4_train.open_rows()`, rows [0, `N_ROWS`), columns 1–2048 (the labels), `np.bincount` per 16 384-row chunk, `minlength` 50 304; saved with its sha256 | |
 | known answers | every recomputed per-prompt e1 equals C4's or C4′ (c)'s record at the same (arm, step, prompt) to 10⁻⁵ relative; the components sum to m_l and the shares to 1 to 10⁻⁵ | refuse rather than degrade |
 | code | `trackC_writeup/c4peg_read.py`, with pure tests; pushed before any output | |
+
+### (g) as U2 runs it (written 2026-11-23, before any output)
+
+Blocked 171 taken as recommended (D3 (a), D4 (a), E (a)) by Claude on the user's "do the next 5
+items in state in whichever order you recommend" (yours to overrule; nothing registered, so D4 (b)
+stays open until U2's records are read, after which g1 cannot be registered as held out). The
+details the frozen text left open:
+
+| detail | fixed as | why |
+|---|---|---|
+| θ(α) | every `named_parameters()` tensor interpolated in float32 (LN included); buffers from X | the design's "every parameter" |
+| L(α) | mean next-token cross-entropy over the 64 held-out rows' 131 072 targets, float32 eager, batches of 8 rows (`c4_train.held_loss`'s reading, summed then divided) | C4′ (b)'s rows and precision |
+| known answer | L(0) and L(1) equal each endpoint's own loss to 10⁻⁵ relative, or refuse | the interpolation path is checked |
+| B | max over the 11-point grid of the excess over the chord (≥ 0, since the endpoints give 0); ± 0.05 around the grid's maximum, beside, never in a label | as frozen |
+| released, seed 1 | `EleutherAI/pythia-70m` and `pythia-70m-seed1` at revision `step4000` (fp16-stored weights read in float32) | the null's noise includes that rounding, as in C4′ (b) |
+| at 1000, beside | (A0, F), (A0′, F′), (A0, A0′), (F, F′) | "the four C4 pairs" read as the four arms' question and scale pairs |
+| (A0′, F′) at 4000 | beside, labelled with pair 1's S and gate; g2 reads pair 1 | D2's pattern: pair 2 replicates |
+| g1's other side | "broken" iff B(F, F′) − B(A0, A0′) < −max(B(null), 0.01); "not told apart" between | the frozen text gave only "held" and "not told apart" |
+| mean ablation | a forward pre-hook on each layer's `attention.dense` replaces the head's 64 coordinates by their mean over the held-out positions (64 × 2047, on the unablated arm); an empty ablation through the hook must leave the induction loss unchanged to 10⁻⁵ | the design's slice, before the dense projection |
+| induction loss | 64 sequences of 64 tokens from [1000, 50000), seed 20261125, each repeated; mean loss on targets 65–127 of the 128 (the second copy's first token is not predictable by copying) | C4's construction, `IND_N` 64 |
+| own sets | heads ≥ 0.5 at 4000 from the head records; the code refuses unless they equal the table above and the union is 11 | the design's sets, checked |
+| random sets | 20 per arm, seed 20261126 + the arm's index (A0, F, A0′, F′), each drawn without replacement from the arm's heads < 0.2 outside the union | as frozen |
+| E (Parked 1) | the cross-arm logit comparison at the close-out, marked post hoc | Blocked 171 E (a) |
+| code | `trackC_writeup/c4peg_g.py` and `tests/test_trackC_c4peg_g.py`, pushed before any output | |
 
 ## Worth challenging (for the PR)
 
