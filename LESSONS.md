@@ -988,6 +988,17 @@ not fixed).
 ## 4. Tests that assert a property of the machine, not of the code
 
 **Instances.**
+- 2026-11-23, C4′ (d)+(f) U1 (H-d): the design asked F¹, a re-run of C4's flat arm on the same
+  harness, to equal F bit for bit, on the strength of "the first re-trained step's loss
+  reproduced to every digit" (C4′ (c) U2). That was a one-update check. F¹'s update-1 loss does
+  equal F's, but its weights differ at update 4, the first state compared (max |Δ| 0.0017), and the
+  gap grows (0.067 at 128); the cause was not tested, and an earlier status entry had already
+  recorded non-deterministic kernels. One hour of GPU was spent on a run whose
+  stated check could not pass; it still serves as the reference, as a near-replicate. In the same
+  unit H-d's code listed F's states 1 and 2, which F¹'s grid never saves; the runner caught it
+  before any output was misread. Rule: **"reproducible" is measured at the horizon a design needs
+  (several updates and a saved state), not inferred from one update's loss; a check's step list is
+  built from the states both runs actually save**.
 - 2026-11-09 (#337's push run red, its PR run green on the same commit):
   `test_rows_ngram_reads_and_refuses` named three scratch dirs `hash(str(kw)) % 1000`; `str`
   hashes are salted per process, so about 1 run in 330 two names collided and `mkdir`

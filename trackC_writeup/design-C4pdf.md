@@ -1,10 +1,11 @@
 <!-- trackC_writeup/design-C4pdf.md -->
 # Track C — design: C4′ (d) and (f), the transient's dose and a schedule switch
 
-**Status: proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on #371 (accept
-with changes, findings 1–5 taken: the reference onset per gated arm, interval bands on a dense
-grid with a refusal when they meet, (f)'s labels, rule T in updates, two slips). Decisions D1–D4
-are STATE Blocked 172.**
+**Status: frozen 2026-11-23 on Blocked 172 D1 (a), D2 (a), D3 (b), D4 (a)** (Claude, on the
+user's "continue for the next 5 state items"; "Decided 2026-11-23" below), the rules pushed in
+code before any output. Proposed 2026-11-23 (U0, writing only); revised after `/challenge-pr` on
+#371 (accept with changes, findings 1–5 taken: the reference onset per gated arm, interval bands
+on a dense grid with a refusal when they meet, (f)'s labels, rule T in updates, two slips).
 Opened on Blocked 169, decided by the user 2026-11-23: "(e) and (g) first", then (d), (f). (e)+(g)
 closed in #370. (d) and (f) both train short new runs from states C4 already holds, and both ask
 what sets F's transient, so they share one design and one harness. Scan: `lit-C4pdf.md`.
@@ -57,14 +58,14 @@ Every arm is `pythia-70m`'s architecture under C4's recipe (`c4_train.build`, `m
 (0.9, 0.95), ε 1e-8, weight decay 0.1, clip 1.0, bf16 autocast, batch 1024 rows of 2049 tokens, on
 **C4's data order** (`c4_train.batch_of(rows, i)`, so iteration i reads A0's and F's i-th batch).
 
-**The dense grid D:** every 4 updates to 128, every 16 to 256, every 32 to 992, and 1000 (65
-states). Saves hold weights only (282 MB each), so density costs disk, not GPU.
+**The dense grid D:** every 4 updates to 128, every 16 to 656, every 32 from 688 to 976, and
+1000 (77 states; widened after `/challenge-pr` on #372). Saves hold weights only (282 MB each), so density costs disk, not GPU.
 
 | arm | from | rate | updates | saved states | changes against C4 |
 |---|---|---|---|---|---|
 | F¹ | seed 0's init (`pythia-70m` step0, as A0, F) | 1e-3, flat (F's) | 0 → 128 | D ≤ 128 (33) | nothing: F on a finer grid, the reference |
-| F½ | seed 0's init | 0.5 × 1e-3, flat | 0 → 1000 | D (65) | the rate only |
-| F⅒ | seed 0's init | 0.1 × 1e-3, flat | 0 → 1000 | D (65) | the rate only |
+| F½ | seed 0's init | 0.5 × 1e-3, flat | 0 → 1000 | D (77) | the rate only |
+| F⅒ | seed 0's init | 0.1 × 1e-3, flat | 0 → 1000 | D (77) | the rate only |
 | B_P | A0's saved step-256 weights (fp32), **fresh AdamW** (zero moments, counter 0) | 1e-3, flat | 256 → 512 | 256 + k, k ∈ K (17) | the state (against F: same rate, same fresh Adam) |
 | B_O | the same weights, fresh AdamW | A0's own, `lr_pythia(256 + k)` (0.179 → 0.358 of the peak) | 256 → 512 | 256 + k, k ∈ K | the control for a low-rate restart |
 
@@ -75,8 +76,8 @@ weights only** (`HDD_1TB/mets_data/c4/A0/ckpt/step256/model.safetensors`; `resum
 
 GPU, at C4's measured ≈ 26.5 s an update (C4′ (c): 8000 updates in ≈ 59 h): F¹ 0.9 h, F½ and F⅒
 7.4 h each, each branch 1.9 h; **≈ 19.4 h in all** at D1 (a), D2 (a). Records (c4_read's
-per-checkpoint e1 / e1c on v1's 7 prompts, float32 eager) and heads (`c4_close heads`) on the 197
-new states: about an hour. Disk ≈ 56 GB on `HDD_1TB` (123 GB free 2026-11-23), under
+per-checkpoint e1 / e1c on v1's 7 prompts, float32 eager) and heads (`c4_close heads`) on the 221
+new states: about an hour. Disk ≈ 63 GB on `HDD_1TB` (123 GB free 2026-11-23), under
 `mets_data/c4pdf/{F1,Fh,Ft,BP,BO}/`.
 
 ## The readings (rules fixed here; constants placed in U1 before any new arm trains)
@@ -195,7 +196,7 @@ induction score on each branch (A0 reaches b near 768).
 | G-I | the bar rule on A0, F, A0′, F′ cut at 1000: 768, 320, 768, 320 | |
 | G-d2 | F's top-head series stretched by 1/r: "dose" at ½; at ⅒, "not formed by 1000" | F unstretched: "step" at both |
 | G-f | F's states 0–256 read as offsets: a transient | A0's states 256–512 as offsets (only 256, 320, 384, 512 exist): none |
-| H-d | F¹ equals F's saved weights bit for bit at every F state ≤ 128 (1, 2, 4, …, 128); then G-d1 is re-run with F¹'s reference: "dose" at ½ and ⅒ | |
+| H-d | F¹ equals F's saved weights bit for bit at every state both saved (0, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128; corrected after F¹ trained, the first text listed 1 and 2, which grid D does not save); then G-d1 is re-run with F¹'s reference: "dose" at ½ and ⅒ | |
 | H-f | a branch's state at k = 0 equals A0's step-256 file bit for bit; its batch k is A0's batch 256 + k (row hashes) | |
 
 G-d1 and G-d2 are plants built from the effect arm itself: they test that the code reads a stretched
@@ -239,6 +240,100 @@ until you make it. Against it: one run per rate, 70m only, ρ₀ placed and not 
 bands disjoint by a thin margin (r < 0.512 at r = ½). D2 (a) stays recommended after #371's
 finding 3 because it answers the question asked (the early state or not), and says plainly that
 it does not separate the jump from the restart; D2 (b) does, for 3.8 h more.
+
+## Decided 2026-11-23 (Blocked 172)
+
+**D1 (a), D2 (a), D3 (b), D4 (a), by Claude on the user's "continue for the next 5 state items"**
+(as recommended; the user's to overrule). D3 (b) is a recommendation that the user register d1
+and d2; the registration itself is the user's commit, and `c4pdf_train` refuses any update on F½
+or F⅒ until `trackC_writeup/c4pdf_entries.json` (the user's, committed) names each reading's
+registered id or "declined". F¹ and the branches are tier 1 and run first (D4 (a)).
+
+**Frozen in code before any output** (U1): `c4pdf_rules.py` (the rules; its `code_sha()` is the
+hash a registered entry names), `c4pdf_train.py` (the arms, H-d, H-f), `c4pdf_read.py` (the
+gates, records, heads, reads). Details fixed with the code, none of which the text above left
+open in a way that could move a label:
+- the branches load A0's step-256 weights into `c4_train.build`'s model (sdpa, train mode) with a
+  strict state-dict load, then a fresh `make_opt`;
+- the top head's series is the maximum over the 48 heads at each state (as `c4pc_read.pair_inputs`);
+- G-d1 and G-d2 stretch F's series onto grid D at horizon 1000; G-f reads F's grid ≤ 256 (which
+  is the offsets K) and A0's 256, 320, 384, 512;
+- a branch's transient span and onset are in absolute steps (only differences enter rule T);
+- the reference (t⁻, t) is F¹'s onset and the state before it on F¹'s grid, per gated τ arm; if F¹
+  has no transient at a gated arm, the read refuses.
+
+## The two draft entries (D3 (b); yours to register or decline)
+
+**F¹ in U1 (before any draft below is registered):** H-d **failed**. F¹'s update-1 loss equals F's to
+every digit, but at update 4, the first state compared after 0, the weights differ (76 tensors,
+max |Δ| 0.0017, growing to 0.067 at 128). So C4's harness does not reproduce F's weights by
+update 4; the cause (a non-deterministic GPU kernel in the backward pass is the likely one) was not
+tested (`/challenge-pr` on #372, finding 6). As the gate row says, F¹ is then a near-replicate of F
+and its onset the reference, recorded so. F¹'s per-transition cells differ from F's at 3–6 of 72
+on the 12 shared states. It also voids the "bit-equal rebuild" in D2 (b) and (c): A0's moments
+could only be rebuilt approximately.
+
+**The references (t⁻, t]:** (44, 48] at τ 9.61e-5, (48, 52] at 1e-4 and at 3e-4. **They disagree
+with F and F′ at 1e-4** (`/challenge-pr` on #372, finding 3): both started at 48 there, outside
+(48, 52]. At 3e-4, F's coarse 64 lies in (48, 64] and is consistent. G-d1 re-run on F¹'s references
+reads "dose" at ½ and ⅒ at every gated arm, **by a margin of 2 updates at 3e-4** (onset 128 against
+a dose window ending at 130 at ½, 640 against 650 at ⅒). So F½'s windows are step [35.2, 60] or
+[38.4, 65] and dose [70.4, 120] or [76.8, 130]; F⅒'s dose window reaches 650. A second F¹
+replicate to 128 (≈ 0.9 h) would give the references a measured spread; whether to run it before
+registering is part of Blocked 173.
+
+**Revised after `/challenge-pr` on #372, before any new arm trained** (rules `284f0d10f5ba`, pushed in
+`2ab4b14`; the gates re-run and passing on them): an arm's event read at state x after state p lies
+in (p, x], and takes a band's label only if that whole interval is inside the band (finding 4);
+grid D is every 4 updates to 128, every 16 to 656 and every 32 from 688 to 976, plus 1000 (77
+states), so F⅒'s onset dose window and d2's 400 / 409.6 edge are read every 16 updates (findings
+4, 7); d1 scores on presence (finding 2). Record: `data/trackC/c4pdf/2026-11-23-u1b/gate.json`,
+sha256 `078bf931574480306fbd011b9d67dc583393accb9379932cad0ec099ea51de70`; the reference
+`…/2026-11-23-u1b/reference.json`, sha256 `e6a8785f6f3c8d747376352af3ee1bee2b592ec94ea1f194ccfa0146be495995`.
+The first gate record (`…/2026-11-23-u1/`, rules `bc45f4a54d84`) is set aside, not deleted.
+
+Drafted in U1 after the gates passed and before F½ or F⅒ took an update. To register: add both to
+`claims/registry.json` with the next two `P-SCH` numbers, then commit
+`trackC_writeup/c4pdf_entries.json` as `{"d1": "<id>", "d2": "<id>"}` (or `"declined"` for either);
+`c4pdf_train` refuses F½ and F⅒ until that file is committed.
+
+**d1** (claim H-RESIST; experiment "C4′ (d)+(f)"; relevance 0.6, as `P-SCH2`–`6`):
+- *statement:* On pythia-70m trained from seed 0's init on C4's data order at a flat rate of
+  0.5e-3 (F½) and of 0.1e-3 (F⅒), each to 1000 with states on grid D (every 4 updates to 128,
+  every 16 to 656, every 32 from 688 to 976, and 1000), at every centred τ arm C4's gate passed on
+  F (9.61e-5, 1e-4, 3e-4): F½ has a transient and F⅒ has none by 1000 (rule T: a run of consecutive
+  saved states, each with a transition outside {T1, T2} majority violated, spanning ≥ 16 updates;
+  `c4pdf_rules.d1_presence`). The onsets' step / dose labels are reported beside and do not score.
+- *h0:* the transient's presence does not change between a tenth and a half of the peak (both arms
+  have one, or neither has).
+- *h1:* the statement.
+- *falsifier:* at some gated arm F½ has no transient, or F⅒ has one by 1000. H-f failing or a
+  divergence scores nothing.
+- *instrument:* `c4pdf_train.py` `84662428cf73` (calling `c4_train.py` `1c1e1d2df083` unchanged),
+  records by `c4_read._records_of`, matrices by `c4_close.per_transition`, the rule
+  `c4pdf_rules.py` `284f0d10f5ba`.
+- *null_construction:* calibration, not a p-value: F and F′ read a transient at every gated arm,
+  A0 and A0′ none (G-T); F stretched by 1/r onto grid D reads "dose" at ⅒ (G-d1). The u1b record.
+- *notes:* 70m only; one run per rate; "none by 1000" on F⅒ does not separate a threshold from a
+  clock slower than the dose; rule T's span was placed after seeing A0′'s one-state run at 640;
+  above 656 the grid is every 32 updates, so a transient shorter than 32 updates there reads
+  "none". Registered after U1's gates and F¹, before F½'s or F⅒'s first update.
+
+**d2** (claim H-RESIST; same experiment and relevance):
+- *statement:* On F½ as in d1, induction's date, the first saved state x at which the maximum over
+  the 48 heads of `c4_close`'s induction score reaches b = ½ P̄ = 0.4819 (P̄ the median of A0's,
+  F's, A0′'s and F′'s `c4_read.date_on` plateaus), lies with its preceding state p so that (p, x]
+  is inside the dose band [409.6, 800], built from F's date interval (256, 320] with ρ₀ = 1.25
+  (`c4pdf_rules.label_induction`).
+- *h0:* (p, x] inside the step band [204.8, 400].
+- *h1:* the statement.
+- *falsifier:* any other outcome: (p, x] inside the step band, crossing either band's edge or
+  lying between or past them ("neither"), or b not reached by 1000. A divergence scores nothing.
+- *instrument:* as d1; heads by `c4pdf_read.heads` (`c4_close.heads`' sequences, seed and scorer).
+- *null_construction:* calibration: the bar rule returns 768, 320, 768, 320 on A0, F, A0′, F′
+  (G-I); F's series stretched by 2 reads "dose", unstretched "step" (G-d2). The u1b record.
+- *notes:* the bands are disjoint by a thin margin (r < 0.512 at r = ½), and F's own date is known
+  only to (256, 320]; F⅒'s induction (d3) is not in the entry, since its dose band is past 1000.
 
 ## Worth challenging (for the PR)
 
