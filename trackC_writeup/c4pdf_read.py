@@ -14,7 +14,9 @@ stretched: "dose" at ½, "not step" at ⅒; unstretched "step"), G-f (F's 0–25
 `c4_read.load_local`, `c4_read.induction_scores`, the same sequences and seed as `c4_close.heads`),
 unchanged, looped over an arm's own saved states (grid D, or 256 + offsets).
 
-**Reads** (`read`, U3): d1 per gated τ arm and joint, d2, f; each with its beside rows.
+**Reads** (`read`, U3): d1 per gated τ arm and joint, d2, f; each with its beside rows; each
+names its input (the gate's path and sha256, the record folder, the checkpoint root: U3a
+Parked 1, fixed in U3b). `read-k` (U3b): rule K on B_K and BKO (`c4pdf_bk`), after G-K and H-K.
 
     METS_DATA=<main>/data python -m trackC_writeup.c4pdf_read gate --out <dir>
 """
@@ -34,6 +36,7 @@ from trackC_writeup import c4_read as cr
 from trackC_writeup import c4_train as ct
 from trackC_writeup import c4pdf_rules as rl
 from trackC_writeup import c4pdf_train as pt
+from trackC_writeup import c4pdf_bk as bk
 
 C4_U2 = DATA / "trackC/c4/2026-11-12-u2"            # A0 and F records, gate.json
 C4_CLOSE = DATA / "trackC/c4/2026-11-14-close"      # heads_{A0,F}.json
@@ -199,8 +202,12 @@ def _np(o):
     return o
 
 
+def save_steps(arm: str) -> tuple:
+    return bk.save_steps(arm) if arm in bk.ARMS else pt.save_steps(arm)
+
+
 def saved(root: Path, arm: str) -> list:
-    return [s for s in pt.save_steps(arm) if ct.ckpt_dir(root, arm, s).exists()]
+    return [s for s in save_steps(arm) if ct.ckpt_dir(root, arm, s).exists()]
 
 
 def records(a) -> int:
@@ -260,11 +267,57 @@ def heads(a) -> int:
 
 def _new(out: Path, root: Path, arm: str, arms: Sequence[str]) -> dict:
     st = saved(root, arm)
-    if st != list(pt.save_steps(arm)):
-        raise C4pdfReadRefused(f"{arm}: states {sorted(set(pt.save_steps(arm)) - set(st))} missing")
+    if st != list(save_steps(arm)):
+        raise C4pdfReadRefused(f"{arm}: states {sorted(set(save_steps(arm)) - set(st))} missing")
     recs = load_recs(out, arm, st)
     heads = json.loads((out / f"heads_{arm}.json").read_text())["per_step"]
     return {"states": st, "mats": mats_of(recs, st, arms), "top": top_series(heads, st), "heads": heads}
+
+
+def _sha(p: Path) -> str:
+    import hashlib
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def _input(a) -> dict:
+    """What a reading ran on (U3a Parked 1, `/challenge-pr` on #374 finding 4)."""
+    gp = Path(a.gate).resolve() / "gate.json"
+    return {"gate": str(gp), "gate_sha256": _sha(gp), "records": str(Path(a.out).resolve()),
+            "root": str(Path(a.root).resolve())}
+
+
+def read_k(a) -> int:
+    """U3b: rule K (`c4pdf_bk.k_label`) on B_K and BKO, after G-K (B_P, B_O cut at 384) and H-K.
+    ``--out`` holds BK/, BKO/, BP/, BO/ and their heads files."""
+    out, root = Path(a.out), Path(a.root)
+    g = json.loads((Path(a.gate) / "gate.json").read_text())
+    if not g["pass"] or g["rules"] != rl.code_sha():
+        raise C4pdfReadRefused(f"gate pass {g['pass']}, rules {g['rules']} against {rl.code_sha()}")
+    hk = json.loads((Path(a.hk) / "hk.json").read_text())
+    if not hk["pass"] or hk["code"] != bk.code_sha():
+        raise C4pdfReadRefused(f"H-K pass {hk['pass']}, code {hk['code']} against {bk.code_sha()}")
+    arms = tuple(g["gated_arms"])
+    sides = {arm: _new(out, root if arm in bk.ARMS else Path(a.branch_root), arm, arms)
+             for arm in ("BK", "BKO", "BP", "BO")}
+    gk = bk.g_k(sides["BP"]["mats"], sides["BP"]["states"], sides["BO"]["mats"], sides["BO"]["states"], arms)
+    res: Dict[str, dict] = {"rules": rl.code_sha(), "bk": bk.code_sha(), "gate": g["rules"],
+                            "input": {**_input(a), "hk": str(Path(a.hk).resolve() / "hk.json"),
+                                      "branch_root": str(Path(a.branch_root).resolve())},
+                            "G-K": gk}
+    if not gk["pass"]:
+        ct._jdump(out / "reading_k.json", _np(res))
+        raise C4pdfReadRefused("G-K fails: B_K is not read")
+    cells = {}
+    for k in arms:
+        tk = rl.transient(sides["BK"]["mats"][k], sides["BK"]["states"])
+        tko = rl.transient(sides["BKO"]["mats"][k], sides["BKO"]["states"])
+        cells[k] = {"BK": tk, "BKO": tko, "label": bk.k_label(tk, tko),
+                    "beside_BP_to_384": gk["per_arm"][k]["BP_to_384"]}
+    res["K"] = cells
+    res["K_joint"] = bk.k_joint({k: v["label"] for k, v in cells.items()})
+    ct._jdump(out / "reading_k.json", _np(res))
+    print(json.dumps({"G-K": gk["pass"], "K": res["K_joint"], **{k: v["label"] for k, v in cells.items()}}))
+    return 0
 
 
 def read(a) -> int:
@@ -274,7 +327,7 @@ def read(a) -> int:
     if not g["pass"] or g["rules"] != rl.code_sha():
         raise C4pdfReadRefused(f"gate pass {g['pass']}, rules {g['rules']} against {rl.code_sha()}")
     arms = tuple(g["gated_arms"])
-    res: Dict[str, dict] = {"rules": rl.code_sha(), "gate": g["rules"]}
+    res: Dict[str, dict] = {"rules": rl.code_sha(), "gate": g["rules"], "input": _input(a)}
     f1 = _new(out, root, "F1", arms)
     ref = {}
     for k in arms:
@@ -322,7 +375,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         q = sub.add_parser(cmd)
         q.add_argument("--out", required=True)
         q.add_argument("--root", default=str(pt.ROOT))
-        q.add_argument("--arm", nargs="+", choices=pt.ARMS, required=True)
+        q.add_argument("--arm", nargs="+", choices=pt.ARMS + bk.ARMS, required=True)
     q = sub.add_parser("reference")
     q.add_argument("--out", required=True)
     q.add_argument("--gate", required=True)
@@ -331,8 +384,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     q.add_argument("--root", default=str(pt.ROOT))
     q.add_argument("--gate", required=True)
     q.add_argument("--f-only", action="store_true")
+    q = sub.add_parser("read-k")
+    q.add_argument("--out", required=True)
+    q.add_argument("--root", default=str(pt.ROOT))
+    q.add_argument("--branch-root", default=str(pt.ROOT))
+    q.add_argument("--gate", required=True)
+    q.add_argument("--hk", required=True)
     a = p.parse_args(argv)
-    return {"gate": gate, "records": records, "heads": heads, "reference": reference, "read": read}[a.cmd](a)
+    return {"gate": gate, "records": records, "heads": heads, "reference": reference, "read": read,
+            "read-k": read_k}[a.cmd](a)
 
 
 if __name__ == "__main__":
