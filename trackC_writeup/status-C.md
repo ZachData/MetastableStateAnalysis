@@ -55,6 +55,7 @@
   - **C4′ (e)+(g) closed 2026-11-23 at its exit and budget** (3 units + close-out): the tokens' mean carries the unigram prior on both schedules; at V's block both end with attention diluting it; the two schedules' end states sit in different basins, their mean directions are near orthogonal, and mid-stack their readouts differ about as much as another init's (post hoc); the other schedule's induction-head indices do nothing when ablated, and each arm's previous-token heads alone remove as much copying as its induction heads, so g3 is unresolved (post hoc; revised after `/challenge-pr` on #370) — `trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"
   - C4′ (d)+(f) opened 2026-11-23 (STATE Blocked 169's order, after (e)+(g); writing only, nothing trained): a scan and a proposed design. (d): flat arms at a half and a tenth of the peak, the transient's onset and induction's date read against a step and a dose band; (f): A0's step-256 weights continued at the peak against the same restart at A0's own rate. The ROADMAP's horizons were too short for the dose clock (F⅒'s transient band reaches 800), and F's own grid cannot tell a half-rate dose from a step, so F is re-run to 128 on a 4-update grid (F¹); A0 passes F's onset dose at 0.26 of the peak, and the peak itself at 1430, with no transient. Revised after `/challenge-pr` on #371. Decisions D1–D4, STATE Blocked 172 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 0"
   - C4′ (d)+(f) U1 (2026-11-23; tier 1): design frozen on Blocked 172 (as recommended, Claude on the user's delegation); rules pushed before output; all five gates pass on the four trained arms. F¹ (the flat arm re-run to 128 on a 4-update grid) is not bit-equal to F from update 4 (the harness is not deterministic past one update), so it is a near-replicate; its onsets (48, 52, 52 at the three gated τ arms) make the half-rate step and dose windows disjoint. Two entries drafted for the user's registration — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 1"
+  - C4′ (d)+(f) U2a (2026-11-23; tier 1, nothing read): (f)'s branches B_P and B_O trained from A0's step-256 weights (fresh AdamW; the peak, A0's own rate) to 512; each starts from A0's state and batch (step 257's loss equal to A0's); records and heads written. F½, F⅒ wait on the user's Blocked 173 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2a"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -71,7 +72,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `2f85064c06`
+- **Reviewed:** 2026-11-23 · body `30ca4e1cb8`
 <!-- /phase-card -->
 
 ## Units
@@ -128,6 +129,44 @@
 | C4′ (e)+(g) close-out (two post hoc reads, minutes) | **done 2026-11-23: at the budget (3 units + close-out); at mid-stack the schedules' means read through W_U agree no more than another init's (the final state is at the read's ceiling for any two models); g3 unresolved on both pairs, each arm's previous-token heads alone remove as much of the copy gain as its induction heads; revised after `/challenge-pr` on #370** | `c4peg_close.py`; "C4′ (e)+(g) on one page (closed 2026-11-23)" below |
 | C4′ (d)+(f) 0. the scan and design (Blocked 169's order; budget 4 units + close-out) | **done 2026-11-23: writing only, nothing trained; proposed, D1–D4 Blocked 172** | `lit-C4pdf.md`, `design-C4pdf.md`, `tools/math_checks/c4pdf_bands.py`; "C4′ (d)+(f) unit 0" below |
 | C4′ (d)+(f) 1. frozen (Blocked 172, Claude on the user's delegation); rules, driver, reader; gates; F¹; entries drafted | **done 2026-11-23: gates G-T, G-d1, G-I, G-d2, G-f pass; H-d fails (not bit-reproducible past update 1), F¹ a near-replicate; references (44, 48], (48, 52], (48, 52]; G-d1 re-run on them passes; registration Blocked 173** | `c4pdf_rules.py`, `c4pdf_train.py`, `c4pdf_read.py`, `data/trackC/c4pdf/2026-11-23-u1b/` (revised after `/challenge-pr` on #372); "C4′ (d)+(f) unit 1" below |
+| C4′ (d)+(f) 2a. (f)'s branches B_P, B_O (D2 (a); not gated on Blocked 173) | **done 2026-11-23: both trained 256 → 512, the state half of H-f passes and step 257's loss matches A0's to every digit; records and heads written (17 saves each); nothing read. F½, F⅒ (U2's other half) wait on Blocked 173** | `data/trackC/c4pdf/2026-11-23-u2/`; "C4′ (d)+(f) unit 2a" below |
+
+## C4′ (d)+(f) unit 2a, (f)'s branches B_P and B_O (2026-11-23)
+
+Run by the `runner` agent from `../Mets-work` at `334ee9b` (code `c4pdf_train` `84662428cf73`,
+`c4pdf_rules` `284f0d10f5ba`; records' code `220161b9159b`, heads' `019846e1561b`); no edits,
+tier 1, nothing read. Input: A0's step-256 file and π's batches 256 + k; records on C4's 7
+prompts.
+Conda `mets` (torch 2.10.0+cu130), RTX 3080, n_micro 512, compiled, bf16 autocast, fp32 master.
+
+| step | state |
+|---|---|
+| B_P (A0's 256, fresh AdamW, 1e-3 flat) | 256 → 512, exit 0, wall 7302 s; 256 logged steps, all finite; lr 1e-3 at every step |
+| B_O (same weights, fresh AdamW, `lr_pythia(256 + k)`) | 256 → 512, exit 0, wall 7350 s; lr 1.790e-4 at 257 rising to 3.573e-4 at 512 (0.179 → 0.357 of the peak, as the design) |
+| H-f, state half | `hf.json` (sha256 `bb1e9ea3ca69`, "pass": true): each branch's saved k = 0 state equals A0's step-256 file on all 76 tensors (max abs 0). This checks the save after loading, not the forward pass |
+| H-f, batch half | `hf.json` only hashes batches 256 + k (k = 0, 1, 255); it compares them with nothing. **The check that covers both halves:** step 257's loss is 5.98879364784807 in B_P's, B_O's and A0's own log (`mets_data/c4/A0/train_log.jsonl`), equal to every digit (same state, same batch, before the first update). Corrected after `/challenge-pr` on #373, finding 2 |
+| records | `records --arm BP BO`: 119 files per arm, 17 saves (256 … 512) × 7 prompts; first line n 465, finite, equal at 256 on both arms (same state) |
+| heads | `heads_BP.json` `393a2152ca66`, `heads_BO.json` `1f3c6df41a88`, 17 saves each |
+| disk | checkpoints `HDD_1TB/mets_data/c4pdf/{BP,BO}/` 5.3 GB each; HDD_1TB 88 % used before the runs |
+
+Training logs: every loss finite on both arms, no divergence. **Seen before Gupta was read
+(2026-11-23):** the runner's report and this session quoted both branches' training-loss peaks and
+the step-512 losses (in the session and in this PR's first commit). Those are log numbers, not
+f's rule, and the rule is frozen. But `lit-C4pdf.md` Parked 1 (Gupta et al.) is to be read before
+U2's records, since it can change f's wording and whether the kept-moment branch (D2 (b)) is
+worth its hours. So that reading and the D2 (b) choice were made with the size of the spike
+known. The numbers are left out here (`/challenge-pr` on #373, finding 1).
+
+**U2's first half is done** (both branches trained, the state matches A0's, records written).
+f does not wait on Blocked 173: `c4pdf_read read --f-only` needs only F¹ (the reference), B_P and B_O, all trained. So the
+next step is U3's f half: read Gupta et al. (Parked 1), then `read --f-only`, then decide on D2 (b).
+This can run while the user decides Blocked 173. That decision then gates F½, F⅒ (U2's
+other half, ≈ 14.7 h). No Parked items.
+
+**Re-run.** From `../Mets-work`, `METS_DATA=<main>/data HF_HOME=HDD_1TB/mets_data/hf
+HF_HUB_OFFLINE=1`, the `mets` env's python: `-m trackC_writeup.c4pdf_train train --arm BP`, then
+`--arm BO`; `c4pdf_train hf --out <dir>`; `-m trackC_writeup.c4pdf_read records --arm BP BO --out
+<dir>`, then `heads --arm BP BO --out <dir>`.
 
 ## C4′ (d)+(f) unit 1, the rules, the gates and the reference run (2026-11-23)
 
