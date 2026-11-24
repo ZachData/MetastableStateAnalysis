@@ -665,3 +665,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-24 | C4′ (d)+(f) U3a (Gupta read, f's read; /challenge-pr on #374 answered) · subagents: general-purpose opus-5-5 1.4M, web-fetch haiku-5-5 27k | 47 | 141k | 4.8M | 33k | #374 |
 | 2026-11-24 | C4′ (d)+(f) U3b (B_K, BKO, A0's rebuild, F¹ r2; the registration; ROADMAP C8 from two research questions; /challenge-pr on #375 answered) · subagents: general-purpose opus-5-5 2.2M, runner haiku-5-5 9.0M · runner batches, main calls: 36 (haiku-5-5) | 98 | 243k | 16.2M | 56k | #375 |
   - Over 2× the running median: the runner's 5 h watch is 9.0M of it (133 calls, two relaunches after `HF_HOME` and the OOM, `LESSONS.md` 3); the main session also answered two research questions (C8) and did the registration.
+| 2026-11-24 | Paper: every model read (writing only; table 2, Dodecahedron, §5 finer grid; ROADMAP C9) | 56 | 196k | 6.9M | 121k | #376 |
