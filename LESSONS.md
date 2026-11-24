@@ -832,6 +832,14 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
 ## 3. The input changes underneath code that assumed it was fixed
 
 **Instances.**
+- 2026-11-24, C4′ (d)+(f) U3b: the batch script assumed the environment of earlier runs. It set
+  `HF_HUB_OFFLINE=1` without `HF_HOME` (the cache is on `HDD_1TB/mets_data/hf`, as `c4_train`'s
+  docstring says), so the first launch died loading `pythia-70m`; and it ran two 70m trainings
+  side by side on the 10 GB 3080, where A0's run died of CUDA OOM (n_micro 512 leaves too little
+  for two). The `runner` agent fixed both without touching the numerics (sequential pairs; the
+  OOM'd segment logged no update); cost ≈ 1 h of wall time. Rule: **a batch copies the export
+  line of the last batch that ran** (`HDD_1TB/mets_data/c4pdf/u3b_batch.sh` now has it), and
+  **two trainings never share the 3080**; forward-pass work (records, heads) can.
 - 2026-10-23, C5 unit 1: `c5_massive.code_sha()` hashed the source files each time it was
   called, and pass 1 (a 27-minute run) stamped each record with it. Freezing τ_p and adding a
   `--seeds` flag mid-run changed the file, so the running process, still executing the code it
