@@ -2215,6 +2215,14 @@ scan found both. No decision moved: the user chose S4, which now starts from the
 proposed row's cost and inputs are checked against the other tracks' inventories and Parked
 items (`grep` the row's model kind across `docs/lit-*.md` and the status files) and a
 release search, before the option is put to the user.
+2026-11-23 (C4′ (d)+(f) U2a, #373): the design says `lit-C4pdf.md` Parked 1 (Gupta et al.) is
+read "before U2's records are read". It can change f's wording and whether D2 (b)'s kept-moment
+branch is worth its hours. Nothing stopped the training logs: the runner's report quoted both
+branches' loss peaks, the session relayed them to the user, and the first commit wrote them into
+`status-C.md`. Gupta's subject is exactly that spike. The frozen rule was not exposed, but the
+D2 (b) choice now is (`/challenge-pr` on #373, finding 1). Rule: when a reading is ordered
+before a unit's outputs, the runner's brief says which logged numbers to leave out of its report
+(here: losses past the first step), and the status file records only run health.
 
 **The rule now.** Scan when a phase opens (before `design-N.md` freezes) and
 before registering. Status: 📋 `CLAUDE.md` (already there; the misses predate it).
