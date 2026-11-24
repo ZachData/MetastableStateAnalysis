@@ -57,7 +57,7 @@
   - C4′ (d)+(f) U1 (2026-11-23; tier 1): design frozen on Blocked 172 (as recommended, Claude on the user's delegation); rules pushed before output; all five gates pass on the four trained arms. F¹ (the flat arm re-run to 128 on a 4-update grid) is not bit-equal to F from update 4 (the harness is not deterministic past one update), so it is a near-replicate; its onsets (48, 52, 52 at the three gated τ arms) make the half-rate step and dose windows disjoint. Two entries drafted for the user's registration — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 1"
   - C4′ (d)+(f) U2a (2026-11-23; tier 1, nothing read): (f)'s branches B_P and B_O trained from A0's step-256 weights (fresh AdamW; the peak, A0's own rate) to 512; each starts from A0's state and batch (step 257's loss equal to A0's); records and heads written. F½, F⅒ wait on the user's Blocked 173 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2a"
   - C4′ (d)+(f) U3a, f (2026-11-24; tier 1; Gupta et al. read and the D2 (b) rule pushed before the read): **f reads "not the early state's" at all three gated τ arms.** A fresh AdamW at the peak makes the transient on A0's trained step-256 state as on F's init, and the same restart at A0's own rate makes none. Not separated: the rate's jump from the restart's first updates (by design), so D2 (b) is worth its hours by the rule fixed before the read; STATE Blocked 174 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3a"
-  - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
+  - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. Fresh moments also make the first updates 3× larger, so the moments and the early steps' size are not separated (`/challenge-pr` on #375). A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C4′ (d)+(f)'s d1 and d2 registered by the user 2026-11-24 as `P-SCH7`, `P-SCH8` (Blocked 173 (a), `4ebc723`) after U1's gates and both F¹ replicates, before F½'s or F⅒'s first update; not yet read; C2 quotes `P-A5`, Track A's
@@ -74,7 +74,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-24 · body `a1935dcc30`
+- **Reviewed:** 2026-11-24 · body `5707367fd3`
 <!-- /phase-card -->
 
 ## Units
@@ -164,7 +164,17 @@ the peak (B_P) and not with fresh moments at A0's rate (B_O), nor with the momen
 (B_K) or at A0's rate (BKO). So the jump in rate alone does not make it; the restart's first updates
 at a high rate do. With F (fresh moments at init, at the peak) and A0 (fresh moments at init, the
 rate rising over 1430), every arm so far with the transient has had un-adapted moments meet a high
-rate. **Not shown:** that this holds at init (no kept-moment arm starts at 0: C8 (iv)'s
+rate. **What "the restart's" does not separate (`/challenge-pr` on #375, finding 1):** fresh
+moments make the first updates larger, so the label cannot say whether the moments matter as such
+or only through the size of the earliest steps. `drift.json` (`c4pdf_read drift`, beside, read
+never): the relative L2 distance from A0's 256 file is 0.033 on B_P against 0.011 on B_K after one
+update, and 0.17 against 0.12 at 272. B_K catches up by 320 (0.36 against 0.34) and is further by
+384 (0.55 against 0.51), still with no transient. So the transient follows how fast the first ~16
+updates move, not B_K's total movement; ROADMAP C8 (iv) carries the arm that separates them (B_K
+with a short rate overshoot sized to B_P's early drift). **BKO's use (finding 2):** a "the jump's"
+reading, the one it guards, did not occur, so its null did not bind. It does show that the rebuilt
+moments behave like A0's own: BKO is 1.2 % and 2.0 % from A0's saved states at 320 and 384, where
+B_O (fresh moments, the same rate) is 3.7 % and 4.5 %. **Not shown:** that this holds at init (no kept-moment arm starts at 0: C8 (iv)'s
 moment-warmed flat arm asks it); a transient later than 384 on B_K (B_P's began 16–32 updates after
 the jump; B_K's horizon is 128 updates); that the moments are A0's own (a near-replicate's, 0.98 %
 off; BKO shows the mismatch alone does not disturb). The lean f-jump (`design-C4pdf.md`) is broken
@@ -196,8 +206,10 @@ sha256, the record folder, the checkpoint root; `read-k` also H-K's and the bran
 
 **Re-run.** From `../Mets-work`, the `mets` env, `HF_HOME=<HDD_1TB>/mets_data/hf`: the batch above;
 then `METS_DATA=<main>/data python -m trackC_writeup.c4pdf_read read-k --out <u3b> --gate
-<main>/data/trackC/c4pdf/2026-11-23-u1b --hk <u3b>` (with `BP/`, `BO/` and their heads linked into
-`<u3b>`), and `… reference --out <u3b>/rep2 --gate <same>`.
+<main>/data/trackC/c4pdf/2026-11-23-u1b --hk <u3b> --f-reading <main>/data/trackC/c4pdf/2026-11-24-u3` (with `BP/`, `BO/` and their
+heads linked into `<u3b>`; it now refuses unless f's reading was made on the same gate and rules,
+the check `c4pdf_bk`'s docstring promised, #375 finding 5; the reading is unchanged apart from its
+`input` block), `… drift --out <u3b>` (CPU), and `… reference --out <u3b>/rep2 --gate <same>`.
 
 **Next:** F⅒ then F½ (D4 (a); ≈ 14.7 h), now unblocked; then U3's d half and the close-out. ROADMAP
 §8 C8 (added 2026-11-24, the user's) takes up the trigger. No Parked items.

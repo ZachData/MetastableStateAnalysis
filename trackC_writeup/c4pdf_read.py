@@ -293,6 +293,9 @@ def read_k(a) -> int:
     g = json.loads((Path(a.gate) / "gate.json").read_text())
     if not g["pass"] or g["rules"] != rl.code_sha():
         raise C4pdfReadRefused(f"gate pass {g['pass']}, rules {g['rules']} against {rl.code_sha()}")
+    rf = json.loads((Path(a.f_reading) / "reading_f.json").read_text())
+    if rf["gate"] != g["rules"] or rf["rules"] != rl.code_sha():
+        raise C4pdfReadRefused(f"f was read on gate {rf['gate']}, rules {rf['rules']}; this gate {g['rules']}")
     hk = json.loads((Path(a.hk) / "hk.json").read_text())
     if not hk["pass"] or hk["code"] != bk.code_sha():
         raise C4pdfReadRefused(f"H-K pass {hk['pass']}, code {hk['code']} against {bk.code_sha()}")
@@ -302,6 +305,7 @@ def read_k(a) -> int:
     gk = bk.g_k(sides["BP"]["mats"], sides["BP"]["states"], sides["BO"]["mats"], sides["BO"]["states"], arms)
     res: Dict[str, dict] = {"rules": rl.code_sha(), "bk": bk.code_sha(), "gate": g["rules"],
                             "input": {**_input(a), "hk": str(Path(a.hk).resolve() / "hk.json"),
+                                      "f_reading": str(Path(a.f_reading).resolve() / "reading_f.json"),
                                       "branch_root": str(Path(a.branch_root).resolve())},
                             "G-K": gk}
     if not gk["pass"]:
@@ -317,6 +321,29 @@ def read_k(a) -> int:
     res["K_joint"] = bk.k_joint({k: v["label"] for k, v in cells.items()})
     ct._jdump(out / "reading_k.json", _np(res))
     print(json.dumps({"G-K": gk["pass"], "K": res["K_joint"], **{k: v["label"] for k, v in cells.items()}}))
+    return 0
+
+
+def drift(a) -> int:
+    """Beside, read never (`/challenge-pr` on #375, findings 1-2): each branch's relative L2 distance
+    from A0's step-256 file, and from A0's own saved states at 320 and 384, at every saved state."""
+    root = Path(a.root)
+    a0 = {s: pt._sd(ct.ckpt_dir(pt.C4_ROOT, "A0", s)) for s in (256, 320, 384)}
+
+    def rel(x, y):
+        num = sum(float(np.sum((x[k].astype(np.float64) - y[k].astype(np.float64)) ** 2)) for k in y)
+        return float(np.sqrt(num / sum(float(np.sum(y[k].astype(np.float64) ** 2)) for k in y)))
+    out = {}
+    for arm in ("BP", "BO", "BK", "BKO"):
+        st = [s for s in save_steps(arm) if s <= bk.UNTIL]
+        rows = {}
+        for s in st:
+            w = pt._sd(ct.ckpt_dir(root, arm, s))
+            rows[str(s)] = {"from_256": rel(w, a0[256]), **({"from_A0_same_step": rel(w, a0[s])} if s in (320, 384) else {})}
+        out[arm] = rows
+    ct._jdump(Path(a.out) / "drift.json", {"code": bk.code_sha(), "read": "never (description)", "per_arm": out})
+    print(json.dumps({arm: {s: round(v["from_256"], 4) for s, v in rows.items() if s in ("257", "258", "272", "320", "384")}
+                      for arm, rows in out.items()}))
     return 0
 
 
@@ -390,9 +417,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     q.add_argument("--branch-root", default=str(pt.ROOT))
     q.add_argument("--gate", required=True)
     q.add_argument("--hk", required=True)
+    q.add_argument("--f-reading", required=True)
+    q = sub.add_parser("drift")
+    q.add_argument("--out", required=True)
+    q.add_argument("--root", default=str(pt.ROOT))
     a = p.parse_args(argv)
     return {"gate": gate, "records": records, "heads": heads, "reference": reference, "read": read,
-            "read-k": read_k}[a.cmd](a)
+            "read-k": read_k, "drift": drift}[a.cmd](a)
 
 
 if __name__ == "__main__":
