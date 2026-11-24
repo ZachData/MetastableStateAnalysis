@@ -661,3 +661,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-23 | C4′ (d)+(f) U0 (scan, design; /challenge-pr on #371 answered) · subagents: general-purpose opus-5-5 2.3M | 61 | 260k | 11.5M | 74k | #371 |
 | 2026-11-23 | C4′ (d)+(f) U1 (rules, gates, F¹; /challenge-pr on #372 answered; same session as #371, running total) · subagents: general-purpose opus-5-5 4.0M, runner haiku-5-5 900k · runner batches, main calls: 15 (haiku-5-5) | 130 | 395k | 34.6M | 101k | #372 |
   - Over 2× the running median: one session for U0, its review, U1 and an explainer page at the user's "continue for the next 5 state items"; the starting STATE alone was ~140 KB, read through a saved file (`LESSONS.md` 9).
+| 2026-11-23 | C4′ (d)+(f) U2a (B_P, B_O trained and recorded; launched at the end of #372's session, whose row grew 34.6M → 36.2M; this session watched and wrote up) · subagents: runner haiku-5-5 9.5M | 30 | 95k | 2.2M | 15k | #373 |
