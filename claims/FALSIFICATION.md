@@ -84,7 +84,7 @@ prose around it.
 
 ### H-RESIST
 
-12 registered · 2 adjudicable now · 0 dormant
+14 registered · 2 adjudicable now · 0 dormant
 
 | # | prediction | p | e | running E | decision after |
 |---|---|---|---|---|---|
@@ -94,7 +94,7 @@ prose around it.
 
 The threshold is crossed (E ≥ 20). Falling back below it would take 7 further factors at p = 1 (each multiplies E by κ = 0.5).
 
-<details><summary>Registered but not adjudicable (10)</summary>
+<details><summary>Registered but not adjudicable (12)</summary>
 
 | prediction | why |
 |---|---|
@@ -106,6 +106,8 @@ The threshold is crossed (E ≥ 20). Falling back below it would take 7 further 
 | `P-SCH4` | measurement — no valid null exists |
 | `P-SCH5` | measurement — no valid null exists |
 | `P-SCH6` | measurement — no valid null exists |
+| `P-SCH7` | measurement — no valid null exists |
+| `P-SCH8` | measurement — no valid null exists |
 | `P-gamma1` | needs-null — null not yet constructed |
 | `P-gamma2` | needs-null — null not yet constructed |
 
