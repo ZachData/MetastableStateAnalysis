@@ -73,7 +73,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-24 · body `5e51dece4c`
+- **Reviewed:** 2026-11-24 · body `c445fae87c`
 <!-- /phase-card -->
 
 ## Units
@@ -158,25 +158,40 @@ on new data. So f's wording does not change, and f-jump keeps Gupta as a weaker 
 trained state at 256 as it did on F's init. The same restart at A0's own rate (0.18 → 0.36 of the
 peak) makes none. Together with A0 itself, which reaches the peak gradually at 1430 with no
 transient, a restart alone at a low rate does not make it, and neither does the peak reached
-gradually. **What f does not separate (by design, #371 finding 3):** the jump in the rate from
-the restart's first updates at the peak. The lean f-state [arms, scan] is broken. f-jump [scan] is
-consistent, but a lean is not a reading, and the confound is exactly between f-jump and the
-restart at the peak.
+gradually. **Why it is F's transient:** B_P's run is a majority of the 7 prompts at T3, T4 and T5
+(T1 and T2 are the end set), the same transitions as F¹'s run at every gated arm. B_O never has a
+majority outside the end set at any state. It has minority hits at T2–T4 from 352, at most 1 of 7
+outside the end set. Checked after `/challenge-pr` on #374, finding 2. **What f does not separate
+(by design, #371 finding 3):** the jump in the rate from the restart's first updates at the peak.
+The lean f-state [arms, scan] is broken. The result fits f-jump and a fresh Adam's first updates
+at the peak equally well; it does not favour f-jump (reworded after #374, finding 3).
 
 **Beside, read never (description):** B_P's onset in updates after the jump (16–32) is earlier
 than F¹'s (44–52). Both runs last to the arm's last state (F¹'s to 128, B_P's to 512), so in
-256 updates B_P's transient does not end under rule T.
+256 updates B_P's transient does not end under rule T. F′'s own transient ran 64 → 1000, so no end
+was expected (#374).
 
 **D2 (b).** By the rule fixed before the read (`lit-C4pdf.md` Parked 1), "not the early state's"
 is the row where D2 (b) earns its hours: B_K (A0's moments kept, jump to the peak) tells the jump
 from the restart. A0's moments at 256 do not exist, and H-d showed the harness is not
 bit-reproducible past one update. So a rebuild (A0 re-trained 0 → 256 with its moments saved) is a
 near-replicate of A0's 256, not the saved file. That is STATE Blocked 174, the user's (it adds GPU
-hours beyond the design's 19.4).
+hours beyond the design's 19.4). The options were revised after `/challenge-pr` on #374, finding 1:
+
+| | B_K's start | cost | against it |
+|---|---|---|---|
+| (a), recommended | A0's **saved** 256 weights with the rebuild's moments, at the peak, to 384 (horizon fixed now) | rebuild ≈ 1.9 h + ≈ 1 h | the moments belong to a near-replicate's weights (their gap from the saved file is recorded first); B_K and B_P then differ only in the optimiser state |
+| (b) | B_O's step-512 `resume.pt` (state and moments exact, on disk), at the peak | ≈ 1 h to 640 | the jump is 2.8× (0.357 of the peak), not 5.6×, on B_O's state, not A0's; "none" from it would be weak |
+| (c) | none: f closes here, the jump and the restart not separated | 0 | |
 
 **Re-run.** From `../Mets-work`, the `mets` env's python: `-m trackC_writeup.c4pdf_read read
 --f-only --out <dir holding F1/, BP/, BO/ and heads_{F1,BP,BO}.json> --gate
-<main>/data/trackC/c4pdf/2026-11-23-u1b`. No Parked items.
+<main>/data/trackC/c4pdf/2026-11-23-u1b`.
+
+**Parked.** 1. `reading_f.json` does not name its input: its `gate` field repeats the rules hash,
+and no gate path or record folder is written (#374, finding 4; pre-existing in `c4pdf_read.read`).
+Why: a result should state its input. Cost: three fields. Changes: nothing in f (this section
+names the inputs, and both hashes match). Carried to U3b: fixed before the d read.
 
 ## C4′ (d)+(f) unit 2a, (f)'s branches B_P and B_O (2026-11-23)
 
