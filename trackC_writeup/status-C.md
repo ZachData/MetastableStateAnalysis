@@ -56,6 +56,7 @@
   - C4′ (d)+(f) opened 2026-11-23 (STATE Blocked 169's order, after (e)+(g); writing only, nothing trained): a scan and a proposed design. (d): flat arms at a half and a tenth of the peak, the transient's onset and induction's date read against a step and a dose band; (f): A0's step-256 weights continued at the peak against the same restart at A0's own rate. The ROADMAP's horizons were too short for the dose clock (F⅒'s transient band reaches 800), and F's own grid cannot tell a half-rate dose from a step, so F is re-run to 128 on a 4-update grid (F¹); A0 passes F's onset dose at 0.26 of the peak, and the peak itself at 1430, with no transient. Revised after `/challenge-pr` on #371. Decisions D1–D4, STATE Blocked 172 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 0"
   - C4′ (d)+(f) U1 (2026-11-23; tier 1): design frozen on Blocked 172 (as recommended, Claude on the user's delegation); rules pushed before output; all five gates pass on the four trained arms. F¹ (the flat arm re-run to 128 on a 4-update grid) is not bit-equal to F from update 4 (the harness is not deterministic past one update), so it is a near-replicate; its onsets (48, 52, 52 at the three gated τ arms) make the half-rate step and dose windows disjoint. Two entries drafted for the user's registration — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 1"
   - C4′ (d)+(f) U2a (2026-11-23; tier 1, nothing read): (f)'s branches B_P and B_O trained from A0's step-256 weights (fresh AdamW; the peak, A0's own rate) to 512; each starts from A0's state and batch (step 257's loss equal to A0's); records and heads written. F½, F⅒ wait on the user's Blocked 173 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2a"
+  - C4′ (d)+(f) U3a, f (2026-11-24; tier 1; Gupta et al. read and the D2 (b) rule pushed before the read): **f reads "not the early state's" at all three gated τ arms.** A fresh AdamW at the peak makes the transient on A0's trained step-256 state as on F's init, and the same restart at A0's own rate makes none. Not separated: the rate's jump from the restart's first updates (by design), so D2 (b) is worth its hours by the rule fixed before the read; STATE Blocked 174 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3a"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
@@ -72,7 +73,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-23 · body `30ca4e1cb8`
+- **Reviewed:** 2026-11-24 · body `5e51dece4c`
 <!-- /phase-card -->
 
 ## Units
@@ -130,6 +131,52 @@
 | C4′ (d)+(f) 0. the scan and design (Blocked 169's order; budget 4 units + close-out) | **done 2026-11-23: writing only, nothing trained; proposed, D1–D4 Blocked 172** | `lit-C4pdf.md`, `design-C4pdf.md`, `tools/math_checks/c4pdf_bands.py`; "C4′ (d)+(f) unit 0" below |
 | C4′ (d)+(f) 1. frozen (Blocked 172, Claude on the user's delegation); rules, driver, reader; gates; F¹; entries drafted | **done 2026-11-23: gates G-T, G-d1, G-I, G-d2, G-f pass; H-d fails (not bit-reproducible past update 1), F¹ a near-replicate; references (44, 48], (48, 52], (48, 52]; G-d1 re-run on them passes; registration Blocked 173** | `c4pdf_rules.py`, `c4pdf_train.py`, `c4pdf_read.py`, `data/trackC/c4pdf/2026-11-23-u1b/` (revised after `/challenge-pr` on #372); "C4′ (d)+(f) unit 1" below |
 | C4′ (d)+(f) 2a. (f)'s branches B_P, B_O (D2 (a); not gated on Blocked 173) | **done 2026-11-23: both trained 256 → 512, the state half of H-f passes and step 257's loss matches A0's to every digit; records and heads written (17 saves each); nothing read. F½, F⅒ (U2's other half) wait on Blocked 173** | `data/trackC/c4pdf/2026-11-23-u2/`; "C4′ (d)+(f) unit 2a" below |
+| C4′ (d)+(f) 3a. f's read (not gated on Blocked 173) | **done 2026-11-24: Gupta et al. read first (silent on moments and on the spike's length); f "not the early state's" at 9.61e-5, 1e-4, 3e-4 (B_P a transient from 280, 280, 288 to 512; B_O none); D2 (b) is Blocked 174** | `data/trackC/c4pdf/2026-11-24-u3/reading_f.json`; "C4′ (d)+(f) unit 3a" below |
+
+## C4′ (d)+(f) unit 3a, f's read (2026-11-24)
+
+Tier 1. Order, each pushed before the next: `lit-C4pdf.md` Parked 1 (Gupta et al.) read and the
+D2 (b) rule fixed (`7a71b60`), then `read --f-only`. No U2 record had been opened before
+that commit. Input: the gate `data/trackC/c4pdf/2026-11-23-u1b/gate.json` (sha256 `078bf9315744`,
+pass, rules `284f0d10f5ba`, gated τ arms 9.61e-5, 1e-4, 3e-4); F¹'s records and heads
+(`2026-11-23-u1/`); B_P's and B_O's (`2026-11-23-u2/`), linked into `2026-11-24-u3/`. Output
+`2026-11-24-u3/reading_f.json` (sha256 `90870c5065b9`). Code at `7a71b60`; conda `mets`, CPU,
+0.5 s (JSON only).
+
+**Gupta et al. 2308.04014** (HTML v2, §1–§6): silent on whether the moments were reset, and on the
+spike's size and length ("its first few iterations"); max rate 3e-4, from the final checkpoint,
+on new data. So f's wording does not change, and f-jump keeps Gupta as a weaker lean
+(`lit-C4pdf.md` Parked 1).
+
+| τ arm | F¹'s reference (t⁻, t] | B_P (rule T) | B_O | f |
+|---|---|---|---|---|
+| 9.61e-5 | (44, 48] | transient, run 280 → 512: onset in (16, 24] updates after the jump | none (no run) | **not the early state's** |
+| 1e-4 | (48, 52] | transient, run 280 → 512: (16, 24] | none | **not the early state's** |
+| 3e-4 | (48, 52] | transient, run 288 → 512: (24, 32] | none | **not the early state's** |
+
+`f_joint`: **"not the early state's"**. A fresh AdamW at the peak makes the transient on A0's
+trained state at 256 as it did on F's init. The same restart at A0's own rate (0.18 → 0.36 of the
+peak) makes none. Together with A0 itself, which reaches the peak gradually at 1430 with no
+transient, a restart alone at a low rate does not make it, and neither does the peak reached
+gradually. **What f does not separate (by design, #371 finding 3):** the jump in the rate from
+the restart's first updates at the peak. The lean f-state [arms, scan] is broken. f-jump [scan] is
+consistent, but a lean is not a reading, and the confound is exactly between f-jump and the
+restart at the peak.
+
+**Beside, read never (description):** B_P's onset in updates after the jump (16–32) is earlier
+than F¹'s (44–52). Both runs last to the arm's last state (F¹'s to 128, B_P's to 512), so in
+256 updates B_P's transient does not end under rule T.
+
+**D2 (b).** By the rule fixed before the read (`lit-C4pdf.md` Parked 1), "not the early state's"
+is the row where D2 (b) earns its hours: B_K (A0's moments kept, jump to the peak) tells the jump
+from the restart. A0's moments at 256 do not exist, and H-d showed the harness is not
+bit-reproducible past one update. So a rebuild (A0 re-trained 0 → 256 with its moments saved) is a
+near-replicate of A0's 256, not the saved file. That is STATE Blocked 174, the user's (it adds GPU
+hours beyond the design's 19.4).
+
+**Re-run.** From `../Mets-work`, the `mets` env's python: `-m trackC_writeup.c4pdf_read read
+--f-only --out <dir holding F1/, BP/, BO/ and heads_{F1,BP,BO}.json> --gate
+<main>/data/trackC/c4pdf/2026-11-23-u1b`. No Parked items.
 
 ## C4′ (d)+(f) unit 2a, (f)'s branches B_P and B_O (2026-11-23)
 
