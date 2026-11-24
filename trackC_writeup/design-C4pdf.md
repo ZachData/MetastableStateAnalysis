@@ -213,6 +213,11 @@ driver, the rules, the gates, F¹ and, at D3 (b), the drafted entries; U2 the ot
 their records, run-and-watch to the `runner` agent; U3 the reads; close-out). GPU ≈ 19.4 h at
 D1 (a), D2 (a). At the budget it closes at what it knows.
 
+**Extended 2026-11-24 (STATE Blocked 175 (i) (a), the user's, on the record):** U3 split into
+U3a (f) and U3b (B_K, F¹'s second replicate, ≈ 4 GPU-h beyond budget, Blocked 174), so the
+thread now runs to **U2b** (F⅒ then F½, ≈ 14.7 h) and **U3c** (the d read) + close-out, about
+7 units, and nothing more. ROADMAP §8 C8 (the transient's trigger) is a new row, not this thread.
+
 ## Carried in
 
 - **The two `c2_seeds` refusals** (C4 U1's Parked 0, carried through C4′, C4′ (c), (e)+(g)): not
