@@ -264,7 +264,7 @@ open in a way that could move a label:
 
 ## Decided 2026-11-24 (Blocked 174): D2 (b) as B_K, after f read "not the early state's"
 
-**(a), by Claude on the user's "continue on the next 5 items in state.md"** (as recommended; the
+**(a), by Claude on the user's "continue on the next 5 items in STATE.md"** (as recommended; the
 user's to overrule; ≈ 4 GPU-h beyond the 19.4 budgeted, the extension on that delegation).
 `trackC_writeup/c4pdf_bk.py` (hash `003164e7af61`, pushed at `8490624` before the rebuild or any
 B_K output): A0 re-trained 0 → 256 by `c4_train` unchanged (its `resume.pt` holds the moments;
