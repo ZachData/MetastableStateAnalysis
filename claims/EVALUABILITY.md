@@ -52,7 +52,7 @@ data.
 |---|---|---|
 | `e-value` | 16 | yes |
 | `needs-null` | 21 | not yet |
-| `measurement` | 9 | never |
+| `measurement` | 11 | never |
 
 ## By phase
 
@@ -132,6 +132,8 @@ in the chunk that constructs the null.
 | `P-SCH4` | H-RESIST | **measurement** | 0.6 | Calibration (not a p-value): the planted effect C4's pair (F, A0) reads 'holds'; the planted null (released pythia-70m, A0) as (F', A0') reads 'does not hold'; seeds 1-9 against the released run as pseudo-(F', A0'), no schedule differing, 0 of 9 hold (pass iff <= 1), on Pythia's 13 steps <= 4000. The seed null cannot see spread below one grid interval (512-1000): every seed and the released run date induction at 1000. Record (untracked, main tree): data/trackC/c4pc/2026-11-18-u1/gate.json, sha256 952b73ba68e7274982186c53479d09d1ccfc6b736aa92d7bc3b1bcc5f2f683c0, rules d7e674313486. |
 | `P-SCH5` | H-RESIST | **measurement** | 0.6 | Calibration (not a p-value): the planted effect C4's pair (F, A0) reads 'holds'; the planted null (released pythia-70m, A0) as (F', A0') reads 'does not hold'; seeds 1-9 against the released run as pseudo-(F', A0'), no schedule differing, 0 of 9 hold (pass iff <= 1). Record (untracked, main tree): data/trackC/c4pc/2026-11-18-u1/gate.json, sha256 952b73ba68e7274982186c53479d09d1ccfc6b736aa92d7bc3b1bcc5f2f683c0, rules d7e674313486. |
 | `P-SCH6` | H-RESIST | **measurement** | 0.6 | Calibration (not a p-value): (a) C4' U2's gate, passed 2026-11-17 (seeds 1-9 'another path' 9 of 9; the released run against fp16-rounded A0 'one path'; data/trackC/c4p/2026-11-17-u2/gate.json), calibrated with A0 as the reference, not A0'. (b) run in U3 before scoring: seeds 1-9 as pseudo-F against A0 on their late steps (512-4000, 4), null the released run against fp16-rounded A0; passes iff the null reads 'beyond A0'' at < 2/3 of its 4 late steps and >= 8 of 9 seeds at >= 2/3. The null mixes precisions (fp16-rounded A0 against full-precision A0'). |
+| `P-SCH7` | H-RESIST | **measurement** | 0.6 | Calibration, not a p-value: F and F′ read a transient at every gated arm, A0 and A0′ none (G-T); F stretched by 1/r onto grid D reads 'dose' at ⅒ (G-d1). The u1b record: data/trackC/c4pdf/2026-11-23-u1b/gate.json, sha256 078bf931574480306fbd011b9d67dc583393accb9379932cad0ec099ea51de70. |
+| `P-SCH8` | H-RESIST | **measurement** | 0.6 | Calibration, not a p-value: the bar rule returns 768, 320, 768, 320 on A0, F, A0′, F′ (G-I); F's series stretched by 2 reads 'dose', unstretched 'step' (G-d2). The u1b record: data/trackC/c4pdf/2026-11-23-u1b/gate.json, sha256 078bf931574480306fbd011b9d67dc583393accb9379932cad0ec099ea51de70. |
 
 ## The order to build a null in
 
