@@ -57,9 +57,10 @@
   - C4′ (d)+(f) U1 (2026-11-23; tier 1): design frozen on Blocked 172 (as recommended, Claude on the user's delegation); rules pushed before output; all five gates pass on the four trained arms. F¹ (the flat arm re-run to 128 on a 4-update grid) is not bit-equal to F from update 4 (the harness is not deterministic past one update), so it is a near-replicate; its onsets (48, 52, 52 at the three gated τ arms) make the half-rate step and dose windows disjoint. Two entries drafted for the user's registration — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 1"
   - C4′ (d)+(f) U2a (2026-11-23; tier 1, nothing read): (f)'s branches B_P and B_O trained from A0's step-256 weights (fresh AdamW; the peak, A0's own rate) to 512; each starts from A0's state and batch (step 257's loss equal to A0's); records and heads written. F½, F⅒ wait on the user's Blocked 173 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2a"
   - C4′ (d)+(f) U3a, f (2026-11-24; tier 1; Gupta et al. read and the D2 (b) rule pushed before the read): **f reads "not the early state's" at all three gated τ arms.** A fresh AdamW at the peak makes the transient on A0's trained step-256 state as on F's init, and the same restart at A0's own rate makes none. Not separated: the rate's jump from the restart's first updates (by design), so D2 (b) is worth its hours by the rule fixed before the read; STATE Blocked 174 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3a"
+  - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. Fresh moments also make the first updates 3× larger, so the moments and the early steps' size are not separated (`/challenge-pr` on #375). A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
-- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C2 quotes `P-A5`, Track A's
+- **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C4′ (d)+(f)'s d1 and d2 registered by the user 2026-11-24 as `P-SCH7`, `P-SCH8` (Blocked 173 (a), `4ebc723`) after U1's gates and both F¹ replicates, before F½'s or F⅒'s first update; not yet read; C2 quotes `P-A5`, Track A's
 - **Depends on:** A@2db9b14ba1, S@a1fb89438b
 - **Feeds:** none
 - **Open threads:**
@@ -73,7 +74,7 @@
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-24 · body `c445fae87c`
+- **Reviewed:** 2026-11-24 · body `5707367fd3`
 <!-- /phase-card -->
 
 ## Units
@@ -132,6 +133,86 @@
 | C4′ (d)+(f) 1. frozen (Blocked 172, Claude on the user's delegation); rules, driver, reader; gates; F¹; entries drafted | **done 2026-11-23: gates G-T, G-d1, G-I, G-d2, G-f pass; H-d fails (not bit-reproducible past update 1), F¹ a near-replicate; references (44, 48], (48, 52], (48, 52]; G-d1 re-run on them passes; registration Blocked 173** | `c4pdf_rules.py`, `c4pdf_train.py`, `c4pdf_read.py`, `data/trackC/c4pdf/2026-11-23-u1b/` (revised after `/challenge-pr` on #372); "C4′ (d)+(f) unit 1" below |
 | C4′ (d)+(f) 2a. (f)'s branches B_P, B_O (D2 (a); not gated on Blocked 173) | **done 2026-11-23: both trained 256 → 512, the state half of H-f passes and step 257's loss matches A0's to every digit; records and heads written (17 saves each); nothing read. F½, F⅒ (U2's other half) wait on Blocked 173** | `data/trackC/c4pdf/2026-11-23-u2/`; "C4′ (d)+(f) unit 2a" below |
 | C4′ (d)+(f) 3a. f's read (not gated on Blocked 173) | **done 2026-11-24: Gupta et al. read first (silent on moments and on the spike's length); f "not the early state's" at 9.61e-5, 1e-4, 3e-4 (B_P a transient from 280, 280, 288 to 512; B_O none); D2 (b) is Blocked 174** | `data/trackC/c4pdf/2026-11-24-u3/reading_f.json`; "C4′ (d)+(f) unit 3a" below |
+| C4′ (d)+(f) 3b. B_K (Blocked 174 (a)), F¹'s second replicate, the registration | **done 2026-11-24: A0 rebuilt 0 → 256 (0.98 % from the saved file at 256); B_K and BKO 256 → 384, H-K and G-K pass; K "the restart's" at all three τ arms; F¹ r2's references (44, 48], (44, 48], (48, 52], G-d1 passes on them; P-SCH7 (d1), P-SCH8 (d2) registered by the user before F½, F⅒** | `c4pdf_bk.py`; `data/trackC/c4pdf/2026-11-24-u3b/`; "C4′ (d)+(f) unit 3b" below |
+
+## C4′ (d)+(f) unit 3b, B_K, F¹'s second replicate, the registration (2026-11-24)
+
+Tier 1. Blocked 174 (a) taken by Claude on the user's "continue on the next 5 items in STATE.md"
+(as recommended; ≈ 4 GPU-h beyond the design's 19.4). `trackC_writeup/c4pdf_bk.py`
+`003164e7af61` (the arms, rule K, G-K, H-K, the rebuild's gap) pushed at `8490624` before the
+rebuild or any B_K output; G-K checked then on the already-read B_P, B_O (passes). `c4pdf_rules`
+`284f0d10f5ba` and `c4pdf_train` `84662428cf73` unchanged. Run by the `runner` agent at
+`81f7bac` (batch `HDD_1TB/mets_data/c4pdf/u3b_batch.sh`; two non-numeric edits: `HF_HOME` added,
+and the pairs run one after the other after a CUDA OOM side by side; the OOM'd A0 segment logged
+no update). Conda `mets`, RTX 3080, n_micro 512, compiled, bf16 autocast, fp32 master.
+Output `data/trackC/c4pdf/2026-11-24-u3b/` (main tree); checkpoints `HDD_1TB/mets_data/c4pdf/{a0r,BK,BKO,rep2}/`.
+
+**BKO is beside Blocked 174 (a)**, which named B_K alone: the rebuilt moments belong to a
+near-replicate, laid on the saved weights, and BKO (the same start at A0's own rate) is the null
+for that mismatch disturbing the state by itself.
+
+| step | result |
+|---|---|
+| rebuild (`c4_train` unchanged, A0 0 → 256, 7191 s) | `gap.json` (`0fb90ae1aed3`): bit-equal to A0's files at 0 and 1; differs from 2 (63 of 76 tensors, max \|Δ\| 2.4e-7), relative L2 1.1e-4 at 128, **9.8e-3 at 256**; the loss first differs at update 3 (max \|Δ\| 0.026 over 1–256, 0.008 at 256). Its `resume.pt` at 256 holds the moments (`c4_train` `1c1e1d2df083`) |
+| B_K, BKO (A0's saved 256, rebuilt moments; the peak / `lr_pythia`; 256 → 384) | exit 0, 3571 s and 3609 s; every loss finite |
+| H-K | `hk.json` (`2404e65dc962`) pass: k = 0 is A0's file on all 76 tensors on both arms; step 257's loss 5.98879364784807 on B_K, BKO and A0's own log |
+| G-K | pass: B_P cut at 384 a transient at every gated arm (runs from 280, 280, 288), B_O none |
+| **K** (`reading_k.json` `80df84354494`) | **"the restart's" at 9.61e-5, 1e-4 and 3e-4**: B_K and BKO have no state with a majority outside {T1, T2} at all (no run, not a short one) |
+
+**What K says, with f.** On A0's trained state at 256 the transient appears with fresh moments at
+the peak (B_P) and not with fresh moments at A0's rate (B_O), nor with the moments kept at the peak
+(B_K) or at A0's rate (BKO). So the jump in rate alone does not make it; the restart's first updates
+at a high rate do. With F (fresh moments at init, at the peak) and A0 (fresh moments at init, the
+rate rising over 1430), every arm so far with the transient has had un-adapted moments meet a high
+rate. **What "the restart's" does not separate (`/challenge-pr` on #375, finding 1):** fresh
+moments make the first updates larger, so the label cannot say whether the moments matter as such
+or only through the size of the earliest steps. `drift.json` (`c4pdf_read drift`, beside, read
+never): the relative L2 distance from A0's 256 file is 0.033 on B_P against 0.011 on B_K after one
+update, and 0.17 against 0.12 at 272. B_K catches up by 320 (0.36 against 0.34) and is further by
+384 (0.55 against 0.51), still with no transient. So the transient follows how fast the first ~16
+updates move, not B_K's total movement; ROADMAP C8 (iv) carries the arm that separates them (B_K
+with a short rate overshoot sized to B_P's early drift). **BKO's use (finding 2):** a "the jump's"
+reading, the one it guards, did not occur, so its null did not bind. It does show that the rebuilt
+moments behave like A0's own: BKO is 1.2 % and 2.0 % from A0's saved states at 320 and 384, where
+B_O (fresh moments, the same rate) is 3.7 % and 4.5 %. **Not shown:** that this holds at init (no kept-moment arm starts at 0: C8 (iv)'s
+moment-warmed flat arm asks it); a transient later than 384 on B_K (B_P's began 16–32 updates after
+the jump; B_K's horizon is 128 updates); that the moments are A0's own (a near-replicate's, 0.98 %
+off; BKO shows the mismatch alone does not disturb). The lean f-jump (`design-C4pdf.md`) is broken
+on this arm; the restart's reading is the one left.
+
+**Beside, read never (the training logs, 257–384):** the loss peaks at 9.57 on B_P (259), 7.42 on
+B_K (259), 7.46 on B_O (258) and 5.99 on BKO; the grad norm peaks at 10.9, 11.3, 7.3, 2.8. So a loss
+spike of B_O's size comes without the transient; only B_P's larger one comes with it (one arm
+each; ROADMAP C8 (i) reads the logs properly). At 384: 5.33, 4.84, 5.30, 5.29.
+
+**F¹'s second replicate (Blocked 173's question, before registering).** `c4pdf_train train --arm F1`
+into a second root (3649 s; it ran beside the OOM'd A0 segment). Against F, not bit-equal from
+update 4 (`rep2/hd.json`: max \|Δ\| 0.0016 at 4, 0.033 at 128; F¹'s was 0.067). Its references
+(`rep2/reference.json` `01b578b6e822`): **(44, 48] at 9.61e-5, (44, 48] at 1e-4, (48, 52] at 3e-4**,
+against F¹'s (44, 48], (48, 52], (48, 52]. So the spread between replicates is one grid step (4
+updates) at 1e-4, where r2's interval now holds F's and F′'s 48, and none at the other two. G-d1
+re-run on r2's references passes ("dose" at ½ and ⅒ at every gated arm). Neither registered score
+reads the reference (d1 on presence, d2 on F's own date), so this firms the onset labels beside d1
+only. The read uses F¹'s reference as frozen.
+
+**The registration (Blocked 173 (a), the user's, 2026-11-24, "register d1 and d2 as drafted"):**
+P-SCH7 (d1) and P-SCH8 (d2) in `claims/registry.json` as drafted (`4ebc723`), P-SCH8's
+null_construction opened "Calibration, not a p-value:" (d1's words, for `check_registry`); 
+`trackC_writeup/c4pdf_entries.json` names them; `c4pdf_train.registration()` reads both registered.
+No F½ or F⅒ update had been taken. The claims tables re-rendered (`b3ab38c`, `1159b48`, `f4bf117`).
+
+**U3a Parked 1, done:** `c4pdf_read.read` and `read-k` write an `input` block (the gate's path and
+sha256, the record folder, the checkpoint root; `read-k` also H-K's and the branches' root).
+
+**Re-run.** From `../Mets-work`, the `mets` env, `HF_HOME=<HDD_1TB>/mets_data/hf`: the batch above;
+then `METS_DATA=<main>/data python -m trackC_writeup.c4pdf_read read-k --out <u3b> --gate
+<main>/data/trackC/c4pdf/2026-11-23-u1b --hk <u3b> --f-reading <main>/data/trackC/c4pdf/2026-11-24-u3` (with `BP/`, `BO/` and their
+heads linked into `<u3b>`; it now refuses unless f's reading was made on the same gate and rules,
+the check `c4pdf_bk`'s docstring promised, #375 finding 5; the reading is unchanged apart from its
+`input` block), `… drift --out <u3b>` (CPU), and `… reference --out <u3b>/rep2 --gate <same>`.
+
+**Next:** F⅒ then F½ (D4 (a); ≈ 14.7 h), now unblocked; then U3's d half and the close-out. ROADMAP
+§8 C8 (added 2026-11-24, the user's) takes up the trigger. No Parked items.
 
 ## C4′ (d)+(f) unit 3a, f's read (2026-11-24)
 

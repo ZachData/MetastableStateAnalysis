@@ -262,6 +262,20 @@ open in a way that could move a label:
 - the reference (t⁻, t) is F¹'s onset and the state before it on F¹'s grid, per gated τ arm; if F¹
   has no transient at a gated arm, the read refuses.
 
+## Decided 2026-11-24 (Blocked 174): D2 (b) as B_K, after f read "not the early state's"
+
+**(a), by Claude on the user's "continue on the next 5 items in STATE.md"** (as recommended; the
+user's to overrule; ≈ 4 GPU-h beyond the 19.4 budgeted, the extension on that delegation).
+`trackC_writeup/c4pdf_bk.py` (hash `003164e7af61`, pushed at `8490624` before the rebuild or any
+B_K output): A0 re-trained 0 → 256 by `c4_train` unchanged (its `resume.pt` holds the moments;
+`gap` records the distance from A0's saved files first); **B_K**: A0's saved 256 weights with
+those moments, at the peak, to 384; **BKO** (added beside (a)): the same start at A0's own rate,
+the null for the moments being a near-replicate's. **Rule K** on rule T at each gated τ arm: B_K
+transient and BKO none → "the jump's"; both none → "the restart's"; BKO a transient → unreadable.
+**G-K**: B_P and B_O cut at 384 (a transient at every gated arm; none), checked on the read arms
+before B_K ran: passes (runs 280, 280, 288 → 384). **H-K**: k = 0 is A0's file; step 257's loss
+equals A0's to every digit. Tier 1.
+
 ## The two draft entries (D3 (b); yours to register or decline)
 
 **F¹ in U1 (before any draft below is registered):** H-d **failed**. F¹'s update-1 loss equals F's to

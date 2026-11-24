@@ -103,3 +103,23 @@ def test_registration_guard(tmp_path):
     ent.write_text(json.dumps({"d1": "X-1", "d2": "declined"}))
     assert pt.require_decided(entries=ent, registry=reg, check_git=False) == {"d1": "registered as X-1", "d2": "declined"}
     assert set(pt.GUARDED) == {"Fh", "Ft"}
+
+
+def test_k_rule_and_gate():
+    """U3b's rule K and G-K (trackC_writeup/c4pdf_bk.py), frozen before the rebuild or B_K ran."""
+    from trackC_writeup import c4pdf_bk as bk
+    assert bk.UNTIL == 384 and bk.SAVES == (256, 257, 258, 260, 264, 268, 272, 280, 288, 304, 320, 336, 352, 384)
+    yes, no = {"present": True}, {"present": False}
+    assert bk.k_label(yes, no) == "the jump's" and bk.k_label(no, no) == "the restart's"
+    assert bk.k_label(yes, yes).startswith("unreadable") and bk.k_label(no, yes).startswith("unreadable")
+    assert bk.k_joint({"a": "the jump's", "b": "the jump's"}) == "the jump's"
+    assert bk.k_joint({"a": "the jump's", "b": "the restart's"}) == "mixed"
+    st = list(bk.SAVES) + [416, 448, 512]
+    hot = np.zeros((len(st), 7), int)
+    hot[7:, 3] = 7                                   # a run 280 → 512 at T3
+    cold = np.zeros((len(st), 7), int)
+    assert bk.g_k({"t": hot}, st, {"t": cold}, st, ["t"])["pass"]
+    late = np.zeros((len(st), 7), int)
+    late[-3:, 3] = 7                                 # a run 416 → 512: cut at 384, nothing
+    assert not bk.g_k({"t": late}, st, {"t": cold}, st, ["t"])["pass"]
+    assert not bk.g_k({"t": hot}, st, {"t": hot}, st, ["t"])["pass"]
