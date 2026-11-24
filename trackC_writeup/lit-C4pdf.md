@@ -71,3 +71,18 @@ summed rate than the counts, held on the replicate pair).
    (f)'s wording, and whether the kept-moment branch (D2 (b)) is worth its hours). Read before U2's
    records are read, so its answer cannot be fitted to (f)'s result (made consistent with the design
    after `/challenge-pr` on #371, finding 5).
+   **Read 2026-11-24 (U3, before any U2 record was opened; HTML v2, §1–§6):** **silent on the
+   moments**: the only optimiser text is AdamW's hyperparameters (§2); nothing says whether the
+   state was reset or loaded. **Silent on the spike's size and length**: the zero-warmup arm (§4.1,
+   max rate 3e-4, warmups 0 / 0.5 / 1 / 2 % of 297B tokens, read at 50B) "experiences an initial
+   'chaotic phase' causing a spike in the loss in its first few iterations"; no step count and no
+   batch size in the text; Figure 1 shows perplexity and was not read. The start is the final
+   checkpoint (143 000; §4.5 adds earlier ones, not said to have had the zero-warmup arm), on new
+   data (SlimPajama). **What changes:** nothing in (f)'s wording. f-jump keeps Gupta as a lean, but a
+   weaker one: a final state on a new distribution, with unknown moments, is not A0 at 256 on its
+   own order. **D2 (b):** Gupta gives no reason for or against it. The rule, fixed here before the
+   read: D2 (b) is worth its hours only if `f_joint` reads **"not the early state's"**, the one row
+   where the jump and the restart are confounded. On "the early state's" or "the restart's" it adds
+   nothing to f; on "unreadable" the control is fixed first; on "mixed" it is the user's call, with
+   the cells shown. Its rebuild of A0's moments would be approximate, not bit-equal (H-d failed,
+   `design-C4pdf.md` "The two draft entries").
