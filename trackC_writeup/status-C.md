@@ -58,7 +58,7 @@
   - C4′ (d)+(f) U2a (2026-11-23; tier 1, nothing read): (f)'s branches B_P and B_O trained from A0's step-256 weights (fresh AdamW; the peak, A0's own rate) to 512; each starts from A0's state and batch (step 257's loss equal to A0's); records and heads written. F½, F⅒ wait on the user's Blocked 173 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2a"
   - C4′ (d)+(f) U3a, f (2026-11-24; tier 1; Gupta et al. read and the D2 (b) rule pushed before the read): **f reads "not the early state's" at all three gated τ arms.** A fresh AdamW at the peak makes the transient on A0's trained step-256 state as on F's init, and the same restart at A0's own rate makes none. Not separated: the rate's jump from the restart's first updates (by design), so D2 (b) is worth its hours by the rule fixed before the read; STATE Blocked 174 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3a"
   - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. Fresh moments also make the first updates 3× larger, so the moments and the early steps' size are not separated (`/challenge-pr` on #375). A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
-  - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m order (E₁ < centred < induction on both harness arms); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
+  - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
 - **Registry:** `P-SCH1`, C4's reading on the flat arm, registered by the user 2026-11-10 before F trained past step 64 (Blocked 156 (a)); read 2026-11-14, R2 "neither", its falsifier met (scoring the entry decided 2026-11-15, STATE Blocked 157 (a): a sentence in its `notes`, the user's commit); C4′ registered nothing (A1's draft entry declined, Blocked 160 (b); (b) tier 1 by design); C4′ (c)'s five leans `P-SCH2`–`P-SCH6` (L7, L8, L9, L9h, L10) registered by the user 2026-11-18 (Blocked 167 (a), `87e996b`) after U1's gates, before either arm's first update; read 2026-11-22: `P-SCH2` does not hold, `P-SCH3`–`6` hold, scoring in `notes` the user's (STATE Blocked 168; `trackC_writeup/status-C.md` "C4′ (c) unit 3"); C4′ (d)+(f)'s d1 and d2 registered by the user 2026-11-24 as `P-SCH7`, `P-SCH8` (Blocked 173 (a), `4ebc723`) after U1's gates and both F¹ replicates, before F½'s or F⅒'s first update; not yet read; C2 quotes `P-A5`, Track A's
@@ -76,7 +76,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, unscheduled (STATE Blocked 176) — `trackC_writeup/status-C.md` "Paper: every model read"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-24 · body `e4b95e7878`
+- **Reviewed:** 2026-11-24 · body `167e797bf7`
 <!-- /phase-card -->
 
 ## Units
@@ -148,16 +148,19 @@ their records (`trackT_timaeus/status-T.md` "T2 unit 1", "T5 U2b").
 | where | what was added |
 |---|---|
 | §4.2 (new), table 2 | each model's warmup, checkpoints and two dates: 410m × 10, 160m, 70m (centred × 10), warmup01, GPT-2 small × 5, the harness and flat arms × 2, Dodecahedron (refused) |
-| §4.2, "Read across the table" | description: on every run that dates both counts, E₁'s break comes first; on Pythia's own schedule E₁'s break is 256–512 and the centred one 512–1000 |
-| §4.2, "Where the count could not be read" | Dodecahedron: both counts fail their gates at steps 1 and 9536 (T2); in the trough (491–917, `-32m` only) the uncentred count and one fitted centred tolerance pass, not §4.1's four (T5 U2b); no date |
-| §5, "On a finer grid" | description: on both harness arms E₁ (384, 320) < centred (640, 640) < induction (768, 768); thinned to Pythia's grid, 640 and 768 tie. Limits: 70m only; induction by §7's rule, not E3's locator; OV, previous-token and n-gram rows unread |
+| §4.2, "Read across the table" | description: on every run with a warmup that dates both counts, E₁'s break comes first (the flat arms left out: their half-rise dates a transient); on Pythia's own schedule E₁'s break is 256–512 and the centred one 512–1000 |
+| §4.2, "Where the count could not be read" | Dodecahedron: every centred tolerance fails its gate at step 9536 (T2; step 1 read only for loss and the cosine); the uncentred count was never gated there and misses plant A (0.04 / 0.07); in the trough (491–917, `-32m` only) the uncentred count sees plant A as on Pythia (its re-init rate 6.2 %, over T2's 5 % bar) and one fitted centred tolerance passes, not §4.1's four (T5 U2b); no date; concentration a co-occurrence, not a cause |
+| §5, "On a finer grid" | description: on both harness arms E₁ (384, 320) before the centred break (640, 640), which is one saved step before induction (768, 768): aligned by §5's one-step convention, the same sign on both (shared init); thinned to Pythia's grid, 640 and 768 tie. Limits: 70m only; induction by §7's rule, not E3's locator; OV, previous-token and n-gram rows unread |
 | abstract, §1, §3.1 | the scope line names the other models, read for the dates alone |
 
 **Caught before commit:** the first Dodecahedron wording said "the same gates pass" in the trough.
 T5 U2b's table shows only the uncentred count and T2's B-matched tolerance pass there, on `-32m`
 only; corrected. **Not established:** any new date, the mean-falls share on a model other than
 410m (not checked whether it was ever read), or the order of the break, induction and the OV phase
-on any model. **Re-run:** `python -m trackC_writeup.paper_check`; compile `paper/` with
+on any model. **`/challenge-pr` on #376: accept with changes, findings 1–5 taken** (wording only):
+the finer-grid gap is "aligned" by §5's convention, not "ordered"; Dodecahedron was gated at 9536
+only and its uncentred count never; §4.2's gating sentence names which count was gated where; the
+causal last sentence dropped; "Read across the table" leaves out the flat arms. **Re-run:** `python -m trackC_writeup.paper_check`; compile `paper/` with
 `pdflatex main; bibtex main; pdflatex main; pdflatex main`.
 
 ## C4′ (d)+(f) unit 3b, B_K, F¹'s second replicate, the registration (2026-11-24)
