@@ -825,5 +825,8 @@
  {"slot": "{{c4pc.l10b[n]}}", "where": "§7 C4′ (c): the late steps (320-4000) at which the first flat arm is beyond the replicate harness arm's distance"},
  {"slot": "{{c4pc.l10b_ratio[320]|f1}}", "where": "§7 C4′ (c): that factor at step 320"},
  {"slot": "{{c4pc.l10b_late_max|f2}}", "where": "§7 C4′ (c): the largest factor at steps 1500-4000"},
- {"literal": "1500", "why": "§7 C4′ (c): a step of C4's dense grid (`c4_train.GRID`), the first after which the factor stays below 1.35; the claim on `c4pc.l10b_late_max` reads steps ≥ 1500"}
+ {"literal": "1500", "why": "§7 C4′ (c): a step of C4's dense grid (`c4_train.GRID`), the first after which the factor stays below 1.35; the claim on `c4pc.l10b_late_max` reads steps ≥ 1500"},
+ {"literal": "9536", "why": "§4.2 (table 2, Dodecahedron): the last released checkpoint of timaeus/dodecahedron-32m and -67m, a checkpoint name; trackT_timaeus/status-T.md 'T2 unit 1' (resolved commits 2e976151cc, e767b1e55c)"},
+ {"literal": "491", "why": "§4.2 Dodecahedron: the first released checkpoint of the trough at which T2's gates pass; trackT_timaeus/status-T.md 'T5 U2b' (data/trackT/t5u2b/2026-11-01/)"},
+ {"literal": "917", "why": "§4.2 Dodecahedron: the last released checkpoint of that trough; trackT_timaeus/status-T.md 'T5 U2b' (data/trackT/t5u2b/2026-11-01/)"}
 ]
