@@ -739,6 +739,14 @@ well-formed but empty/zero result. It looks exactly like a real result.
   checkpoint or resume state was touched. Rule: **find a detached run's PID with `pgrep -f`, not
   `$!`, and launch it with `python -u`; before relaunching a run that looks dead, check
   `nvidia-smi` / `pgrep` for it.**
+- 2026-11-24 (C4′ (d)+(f) U2b), a 15-hour batch died silently with its session: the brief told the
+  `runner` "run it in the background" with a plain `> batch.log` redirect, so it was not launched
+  with the template's `nohup systemd-inhibit … echo $? > .exit`. Ft stopped at step 481 around
+  20:25 with no error and no exit file; the launching session's transcript ends at 20:29, and the
+  box suspended at 21:25, once nothing held it awake. Nothing was corrupted (it resumed from 480, step 481's loss equal to every digit), but
+  ≈ 8.5 h were lost until the next session found it. Rule: **a brief for a job longer than a
+  session names the template's detached launch and an `.exit` file; "in the background" alone is
+  not a launch line.** A missing `.exit` with no live process is a death, not a run.
 - 2026-10-21 (S1 unit 3), a comparison against the wrong null: `r3` scored step 0's compressions
   (the trained S on step 0's V_l) against the *trained* step's Haar draws, so its "outside" counts
   read 19–24 of 24 at every step from 512 and looked like a finding. Found reading the output
