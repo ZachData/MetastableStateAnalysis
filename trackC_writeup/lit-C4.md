@@ -44,3 +44,6 @@ trained, and its centred date read "consistent with cumulative" (`status-C.md` "
 1. **Qu & Liu's peak-dependence** (why: their 6e-3 plateau never formed induction heads; cost:
    a second flat arm at half peak, about 2 GPU-days; could change: whether a flat arm that forms
    nothing is read as "the schedule's" or "the peak's"). It is option D1 (b) in the design.
+   **Answered on 70m at C4′ (d)+(f)'s close (2026-11-25; `status-C.md` "C4′ (d)+(f) on one
+   page"):** at half F's peak induction forms at F's update count (320; P-SCH8 falsified), and at
+   a tenth not by 1000. Qu & Liu's higher peak (6e-3) is not tested.

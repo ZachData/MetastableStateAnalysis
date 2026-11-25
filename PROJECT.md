@@ -3165,6 +3165,29 @@ existed, and its prediction failed.
 
 ---
 
+## 3.88 Track C's C4′ (d)+(f) closed: the flat arm's transient comes with a fresh Adam at a high rate, at a half and a tenth of the peak, on no single clock; both registered entries falsified (2026-11-25)
+
+**`trackC_writeup/status-C.md` "C4′ (d)+(f) on one page (closed 2026-11-25)"** holds the numbers.
+70m, seed 0's init, C4's order, one run per arm. P-SCH7 and P-SCH8 were registered before their
+arms trained; the rest is tier 1.
+
+- **Not the early state's.** On the harness arm's trained state at 256, a fresh AdamW at the peak
+  makes the transient on F's transitions within 16–32 updates. The same restart at the harness
+  arm's own rate does not.
+- **Not the rate's jump alone.** The same state with its moments kept makes no transient at the
+  peak. Every arm with it so far had un-adapted moments meet a high rate. Fresh moments also make
+  the first updates larger, so the two are not separated (C8 (iv)).
+- **Not a threshold between a tenth and a half (P-SCH7 falsified).** Flat at half the peak the
+  transient starts near F's update count. At a tenth it starts at (752, 784], past the dose
+  clock, small and still running at 1000. Whether that is the same event, weaker, or on a slower
+  clock is open (C8 (vii)).
+- **Induction at half the peak comes at F's update count** ((304, 320] against F's 320; P-SCH8,
+  the dose band, falsified). At a tenth it has not formed by 1000.
+- C4's harness is not bit-reproducible: a rebuild's weights differ from update 2 (cause untested),
+  so F¹ is a near-replicate, with one grid step of spread in the onset. What triggers the transient is ROADMAP §8 C8.
+
+---
+
 ## 3.87 Track C's C4′ (e)+(g) closed: two schedules from one init end in different basins, on non-transferable heads, with mid-stack readouts as far apart as another init's (2026-11-23)
 
 **`trackC_writeup/status-C.md` "C4′ (e)+(g) on one page (closed 2026-11-23)"** holds the numbers.
