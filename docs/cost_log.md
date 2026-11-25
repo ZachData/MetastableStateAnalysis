@@ -668,3 +668,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-24 | Paper: every model read (writing only; table 2, Dodecahedron, §5 finer grid; ROADMAP C9; /challenge-pr on #376 answered) · subagents: general-purpose opus-5-5 1.4M | 71 | 220k | 10.0M | 126k | #376 |
 | 2026-11-25 | C4′ (d)+(f) U2b (F⅒, F½ resumed and trained; STATE merge with #376; /challenge-pr on #377 answered) · subagents: general-purpose opus-5-5 1.5M, runner haiku-5-5 35.4M · runner batches, main calls: 4 (haiku-5-5) | 61 | 181k | 7.0M | 50k | #377 |
   - The runner's 12-hour watch is 35.4M (Haiku, 284 calls at 580 s waits), about 10× the main session; a watch this long would be cheaper as one main-session wait on the `.exit` file (CLAUDE.md "Watching yourself").
+| 2026-11-25 | C4′ (d)+(f) U3c, the d read (P-SCH7, P-SCH8 scored; Blocked 177) | 41 | 127k | 4.0M | 30k | #378 |
