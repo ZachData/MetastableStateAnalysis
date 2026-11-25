@@ -58,6 +58,7 @@
   - C4′ (d)+(f) U2a (2026-11-23; tier 1, nothing read): (f)'s branches B_P and B_O trained from A0's step-256 weights (fresh AdamW; the peak, A0's own rate) to 512; each starts from A0's state and batch (step 257's loss equal to A0's); records and heads written. F½, F⅒ wait on the user's Blocked 173 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2a"
   - C4′ (d)+(f) U3a, f (2026-11-24; tier 1; Gupta et al. read and the D2 (b) rule pushed before the read): **f reads "not the early state's" at all three gated τ arms.** A fresh AdamW at the peak makes the transient on A0's trained step-256 state as on F's init, and the same restart at A0's own rate makes none. Not separated: the rate's jump from the restart's first updates (by design), so D2 (b) is worth its hours by the rule fixed before the read; STATE Blocked 174 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3a"
   - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. Fresh moments also make the first updates 3× larger, so the moments and the early steps' size are not separated (`/challenge-pr` on #375). A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
+  - C4′ (d)+(f) U2b (2026-11-25; under P-SCH7, P-SCH8; nothing read): F⅒ and F½ (seed 0's init, C4's order, flat at a tenth and a half of the peak) trained 0 → 1000, 77 states each on grid D, every loss finite; records and heads written. Blocked 175 (a), (a), the user's — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2b"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -76,7 +77,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the download into `WDS_500/Mets_hdd_storage` from 2026-11-25, under 250 GB) — `trackC_writeup/status-C.md` "Paper: every model read"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-24 · body `167e797bf7`
+- **Reviewed:** 2026-11-25 · body `2c51906910`
 <!-- /phase-card -->
 
 ## Units
@@ -136,7 +137,59 @@
 | C4′ (d)+(f) 2a. (f)'s branches B_P, B_O (D2 (a); not gated on Blocked 173) | **done 2026-11-23: both trained 256 → 512, the state half of H-f passes and step 257's loss matches A0's to every digit; records and heads written (17 saves each); nothing read. F½, F⅒ (U2's other half) wait on Blocked 173** | `data/trackC/c4pdf/2026-11-23-u2/`; "C4′ (d)+(f) unit 2a" below |
 | C4′ (d)+(f) 3a. f's read (not gated on Blocked 173) | **done 2026-11-24: Gupta et al. read first (silent on moments and on the spike's length); f "not the early state's" at 9.61e-5, 1e-4, 3e-4 (B_P a transient from 280, 280, 288 to 512; B_O none); D2 (b) is Blocked 174** | `data/trackC/c4pdf/2026-11-24-u3/reading_f.json`; "C4′ (d)+(f) unit 3a" below |
 | C4′ (d)+(f) 3b. B_K (Blocked 174 (a)), F¹'s second replicate, the registration | **done 2026-11-24: A0 rebuilt 0 → 256 (0.98 % from the saved file at 256); B_K and BKO 256 → 384, H-K and G-K pass; K "the restart's" at all three τ arms; F¹ r2's references (44, 48], (44, 48], (48, 52], G-d1 passes on them; P-SCH7 (d1), P-SCH8 (d2) registered by the user before F½, F⅒** | `c4pdf_bk.py`; `data/trackC/c4pdf/2026-11-24-u3b/`; "C4′ (d)+(f) unit 3b" below |
+| C4′ (d)+(f) 2b. F⅒, F½ (Blocked 175 (i) (a), the user's: budget extended to U2b, U3c + close-out) | **done 2026-11-25: both 0 → 1000, exit 0, 77 states each, all losses finite; step 1's loss equal to F¹'s; records 539 per arm, heads 77 states; the first launch was stopped by the user at Ft 481 and resumed from 480 with step 481's loss equal to every digit; nothing read. U3c (the d read) next** | `data/trackC/c4pdf/2026-11-24-u2b/`; "C4′ (d)+(f) unit 2b" below |
 | Paper: every model read (the user's, 2026-11-24; writing only, outside any thread) | **done 2026-11-24: `paper/` §4.2 (table 2, every model's two dates; Dodecahedron refused), §5 "On a finer grid" (70m), §1, §3.1 and the abstract's scope; no number computed; `paper_check` 0, 38 pages; the rest is ROADMAP §8 C9** | "Paper: every model read" below |
+
+## C4′ (d)+(f) unit 2b, F⅒ and F½ (2026-11-25)
+
+Registered: trained under P-SCH7 (d1) and P-SCH8 (d2), each arm's `meta.json` recording
+"registered as P-SCH7 / P-SCH8" (the guard read `c4pdf_entries.json`). Blocked 175 (i) (a), (ii)
+(a), the user's (`70f66a5`): the budget extended to U2b, U3c + close-out, and one sentence added
+to each entry's `notes` before either arm's first update. Code at `70f66a5`: `c4pdf_train`
+`84662428cf73`, `c4pdf_rules` `284f0d10f5ba`, `c4_train` `1c1e1d2df083`; heads' code
+`019846e1561b` (U2a's). Batch `HDD_1TB/mets_data/c4pdf/u2b_batch.sh`, run by the `runner`
+agent, no edits. Conda `mets` (torch 2.10.0+cu130), RTX 3080, n_micro 512, compiled, bf16
+autocast, fp32 master. Input: seed 0's init, C4's batches 1–1000; records on C4's 7 prompts.
+
+| step | state |
+|---|---|
+| Ft (F⅒, 1e-4 flat) | 0 → 1000, exit 0, two segments (0 → 481, stopped by the user; 480 → 1000, 3 h 59 min); 1000 logged steps, all finite, lr 1e-4 at every step |
+| Fh (F½, 5e-4 flat) | 0 → 1000, exit 0, one segment, 7 h 42 min; 1000 logged steps, all finite, lr 5e-4 at every step |
+| same start | step 1's loss is 11.081148006021976 on Ft, Fh and F¹ (same init, same batch, before the first update); the step-0 records of Ft and Fh are equal |
+| the resume | Ft resumed from `resume.pt` at 480; step 481's loss 5.243332610465586 on both segments, equal to every digit (grad norm equal to 6 digits); `train_log.jsonl` keeps both rows with a segment line between |
+| records | `records --arm Ft Fh`: 539 files per arm (77 states × 7 prompts), none empty, n 512 |
+| heads | `heads_Ft.json` sha256 `317689664d38`, `heads_Fh.json` `cab13fbe4e09`, 77 states each |
+| disk | `HDD_1TB/mets_data/c4pdf/{Ft,Fh}/` ≈ 21 GB each; HDD_1TB 37 GB free after |
+
+**Seen before the read:** the runner's report gave each arm's training loss and grad norm at
+step 1000 (and Ft's at 481), because its brief asked for them (finding 4: a brief for a run under a
+registered entry asks "finite: yes / no" instead). Those are log numbers, not P-SCH7's or P-SCH8's statistic (rule T on
+the centred records, the induction bar on the heads), and neither entry nor rule can change now.
+They are left out here.
+
+**The first launch was stopped by the user** (launched 2026-11-24 16:39 with the `runner`'s
+detached template; Ft at step 481 when the user said "stop all computations, we will begin again
+tomorrow" at 20:25; that session stopped the runner, then killed the batch, which had survived
+it, by hand, so no exit file was written). The stop was not recorded on disk. This unit's first
+commit took it for a silent death tied to the launching session and wrote that cause here, in
+STATE and in `LESSONS.md`; `/challenge-pr` on #377 (finding 1) found the stop in that session's
+transcript, and all three are corrected (`LESSONS.md` 1). Resumed 2026-11-25 04:58. The first
+launch's `Ft.log` was overwritten by the relaunch (finding 2); `train_log.jsonl` keeps every row
+of both segments.
+
+**The resume check** (finding 3): step 481's loss and grad norm show that the weights and the
+batch order resumed. They do not show that the optimiser state did; `train` restores it from the
+same `resume.pt` (`c4pdf_train.py` `train`, `opt.load_state_dict`), which was written before
+the stop.
+
+**Next: U3c**, the d read: `c4pdf_read read` on F⅒, F½ against F¹'s references, P-SCH7 and
+P-SCH8 scored by their frozen rules, then the close-out (`design-C4pdf.md`). No Parked items.
+
+**Re-run.** From `../Mets-work`, `METS_DATA=<main>/data HF_HOME=HDD_1TB/mets_data/hf
+HF_HUB_OFFLINE=1`, the `mets` env's python: `bash HDD_1TB/mets_data/c4pdf/u2b_batch.sh` (every
+step resumes), or by hand `-m trackC_writeup.c4pdf_train train --arm Ft`, then `--arm Fh`;
+`-m trackC_writeup.c4pdf_read records --arm Ft Fh --out <dir>`, then `heads --arm Ft Fh --out
+<dir>`.
 
 ## Paper: every model read (2026-11-24; writing only)
 

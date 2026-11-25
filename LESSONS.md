@@ -507,6 +507,17 @@ document is checked against the config, or against the weights where a null dire
 used the schedule at ≤ 20 000 without opening `c6_schedule.py`, which reads to 143 000; and the
 symmetry table was labelled "solved" with two families missing (`/challenge-pr` on #354,
 findings 1 and 2). A claim about what a file reads is checked by opening the file.
+- 2026-11-25 (C4′ (d)+(f) U2b), a deliberate stop read as a silent death: the user stopped the
+  U2b batch at Ft step 481 ("stop all computations, we will begin again tomorrow"), and that
+  session killed the detached batch by hand. It wrote nothing to STATE or the logs, and said it
+  would record the stop "once U2b finishes". The next session found a run with no `.exit` file
+  and no live process. It inferred a session-bound death from timestamps and wrote that cause,
+  "≈ 8.5 h lost", and a wrong rule about the `runner` template into STATE, `status-C.md`,
+  this file and #377. `/challenge-pr` on #377 found it in the earlier transcript (finding 1).
+  The template had in fact survived the runner being stopped. Rule: **a deliberate stop of a
+  run is written where the next session looks (STATE's line 3, or a `STOPPED` file beside the
+  run's log) before the session ends; a run found dead is checked against the last session's
+  transcript before a cause is written.**
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files

@@ -1199,7 +1199,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; one run per rate; 'none by 1000' on F⅒ does not separate a threshold from a clock slower than the dose; rule T's span was placed after seeing A0′'s one-state run at 640; above 656 the grid is every 32 updates, so a transient shorter than 32 updates there reads 'none'. Registered after U1's gates and F¹, before F½'s or F⅒'s first update.",
+      "notes": "70m only; one run per rate; 'none by 1000' on F⅒ does not separate a threshold from a clock slower than the dose; rule T's span was placed after seeing A0′'s one-state run at 640; above 656 the grid is every 32 updates, so a transient shorter than 32 updates there reads 'none'. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering ((44, 48], (44, 48], (48, 52] at 9.61e-5, 1e-4, 3e-4; one grid step from F¹'s at 1e-4; status-C.md 'C4′ (d)+(f) unit 3b'); this score (presence) does not read them, and the onset labels beside use F¹'s first reference as frozen.",
       "superseded_by": null,
       "status": "active"
     },
@@ -1224,7 +1224,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "The bands are disjoint by a thin margin (r < 0.512 at r = ½), and F's own date is known only to (256, 320]; F⅒'s induction (d3) is not in the entry, since its dose band is past 1000. Registered after U1's gates and F¹, before F½'s or F⅒'s first update.",
+      "notes": "The bands are disjoint by a thin margin (r < 0.512 at r = ½), and F's own date is known only to (256, 320]; F⅒'s induction (d3) is not in the entry, since its dose band is past 1000. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering (status-C.md 'C4′ (d)+(f) unit 3b'); this score reads F's own date, not F¹'s references, and the onset labels beside P-SCH7 use F¹'s first reference as frozen; the null_construction's opening 'Calibration, not a p-value:' was added at registration (P-SCH7's words, for check_registry), confirmed by the user.",
       "superseded_by": null,
       "status": "active"
     }
