@@ -507,6 +507,17 @@ document is checked against the config, or against the weights where a null dire
 used the schedule at ≤ 20 000 without opening `c6_schedule.py`, which reads to 143 000; and the
 symmetry table was labelled "solved" with two families missing (`/challenge-pr` on #354,
 findings 1 and 2). A claim about what a file reads is checked by opening the file.
+- 2026-11-25 (C4′ (d)+(f) U2b), a deliberate stop read as a silent death: the user stopped the
+  U2b batch at Ft step 481 ("stop all computations, we will begin again tomorrow"), and that
+  session killed the detached batch by hand. It wrote nothing to STATE or the logs, and said it
+  would record the stop "once U2b finishes". The next session found a run with no `.exit` file
+  and no live process. It inferred a session-bound death from timestamps and wrote that cause,
+  "≈ 8.5 h lost", and a wrong rule about the `runner` template into STATE, `status-C.md`,
+  this file and #377. `/challenge-pr` on #377 found it in the earlier transcript (finding 1).
+  The template had in fact survived the runner being stopped. Rule: **a deliberate stop of a
+  run is written where the next session looks (STATE's line 3, or a `STOPPED` file beside the
+  run's log) before the session ends; a run found dead is checked against the last session's
+  transcript before a cause is written.**
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
@@ -739,14 +750,6 @@ well-formed but empty/zero result. It looks exactly like a real result.
   checkpoint or resume state was touched. Rule: **find a detached run's PID with `pgrep -f`, not
   `$!`, and launch it with `python -u`; before relaunching a run that looks dead, check
   `nvidia-smi` / `pgrep` for it.**
-- 2026-11-24 (C4′ (d)+(f) U2b), a 15-hour batch died silently with its session: the brief told the
-  `runner` "run it in the background" with a plain `> batch.log` redirect, so it was not launched
-  with the template's `nohup systemd-inhibit … echo $? > .exit`. Ft stopped at step 481 around
-  20:25 with no error and no exit file; the launching session's transcript ends at 20:29, and the
-  box suspended at 21:25, once nothing held it awake. Nothing was corrupted (it resumed from 480, step 481's loss equal to every digit), but
-  ≈ 8.5 h were lost until the next session found it. Rule: **a brief for a job longer than a
-  session names the template's detached launch and an `.exit` file; "in the background" alone is
-  not a launch line.** A missing `.exit` with no live process is a death, not a run.
 - 2026-10-21 (S1 unit 3), a comparison against the wrong null: `r3` scored step 0's compressions
   (the trained S on step 0's V_l) against the *trained* step's Haar draws, so its "outside" counts
   read 19–24 of 24 at every step from 512 and looked like a finding. Found reading the output
