@@ -59,7 +59,7 @@
   - C4′ (d)+(f) U3a, f (2026-11-24; tier 1; Gupta et al. read and the D2 (b) rule pushed before the read): **f reads "not the early state's" at all three gated τ arms.** A fresh AdamW at the peak makes the transient on A0's trained step-256 state as on F's init, and the same restart at A0's own rate makes none. Not separated: the rate's jump from the restart's first updates (by design), so D2 (b) is worth its hours by the rule fixed before the read; STATE Blocked 174 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3a"
   - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. Fresh moments also make the first updates 3× larger, so the moments and the early steps' size are not separated (`/challenge-pr` on #375). A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
   - C4′ (d)+(f) U2b (2026-11-25; under P-SCH7, P-SCH8; nothing read): F⅒ and F½ (seed 0's init, C4's order, flat at a tenth and a half of the peak) trained 0 → 1000, 77 states each on grid D, every loss finite; records and heads written. Blocked 175 (a), (a), the user's — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2b"
-  - C4′ (d)+(f) U3c, d (2026-11-25; P-SCH7, P-SCH8 scored by their frozen rules): **neither entry holds.** F⅒ has a transient too (onset (752, 784] at every gated arm, past its dose band), so no threshold lies between a tenth and a half; F½'s onset is on a step clock ((56, 60] to (60, 64]) and its induction date (304, 320] is in the step band; d1 joint "mixed"; d3 "not step" (F⅒ not formed by 1000). Scoring sentences drafted, Blocked 177 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3c"
+  - C4′ (d)+(f) U3c, d (2026-11-25; P-SCH7, P-SCH8 scored by their frozen rules): **neither entry holds.** F⅒ has a transient too by rule T (onset (752, 784] at every gated arm, past its dose band; cut off at 1000, its size about a sixth of F½'s), so the registered threshold is not borne out, and a weaker effect at a low rate or a much slower clock is not separated from "no threshold"; F½'s onset is labelled step beside ((56, 60] to (60, 64], one on the band's edge; not scored) and its induction date (304, 320] is in the step band; d1 joint "mixed"; d3 "not step" (F⅒ not formed by 1000). Scoring sentences drafted, Blocked 177 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3c"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -78,7 +78,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the download into `WDS_500/Mets_hdd_storage` from 2026-11-25, under 250 GB) — `trackC_writeup/status-C.md` "Paper: every model read"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `5368d9e5da`
+- **Reviewed:** 2026-11-25 · body `e7f158476d`
 <!-- /phase-card -->
 
 ## Units
@@ -150,8 +150,21 @@ against the entries before the read). Input: the gate `data/trackC/c4pdf/2026-11
 (sha256 `078bf9315744`, pass, gated τ arms 9.61e-5, 1e-4, 3e-4); F¹'s records and heads
 (`2026-11-23-u1/`), B_P's and B_O's (`2026-11-23-u2/`), F½'s and F⅒'s (`2026-11-24-u2b/`), each
 linked into `2026-11-25-u3c/`; checkpoint root `HDD_1TB/mets_data/c4pdf` (the reader checks each
-arm's states are all there). Output `2026-11-25-u3c/reading.json` (sha256 `16150f06cc1b`).
+arm's states are all there). Output `2026-11-25-u3c/reading.json`, sha256
+`16150f06cc1b8a682eef49266d9911345ab142ef6b70baf500f03869d28acccd`, made read-only after the read
+(a re-run to the same folder now fails rather than overwrite it; `/challenge-pr` on #378, finding 3).
 `c4pdf_read read`, conda `mets`, CPU, JSON only, seconds.
+
+The input's hashes (the reader records paths only; finding 3). Heads, sha256 of the file; records,
+sha256 of the sorted `sha256sum` listing of the arm's folder:
+
+| arm | heads | records (files) |
+|---|---|---|
+| F¹ | `9860afc86bac` | `e00a680d20a2` (231) |
+| F½ | `cab13fbe4e09` | `9b82c9afcfb7` (539) |
+| F⅒ | `317689664d38` | `9b628eef3a05` (539) |
+| B_P | `393a2152ca66` | `c2e8812621f1` (119) |
+| B_O | `1f3c6df41a88` | `9dc75a302f35` (119) |
 
 **d1 (P-SCH7)**, against F¹'s references (rule T; an onset read at x after p lies in (p, x]):
 
@@ -209,13 +222,22 @@ arm's states are all there). Output `2026-11-25-u3c/reading.json` (sha256 `16150
 - Above 656, F⅒ is saved every 32 updates. Its onset is known only to (752, 784], and whether
   its run would end, and when, is past 1000.
 - "Mixed" makes no joint claim. Neither a step clock nor a dose clock is established across the
-  three rates. The transient is present at a tenth of the peak, so no threshold lies above a tenth.
+  three rates, and F½'s step labels are beside, not scored.
+- **What F⅒'s transient is, is not established** (reworded after `/challenge-pr` on #378,
+  finding 1; the first push said "no threshold lies above a tenth"). Rule T counts it, so the
+  registered threshold is not borne out. But its run is cut off at 1000 and never seen ending,
+  its size is about a sixth of F½'s, and the reviewer's post hoc recomputation from the records
+  puts its energy drops at about a tenth of F¹'s (still 3–8 times τ, so not a threshold artefact).
+  "No threshold", "an effect that weakens with the rate" and "a much slower clock" are not told
+  apart.
 - The transient's trigger stays C8's (ROADMAP §8).
 
-**Scoring.** As with `P-SCH1` (Blocked 157 (a)) and Blocked 168's drafts, scoring is one `notes`
-sentence per entry, and the commit is yours (STATE Blocked 177). Each is prefixed "Read
-2026-11-25 (C4′ (d)+(f) U3c, `data/trackC/c4pdf/2026-11-25-u3c/reading.json`, rules
-`284f0d10f5ba`, the gate passed):":
+**Scoring.** As Blocked 157 (a) set for `P-SCH1` and Blocked 168 drafted for `P-SCH2`–`6`,
+scoring is one `notes` sentence per entry, and the commit is yours (STATE Blocked 177). None of
+those earlier sentences is in the registry yet (finding 2), so Blocked 177 carries all eight. Each
+here is prefixed "Read 2026-11-25 (C4′ (d)+(f) U3c, `data/trackC/c4pdf/2026-11-25-u3c/reading.json`
+sha256 16150f06cc1b8a682eef49266d9911345ab142ef6b70baf500f03869d28acccd, rules `284f0d10f5ba`,
+the gate passed):":
 
 | entry | draft sentence |
 |---|---|
