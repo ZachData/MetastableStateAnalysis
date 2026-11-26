@@ -11,7 +11,7 @@ checkpoints:
   "carries" if M ≥ M₄₁₀ − 0.1, "partly" if ½ ≤ M < M₄₁₀ − 0.1, "not" if M < ½.
 
 Order, each step refusing before the next: (1) every (step, prompt) record of every run present,
-one state count and one `n` per run; (2) the known answer, U1's code against `c2_readings` on
+one state count per run and one `n` per prompt; (2) the known answer, U1's code against `c2_readings` on
 410m's records and C2 5b's R6 numbers exactly; (3) per model, the two plants (R held at the
 series' first state: M = 1, S_any = 1; ‖m‖² held there: M = 0, "not"); a model failing a plant,
 or R ≥ 0, is refused; (4) M₄₁₀; (5) the other models. Beside, never read: the base rate, the
@@ -109,9 +109,13 @@ def load_run(d: Path) -> Tuple[List[int], Dict[Tuple[int, str], dict]]:
     extra = sorted({p for _, p in recs} - set(V1))
     if missing or extra:
         raise Refused(f"{d}: missing {missing[:5]} ({len(missing)}), unknown prompts {extra}")
-    shapes = {(len(r["e1"]), len(r["cos"]), r["n"]) for r in recs.values()}
+    shapes = {(len(r["e1"]), len(r["cos"])) for r in recs.values()}
     if len(shapes) != 1 or next(iter(shapes))[0] != next(iter(shapes))[1]:
-        raise Refused(f"{d}: (states e1, states cos, n) not one value: {shapes}")
+        raise Refused(f"{d}: (states e1, states cos) not one value: {shapes}")
+    for p in V1:                                # n is the prompt's token count: one per prompt
+        ns = {recs[(s, p)]["n"] for s in steps}
+        if len(ns) != 1:
+            raise Refused(f"{d}: {p} has n {sorted(ns)} across steps")
     return steps, recs
 
 
