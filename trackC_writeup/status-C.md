@@ -62,6 +62,7 @@
   - C4′ (d)+(f) U3c, d (2026-11-25; P-SCH7, P-SCH8 scored by their frozen rules): **neither entry holds.** F⅒ has a transient too by rule T (onset (752, 784] at every gated arm, past its dose band; cut off at 1000, its size about a sixth of F½'s), so the registered threshold is not borne out, and a weaker effect at a low rate or a much slower clock is not separated from "no threshold"; F½'s onset is labelled step beside ((56, 60] to (60, 64], one on the band's edge; not scored) and its induction date (304, 320] is in the step band; d1 joint "mixed"; d3 "not step" (F⅒ not formed by 1000). Scoring sentences drafted, Blocked 177 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3c"
   - C4′ (d)+(f) closed 2026-11-25 at its exit and extended budget (7 units + close-out): the transient is not the early state's (a trained state shows it after a fresh Adam at the peak), nor the rate's jump alone (kept moments at the peak show none within 128 updates), nor confined to the peak (present at a half and a tenth from init); no single condition yet covers every arm (F⅒'s comes at 1e-4 after ~750 updates, long after its moments adapted; `/challenge-pr` on #379, finding 0); neither a step nor a dose clock dates it across rates; at half the peak induction comes at F's update count; P-SCH7, P-SCH8 falsified; the trigger is ROADMAP §8 C8's — `trackC_writeup/status-C.md` "C4′ (d)+(f) on one page (closed 2026-11-25)"; `PROJECT.md` §3.88
   - C9 opened 2026-11-25 (Blocked 176 (a), the user's; writing only, nothing read): scan and a proposed design. U1, the mean's term on every model, is a CPU read on records that already exist; U2, A3's pairs on GPT-2 small × 5 and the harness arms; U3, the 160m seeds' dates (downloading); U4, the paper. D1–D6, Blocked 178 — `trackC_writeup/status-C.md` "C9 unit 0"
+  - C9 U1, the mean's term on every model (2026-11-25; Blocked 178 all (a), Claude on the user's "merged, continue"; tier 1, no forward pass; rule pushed before output): the share of counted drops whose mean's term carries over half reads "carries" (≥ 410m's 0.963 less 0.1) on 410m, 160m, 70m (by 0.02), GPT-2 small and the harness and flat arms, and "partly" on `pythia-70m-warmup01` (0.826, one run, low at 8000–54000); warmup01's 0.826 lies inside 70m's seeds' 0.802–0.981, so not shown to be its warmup's; the paper's S_any is 0.961–0.988 pooled on every model; at the break ‖m‖² falls at every counted drop on every model (the abstract's sentence), but its term is over half of each only on the Pythia-shaped runs, not on GPT-2 small (0.76–0.87; §4's clause) — `trackC_writeup/status-C.md` "C9 unit 1"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -77,10 +78,10 @@
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
-  - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the download into `WDS_500/Mets_hdd_storage` from 2026-11-25, under 250 GB) — `trackC_writeup/status-C.md` "Paper: every model read"
+  - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share), U2a next — `trackC_writeup/status-C.md` "C9 unit 1"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `53578ffa6e`
+- **Reviewed:** 2026-11-25 · body `eb27c3a4f0`
 <!-- /phase-card -->
 
 ## Units
@@ -145,6 +146,73 @@
 | C4′ (d)+(f) 3c. the d read (P-SCH7, P-SCH8) | **done 2026-11-25: P-SCH7 does not hold (F⅒ has a transient, onset 784, at every gated arm); P-SCH8 does not hold (F½'s induction (304, 320], the step band); d1 joint "mixed" (F½ step, F⅒ neither); d3 "not step"; f re-read unchanged. Scoring sentences drafted, Blocked 177. Close-out next** | `data/trackC/c4pdf/2026-11-25-u3c/reading.json`; "C4′ (d)+(f) unit 3c" below |
 | C4′ (d)+(f) close-out | **done 2026-11-25: writing only; closed at its exit and extended budget (7 units + close-out); five findings, P-SCH7 and P-SCH8 falsified; Parked carried to C8 or dropped; `PROJECT.md` §3.88** | "C4′ (d)+(f) on one page" below |
 | C9 0. the scan and design (Blocked 176 (a), the user's) | **done 2026-11-25: writing only, nothing read; proposed, D1–D6 Blocked 178; U1 is a CPU read (every model's records exist); the 160m seeds downloading** | `lit-C9.md`, `design-C9.md`; "C9 unit 0" below |
+| C9 1. the mean's term on every model (Blocked 178 all (a)) | **done 2026-11-25: known answer exact, plants exact on all 7 models; M "carries" on 6, "partly" on warmup01; the 160m download complete** | `c9_u1.py`, `data/trackC/c9/2026-11-25-u1/u1.json`; "C9 unit 1" below |
+
+## C9 unit 1, the mean's term on every model (2026-11-25)
+
+Tier 1, description under D1 (a)'s placed label; no forward pass. **Blocked 178 taken all (a)** by
+Claude on the user's "merged, continue" (yours to overrule); `design-C9.md` frozen ("Decided
+2026-11-25": the models, M₄₁₀'s pooling, plants held at the series' first state, S_break's
+dates) and `trackC_writeup/c9_u1.py` pushed before any output (`5dd99ca`). The first launch
+refused at step (1), before anything was computed: its check wanted one `n` per run, but `n` is
+each prompt's token count; fixed to one `n` per prompt across steps (code `81578cbf7a39`).
+
+**Input** (each run's sha256 in the record): 410m `c2u3` seed 0 + `c2u3s` seeds 1–9; 160m `c2u3b`;
+70m C6 U0 seeds 0–9; warmup01 C6 U1b; GPT-2 small `c2u3c` × 5 (35 steps); A0, F `c4/2026-11-12-u2`,
+A0′, F′ `c4pc/2026-11-22-u3` (29 steps). Every (step, prompt) record present on every run.
+
+**Gate.** Known answer: record by record U1's series equals `c2_readings.one_series`, and on all 18
+steps C2 5b's R6 shares equal U1's exactly; seed hashes equal C2 5b's inputs. **M₄₁₀ = 0.9628**
+(5438 of 5648 drops), so the bar is **0.8628**. Both plants exact on all 7 models (mean held:
+M = S_any = 1; ‖m‖² held: M = 0, "not"); R ≥ 0 everywhere (min 1.6e-3). None refused.
+
+| model | runs | drops | **M** | label | S_any | per run M | M at the break (drops) |
+|---|---|---|---|---|---|---|---|
+| `pythia-410m` | 10 | 5648 | 0.963 | carries | 0.988 | 0.939–0.979 | 1.0 on all 10 (29–58) |
+| GPT-2 small | 5 | 4823 | 0.944 | carries | 0.988 | 0.931–0.952 | 0.76–0.87 (27–38) |
+| 70m flat (F, F′) | 2 | 539 | 0.959 | carries | 0.982 | 0.964, 0.954 | 1.0, 1.0 (8, 7) |
+| 70m harness (A0, A0′) | 2 | 152 | 0.941 | carries | 0.980 | 0.920, 0.961 | 1.0, 1.0 (4, 4) |
+| `pythia-160m` | 1 | 213 | 0.911 | carries | 0.986 | 0.911 | 1.0 (18) |
+| `pythia-70m` | 10 | 828 | 0.883 | carries | 0.961 | 0.802–0.981 | 1.0 on seed 0 (3); others undated |
+| `pythia-70m-warmup01` | 1 | 109 | **0.826** | **partly** | 0.964 | 0.826 (inside 70m's seeds' 0.802–0.981) | no E₁ date (refused) |
+
+At the break ‖m‖² falls at every counted drop on every dated run of every model (1.0; the
+abstract's sentence); the column above is M, §4's stronger clause ("more than half the drop").
+
+Beside, never read (all in `u1.json`): the base rate (‖m‖² falls at 0.06–0.34 of all
+transitions), per-step M (lowest 0.59, 70m at 143000 on 56 drops; warmup01 0.71–0.75 at
+8000–54000 on 11–20 drops a step), per-step S_any (lowest 0.80, warmup01).
+
+**What it says.** On every model but warmup01, the drops V counts are mostly the mean's falls at
+about 410m's rate. The paper's S_any holds pooled on every model (0.961–0.988), as the identity
+nearly forces. At the break, the abstract's "every drop the count counts is a layer at which
+the mean's norm falls" holds on every model (1.0 on every dated run); §4's stronger clause, that
+the mean's term is more than half of each drop there (M = 1 on every Pythia-shaped run), does not
+hold on GPT-2 small (M 0.76–0.87 at its breaks). Corrected after `/challenge-pr` on #381
+(finding 1): the first push pinned GPT-2's at-break result on the abstract's sentence.
+
+**Not established / weak.** The bar is placed (0.1), not calibrated. 70m clears it by 0.02, and
+4 of its 10 seeds (0.80–0.86) fall below it alone. warmup01's "partly" rests on one run and 109
+drops, concentrated where its LR is still warming (to 14 300) and after; its 0.826 lies inside
+`pythia-70m`'s own seeds (0.802–0.981, three of them below it), so the label difference is one
+run against a pool of ten, not shown to be the longer warmup's (`/challenge-pr` on #381,
+finding 2). The gate checks the code only: the plants are exact by construction, so they test
+nothing of M's power (finding 4). At-break values on 70m
+and the harness arms rest on 3–4 drops. M pools every checkpoint, so it says nothing about when.
+
+**Re-run:** `METS_REPO=$PWD METS_DATA=<main>/data python -m trackC_writeup.c9_u1` (seconds, CPU);
+tests `tests/test_trackC_c9_u1.py`.
+
+**The download** (Blocked 176) finished 2026-11-25: 162 of 162 (9 seeds × 18 steps), every
+`pytorch_model.bin` present at 375 036 845 bytes, 57 GB in `Mets_hdd_storage/hf/hub`; still not
+linked into HDD_1TB's hub (U3 does it).
+
+**Next:** U2a (A3's rows generalised by model and grid, their gates and the known answer), a fresh
+session. `lit-C9.md` Parked 2 before U2b's rows are read. **Parked:** GPT-2's below-410m M at
+its break (0.76–0.87) and warmup01's late-step dip are discoveries: why / a per-transition
+split of R against the mean at those states, minutes / could change whether §4's "more than half
+the drop at all but one" is scoped to Pythia-shaped runs (U4's wording; the abstract's sentence
+holds on every model).
 
 ## C9 unit 0, the scan and design (2026-11-25)
 
