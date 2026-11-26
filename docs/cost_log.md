@@ -670,3 +670,5 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   - The runner's 12-hour watch is 35.4M (Haiku, 284 calls at 580 s waits), about 10× the main session; a watch this long would be cheaper as one main-session wait on the `.exit` file (CLAUDE.md "Watching yourself").
 | 2026-11-25 | C4′ (d)+(f) U3c, the d read (P-SCH7, P-SCH8 scored; Blocked 177; /challenge-pr on #378 answered) · subagents: general-purpose opus-5-5 2.2M | 54 | 145k | 5.7M | 34k | #378 |
 | 2026-11-25 | C4′ (d)+(f) close-out (writing only; /challenge-pr on #379 answered; same session as U3c, this row is the delta after its row; session peak) · subagents: general-purpose opus-5-5 2.2M | 45 | 217k | 8.3M | 21k | #379 |
+| 2026-11-25 | C9 U0 (scan, design proposed; 160m download launched; /challenge-pr on #380 answered; same session as U3c and the close-out, delta after their rows; session peak) · subagents: general-purpose opus-5-5 2.3M | 57 | 310k | 15.0M | 23k | #380 |
+  - About 2× the median: the third unit in one session (the user's "continue in the next 4 items", "just keep going"), so each call re-read ≈ 250k of earlier units' context (`LESSONS.md` 9).
