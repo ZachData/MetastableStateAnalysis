@@ -207,6 +207,39 @@ a choice:
 - *S_break* (beside) uses table 2's E₁ dates from the records they were read from; none for
   70m seeds 1–9 (centred only) or warmup01 (refused).
 
+**D1–D4 and D6 confirmed by the user** (2026-11-25, after U1's output was seen: "D1–D4, D6
+confirmed"; `/challenge-pr` on #381, finding 3). D5 stays open until U3.
+
+**U2a as it runs** (`trackC_writeup/c9_u2.py`, pushed before any of its output). The split
+between U2a and U2b, where the text above left it open:
+- *U2a* is the CPU part: the locator and gate parametrised by grid; the weights rows E2, E7, E8 on
+  every U2 run and on 410m seed 0; each of those rows **gated** on each run. **Nothing is
+  located on GPT-2 or the harness arms in U2a**: a date there is the reading (U2b, after
+  `lit-C9.md` Parked 2).
+- *U2b* is the GPU part: E3, E4 (D2 (a)), E5 and, on A0, A0′, E6u and E6b, each producer run
+  first on 410m seed 0 as its known answer, then gated and read with the U2a rows. E3 needs a
+  rerun: C4's `heads_*.json` keep only the mean over the 8 sequences, so the bootstrap has no
+  units; U2b keeps the per-sequence scores (units = sequences, statistic = max over heads of
+  their mean).
+- *Grids and windows.* 410m: Pythia's 18, window ≤ 4000 (A3's). Harness arms: C4's 28-step
+  `GRID` (3500, off the grid, is not read), window ≤ 4000, the whole grid. GPT-2 small: C2 3c's
+  35 tags, window ≤ 16000, the whole grid: 410m's 4000 steps are 8.4 B tokens, which is 16 000
+  of GPT-2's 524 288-token steps (C2 3c's plateau used the same conversion). A reference at the
+  window's last step is censored, as in A3.
+- *The axis.* x = log₂ step; step 0 sits two octaves below the first nonzero step. On Pythia's
+  grid this is A3's x(0) = −1 exactly.
+- *The plant's width* is a quarter of its gap's width in octaves, so a plant is as sharp
+  relative to every grid as A3's was on Pythia's (0.25 on every one-octave gap; on 512–1000,
+  0.24). With A3's fixed 0.25 octave, GPT-2's 0.15-octave gaps (450–500) would carry a plant
+  smoother than the grid, and the effect arm would refuse on resolution, not power. The
+  locator, floor, null arm, `AMPS` and the 90 % / 95 % bars are A3's unchanged.
+- *Randomness.* Each run's gate uses `default_rng([20261126, i])`, i its index in the run list.
+- *Known answer (U2a's part).* (i) The generalised gate and locator on A3's own units (built by
+  `a3.py`'s row builders from A3's records) in A3's order and seed reproduce every date and
+  floor of `2026-10-20-A3u5/a3_rows.json`. (ii) The generalised weights producer on 410m seed 0
+  reproduces `a3_weights`' E7, E8 values and `ov_per_head_series.json`'s per-head E2 (to 1e-6),
+  and, swapped into (i), leaves every date unchanged (E2 512, E7 2000 censored, E8 1000).
+
 ## Worth challenging (for the PR)
 
 1. U2 leaves out 70m and 160m on Pythia's grid (one run each) and the flat arms. The harness
