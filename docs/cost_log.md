@@ -673,3 +673,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-25 | C9 U0 (scan, design proposed; 160m download launched; /challenge-pr on #380 answered; same session as U3c and the close-out, delta after their rows; session peak) · subagents: general-purpose opus-5-5 2.3M | 57 | 310k | 15.0M | 23k | #380 |
   - About 2× the median: the third unit in one session (the user's "continue in the next 4 items", "just keep going"), so each call re-read ≈ 250k of earlier units' context (`LESSONS.md` 9).
 | 2026-11-25 | C9 U1 (Blocked 178 taken (a); the mean's term on every model, CPU read; download verified; /challenge-pr on #381 answered) · subagents: general-purpose opus-5-5 1.1M | 65 | 242k | 12.0M | 79k | #381 |
+| 2026-11-26 | C9 U2a (the locator by grid, weights rows on 8 runs, known answer, 21 gates; /challenge-pr on #382 answered) · subagents: general-purpose opus-5-5 1.2M | 87 | 237k | 14.9M | 61k | #382 |

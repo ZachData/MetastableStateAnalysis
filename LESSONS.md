@@ -1025,6 +1025,12 @@ not fixed).
   before any output was misread. Rule: **"reproducible" is measured at the horizon a design needs
   (several updates and a saved state), not inferred from one update's loss; a check's step list is
   built from the states both runs actually save**.
+- 2026-11-26, C9 U2a: the known answer asked the new weights producer to equal `a3_weights`' E7
+  and E8 exactly (`== 0`), on the reasoning that it was the same code on the same float32 load.
+  The first 410m record differed by 1e-13 relative in α: 8 processes at 2 BLAS threads each,
+  against A3's one at the default. Caught on the first record, before the known answer ran, and
+  changed to relative 1e-9 (`fe1bd4c`). Rule: **a reproduction across runs compares at a stated
+  tolerance; "the same code" does not mean the same bits once the thread count changes.**
 - 2026-11-09 (#337's push run red, its PR run green on the same commit):
   `test_rows_ngram_reads_and_refuses` named three scratch dirs `hash(str(kw)) % 1000`; `str`
   hashes are salted per process, so about 1 run in 330 two names collided and `mkdir`
