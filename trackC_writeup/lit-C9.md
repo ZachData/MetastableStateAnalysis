@@ -32,3 +32,13 @@ reports dates beside.
    before U3's records are read.
 2. **2509.22831's full text** (why: its 1-back onset steps on 160m and 70m seeds; cost: one
    reading; could change: E4's lean on the harness arms). Read before U2's rows are read.
+   **Done 2026-11-26** (U2b, before any U2b record; arXiv HTML v1, read by a fetch agent; quotes
+   checked only against its report). The score is §4.1's Eq. 1, each head's mean attention from
+   i to i − 1 on the Natural Stories corpus. The figures take **the max over heads** at each
+   checkpoint, which is D2 (a)'s E4 (on other text). Onset is the first step where Δ(max) / Δ log
+   step passes a threshold (averaged over 0.01–0.3). **No onset step is given for 70m, 160m or
+   410m**: only a mixed-model slope, "larger models … earlier onsets" (β −0.18 on log
+   parameters, units not stated), and on all models pooled "an expected onset … between 512 and
+   2000 steps". It does not compare with induction. **What it changes:** E4's lean stays as
+   written (70m's previous-token onset no earlier than 410m's). There is no number to read
+   against, and 512–2000 covers both. No rule moves.

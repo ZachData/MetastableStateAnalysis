@@ -1002,6 +1002,16 @@ validator yet — candidate tool: `tools/verify_run_dir.py`.
   19 signed zeros, so their byte hashes differ. A four-model smoke test in scratch caught it
   before any job's K (cost: one commit). Values are now compared, with −0 = +0. "Unchanged" means
   equal values, not equal bytes.
+- 2026-11-26, C9 U2b: D7 (a)'s snapped arm took "the planted step" to be the step after the gap
+  (`i + 1`), as it is for A3's dip on Pythia's one-octave gaps. A3's fixed 0.25-octave dip on the
+  harness arms' finer grid has its noise-free minimum a step or more later (48–64 → 80), so E6
+  read 0.000 on the first gate pass. Noticed because 0.000 is not a power reading. The first pass
+  was set aside (`gate-v0`). The arm now locates the noise-free plant and snaps that
+  (`test_planted_step_is_where_the_noise_free_plant_is_located`), and a half plant refuses if it
+  is not at `i + 1`. Cost: one re-gate, 36 min CPU. Same unit: the design said GPT-2's E10
+  interval (50, 100] "snaps to 32 either way". Tag 60 is 15 Pythia steps, so it snaps to 16 or 32
+  (beside only; no reading). A construction placed on one grid is re-derived on the next grid,
+  not carried over.
 
 **The rule now.** Anything whose result is recorded names the exact input
 set it ran on (a hash of the texts, not a key list) and refuses on a
