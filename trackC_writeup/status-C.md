@@ -64,6 +64,8 @@
   - C9 opened 2026-11-25 (Blocked 176 (a), the user's; writing only, nothing read): scan and a proposed design. U1, the mean's term on every model, is a CPU read on records that already exist; U2, A3's pairs on GPT-2 small × 5 and the harness arms; U3, the 160m seeds' dates (downloading); U4, the paper. D1–D6, Blocked 178 — `trackC_writeup/status-C.md` "C9 unit 0"
   - C9 U1, the mean's term on every model (2026-11-25; Blocked 178 all (a), Claude on the user's "merged, continue"; tier 1, no forward pass; rule pushed before output): the share of counted drops whose mean's term carries over half reads "carries" (≥ 410m's 0.963 less 0.1) on 410m, 160m, 70m (by 0.02), GPT-2 small and the harness and flat arms, and "partly" on `pythia-70m-warmup01` (0.826, one run, low at 8000–54000); warmup01's 0.826 lies inside 70m's seeds' 0.802–0.981, so not shown to be its warmup's; the paper's S_any is 0.961–0.988 pooled on every model; at the break ‖m‖² falls at every counted drop on every model (the abstract's sentence), but its term is over half of each only on the Pythia-shaped runs, not on GPT-2 small (0.76–0.87; §4's clause) — `trackC_writeup/status-C.md` "C9 unit 1"
   - C9 U2a, the locator by grid and the weights rows (2026-11-26; D1–D4, D6 confirmed by the user; tier 1, CPU, nothing located off 410m; rules pushed before output): A3's locator and gate parametrised by grid reproduce A3 unit 5's dates and floors exactly on its own units; the weights producer reproduces A3's E2, E7, E8 on 410m; E2, E7, E8 are gated on GPT-2 small × 5 (35 tags) and A0, A0′ (28 steps), and all 21 pass at floor 4.0 — `trackC_writeup/status-C.md` "C9 unit 2a"
+  - C9 U2b, the GPU rows and the pairs (2026-11-26; Blocked 179 D7 (a), D8 (a), the user's; tier 1): every known answer exact. The snapped gate refuses every GPT-2 row, so no GPT-2 pair is read; one pair is read on the harness arms (A0's E1–E3 aligned, replicating 410m's verdict). Accepted as frozen (Blocked 180 (a), the user's) — `trackC_writeup/status-C.md` "C9 unit 2b"
+  - C9 U3, the 160m seeds' two dates (2026-11-26; D5 (a), the user's: tier 1, nothing registered; rules pushed before output): known answer bit-equal on seed 0. E₁'s break is 256 on all ten 160m seeds. The centred date is 1000 at every arm on 6 seeds, and 512–1000 across arms on 4. U1's M on the ten seeds is 0.927, "carries" — `trackC_writeup/status-C.md` "C9 unit 3"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -79,10 +81,10 @@
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
-  - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share); U2a, U2b done 2026-11-26 (the timeline's order off 410m: every GPT-2 row refused by D7 (a)'s snapped gate, one pair read on A0, replicating); Blocked 180, then U3 — `trackC_writeup/status-C.md` "C9 unit 2b"
+  - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share); U2a, U2b done 2026-11-26 (the timeline's order off 410m: every GPT-2 row refused by D7 (a)'s snapped gate, one pair read on A0, replicating; Blocked 180 (a), accepted as frozen); U3 done 2026-11-26 (D5 (a): E₁ 256 on all ten 160m seeds, centred 1000 on 6 and 512–1000 on 4; M "carries"); Blocked 181, then U4 and the close-out — `trackC_writeup/status-C.md` "C9 unit 3"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `9efb0113a0`
+- **Reviewed:** 2026-11-26 · body `2e1324d6b4`
 <!-- /phase-card -->
 
 ## Units
@@ -150,6 +152,82 @@
 | C9 1. the mean's term on every model (Blocked 178 all (a)) | **done 2026-11-25: known answer exact, plants exact on all 7 models; M "carries" on 6, "partly" on warmup01; the 160m download complete** | `c9_u1.py`, `data/trackC/c9/2026-11-25-u1/u1.json`; "C9 unit 1" below |
 | C9 2a. the locator by grid, the weights rows and their gates (D1–D4, D6 confirmed by the user) | **done 2026-11-26: CPU, nothing located off 410m; known answer exact (A3's dates and floors; E2, E7, E8 from the weights); E2, E7, E8 gated on GPT-2 × 5, A0, A0′: all 21 pass, floor 4.0. U2b next** | `c9_u2.py`, `data/trackC/c9/2026-11-26-u2a/`; "C9 unit 2a" below |
 | C9 2b. the GPU rows, the snapped gate and the pairs (Blocked 179 D7 (a), D8 (a), the user's) | **done 2026-11-26: every known answer exact; the snapped arm refuses every row on GPT-2 × 5 and 6 of 9 on each harness arm; one pair read (A0, E1–E3 aligned, replicates 410m's); Blocked 180** | `c9_u2b_pass.py`, `c9_u2b.py`, `data/trackC/c9/2026-11-26-u2b/`; "C9 unit 2b" below |
+| C9 3. the 160m seeds' two dates (Blocked 180 (a); D5 (a), the user's) | **done 2026-11-26: tier 1, nothing registered; known answer bit-equal; gate passes; E₁ 256 on 10 of 10 seeds; centred 1000 at every arm on 6, 512–1000 across arms on 4; U1's M 0.927 "carries"** | `c9_u3_pass.py`, `c9_u3.py`, `data/trackC/c9/2026-11-26-u3/`; "C9 unit 3" below |
+
+## C9 unit 3, the 160m seeds' two dates (2026-11-26)
+
+Tier 1, description. The decisions came first: **Blocked 180 decided (a)** (the user's: GPT-2's
+refusal accepted as frozen, so U2 is done) and **D5 decided (a)** (the user's, before any seed 1–9
+record: nothing registered). `lit-C9.md` Parked 1 was read before any record: PolyPythias names
+no 160m outlier seed, so none is flagged. `design-C9.md` "U3 as it runs", the producer
+`c9_u3_pass.py` and the reading `c9_u3.py` were pushed before any output (`9ec5282`). One gate
+check was dropped before that push (the design says why).
+
+**Input.** One GPU pass per (seed, step): `pythia-160m` seed 0 (again, the known answer) and
+`pythia-160m-seed1`–`seed9`, Pythia's 18 steps, 7 v1 prompts, float32, tf32 off. That is 1260
+records with 13 states each, producer code `d4510f86170e`, 14 min on the 3080. The arms are C2
+3b's four centred τ (1.25e-4, 1e-4, 3e-4, 8.22e-4; derived and gated on 160m seed 0), not
+re-derived. Reading at code `4d324752a028`. Records: `data/trackC/c9/2026-11-26-u3/`
+(`seed{0..9}/records/`, `plan.json`, `known.json`, `gate.json`, `reading.json` sha256
+`cebbfdec0a10…`).
+
+**Known answer** (`known.json`): seed 0's rerun against 3b's 126 records. Ids are equal, and
+e1, e1c, e1r and cos are bit-equal (max relative difference 0, tolerance 1e-4). V_u and all
+four V_c are equal, so the dates are 256 and 1000 × 4. 3b's gate passed all four arms.
+**Gate** (`gate.json`, on seed 0's series): every check passes. The planted null reads inside
+A5's window exactly at 256 and 512, of the 12 null steps. The planted effect at 1000 reads 1000,
+not inside. Each arm's V_c moved one step earlier reads 512, readable.
+
+**Reading** (per seed; the centred date is the set over the four gated, readable arms):
+
+| seed | E₁'s break | plateau | centred date(s) | arms at 512 |
+|---|---|---|---|---|
+| 0 | 256 | 16 | 1000 | — |
+| 1 | 256 | 20 | 512, 1000 | 1e-4 |
+| 2 | 256 | 18 | 512, 1000 | 1.25e-4, 1e-4 |
+| 3 | 256 | 19 | 512, 1000 | 1.25e-4, 1e-4 |
+| 4 | 256 | 19 | 1000 | — |
+| 5 | 256 | 24 | 1000 | — |
+| 6 | 256 | 23 | 1000 | — |
+| 7 | 256 | 22 | 1000 | — |
+| 8 | 256 | 23 | 1000 | — |
+| 9 | 256 | 15 | 512, 1000 | 3e-4 |
+
+- **E₁'s break is 256 on all ten 160m seeds.** None is unreadable: the step 0–128 counts are at
+  most 2 against plateaus of 15–24. Table 2's 160m row becomes "256 (10 of 10)".
+- **The centred date is 1000 at every arm on 6 seeds.** On the other 4, one or two arms read 512
+  and the rest 1000, so the date is "512–1000, arms disagree". Every arm on every seed is later
+  than that seed's break (C2 3s's event 1, 10 of 10). Event 2 (1000 at all four arms) holds on 6
+  of 10.
+- **U1's M on 160m pooled over the ten seeds: 0.927, "carries"** (bar 0.863; 2328 drops). Both
+  plants are exact (1.0 and 0.0), R ≥ 0 (minimum 0.0043), and S_any is 0.983. Per seed M runs
+  0.894–0.958, every seed above the bar. U1's seed-0 value was 0.911.
+
+**Beside, never read** (D5 (a): no label): 410m's ten seeds break at 512 × 8 and 256 × 2, and
+160m's ten at 256 × 10. Every 160m break is inside A5's window. Under 3b's schedule sets, every
+seed's E₁ date is consistent with all three schedules. The centred date excludes
+"instantaneous" on the six 1000-only seeds, and on the four with a 512 arm all three survive.
+The difference from 410m is a description of an unregistered contrast on Pythia's
+one-octave grid (C9 design D5 (c) was not taken), and size is confounded with the peak LR (6e-4
+against 3e-4).
+
+**Not established.** Why 160m breaks a grid step earlier than most 410m seeds: on this grid
+"256" is a crossing in (128, 256]. It does not tell step, cumulative and instantaneous apart (3b's
+predictions overlap). The 512 arms are at the two smallest τ (1e-4, 1.25e-4) on 3 of the 4
+seeds and at 3e-4 on seed 9. Whether that is the arms' scale or the seeds is not read.
+
+**Carried in, not made:** the two `c2_seeds` refusals. U3 derived no arm, so neither applies. They go
+to the close-out, which gives them a home (ROADMAP C8 or the next unit that derives an arm).
+
+**Re-run:** `METS_REPO=$PWD METS_DATA=<main>/data HF_HUB_OFFLINE=1 python -m
+trackC_writeup.c9_u3_pass --out <dir>` (GPU, about 14 min; seeds 1–9 from
+`WDS_500/Mets_hdd_storage/hf/hub`, seed 0 from `HDD_1TB/mets_data/hf/hub`), then `python -m
+trackC_writeup.c9_u3 known --out <dir>` and `read --out <dir>` (CPU, seconds).
+
+**Next:** U4 (`paper/`: table 2's 160m row, U1's column, §5's "on other models" paragraph with
+Blocked 180 (a)'s wording, the scope line) and the close-out. The budget's five units are spent.
+D6 (a) makes U4 a unit of its own, and the budget line counted it only under D6 (b), so **Blocked
+181**: U4 inside the close-out (writing only), or a budget extension. **Parked:** none new.
 
 ## C9 unit 2b, the GPU rows, the snapped gate and the pairs (2026-11-26)
 

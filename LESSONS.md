@@ -2168,6 +2168,14 @@ report before it freezes" is a `CLAUDE.md` rule, so the user's (STATE Blocked 80
   that same entry, from the intact arm only (it does not reveal the edited arm's outcome). Pick
   the reading by where its deciding entries sit relative to the effect's known locus, or the
   test has no power whatever the ladder**.
+- **2026-11-26, C9 U3: a planted move that also moved the statistic's own reference.** The gate
+  shifted each centred series one grid step later and asked for 2000. The half-rise is read
+  against the median of steps 1000–4000, so shifting the series moves the plateau too, and three
+  arms still read 1000. A dry run on seed 0's published series (the development set, before
+  any seed 1–9 record) caught it before the push. The half was dropped and the design says
+  why. Rule: **a shift plant is checked against what the reader normalises by; if the plant
+  moves that reference, it tests the reference, not the reader. Dry-run every gate check on the
+  development set before the code is pushed.**
 
 ## 7. Literature found after the construction was built
 
