@@ -240,6 +240,54 @@ between U2a and U2b, where the text above left it open:
   reproduces `a3_weights`' E7, E8 values and `ov_per_head_series.json`'s per-head E2 (to 1e-6),
   and, swapped into (i), leaves every date unchanged (E2 512, E7 2000 censored, E8 1000).
 
+**Blocked 179 decided D7 (a), D8 (a)** (the user's, 2026-11-26, before any U2b output).
+
+**U2b as it runs** (`trackC_writeup/c9_u2b_pass.py`, the producer, and `c9_u2b.py`, the gates
+and the reading, pushed before any of their output). Where the text above left a choice:
+- *Snap (D8 (a)).* A GPT-2 step s counts as s / 4 Pythia steps (524 288 against 2 097 152 tokens
+  a step, the units U2a's window uses). The harness arms and 410m use their own step. The
+  snapped step is the first Pythia grid step at or above that number.
+- *The gate (D7 (a)).* A row is gated only if U2a's arm and a **snapped arm** both pass. The
+  snapped arm plants A3's fixed 0.25-octave logistic (a dip for a turn row) in every own-grid
+  gap, at 9 σ̄_ref, at the row's floor. It counts a draw as placed right when the located step
+  snaps to the same step as the planted one, and passes at ≥ 90 % in every gap. The null arm is
+  U2a's. U2a's gate records give E2, E7, E8 their own arm. 410m is gated on E3 and E4 by D2 (a)
+  only (the bridge). Each row's draws use `default_rng([20261127, run index, row index])`.
+- *Producer.* One pass per (run, step). E3 uses C4's 8 sequences, with every head's score kept
+  per sequence. E4 uses the 7 v1 prompts, every head. E5 is Phase 1's `MinRank` (the minimum over
+  states of the effective rank on the sphere). E6u, E6b, E6b′ are A3's tables, on 410m, A0 and
+  A0′ only (D3 (a)). Prompts are tokenised as the energy records were (truncation 512). The
+  records' code hash covers the producer's file and the code it calls, not the reading (#382
+  finding 2). U2a's weights records keep U2a's hash.
+- *Statistic for E3, E4 (D2 (a)):* the max over heads of the mean over units (sequences or
+  prompts). Units are resampled whole, so a bootstrap draw recomputes the max.
+- *Known answers, each before any run is gated* (`c9_u2b known`; tolerances placed here):
+  - U2a's `known.json` passes, and its null rates are equal (#382 finding 3, now in the flag).
+  - E5 on 410m seed 0 is within 0.005 of the reports' `MinRank` (printed to 2 decimals), and its
+    mean is within 5e-4 relative of the panel's.
+  - E4 at `L5H2` is within 1e-3 of A3's `prev` (A3 read Phase 1's stored attentions from
+    another pass).
+  - E3's mean over sequences is within 1e-5 of C4's `heads_A0.json` and C4′ (c)'s
+    `heads_A0p.json`.
+  - E6u, E6b, E6b′ are within 1e-4 nats of A3 units 4 and 5's records on all 18 steps.
+  - Every prompt's ids hash equals the run's own energy records', on every read run and step.
+- *E1, E1c* come from the records the paper reads. GPT-2: C2 3c's uncentred dates, with no
+  centred date (its arms disagree). A0: E₁ 384, centred 640 (C4 U2's `reading.json`, gated
+  arms). A0′: 320 and 640 (C4′ (c) U3's `measured.json`). The code refuses if a record says
+  otherwise. E1c is not in A3's eleven pairs; it is reported beside.
+- *E10, beside.* The harness arms use Pythia's schedule (A3's `lr`). GPT-2 uses the logged LR
+  (`gpt2_small_lr_log.json`), whose tags 10–80 are not logged, so its half-peak lies in
+  (50, 100]. That interval snaps to 32 either way, so it is stated as an interval and not
+  located.
+- *E8's second date* is A3's `from_peak`, on the run's own grid and window.
+- *What is read:* A3's eleven pairs on snapped indices under A3's one-step rule. A pair with two
+  dates (E6b′, E8 from its peak) is read only where both dates give one verdict. **The order
+  replicates** for a pair if the run's verdict (aligned, or ordered with which first) equals
+  410m seed 0's in `a3_rows.json`. A pair unread on either side is not counted. GPT-2's five
+  seeds are reported as "k of n read". *Beside, never read:* the same comparison against 410m
+  with D2 (a)'s E3 and E4 (the bridge), each pair's own-grid distance, and an "aligned" pair two
+  or more own-grid steps apart.
+
 ## Worth challenging (for the PR)
 
 1. U2 leaves out 70m and 160m on Pythia's grid (one run each) and the flat arms. The harness
