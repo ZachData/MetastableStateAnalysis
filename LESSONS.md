@@ -518,6 +518,13 @@ findings 1 and 2). A claim about what a file reads is checked by opening the fil
   run is written where the next session looks (STATE's line 3, or a `STOPPED` file beside the
   run's log) before the session ends; a run found dead is checked against the last session's
   transcript before a cause is written.**
+- 2026-11-25, C4′ (d)+(f) U3c (#378, `/challenge-pr` finding 2). `status-C.md` cited P-SCH1's
+  scoring (Blocked 157 (a), decided 2026-11-15) as a precedent already followed. The commit the
+  user was to make never landed, nor did Blocked 168's five sentences, so four falsified P-SCH
+  entries had nothing on the record. A decision whose action is the user's drops out of sight
+  once its Blocked line says "decided". Rule: **a decided item whose commit is the user's stays
+  open in STATE until `git log` shows the commit, and the next item of the same kind names the
+  backlog.**
 
 **The rule now.** One startup file, `STATE.md`, capped at 150 lines and
 **overwritten** each time (never appended). Each fact has one home; other files
@@ -2989,6 +2996,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   the read sits at its ceiling and says nothing about schedules. The headline went into a PR
   title, §3.87 and STATE before review. Rule unchanged; it was skipped because the reference
   pair (another init) needed a forward pass the arms' records did not hold. That cost is minutes.
+- 2026-11-25, C4′ (d)+(f) U3c (#378, `/challenge-pr` findings 1, 4). A falsified entry's score
+  ("F⅒ has a transient by rule T") became a mechanism in the prose ("no threshold lies between a
+  tenth and a half"), and an unscored beside label became "F½'s onset is on a step clock". Both
+  reached the card, STATE's line 3 and the Now row before review. The run was cut off at 1000
+  and its size was a sixth of F½'s, which leaves a weaker effect or a slower clock open. Rule:
+  **a falsifier met says what the registered statement got wrong, not which alternative is
+  true; the prose names the alternatives the score leaves open.**
 
 ## 12. Deleted, then needed
 
