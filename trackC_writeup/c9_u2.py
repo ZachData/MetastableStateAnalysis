@@ -68,6 +68,8 @@ RUNS = ("410m",) + GPT2_SEEDS + ("A0", "A0p")                       # the gate's
 WROWS = {  # id: (direction, statistic)
     "E2": ("down", "median"), "E7": ("up", "medmed"), "E8": ("down", "medmed")}
 E2_TOL = 1e-6
+E78_RTOL = 1e-9        # set after the first 410m record: α differs from a3_weights' by 1e-13
+                       # relative (BLAS threads, not the code); placed before the known answer ran
 
 
 class C9Refused(RuntimeError):
@@ -431,7 +433,7 @@ def known(out: Path) -> dict:
         e78 = {}
         for rid, key in (("E7", "rel_change"), ("E8", "alpha")):
             ref = np.array([[old[s][key][t] for s in STEPS] for t in TYPES]).transpose(2, 1, 0)
-            e78[rid] = float(np.max(np.abs(w[rid] - ref)))
+            e78[rid] = float(np.max(np.abs(w[rid] - ref) / np.maximum(np.abs(ref), 1e-300)))
         ov = json.loads((DATA / "analysis" / "ov_per_head_series.json").read_text())
         cols = [ov["steps"].index(s) for s in STEPS]
         keys = [f"{l},{h}" for l in range(ov["n_blocks"]) for h in range(ov["n_heads"])]
@@ -440,8 +442,8 @@ def known(out: Path) -> dict:
         e2gap = float(np.max(np.abs(w["E2"][..., 0] - e2ref)))
         swapped = dict(a["units"], E2=w["E2"], E7=w["E7"], E8=w["E8"])
         kii = compare(replay(swapped), a["record"])
-        kii.update(e7_max_abs_diff=e78["E7"], e8_max_abs_diff=e78["E8"], e2_max_abs_diff=e2gap,
-                   values_pass=bool(e78["E7"] == 0 and e78["E8"] == 0 and e2gap <= E2_TOL),
+        kii.update(e7_max_rel_diff=e78["E7"], e8_max_rel_diff=e78["E8"], e2_max_abs_diff=e2gap,
+                   values_pass=bool(e78["E7"] <= E78_RTOL and e78["E8"] <= E78_RTOL and e2gap <= E2_TOL),
                    weights_code=w["_code"])
         kii["pass"] = bool(kii["pass"] and kii["values_pass"])
         res["ii"] = kii
