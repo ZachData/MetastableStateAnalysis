@@ -60,6 +60,7 @@
   - C4′ (d)+(f) U3b, K (2026-11-24; tier 1; Blocked 174 (a), Claude on the user's delegation; rule K pushed before output): **K reads "the restart's" at all three gated τ arms.** A0's state at 256 with its Adam moments kept (rebuilt, 0.98 % from the saved weights) jumped to the peak makes no transient by 384, nor at A0's own rate (BKO), where B_P (fresh moments, the same jump) makes one at 280–288. So on a trained state the transient needs fresh moments *and* a high rate; neither the jump alone nor the restart at a low rate makes it. Fresh moments also make the first updates 3× larger, so the moments and the early steps' size are not separated (`/challenge-pr` on #375). A second F¹ replicate moves 1e-4's reference to (44, 48]. P-SCH7, P-SCH8 registered (the user's) — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3b"
   - C4′ (d)+(f) U2b (2026-11-25; under P-SCH7, P-SCH8; nothing read): F⅒ and F½ (seed 0's init, C4's order, flat at a tenth and a half of the peak) trained 0 → 1000, 77 states each on grid D, every loss finite; records and heads written. Blocked 175 (a), (a), the user's — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2b"
   - C4′ (d)+(f) U3c, d (2026-11-25; P-SCH7, P-SCH8 scored by their frozen rules): **neither entry holds.** F⅒ has a transient too by rule T (onset (752, 784] at every gated arm, past its dose band; cut off at 1000, its size about a sixth of F½'s), so the registered threshold is not borne out, and a weaker effect at a low rate or a much slower clock is not separated from "no threshold"; F½'s onset is labelled step beside ((56, 60] to (60, 64], one on the band's edge; not scored) and its induction date (304, 320] is in the step band; d1 joint "mixed"; d3 "not step" (F⅒ not formed by 1000). Scoring sentences drafted, Blocked 177 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3c"
+  - C4′ (d)+(f) closed 2026-11-25 at its exit and extended budget (7 units + close-out): the transient is not the early state's (a trained state shows it after a fresh Adam at the peak), nor the rate's jump alone (kept moments at the peak show none within 128 updates), nor confined to the peak (present at a half and a tenth from init); no single condition yet covers every arm (F⅒'s comes at 1e-4 after ~750 updates, long after its moments adapted; `/challenge-pr` on #379, finding 0); neither a step nor a dose clock dates it across rates; at half the peak induction comes at F's update count; P-SCH7, P-SCH8 falsified; the trigger is ROADMAP §8 C8's — `trackC_writeup/status-C.md` "C4′ (d)+(f) on one page (closed 2026-11-25)"; `PROJECT.md` §3.88
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -78,7 +79,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the download into `WDS_500/Mets_hdd_storage` from 2026-11-25, under 250 GB) — `trackC_writeup/status-C.md` "Paper: every model read"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `e7f158476d`
+- **Reviewed:** 2026-11-25 · body `464b134fa0`
 <!-- /phase-card -->
 
 ## Units
@@ -141,6 +142,83 @@
 | C4′ (d)+(f) 2b. F⅒, F½ (Blocked 175 (i) (a), the user's: budget extended to U2b, U3c + close-out) | **done 2026-11-25: both 0 → 1000, exit 0, 77 states each, all losses finite; step 1's loss equal to F¹'s; records 539 per arm, heads 77 states; the first launch was stopped by the user at Ft 481 and resumed from 480 with step 481's loss equal to every digit; nothing read. U3c (the d read) next** | `data/trackC/c4pdf/2026-11-24-u2b/`; "C4′ (d)+(f) unit 2b" below |
 | Paper: every model read (the user's, 2026-11-24; writing only, outside any thread) | **done 2026-11-24: `paper/` §4.2 (table 2, every model's two dates; Dodecahedron refused), §5 "On a finer grid" (70m), §1, §3.1 and the abstract's scope; no number computed; `paper_check` 0, 38 pages; the rest is ROADMAP §8 C9** | "Paper: every model read" below |
 | C4′ (d)+(f) 3c. the d read (P-SCH7, P-SCH8) | **done 2026-11-25: P-SCH7 does not hold (F⅒ has a transient, onset 784, at every gated arm); P-SCH8 does not hold (F½'s induction (304, 320], the step band); d1 joint "mixed" (F½ step, F⅒ neither); d3 "not step"; f re-read unchanged. Scoring sentences drafted, Blocked 177. Close-out next** | `data/trackC/c4pdf/2026-11-25-u3c/reading.json`; "C4′ (d)+(f) unit 3c" below |
+| C4′ (d)+(f) close-out | **done 2026-11-25: writing only; closed at its exit and extended budget (7 units + close-out); five findings, P-SCH7 and P-SCH8 falsified; Parked carried to C8 or dropped; `PROJECT.md` §3.88** | "C4′ (d)+(f) on one page" below |
+
+## C4′ (d)+(f) on one page (closed 2026-11-25)
+
+**Closed at its exit and at its extended budget** (Blocked 175 (i) (a)): U0 the design (#371),
+U1 the rules, gates and F¹ (#372), U2a (f)'s branches (#373), U3a f (#374), U3b B_K and the
+registration (#375), U2b F⅒ and F½ (#377), U3c d (#378), and this close-out. d1, d2, d3 and f are
+each read by their rules (the exit), and K was added beside. P-SCH7 and P-SCH8 were registered
+before either arm trained, and both are falsified. The rest is tier 1. 70m only, seed 0's init,
+C4's order, one run per arm.
+
+**What it established** (numbers in the unit sections):
+
+| # | finding | lean |
+|---|---|---|
+| 1 | C4's harness does not reproduce F's weights by update 4 (cause untested). F¹ is a near-replicate: its transient starts at (44, 48] / (48, 52] / (48, 52] on the three gated τ arms, and a second replicate at (44, 48] / (44, 48] / (48, 52]: one grid step of spread at 1e-4. | H-d failed (gate row) |
+| 2 | On A0's trained state at 256, a fresh AdamW at the peak makes the transient (onset 16–32 updates after, on F's transitions T3–T5). The same restart at A0's own rate (1.79e-4 → 3.57e-4) makes none **within its 256 updates**, a summed rate (≈ 0.07) below F⅒'s at its onset (0.075–0.078). | f "not the early state's"; f-state broken |
+| 3 | On that trained state, the moments kept make no transient at the peak (B_K) or at A0's rate (BKO) within 128 updates. **On a trained state**, then, the transient came only with fresh moments at the peak, and fresh moments also make the first updates larger (the two not separated). From init it is not so tied: F⅒'s comes at 1e-4, below B_O's rate, after ~750 updates, long after Adam's moments (β 0.9, 0.95) have adapted. So no single condition yet covers every arm (`/challenge-pr` on #379; the first push said "every arm with it had un-adapted moments meet a high rate", written before F⅒ was read). | K "the restart's"; f-jump broken |
+| 4 | **P-SCH7 falsified.** A flat rate at half the peak has the transient, labelled step beside (onset (56, 60] to (60, 64]). So does a tenth, at (752, 784], past its dose band, small (a sixth of F½'s size) and cut off at 1000. | d1, d1′ broken; joint "mixed" |
+| 5 | **P-SCH8 falsified.** At half the peak, induction reaches the bar at (304, 320], F's update count (the step band), not the dose band. At a tenth it has not formed by 1000. | d2 broken; d3 held ("not step") |
+
+**For C4's item 7 ("the flat arm's date is the onset of a transient").** The transient is not
+the early state's, since a trained state shows it after a fresh Adam at the peak. It is not the
+rate's jump alone, since kept moments at the peak show none within 128 updates. It is not confined
+to the peak or to fresh moments, since from init it appears at half and at a tenth, at a tenth
+only after ~750 updates. Its onset is near F's update count at half the peak and far
+past the dose clock at a tenth. So neither a step clock nor a dose clock dates it across rates,
+and what triggers it is ROADMAP §8 C8's question.
+
+**For `lit-C4.md` Parked 1 (does a lower flat peak form the heads).** On 70m at half the peak,
+induction forms at F's update count (320), with its top head in layer 3 (F's in layer 2, A0's in
+3). At a tenth it has not formed by 1000. Qu & Liu's non-forming plateau was at a higher peak
+(6e-3), so this does not test their case. It says only that halving 70m's peak does not delay
+induction.
+
+**For `paper/` §7** (the user's rewrite; not edited here). §7's second registered bullet
+(P-SCH4, held) says the flat and harness arms' induction dates (320, 768) lie "nearer the summed
+rate than the centred date is". d2 compares two flat rates, not those two arms, so it does not
+contradict the bullet. It limits it: between the peak and half the peak, induction keeps the
+update count (`/challenge-pr` on #379, finding 3; the first push called this a tension). A
+sentence on it is yours to place, if any.
+
+**Not established.** What the transient is at a tenth of the peak: no threshold, an effect that
+weakens with the rate, or a much slower clock (its run is never seen ending). That B_O, B_K or
+BKO have none past their 256 or 128 updates: F⅒ needed ~750 (finding 1). Whether moments matter
+as such or only through the first updates' size (C8 (iv)). Any of this at init with kept moments.
+Anything on 410m.
+
+**Parked and carried, each carried or dropped:**
+1. `lit-C4pdf.md` Parked 1 (Gupta et al.'s full text): **done** in U3a, before f's read.
+2. U3a Parked 1 (the reading names its input): **done** in U3b. Its remainder, that the reader
+   records paths and not the input files' hashes (`/challenge-pr` on #378, finding 3): **carried
+   to ROADMAP §8 C8**, whose new reader should hash its inputs (`status-C.md` "unit 3c" holds the
+   hashes by hand).
+3. F⅒ continued from its `resume.pt` at 1000 (why: to see whether its transient ends, and on
+   which transitions; cost ≈ 7.7 h at 1e-4 to 2000; could change: finding 4's "not established").
+   **Carried to ROADMAP §8 C8**, unscheduled.
+4. B_K with a rate overshoot sized to B_P's early drift: already **C8 (iv)**.
+4b. B_O continued from its `resume.pt` at 512 at A0's rate (why: its "none" stops at 256 updates,
+   below F⅒'s onset dose; cost ≈ 7 h to 1000 (its 256 updates took 2.0 h); could change finding 2's
+   "the same restart at a low rate makes none"): **carried to ROADMAP §8 C8 (viii)**
+   (`/challenge-pr` on #379, finding 1).
+5. The two `c2_seeds` refusals (C2 3c's Parked 0; carried as C4 U1's): **carried to ROADMAP §8
+   C9**, not dropped as first pushed (`/challenge-pr` on #379, finding 2): `b_matched_tol` is still
+   called by `s4.py`, `t2.py` and `t5e.py`, and C9 may derive tolerance arms on new models. None of
+   the five designs that carried them (C4, C4′, (c), (e)+(g), (d)+(f)) derived a centred arm.
+6. Blocked 177 (P-SCH7 and P-SCH8's scoring sentences, with P-SCH1's and P-SCH2–6's, none yet
+   in the registry): **given a home**. It is the user's commit and stays open in STATE until
+   `git log` shows it.
+
+**Units at close:** 7 + close-out, the extended budget (the design's 4, plus U3b on Blocked 174 and
+U2b, U3c on Blocked 175). GPU ≈ 25.5 h by the logged walls: B_P, B_O 4.1 h, the A0 rebuild 2.0 h,
+B_K, BKO 2.0 h, F½ 7.7 h, F⅒ ≈ 7.7 h over two segments, F¹ ≈ 62 min and its replicate 3649 s.
+The design's figure was 19.4 h.
+
+**Re-run:** each unit's section below names its commands. The reads are JSON only:
+`c4pdf_read read` (d and f, U3c), `read-k` (U3b).
 
 ## C4′ (d)+(f) unit 3c, the d read (2026-11-25)
 

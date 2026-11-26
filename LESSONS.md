@@ -3003,6 +3003,13 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   and its size was a sixth of F½'s, which leaves a weaker effect or a slower clock open. Rule:
   **a falsifier met says what the registered statement got wrong, not which alternative is
   true; the prose names the alternatives the score leaves open.**
+- 2026-11-25, C4′ (d)+(f) close-out (#379, `/challenge-pr` finding 0), the same session. U3b's
+  summary ("every arm with the transient has had un-adapted moments meet a high rate") went into
+  the close-out's headline, PROJECT §3.88's title and STATE. Two hours earlier this session had
+  read F⅒, which breaks it twice: at update 784 Adam's moments (β 0.9, 0.95) have long adapted,
+  and 1e-4 is below B_O's rate, which showed none. B_O's "none" was also read past its 256
+  updates. Rule: **a close-out re-derives each earlier unit's summary sentence against the last
+  arm read before copying it, and a negative is quoted with its horizon.**
 
 ## 12. Deleted, then needed
 
