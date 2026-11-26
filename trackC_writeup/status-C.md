@@ -80,7 +80,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the download into `WDS_500/Mets_hdd_storage` from 2026-11-25, under 250 GB) — `trackC_writeup/status-C.md` "Paper: every model read"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `8524fa3514`
+- **Reviewed:** 2026-11-25 · body `53578ffa6e`
 <!-- /phase-card -->
 
 ## Units
@@ -161,8 +161,16 @@ close-out, U0 before any read.
   file counts). This corrects the ROADMAP row's "GPU hours". U2 is A3's eleven pairs on GPT-2
   small × 5 and the harness arms A0, A0′, with the locator gated on each grid. U3 is the 160m
   seeds' two dates. U4 is the paper. Budget 5 units + close-out, GPU ≈ 4–6 h.
-- **Decisions D1–D6, Blocked 178** (recommended: all (a)). D5 (a) registers a P-A5-style break
-  window on the nine 160m seeds before any of their records exist.
+- **Decisions D1–D6, Blocked 178** (recommended: all (a)).
+- **`/challenge-pr` on #380: accept with changes, findings 1–7 taken in the design before any
+  decision.**
+  1. "Aligned" now snaps each date onto Pythia's grid, then applies A3's one-step rule. A factor of 2 would have flipped §5's finer-grid pair.
+  2. U1 reads the magnitude share M. S_any ≥ 0.96 is nearly forced by E₁ = ½ + ½‖m‖² + R, so no shuffle is a null for it.
+  3. No registration is recommended: the 256-or-512 window is already near-settled.
+  4. Heads are read by the max over heads, the paper's harness-arm rule. A5's D10 rule would have given a second induction date.
+  5. `one_series` hard-codes 25 states, so U1 takes the state count from the record.
+  6. The 0.96 is labelled 410m's pooled minimum, and the duplicate 70m row is merged.
+  7. Another design's decisions are named with that design.
 - **The download (Blocked 176):** `Mets_hdd_storage/c9_download.py`, the nine
   `pythia-160m-seed{1..9}` repos at A5's 18 steps (`config.json`, `pytorch_model.bin`, 375 MB
   each, ≈ 61 GB), into `Mets_hdd_storage/hf/hub`. It is idempotent and stops past 240 GB. Its
