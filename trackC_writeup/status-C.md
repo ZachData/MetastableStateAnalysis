@@ -61,6 +61,7 @@
   - C4′ (d)+(f) U2b (2026-11-25; under P-SCH7, P-SCH8; nothing read): F⅒ and F½ (seed 0's init, C4's order, flat at a tenth and a half of the peak) trained 0 → 1000, 77 states each on grid D, every loss finite; records and heads written. Blocked 175 (a), (a), the user's — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 2b"
   - C4′ (d)+(f) U3c, d (2026-11-25; P-SCH7, P-SCH8 scored by their frozen rules): **neither entry holds.** F⅒ has a transient too by rule T (onset (752, 784] at every gated arm, past its dose band; cut off at 1000, its size about a sixth of F½'s), so the registered threshold is not borne out, and a weaker effect at a low rate or a much slower clock is not separated from "no threshold"; F½'s onset is labelled step beside ((56, 60] to (60, 64], one on the band's edge; not scored) and its induction date (304, 320] is in the step band; d1 joint "mixed"; d3 "not step" (F⅒ not formed by 1000). Scoring sentences drafted, Blocked 177 — `trackC_writeup/status-C.md` "C4′ (d)+(f) unit 3c"
   - C4′ (d)+(f) closed 2026-11-25 at its exit and extended budget (7 units + close-out): the transient is not the early state's (a trained state shows it after a fresh Adam at the peak), nor the rate's jump alone (kept moments at the peak show none within 128 updates), nor confined to the peak (present at a half and a tenth from init); no single condition yet covers every arm (F⅒'s comes at 1e-4 after ~750 updates, long after its moments adapted; `/challenge-pr` on #379, finding 0); neither a step nor a dose clock dates it across rates; at half the peak induction comes at F's update count; P-SCH7, P-SCH8 falsified; the trigger is ROADMAP §8 C8's — `trackC_writeup/status-C.md` "C4′ (d)+(f) on one page (closed 2026-11-25)"; `PROJECT.md` §3.88
+  - C9 opened 2026-11-25 (Blocked 176 (a), the user's; writing only, nothing read): scan and a proposed design. U1, the mean's term on every model, is a CPU read on records that already exist; U2, A3's pairs on GPT-2 small × 5 and the harness arms; U3, the 160m seeds' dates (downloading); U4, the paper. D1–D6, Blocked 178 — `trackC_writeup/status-C.md` "C9 unit 0"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -79,7 +80,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the download into `WDS_500/Mets_hdd_storage` from 2026-11-25, under 250 GB) — `trackC_writeup/status-C.md` "Paper: every model read"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `464b134fa0`
+- **Reviewed:** 2026-11-25 · body `8524fa3514`
 <!-- /phase-card -->
 
 ## Units
@@ -143,6 +144,33 @@
 | Paper: every model read (the user's, 2026-11-24; writing only, outside any thread) | **done 2026-11-24: `paper/` §4.2 (table 2, every model's two dates; Dodecahedron refused), §5 "On a finer grid" (70m), §1, §3.1 and the abstract's scope; no number computed; `paper_check` 0, 38 pages; the rest is ROADMAP §8 C9** | "Paper: every model read" below |
 | C4′ (d)+(f) 3c. the d read (P-SCH7, P-SCH8) | **done 2026-11-25: P-SCH7 does not hold (F⅒ has a transient, onset 784, at every gated arm); P-SCH8 does not hold (F½'s induction (304, 320], the step band); d1 joint "mixed" (F½ step, F⅒ neither); d3 "not step"; f re-read unchanged. Scoring sentences drafted, Blocked 177. Close-out next** | `data/trackC/c4pdf/2026-11-25-u3c/reading.json`; "C4′ (d)+(f) unit 3c" below |
 | C4′ (d)+(f) close-out | **done 2026-11-25: writing only; closed at its exit and extended budget (7 units + close-out); five findings, P-SCH7 and P-SCH8 falsified; Parked carried to C8 or dropped; `PROJECT.md` §3.88** | "C4′ (d)+(f) on one page" below |
+| C9 0. the scan and design (Blocked 176 (a), the user's) | **done 2026-11-25: writing only, nothing read; proposed, D1–D6 Blocked 178; U1 is a CPU read (every model's records exist); the 160m seeds downloading** | `lit-C9.md`, `design-C9.md`; "C9 unit 0" below |
+
+## C9 unit 0, the scan and design (2026-11-25)
+
+Writing only; nothing read. Opened by Blocked 176 (a), the user's: C9 after C4′ (d)+(f)'s
+close-out, U0 before any read.
+
+- **Scan** `trackC_writeup/lit-C9.md` (abstracts and snippets; no full text). Nothing scooped.
+  Two inputs: heads move between indices over training (2407.10827), so heads are picked per
+  model by a rule; and induction's step follows batch × context, not size (2511.16893), so C9
+  reads orders within a model, not dates across models. Parked: PolyPythias' and 2509.22831's
+  full text, each before the records it bears on.
+- **Design** `trackC_writeup/design-C9.md`, proposed. U1 is the mean's term on every model, a CPU
+  read: every model's records hold `e1`, `cos` and `n` (one record per folder checked, and the
+  file counts). This corrects the ROADMAP row's "GPU hours". U2 is A3's eleven pairs on GPT-2
+  small × 5 and the harness arms A0, A0′, with the locator gated on each grid. U3 is the 160m
+  seeds' two dates. U4 is the paper. Budget 5 units + close-out, GPU ≈ 4–6 h.
+- **Decisions D1–D6, Blocked 178** (recommended: all (a)). D5 (a) registers a P-A5-style break
+  window on the nine 160m seeds before any of their records exist.
+- **The download (Blocked 176):** `Mets_hdd_storage/c9_download.py`, the nine
+  `pythia-160m-seed{1..9}` repos at A5's 18 steps (`config.json`, `pytorch_model.bin`, 375 MB
+  each, ≈ 61 GB), into `Mets_hdd_storage/hf/hub`. It is idempotent and stops past 240 GB. Its
+  first launch's size guard read 0 GB (`du` on the symlinked root measured the link); stopped
+  after 5 files, fixed (`du -sb root/`), relaunched. Log `Mets_hdd_storage/c9_logs/download.log`.
+  Not yet linked into HDD_1TB's hub (U3 does it).
+
+**Next:** Blocked 178, then U1. No Parked items beyond the scan's.
 
 ## C4′ (d)+(f) on one page (closed 2026-11-25)
 
