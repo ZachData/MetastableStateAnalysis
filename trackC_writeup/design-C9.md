@@ -230,7 +230,7 @@ between U2a and U2b, where the text above left it open:
   grid this is A3's x(0) = −1 exactly.
 - *The plant's width* is a quarter of its gap's width in octaves, so a plant is as sharp
   relative to every grid as A3's was on Pythia's (0.25 on every one-octave gap; on 512–1000,
-  0.24). With A3's fixed 0.25 octave, GPT-2's 0.15-octave gaps (450–500) would carry a plant
+  0.24). With A3's fixed 0.25 octave, GPT-2's finest gaps (0.13 octave, 1100–1200; 0.15 at 450–500) would carry a plant
   smoother than the grid, and the effect arm would refuse on resolution, not power. The
   locator, floor, null arm, `AMPS` and the 90 % / 95 % bars are A3's unchanged.
 - *Randomness.* Each run's gate uses `default_rng([20261126, i])`, i its index in the run list.

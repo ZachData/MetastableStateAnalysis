@@ -82,7 +82,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share), U2a next — `trackC_writeup/status-C.md` "C9 unit 1"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `46b47628fb`
+- **Reviewed:** 2026-11-25 · body `c2fe001bff`
 <!-- /phase-card -->
 
 ## Units
@@ -169,8 +169,10 @@ W₀ its own step 0); known answer and gates at `c0cd011e8b22`. Records in
 
 **Known answer** (`known.json`): (i) the grid-parametrised gate and locator on A3's own units, in
 A3's order and seed, give every date, censoring and floor of A3 unit 5 (E2 512, E3 1000, E4 1000,
-E5 8, E6u 128, E6b 256, E6b′ 256, E7 2000 censored, E8 1000, E11 refused) and the same null rate
-on every row. (ii) The weights producer on 410m seed 0 gives `a3_weights`' E7, E8 to 4.4e-14 and
+E5 8, E6u 128, E6b 256, E6b′ 256, E7 2000 censored, E8 1000, E11 refused). These are the first
+dates of the gated rows; E8's second date (from its peak) and the offset-0 E3 are not replayed.
+The null rate is equal on every row too (`null_no_change_equal`), but it is recorded, not part
+of the pass flag (`/challenge-pr` on #382, finding 3; folded into the flag in U2b). (ii) The weights producer on 410m seed 0 gives `a3_weights`' E7, E8 to 4.4e-14 and
 2.5e-13 relative and `ov_per_head_series.json`'s per-head E2 to 5.8e-8 absolute (bar 1e-6);
 swapped into (i), no date moves. **Pass.**
 
@@ -192,18 +194,25 @@ on 3 seeds. Units: 144 heads (GPT-2) and 48 (70m) for E2; 12 and 6 layers × 4 t
 
 **Not established / weak.** The gates test the rule against flat noise at each run's own
 spread. They say nothing of the rows' power against a real change's shape. The plant width (a
-quarter of the gap) is placed. On GPT-2's finest gaps (0.15 octave) it plants a change sharper
-in octaves than any on Pythia's grid, so a pass there is about resolution on the grid, not about a
-timescale. The producers' logs print each step's E2 median. They were seen at the first steps
+quarter of the gap) is placed. On GPT-2's finest gaps (0.13 octave, 1100–1200) it plants a near-step,
+the easiest change the locator can place. The gate scores the own-grid step, but D4 reads the
+step snapped onto Pythia's grid. So a pass there is about resolving the grid, not about a
+timescale, and not about what U2b reads (`/challenge-pr` on #382, finding 1: **Blocked 179**,
+yours, before U2b). The producers' logs print each step's E2 median. They were seen at the first steps
 while checking the output was populated; no row was located or plotted.
 
 **Re-run** (CPU, ≈ 25 min with 8 processes): `c9_u2 weights --run <run>` for the 8 runs (HF_HOME
-as in `c9_u2.py`'s docstring), then `c9_u2 known`, then `c9_u2 gate --run <run>`; tests
+as in `c9_u2.py`'s docstring) **into a fresh `--out`**, or at `09c9117`. The records' code hash
+covers all of `c9_u2.py`, so at a later commit `weights` refuses to resume into this unit's
+dir (finding 2; the hash narrowed to the producer in U2b). Then `c9_u2 known`, then `c9_u2 gate --run <run>`; tests
 `tests/test_trackC_c9_u2.py`.
 
 **Next: U2b** (the GPU rows: E3, E4 by D2 (a) with per-sequence units, E5, E6u/E6b on A0, A0′;
 each producer's known answer on 410m seed 0 first; then the reading, after `lit-C9.md` Parked 2;
-fresh session). **Parked:** E10 on GPT-2 is Mistral's logged schedule
+fresh session; **waits on Blocked 179**, D7 the gate's snapped arm and D8 the snap's units).
+`/challenge-pr` on #382: accept with changes, findings 2–5 taken (re-run line, known answer
+wording, the copied grids tested against their sources, the finest gap 0.13 octave), 1 to the
+user. **Parked:** E10 on GPT-2 is Mistral's logged schedule
 (`gpt2_small_lr_log.json`), not analytic: why / the confound row needs a series on 35 tags /
 cost minutes / could change which pairs carry "inside warmup" on GPT-2. Carried to U2b.
 

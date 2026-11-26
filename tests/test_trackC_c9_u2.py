@@ -119,3 +119,11 @@ def test_head_cores_neox_interleaved_layout():
     for h, core in enumerate(c.head_cores(_ns(attention=attn), "neox", H)):
         O_h = O[:, h * dh:(h + 1) * dh]
         assert np.allclose(np.sort_complex(np.linalg.eigvals(core)), _dense_eigs(Vs[h], O_h))
+
+
+def test_copied_grids_equal_their_sources():
+    """`/challenge-pr` on #382, finding 4: the grids are copied, so a source edit must fail here."""
+    from trackC_writeup import c2_warmup, c4_train
+    assert c.GPT2_GRID == tuple(c2_warmup.GRID)
+    assert c.HARNESS_GRID == tuple(c4_train.GRID)
+    assert c.GPT2_SEEDS == tuple(c2_warmup.SEEDS)
