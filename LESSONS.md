@@ -3010,6 +3010,12 @@ settles disagreements. Status: 📋 `CLAUDE.md` Stop step 9 (lands with #68).
   and 1e-4 is below B_O's rate, which showed none. B_O's "none" was also read past its 256
   updates. Rule: **a close-out re-derives each earlier unit's summary sentence against the last
   arm read before copying it, and a negative is quoted with its horizon.**
+- 2026-11-25, C9 U1 (#381, `/challenge-pr` finding 1). GPT-2 small's at-break M (0.76–0.87) was
+  written up as breaking the abstract's "every drop the count counts is a fall of the mean's
+  norm", and a Parked item pointed U4 at narrowing it. The record held that sentence's own
+  statistic (`m_fall_at_drops`, 1.0 on every model); M is §4's stronger "more than half the drop".
+  The reader had paraphrased the sentence from memory. Rule: **a result said to break a paper
+  sentence quotes the sentence from `paper/` and names the record field that tests it.**
 
 ## 12. Deleted, then needed
 

@@ -71,8 +71,9 @@ as the paper words it, with no label: the 0.96 was 410m's pooled minimum, and a 
 has 42–84 transitions a checkpoint against 410m's 1680, so a per-checkpoint bar would turn on
 one transition (finding 6).
 
-**Gate (before any model is read).** It checks the code and M's power. It is not a null for
-S_any.
+**Gate (before any model is read).** It checks the code only (the plants are exact by
+construction, so they test nothing of M's power; corrected after `/challenge-pr` on #381,
+finding 4). It is not a null for S_any.
 - *Known answer:* on 410m's records, U1's code returns C2 5b's R6 numbers exactly.
 - *Planted mean:* each model's records with R held at its step-0 value (E₁ rebuilt as
   ½ + ½‖m‖² + R₀) read M = 1 and S_any = 1.

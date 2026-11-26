@@ -59,3 +59,17 @@ def test_load_run_refuses_a_missing_prompt(tmp_path):
         (tmp_path / f"step0_{p}.json").write_text(json.dumps({"e1": [1, 1], "cos": [0, 0], "n": 3}))
     with pytest.raises(c.Refused):
         c.load_run(tmp_path)
+
+
+def test_load_run_takes_n_per_prompt_and_refuses_n_changing_across_steps(tmp_path):
+    # `/challenge-pr` on #381, finding 5: n is a prompt's token count, one per prompt across steps
+    import json
+    from trackA_force.a1a import V1
+    for st in (0, 2):
+        for i, p in enumerate(V1):
+            (tmp_path / f"step{st}_{p}.json").write_text(json.dumps({"e1": [1, 1], "cos": [0, 0], "n": 10 + i}))
+    steps, _ = c.load_run(tmp_path)                      # n differs by prompt: accepted
+    assert steps == [0, 2]
+    (tmp_path / f"step2_{V1[0]}.json").write_text(json.dumps({"e1": [1, 1], "cos": [0, 0], "n": 99}))
+    with pytest.raises(c.Refused, match="across steps"):
+        c.load_run(tmp_path)
