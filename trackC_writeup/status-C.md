@@ -63,6 +63,7 @@
   - C4′ (d)+(f) closed 2026-11-25 at its exit and extended budget (7 units + close-out): the transient is not the early state's (a trained state shows it after a fresh Adam at the peak), nor the rate's jump alone (kept moments at the peak show none within 128 updates), nor confined to the peak (present at a half and a tenth from init); no single condition yet covers every arm (F⅒'s comes at 1e-4 after ~750 updates, long after its moments adapted; `/challenge-pr` on #379, finding 0); neither a step nor a dose clock dates it across rates; at half the peak induction comes at F's update count; P-SCH7, P-SCH8 falsified; the trigger is ROADMAP §8 C8's — `trackC_writeup/status-C.md` "C4′ (d)+(f) on one page (closed 2026-11-25)"; `PROJECT.md` §3.88
   - C9 opened 2026-11-25 (Blocked 176 (a), the user's; writing only, nothing read): scan and a proposed design. U1, the mean's term on every model, is a CPU read on records that already exist; U2, A3's pairs on GPT-2 small × 5 and the harness arms; U3, the 160m seeds' dates (downloading); U4, the paper. D1–D6, Blocked 178 — `trackC_writeup/status-C.md` "C9 unit 0"
   - C9 U1, the mean's term on every model (2026-11-25; Blocked 178 all (a), Claude on the user's "merged, continue"; tier 1, no forward pass; rule pushed before output): the share of counted drops whose mean's term carries over half reads "carries" (≥ 410m's 0.963 less 0.1) on 410m, 160m, 70m (by 0.02), GPT-2 small and the harness and flat arms, and "partly" on `pythia-70m-warmup01` (0.826, one run, low at 8000–54000); warmup01's 0.826 lies inside 70m's seeds' 0.802–0.981, so not shown to be its warmup's; the paper's S_any is 0.961–0.988 pooled on every model; at the break ‖m‖² falls at every counted drop on every model (the abstract's sentence), but its term is over half of each only on the Pythia-shaped runs, not on GPT-2 small (0.76–0.87; §4's clause) — `trackC_writeup/status-C.md` "C9 unit 1"
+  - C9 U2a, the locator by grid and the weights rows (2026-11-26; D1–D4, D6 confirmed by the user; tier 1, CPU, nothing located off 410m; rules pushed before output): A3's locator and gate parametrised by grid reproduce A3 unit 5's dates and floors exactly on its own units; the weights producer reproduces A3's E2, E7, E8 on 410m; E2, E7, E8 are gated on GPT-2 small × 5 (35 tags) and A0, A0′ (28 steps), and all 21 pass at floor 4.0 — `trackC_writeup/status-C.md` "C9 unit 2a"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -81,7 +82,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share), U2a next — `trackC_writeup/status-C.md` "C9 unit 1"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `eb27c3a4f0`
+- **Reviewed:** 2026-11-25 · body `46b47628fb`
 <!-- /phase-card -->
 
 ## Units
@@ -147,6 +148,64 @@
 | C4′ (d)+(f) close-out | **done 2026-11-25: writing only; closed at its exit and extended budget (7 units + close-out); five findings, P-SCH7 and P-SCH8 falsified; Parked carried to C8 or dropped; `PROJECT.md` §3.88** | "C4′ (d)+(f) on one page" below |
 | C9 0. the scan and design (Blocked 176 (a), the user's) | **done 2026-11-25: writing only, nothing read; proposed, D1–D6 Blocked 178; U1 is a CPU read (every model's records exist); the 160m seeds downloading** | `lit-C9.md`, `design-C9.md`; "C9 unit 0" below |
 | C9 1. the mean's term on every model (Blocked 178 all (a)) | **done 2026-11-25: known answer exact, plants exact on all 7 models; M "carries" on 6, "partly" on warmup01; the 160m download complete** | `c9_u1.py`, `data/trackC/c9/2026-11-25-u1/u1.json`; "C9 unit 1" below |
+| C9 2a. the locator by grid, the weights rows and their gates (D1–D4, D6 confirmed by the user) | **done 2026-11-26: CPU, nothing located off 410m; known answer exact (A3's dates and floors; E2, E7, E8 from the weights); E2, E7, E8 gated on GPT-2 × 5, A0, A0′: all 21 pass, floor 4.0. U2b next** | `c9_u2.py`, `data/trackC/c9/2026-11-26-u2a/`; "C9 unit 2a" below |
+
+## C9 unit 2a, the locator by grid, the weights rows and their gates (2026-11-26)
+
+Tier 1; CPU, no forward pass; **nothing located off 410m** (a date there is U2b's reading).
+**D1–D4, D6 confirmed by the user** (2026-11-25, after U1's output: `/challenge-pr` on #381,
+finding 3). The split of U2 into U2a (CPU) and U2b (GPU), the grids, windows, axis, plant width
+and seeds were placed in `design-C9.md` "U2a as it runs" and pushed with `c9_u2.py` before any
+output (`09c9117`). One change after the first record and before the known answer ran
+(`fe1bd4c`): (ii) compares E7, E8 at relative 1e-9, not exactly, since the first 410m record's α
+differed from `a3_weights`' by 1e-13 relative (thread count, not the code).
+
+**Input.** Checkpoints: 410m seed 0's 18 (`data/hf`), GPT-2 small × 5 on C2 3c's 35 tags
+(`HDD_1TB/mets_data/hf`), A0 (`HDD_1TB/mets_data/c4`) and A0′ (`…/c4pc`) on C4's 28-step grid.
+A3 unit 5's record `data/trackA/a3/2026-10-20-A3u5/a3_rows.json` and its inputs (the known
+answer). Weights records by `c9_u2.py` at code `a3eedc0b9808` (249: 18 + 175 + 56, each run's
+W₀ its own step 0); known answer and gates at `c0cd011e8b22`. Records in
+`data/trackC/c9/2026-11-26-u2a/` (`weights/`, `known.json`, `gate/<run>.json`, `logs/`).
+
+**Known answer** (`known.json`): (i) the grid-parametrised gate and locator on A3's own units, in
+A3's order and seed, give every date, censoring and floor of A3 unit 5 (E2 512, E3 1000, E4 1000,
+E5 8, E6u 128, E6b 256, E6b′ 256, E7 2000 censored, E8 1000, E11 refused) and the same null rate
+on every row. (ii) The weights producer on 410m seed 0 gives `a3_weights`' E7, E8 to 4.4e-14 and
+2.5e-13 relative and `ov_per_head_series.json`'s per-head E2 to 5.8e-8 absolute (bar 1e-6);
+swapped into (i), no date moves. **Pass.**
+
+**Gates** (A3's rule; plant width a quarter of its gap; null ≥ 95 %, effect ≥ 90 % in every gap):
+
+| run | grid (gaps) | E2 own floor / null / effect min | E7 | E8 |
+|---|---|---|---|---|
+| GPT-2 alias | 35 (33) | 3.24 / 0.992 / 0.993 | 2.72 / 0.999 / 0.983 | 3.11 / 0.999 / 0.986 |
+| GPT-2 battlestar | 35 (33) | 3.23 / 0.993 / 0.994 | 2.68 / 1.000 / 0.979 | 2.99 / 0.996 / 0.989 |
+| GPT-2 caprica | 35 (33) | 3.17 / 0.992 / 0.996 | 2.68 / 0.999 / 0.972 | 3.22 / 0.989 / 0.992 |
+| GPT-2 darkmatter | 35 (33) | 3.19 / 0.994 / 0.992 | 2.52 / 0.998 / 0.978 | 3.18 / 0.996 / 0.992 |
+| GPT-2 expanse | 35 (33) | 3.25 / 0.994 / 0.995 | 2.66 / 1.000 / 0.978 | 3.10 / 0.997 / 0.991 |
+| A0 | 28 (26) | 2.73 / 0.995 / 0.994 | 2.78 / 0.995 / 0.982 | 3.09 / 0.992 / 0.985 |
+| A0′ | 28 (26) | 3.03 / 0.998 / 0.993 | 2.79 / 0.999 / 0.983 | 3.15 / 0.994 / 0.980 |
+
+Every own floor is below 4, so the floor used is 4.0 everywhere (A3's max(4, own)). **All 21
+pass.** Power (the least amplitude reaching 90 %) is 4–9 σ̄_ref by gap, and 6–9 for GPT-2's E8
+on 3 seeds. Units: 144 heads (GPT-2) and 48 (70m) for E2; 12 and 6 layers × 4 types for E7, E8.
+
+**Not established / weak.** The gates test the rule against flat noise at each run's own
+spread. They say nothing of the rows' power against a real change's shape. The plant width (a
+quarter of the gap) is placed. On GPT-2's finest gaps (0.15 octave) it plants a change sharper
+in octaves than any on Pythia's grid, so a pass there is about resolution on the grid, not about a
+timescale. The producers' logs print each step's E2 median. They were seen at the first steps
+while checking the output was populated; no row was located or plotted.
+
+**Re-run** (CPU, ≈ 25 min with 8 processes): `c9_u2 weights --run <run>` for the 8 runs (HF_HOME
+as in `c9_u2.py`'s docstring), then `c9_u2 known`, then `c9_u2 gate --run <run>`; tests
+`tests/test_trackC_c9_u2.py`.
+
+**Next: U2b** (the GPU rows: E3, E4 by D2 (a) with per-sequence units, E5, E6u/E6b on A0, A0′;
+each producer's known answer on 410m seed 0 first; then the reading, after `lit-C9.md` Parked 2;
+fresh session). **Parked:** E10 on GPT-2 is Mistral's logged schedule
+(`gpt2_small_lr_log.json`), not analytic: why / the confound row needs a series on 35 tags /
+cost minutes / could change which pairs carry "inside warmup" on GPT-2. Carried to U2b.
 
 ## C9 unit 1, the mean's term on every model (2026-11-25)
 
