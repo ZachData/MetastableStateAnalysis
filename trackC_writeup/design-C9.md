@@ -293,6 +293,52 @@ and the reading, pushed before any of their output). Where the text above left a
   with D2 (a)'s E3 and E4 (the bridge), each pair's own-grid distance, and an "aligned" pair two
   or more own-grid steps apart.
 
+**Blocked 180 decided (a)** (the user's, 2026-11-26): GPT-2's refusal accepted as frozen. U2 is
+done at its exit ("read or refused"). U4's §5 paragraph says the timeline's order is unread off
+410m at Pythia's resolution and gives the one replicated pair. **D5 decided (a)** (the user's,
+2026-11-26, before any 160m seed 1–9 record): nothing registered. U3 is tier 1 description.
+
+**U3 as it runs** (`trackC_writeup/c9_u3_pass.py`, the producer, and `c9_u3.py`, the gate and
+the reading, pushed before any of their output). Where the text above left a choice:
+- *Parked 1 read first* (`lit-C9.md`): PolyPythias names no 160m outlier seed (only 410m's 3 and
+  4), so no 160m seed is flagged.
+- *Producer.* `c2_dose`'s record (`c2_aniso.states`, `state_row`: e1, e1c, e1r, cos per state;
+  tokenizer and truncation as 3b), one pass per (seed, step) on the 9 seeds' 18 steps, loaded
+  float32 from `Mets_hdd_storage/hf/hub`, offline. Seed 0 (`pythia-160m`, from
+  `HDD_1TB/mets_data/hf/hub`) is run again by the same code as the known answer. Each record's
+  `ids_sha` must equal 3b's seed-0 record for that (step, prompt) (one tokenizer), or the pass
+  refuses.
+- *The arms are 3b's, not re-derived.* The four centred τ (`c2_dose.TAU_ARMS["160m"]`: 1.25e-4,
+  1e-4, 3e-4, 8.22e-4) were derived on 160m seed 0's step 7000 and its re-inits, and gated
+  there (all four pass, 3b's `reading.json`). This is how C2 3s carried 410m seed 0's arms to
+  its nine seeds. No arm is derived, so the two carried `c2_seeds` refusals are **not made**.
+  They go back to the next unit that derives an arm (the close-out says where).
+- *Known answer* (`c9_u3 known`, before any seed 1–9 record is read). Seed 0's rerun against
+  3b's 126 records: ids equal, e1, e1c, e1r and cos within `c2_aniso.ENERGY_TOL` (1e-4
+  relative). The uncentred V and each arm's centred V must equal 3b's, and the dates must be
+  E₁ 256 and centred 1000 on all four arms.
+- *Gate on seed 0's series* (A5's gate, moved to 160m's date). (i) Planted null: seed 0's V_u
+  moved (`a5_seeds.shift`) so that its located step sits at each of A5's 12 null steps (2–4000).
+  It reads inside A5's window (256 or 512) exactly when the planted step is 256 or 512. (ii)
+  Planted effect: moved to 1000, it reads 1000 and not inside. (iii) On each arm's V_c, moved
+  one step earlier, the date reads 512 and is readable. Any failure refuses the reading. *(iii)
+  as first written also moved V_c one step later, to read 2000. A dry run on 3b's seed-0 records
+  (the development set, before any seed 1–9 record existed) read 1000 at three arms. Moving the
+  series later puts seed 0's 512 value into the plateau steps, so the plateau itself moves: the
+  check fails by construction, not because the reader is wrong. It was dropped before the code
+  was pushed.)*
+- *What is read, per seed (description, D5 (a)).* E₁'s break: `c2_dose.date_reading` on V_u
+  (A5's half-rise, unreadable by 92 (i)). The centred date: `date_reading` on each gated arm's
+  V_c. The date is the set over readable arms, with "agree" when that set has one step (3b's
+  `size_reading`). Table 2's 160m row becomes the ten seeds' dates.
+- *U1's statistics* on 160m pooled over the ten seeds: `c9_u1.read_model`, the two plants, and
+  M labelled against U1's recorded bar (M₄₁₀ − 0.1 = 0.863) by D1 (a). U1's single-seed 160m
+  value (0.911) is beside.
+- *Beside, never read:* each seed's inside A5's window; C2 3s's events 1 and 2 (centred later than
+  the break; centred at 1000, at all four arms); 3b's `consistent` schedule sets; the tally of
+  break dates against 410m's ten (512 × 8, 256 × 2). D5 (a) leaves the 160m-against-410m
+  split unregistered, so the tally carries no label.
+
 ## Worth challenging (for the PR)
 
 1. U2 leaves out 70m and 160m on Pythia's grid (one run each) and the flat arms. The harness
