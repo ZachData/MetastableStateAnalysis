@@ -62,3 +62,13 @@ def test_second_dates_must_agree():
             "E8_peak": {"reading": "located", "step": 128, "censored": False}}
     p = b.read_pair("410m", rows, "E1", "E8", list(a3.STEPS))
     assert p["verdict"] == "unread (two dates)"
+
+
+def test_planted_step_is_where_the_noise_free_plant_is_located():
+    # a fixed 0.25-octave dip on the harness grid's 48-64 gap has its minimum at 80, not 64
+    g = c.HARNESS
+    i = g.steps.index(48)
+    r = c.place(g, b.dip_fixed(g, i), "turn", None, "turn", floor=None)
+    assert r["step"] == 80 and b.snap("A0", r["step"]) == 128
+    for j in c.gaps(g, "half"):                                 # a half plant is at i + 1
+        assert c.place(g, b.shape_fixed(g, j), "up", None, "half", floor=None)["step"] == g.steps[j + 1]

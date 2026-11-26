@@ -126,7 +126,13 @@ def snapped_arm(run: str, g: Grid, direction: str, sname: str, kind: str, units,
     for i in u.gaps(g, kind):
         sref = float(sbar[i + 1:].max())
         sh = dip_fixed(g, i) if kind == "turn" else SIGN[direction] * shape_fixed(g, i)
-        want = snap(run, g.steps[i + 1])
+        # the planted step: where the noise-free plant itself is located. For a half row it is
+        # i + 1; a fixed-width dip on a sub-octave grid has its minimum a step or more later, so
+        # i + 1 was wrong for turn rows (found on the first gate run; LESSONS.md 3)
+        free = u.place(g, LOW_POWER * sref * sh, direction, None, kind, floor=None)
+        if kind != "turn" and free["step"] != g.steps[i + 1]:
+            raise U2bRefused(f"{g.name} gap {i}: a noise-free half plant is located at {free['step']}")
+        want = snap(run, free["step"])
         hits = []
         for x, s in zip(xc, sc):
             y = x + LOW_POWER * sref * sh
@@ -134,7 +140,7 @@ def snapped_arm(run: str, g: Grid, direction: str, sname: str, kind: str, units,
                         floor=floor)
             hits.append(r["step"] is not None and snap(run, r["step"]) == want)
         ok = float(np.mean(hits))
-        out.append({"gap": f"{g.steps[i]}-{g.steps[i + 1]}", "to_index": i + 1, "snaps_to": want,
+        out.append({"gap": f"{g.steps[i]}-{g.steps[i + 1]}", "to_index": i + 1, "planted_step": free["step"], "snaps_to": want,
                     "sigma_ref": sref, "placed_right_snapped": ok, "pass": ok >= GATE_EFFECT})
     return {"width_octaves": A3_WIDTH, "effect": out, "pass": all(e["pass"] for e in out)}
 
