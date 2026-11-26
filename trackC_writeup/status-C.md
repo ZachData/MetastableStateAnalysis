@@ -82,7 +82,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share); U2a, U2b done 2026-11-26 (the timeline's order off 410m: every GPT-2 row refused by D7 (a)'s snapped gate, one pair read on A0, replicating); Blocked 180, then U3 — `trackC_writeup/status-C.md` "C9 unit 2b"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `4b41fbae46`
+- **Reviewed:** 2026-11-26 · body `9efb0113a0`
 <!-- /phase-card -->
 
 ## Units
@@ -201,7 +201,8 @@ snap to 128 and 550 to 256. A 0.25-octave change spans several of GPT-2's 0.13�
 gaps, so noise moves the located step by one own-grid step, and that step snaps to either side
 of the boundary. This is what D7's arm was added to detect, and it fires: **at the locator's
 power, a GPT-2 date cannot be carried onto Pythia's grid to one Pythia step.** E3's 0.00 is at
-450–500 on every seed whose own arm passes (cause not examined). On the harness arms, E6's
+450–500 on every seed whose own arm passes. Its cause is the null's bias for a max over heads
+(finding 1 below). On the harness arms, E6's
 refusals say more about the plant than the rows. A3's fixed dip, with its rise one gap later,
 has a bottom several steps wide on C4's fine grid, so argmin is noisy (0.02–0.04 even after the
 fix below). E8 misses by 0.02 and 0.002.
@@ -216,7 +217,7 @@ GPT-2 entry above is the same in both passes.
 
 | run | located (own step → snapped) | pairs read | replicates 410m's? |
 |---|---|---|---|
-| A0 | E1 384 → 512; E3 768 → 1000; E2 "no change" (a dip 0.514 → 0.40 at 1000–1250 and back, 1.6 σ over 48 heads, floor 4); E7 1500, censored | **E1–E3 aligned** (one Pythia step; three own-grid steps apart, E1 first: the finer order §5 already prints) | **yes** |
+| A0 | E1 384 → 512; E3 768 → 1000; E2 "no change" (a dip 0.514 → 0.40 at 1000–1250 and back, 1.6 σ over 48 heads, floor 4); E7 1500, censored | **E1–E3 aligned** (one Pythia step; three own-grid steps apart, E1 first: the finer order §5 already prints) | **yes**, against A3's named-head E3 (another instrument; finding 2 below) |
 | A0′ | E1 320 → 512; E2 "no change" (2.2 σ); E7 censored | none | — |
 | GPT-2 × 5 | E1 only (from C2 3c) | none | — |
 
@@ -234,6 +235,39 @@ which snaps to 16 or 32.
 - E2's "no change" on 70m means not at the floor over 48 heads. It does not mean no OV phase
   (the median dips by 0.11).
 - E3, E4 by D2 (a) differ from 410m's named-head rows. The bridge measures that on 410m only.
+  **The one "replicates" compares two instruments** (`/challenge-pr` on #383, finding 2). A0's
+  E3 is the max over heads; the reference is A3's named heads. With the same instrument on 410m
+  (the bridge), E3 is censored, so like for like the pair is unread.
+
+**After `/challenge-pr` on #383** (accept with changes; comment
+https://github.com/ZachData/MetastableStateAnalysis/pull/383#issuecomment-7202347427):
+- **Finding 1, the null is biased for the max-over-heads rows (taken as a finding, not fixed:
+  that would change a gate after its output).** A3's synthetic null gives every unit zero noise
+  at step 0. For E3 and E4's statistic, the max over 48 or 144 tied noisy heads is therefore
+  positive at every later step: 1.2–3.2 SE on alias's E3, about 2.4 on A0's E4, by the
+  reviewer's rebuild. That moves a smooth plant's located step one step late. The rebuild (no
+  floor, approximate SEs; not re-run here) gives:
+
+  | row | recorded | rebuild, biased | rebuild, unbiased |
+  |---|---|---|---|
+  | GPT-2 E3, gap 450–500 | 0.00 | 1 of 300 | 0.64 |
+  | A0 E4 | 0.65 | 0.67–0.74 | 1.00 |
+  | A0′ E3 | 0.84 | 0.87 | 1.00 |
+
+  So the cause of E3's 0.00 is this, and it plausibly decides A0's E4 and A0′'s E3 refusals
+  (A0′'s E1–E3 would be the second arm's pair). The GPT-2 rows stay refused either way (E2, E7,
+  E8 do not use the max). It is in Blocked 180.
+- **Finding 2:** the caveat above, also in STATE and the PR title.
+- **Finding 3:** Blocked 180 gains (d), the stability of each pair's snapped verdict under the
+  bootstrap. That tests what D4 reads, rather than every gap. Beside it: GPT-2's own E₁ dates
+  (250, 350) already snap to two steps (64, 128).
+- **Finding 4, the snapped arm's known answer, run post hoc** (`c9_u2b_snapcheck.py`,
+  `snapped_known.json`). On Pythia's grid, on A3's units at A3's floors, it gives A3's recorded
+  effect rates to ≤ 0.013 (E2 0.002, E5 0.013, E6u 0.003; fresh draws; tolerance 0.03, placed
+  at about 3 binomial SE). It would not have caught `7459cd1`'s defect, which needs a grid
+  finer than an octave.
+- **Finding 5:** three verdicts sit within one Monte Carlo SE (≈ 0.0095 at n = 1000) of the
+  0.90 bar: 410m E4 0.904, 410m E3 0.914, A0′ E8 0.898. The seed decides them.
 
 **Re-run** (GPU ≈ 75 min, then CPU ≈ 40 min with 8 processes): `c9_u2b_pass --run <run> --out
 <dir>` for the 8 runs (HF_HOME: `data/hf` for 410m and the arms' tokenizer, `HDD_1TB/mets_data/hf`
