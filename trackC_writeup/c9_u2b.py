@@ -386,7 +386,7 @@ def e1_rows(run: str) -> dict:
 
 def e10_row(run: str) -> dict:
     """The confound row, beside: Pythia's schedule on the harness arms; on GPT-2 the logged LR,
-    whose tags 10–80 are not logged (half the peak lies in (50, 100], which snaps to 32 either way)."""
+    whose tags 10–80 are not logged (half the peak lies in (50, 100], which snaps to 16 or 32)."""
     if run in GPT2_SEEDS:
         lr = json.loads((REPO / "trackC_writeup" / "gpt2_small_lr_log.json").read_text())["seeds"][run]["lr"]
         peak = max(v for s, v in lr if s <= 4000)

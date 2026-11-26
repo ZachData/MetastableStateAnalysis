@@ -79,10 +79,10 @@
   - Whether R breaks on its own, E_β at other β, component transplants, the small sizes' seeds, a sampled prompt set: ROADMAP C5, unscheduled — `trackC_writeup/status-C.md` "C2 on one page (closed 2026-10-23)"
   - The draft's rewrite and posting (anonymity and the timestamp narrative, m11; the abstract's density, m12; M3 (iii); a code and data statement; the venue; the records' release): the user's, Blocked 103 (a); the rewrite done (the user, 2026-11-09; its `paper/` commit pending), F1 still open (posting before F1 is the user's); C7 (i) closed with a §8 sentence for the user to carry; C4's design next (Blocked 153, revised 2026-11-09) — `trackC_writeup/referee-C2p.md`
   - C7 (i) on the other seeds (if the authors ask) and the ViT comparison for §8 (2511.21635): ROADMAP §8 C7, unscheduled — `trackC_writeup/status-C.md` "C7 (i) on one page (closed 2026-11-09)"
-  - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share), U2a next — `trackC_writeup/status-C.md` "C9 unit 1"
+  - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share); U2a, U2b done 2026-11-26 (the timeline's order off 410m: every GPT-2 row refused by D7 (a)'s snapped gate, one pair read on A0, replicating); Blocked 180, then U3 — `trackC_writeup/status-C.md` "C9 unit 2b"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-25 · body `c2fe001bff`
+- **Reviewed:** 2026-11-26 · body `4b41fbae46`
 <!-- /phase-card -->
 
 ## Units
@@ -149,6 +149,99 @@
 | C9 0. the scan and design (Blocked 176 (a), the user's) | **done 2026-11-25: writing only, nothing read; proposed, D1–D6 Blocked 178; U1 is a CPU read (every model's records exist); the 160m seeds downloading** | `lit-C9.md`, `design-C9.md`; "C9 unit 0" below |
 | C9 1. the mean's term on every model (Blocked 178 all (a)) | **done 2026-11-25: known answer exact, plants exact on all 7 models; M "carries" on 6, "partly" on warmup01; the 160m download complete** | `c9_u1.py`, `data/trackC/c9/2026-11-25-u1/u1.json`; "C9 unit 1" below |
 | C9 2a. the locator by grid, the weights rows and their gates (D1–D4, D6 confirmed by the user) | **done 2026-11-26: CPU, nothing located off 410m; known answer exact (A3's dates and floors; E2, E7, E8 from the weights); E2, E7, E8 gated on GPT-2 × 5, A0, A0′: all 21 pass, floor 4.0. U2b next** | `c9_u2.py`, `data/trackC/c9/2026-11-26-u2a/`; "C9 unit 2a" below |
+| C9 2b. the GPU rows, the snapped gate and the pairs (Blocked 179 D7 (a), D8 (a), the user's) | **done 2026-11-26: every known answer exact; the snapped arm refuses every row on GPT-2 × 5 and 6 of 9 on each harness arm; one pair read (A0, E1–E3 aligned, replicates 410m's); Blocked 180** | `c9_u2b_pass.py`, `c9_u2b.py`, `data/trackC/c9/2026-11-26-u2b/`; "C9 unit 2b" below |
+
+## C9 unit 2b, the GPU rows, the snapped gate and the pairs (2026-11-26)
+
+Tier 1. The decision came first: **Blocked 179 decided D7 (a), D8 (a)** (the user's, before any
+U2b output). `design-C9.md` "U2b as it runs", the producer `c9_u2b_pass.py` and the reading
+`c9_u2b.py` were pushed before any of their output (`9eb0efc`). `lit-C9.md` Parked 2
+(2509.22831's full text) was read before any record. It measures D2 (a)'s statistic, the max
+over heads of the mean 1-back attention. It gives no onset for 70m, 160m or 410m, so nothing
+moves.
+
+**Input.** One GPU pass per (run, step) on 410m seed 0 (18 states), GPT-2 small × 5 (35 each)
+and A0, A0′ (28 each): 251 records, producer code `49c1638e235c`, about 75 min on the 3080
+(`pass/`). The weights rows (E2, E7, E8) are U2a's records (`2026-11-26-u2a/weights`).
+E1 and E1c come from the paper's records: C2 3c (GPT-2 E₁ 250, 350, 250, 350, 350, with no
+centred date), C4 U2 (A0: 384, 640) and C4′ (c) U3 (A0′: 320, 640). Gates and reading at code
+`109a7e86d345`. Records: `data/trackC/c9/2026-11-26-u2b/` (`known.json`, `gate/<run>.json`,
+`reading.json` sha256 `8f0b8ff2…`, `logs/`).
+
+**Known answers** (`known.json`, every one before any gate). All pass:
+
+| check | result | tolerance |
+|---|---|---|
+| U2a's known answer, its null rates equal (#382 finding 3) | pass | — |
+| E5 on 410m against the reports' `MinRank` | 0.00499 (the reports' 2-decimal rounding) | 0.005 |
+| E5's mean against the panel | 3.9e-4 relative | 5e-4 |
+| E4 at `L5H2` against A3's `prev` | 5.8e-8 | 1e-3 |
+| E3's mean over sequences against C4's heads files | 7.5e-8 (A0), 9.7e-8 (A0′) | 1e-5 |
+| E6u, E6b, E6b′ against A3's records | ≤ 3.2e-14 nats | 1e-4 |
+| prompt ids against each run's energy records | 0 mismatches of 7 runs × all steps × 7 | 0 |
+
+**Gates (D7 (a): a row is gated only if U2a's own-grid arm and the snapped arm both pass).**
+Entries are the snapped arm's minimum over gaps of "placed right" (bar 0.90). **P** = both
+pass; **o** = the own arm fails too.
+
+| run | E2 | E7 | E8 | E3 | E4 | E5 | E6u | E6b | E6b′ |
+|---|---|---|---|---|---|---|---|---|---|
+| 410m (bridge only) | | | | **P** 0.91 | **P** 0.90 | | | | |
+| GPT-2 alias | 0.48 | 0.62 | 0.49 | 0.00 | 0.32 | 0.43 | | | |
+| GPT-2 battlestar | 0.47 | 0.66 | 0.50 | o 0.00 | o 0.18 | o 0.42 | | | |
+| GPT-2 caprica | 0.46 | 0.59 | 0.48 | 0.00 | o 0.11 | 0.44 | | | |
+| GPT-2 darkmatter | 0.43 | 0.60 | 0.52 | o 0.00 | o 0.15 | o 0.44 | | | |
+| GPT-2 expanse | 0.46 | 0.60 | 0.50 | 0.00 | 0.24 | o 0.43 | | | |
+| A0 | **P** 0.94 | **P** 0.91 | 0.88 | **P** 0.92 | 0.65 | o 0.45 | 0.02 | 0.04 | 0.03 |
+| A0′ | **P** 0.94 | **P** 0.91 | 0.898 | 0.84 | o 0.73 | o 0.47 | 0.02 | 0.03 | 0.03 |
+
+**On GPT-2 every row is refused, so no pair is read on any GPT-2 seed.** The snapped arm's
+failures are at the gaps that straddle a snap boundary. For example, in 450–500, 450 and 500
+snap to 128 and 550 to 256. A 0.25-octave change spans several of GPT-2's 0.13–0.15-octave
+gaps, so noise moves the located step by one own-grid step, and that step snaps to either side
+of the boundary. This is what D7's arm was added to detect, and it fires: **at the locator's
+power, a GPT-2 date cannot be carried onto Pythia's grid to one Pythia step.** E3's 0.00 is at
+450–500 on every seed whose own arm passes (cause not examined). On the harness arms, E6's
+refusals say more about the plant than the rows. A3's fixed dip, with its rise one gap later,
+has a bottom several steps wide on C4's fine grid, so argmin is noisy (0.02–0.04 even after the
+fix below). E8 misses by 0.02 and 0.002.
+
+**Corrected after the first gate pass, before the reading** (`7459cd1`; the first pass kept as
+`gate-v0/`): the snapped arm took the planted step as `i + 1`. For the fixed dip on a
+sub-octave grid that is wrong (48–64's dip bottoms at 80), so E6 read 0.000. Now the arm
+locates the noise-free plant and snaps that (`LESSONS.md` 3). Half rows were unchanged, so every
+GPT-2 entry above is the same in both passes.
+
+**Reading** (`reading.json`):
+
+| run | located (own step → snapped) | pairs read | replicates 410m's? |
+|---|---|---|---|
+| A0 | E1 384 → 512; E3 768 → 1000; E2 "no change" (a dip 0.514 → 0.40 at 1000–1250 and back, 1.6 σ over 48 heads, floor 4); E7 1500, censored | **E1–E3 aligned** (one Pythia step; three own-grid steps apart, E1 first: the finer order §5 already prints) | **yes** |
+| A0′ | E1 320 → 512; E2 "no change" (2.2 σ); E7 censored | none | — |
+| GPT-2 × 5 | E1 only (from C2 3c) | none | — |
+
+The bridge, beside: 410m with D2 (a)'s instrument gives E4 1000 (as the named head) and E3 1000
+censored (its reference at 4000, where the named heads' is not). So the bridge reads 6 of the 9
+pairs A3 reads (the three with E3 unread) and agrees on all 6. E10, beside: A0, A0′ 768 → 1000; GPT-2 (50, 100],
+which snaps to 16 or 32.
+
+**Not established / weak.**
+- **Whether the timeline's order holds off 410m.** On GPT-2 it is unread: refused by the gate
+  you chose, not by a contrary reading. On the arms it rests on one pair on one run.
+- The snapped arm uses A3's fixed width and amplitude on grids it was not built for. On GPT-2
+  that is the test you asked for. For the turn rows the plant is a weak one, so E6's refusal
+  says little about E6.
+- E2's "no change" on 70m means not at the floor over 48 heads. It does not mean no OV phase
+  (the median dips by 0.11).
+- E3, E4 by D2 (a) differ from 410m's named-head rows. The bridge measures that on 410m only.
+
+**Re-run** (GPU ≈ 75 min, then CPU ≈ 40 min with 8 processes): `c9_u2b_pass --run <run> --out
+<dir>` for the 8 runs (HF_HOME: `data/hf` for 410m and the arms' tokenizer, `HDD_1TB/mets_data/hf`
+for GPT-2), then `c9_u2b known`, `c9_u2b gate --run <run>` × 8, `c9_u2b read`; tests
+`tests/test_trackC_c9_u2b.py`.
+
+**Next: Blocked 180** (yours: what U2 does with GPT-2's refusal), then U3 (the 160m seeds).
+**Parked:** none new. U2a's E10 item is done (beside, from the logged LR).
 
 ## C9 unit 2a, the locator by grid, the weights rows and their gates (2026-11-26)
 

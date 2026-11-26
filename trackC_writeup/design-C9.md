@@ -277,8 +277,13 @@ and the reading, pushed before any of their output). Where the text above left a
   otherwise. E1c is not in A3's eleven pairs; it is reported beside.
 - *E10, beside.* The harness arms use Pythia's schedule (A3's `lr`). GPT-2 uses the logged LR
   (`gpt2_small_lr_log.json`), whose tags 10–80 are not logged, so its half-peak lies in
-  (50, 100]. That interval snaps to 32 either way, so it is stated as an interval and not
-  located.
+  (50, 100]. It is stated as an interval and not located. *(Corrected after the output: this
+  line said the interval "snaps to 32 either way". Tag 60 snaps to 16, so it is 16 or 32. Beside
+  only, nothing reads it; `LESSONS.md` 3.)*
+- *Corrected in code after the first gate pass, before the reading* (`7459cd1`; the first pass
+  is kept as `gate-v0`). The snapped arm's planted step is where the noise-free plant itself is
+  located. That is `i + 1` for a half plant (checked), and a step or more later for A3's fixed
+  dip on a sub-octave grid.
 - *E8's second date* is A3's `from_peak`, on the run's own grid and window.
 - *What is read:* A3's eleven pairs on snapped indices under A3's one-step rule. A pair with two
   dates (E6b′, E8 from its peak) is read only where both dates give one verdict. **The order
