@@ -1,9 +1,9 @@
 <!-- trackC_writeup/design-C9.md -->
-# C9 — the paper across every model: design (proposed 2026-11-25)
+# C9 — the paper across every model: design (proposed 2026-11-25; frozen 2026-11-25, Blocked 178 all (a))
 
 ROADMAP §8 C9; opened by Blocked 176 (the user's, 2026-11-24: "I would prefer to have all of the
-models there"). Scan: `lit-C9.md`. **Proposed; nothing read.** Decisions D1–D6 below are yours
-(STATE Blocked 178). Every rule here is fixed before any of its output exists.
+models there"). Scan: `lit-C9.md`. **Frozen 2026-11-25** ("Decided 2026-11-25" below; D1–D6
+were STATE Blocked 178). Every rule here is fixed before any of its output exists.
 
 ## What it is for
 
@@ -186,6 +186,25 @@ finding 7).
 **Recommended: D1 (a), D2 (a), D3 (a), D4 (a), D5 (a), D6 (a)** (revised after `/challenge-pr`
 on #380, accept with changes, findings 1–7 taken; D1, D2, D4 and D5's options rewritten before
 any decision).
+
+## Decided 2026-11-25
+
+**Blocked 178: D1–D6 all (a)**, taken by Claude as recommended on the user's "merged, continue"
+(after #378–#380 merged); yours to overrule. D5 bites only when U3 reads a 160m seed's record,
+so (c) stays open until that session starts.
+
+**U1 as it runs** (`trackC_writeup/c9_u1.py`, pushed before any output). Where the text above left
+a choice:
+- *Models* are the rows of the table above, each pooled over its runs: 410m (10), 160m (1),
+  70m (C6's 10; C2 3b's copy of seed 0 not read), warmup01 (1), GPT-2 small (5), the harness arms
+  (A0, A0′), the flat arms (F, F′). Every checkpoint on each run's own grid counts.
+- *M₄₁₀* is C2 5b's R6 pooled over its 18 steps: Σ (s > ½ at drops) / Σ drops, from the record's
+  per-step shares and counts, and must equal U1's own pooled M on 410m's records.
+- *The plants hold at the series' first state* (depth), not at training step 0: only then are
+  they exact (R constant over depth gives s = 1 at every drop; ‖m‖² constant gives s = 0), which
+  is what "read M = 1" and "M = 0" require. A plant with no drop reads "refused".
+- *S_break* (beside) uses table 2's E₁ dates from the records they were read from; none for
+  70m seeds 1–9 (centred only) or warmup01 (refused).
 
 ## Worth challenging (for the PR)
 
