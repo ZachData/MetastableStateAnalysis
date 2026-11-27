@@ -201,9 +201,12 @@ def _plant(lg: Logs, arm: str, twin: Optional[str], win: Tuple[int, int], c: dic
     lo, hi = win
     br = _branch(arm)
     det = {k: 0 for k in r8.KINDS}
-    n = 0
+    n, ratio, gap = 0, [], []
     for s in range(max(lo + 1, r8.first_update(br)), hi + 1):
         n += 1
+        tr = range(s - r8.TRAIL, s)
+        ratio.append(gn[s] / float(np.median([gn[j] for j in tr])))
+        gap.append((loss[s] - min(loss[j] for j in tr)) / c["delta_L"])
         for kind in r8.KINDS:
             L, G = dict(loss), dict(gn)
             if kind == "loss":
@@ -213,7 +216,15 @@ def _plant(lg: Logs, arm: str, twin: Optional[str], win: Tuple[int, int], c: dic
             ev = r8.events(L, G, c["delta_L"], c["kappa"], s - 1, s, br)
             te = r8.events(tw[0], tw[1], c["delta_L"], c["kappa"], s - 1, s, br) if tw else None
             det[kind] += s in r8.counted(ev, te)[kind]
-    return {"positions": n, **{f"share_{k}": det[k] / n for k in r8.KINDS}}
+    # the diagnostic (/challenge-pr on #389, finding 4): a grad plant κ^m is found iff g_s/median > κ^(1−m),
+    # so with the plant tied to κ, ≥ 90 % needs κ > r_(j)^(−1/(m−1)), r_(j) the ratio with j = misses allowed
+    allowed = n - int(np.ceil(0.9 * n))
+    rs = sorted(ratio)
+    need = float(rs[allowed] ** (-1.0 / (m - 1))) if m > 1 and rs[allowed] < 1 else None
+    return {"positions": n, **{f"share_{k}": det[k] / n for k in r8.KINDS},
+            "g_over_trailing_median": [round(x, 4) for x in ratio],
+            "loss_minus_trailing_min_over_dL": [round(x, 4) for x in gap],
+            "kappa_needed_for_0.9 (twin ignored)": need}
 
 
 def gate(out: Path) -> dict:

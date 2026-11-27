@@ -127,3 +127,22 @@ def test_clip_label():
     gn = {s: (1.5 if s % 2 else 0.5) for s in range(1, 100)}
     assert r.clip_label(gn, 10, 20)["label"] == "clipped"
     assert r.clip_label({s: 0.5 for s in range(1, 50)}, 10, 20)["label"] == "unclipped"
+
+
+def test_a_falling_grad_norm_hides_a_planted_spike():
+    # the gate's failure (/challenge-pr on #389, finding 6): on g = exp(−f s), g_s / median(trailing 8)
+    # = exp(−4.5 f): 0.87 at f = 0.03 (> κ^(−½) = 0.816, plant κ^1.5 found), 0.64 at f = 0.10 (missed)
+    for fall, found in ((0.03, True), (0.10, False)):
+        gn = {k: float(np.exp(-fall * k)) for k in range(1, 60)}
+        loss = {k: 4.0 for k in range(1, 60)}
+        gn[40] *= 1.5 ** 1.5
+        assert (40 in r.events(loss, gn, 0.02, 1.5, 39, 40)["grad"]) is found
+
+
+def test_reader_refuses_a_with_transient_log_before_the_gate():
+    from trackC_writeup import c8_read as cr
+    lg = cr.Logs(allow_all=False)
+    for arm in ("F", "Fp", "Fh", "Ft", "BP", "F1", "F1p"):
+        with pytest.raises(cr.C8ReadRefused):
+            lg(arm)
+    assert set(cr.CONTROLS) == {"A0", "A0p", "BK", "BKO", "BO"}

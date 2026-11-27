@@ -87,7 +87,7 @@
   - After C9 (closed 2026-11-26): the timeline's order off 410m (unread on GPT-2 at Pythia's resolution; A0′'s pair and A0's E4 wait on an unbiased max-over-heads null, ROADMAP §8 C9's standing note); why 160m breaks a step before most 410m seeds (unregistered); a per-transition split of R at GPT-2's breaks (ROADMAP §8 C5); the `c2_seeds` refusals (ROADMAP §8 C8) — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-27 · body `8235288b55`
+- **Reviewed:** 2026-11-27 · body `6a2cd98bd2`
 <!-- /phase-card -->
 
 ## Units
@@ -170,7 +170,8 @@ A0′, B_K, BKO and B_O.
 
 **Input.** Rule `c8_rules.py` `f7da63aca1d1`, reader `c8_read.py`, committed (`b604e8c`) before
 any output. Output `data/trackC/c8/2026-11-27-u1/` (main tree): `reference.json` `50d062ebe2fd`,
-`constants.json` `3f8a0aa3edaa`, `gate.json` `eee68b76b446` (first 12 of sha256). Each holds the
+`constants.json` `3f8a0aa3edaa`, `gate.json` `95f72225b6ff` (first 12 of sha256; re-run after
+`/challenge-pr` on #389 finding 4 to keep the diagnostic, same pass/fail; first `eee68b76b446`). Each holds the
 sha256 of every log, record set and file it read. A0's log `3c7a18a112b1`. Conda py3.10.
 
 | step | result |
@@ -182,7 +183,7 @@ sha256 of every log, record set and file it read. A0's log `3c7a18a112b1`. Conda
 | G-plant (1.5×) | **fail at every τ**: grad-spike detection 0.125 (9.61e-5, 1e-4) and 0.375 (3e-4) on B_K at B_P's window, 0.42 on B_O; 0.75 on A0 at F's and A0′ at F′'s window (9.61e-5, 1e-4). Loss rise ≥ 0.875 everywhere, 1.0 except B_K (0.875, 0.917) and B_O (0.958) |
 | G-edge (1×, no bar) | loss 0–0.03 at F's, F′'s, F½'s windows, 0.83 at F⅒'s; grad 0–0.46 |
 
-**Cause (checked on the controls' logs, `gate.json` and a diagnostic not kept):** the grad norm is
+**Cause (`gate.json` G-plant's per-position `g_over_trailing_median` and `kappa_needed`):** the grad norm is
 falling in these windows, so the trailing median of 8 sits above g_s. A plant of κ^1.5 is found
 only if g_s / median > κ^(−½) = 0.816. On B_K, s = 265–280, that ratio is 0.27–0.83 (only 2 of 16
 above), since the trailing 8 still hold the restart spike's tail. On A0, s = 17–26, it is
@@ -192,10 +193,21 @@ minimum, so the loss misses on B_K and B_O come from the same post-restart fall 
 by one).
 
 **Reading: (i) refused at its gate (design "If a gate fails, U1 reports a refusal").** The
-constants were not re-placed: the plant scales with κ, so passing on B_K needs κ ≳ 7.3 (the
-second-lowest ratio is 0.369). That is a pass by scale, not by power. With no window opened, a
-revised rule could still be gated blind (Blocked 183). Neither event kind alone passes: the loss
-rise is 0.875 on B_K at two τ.
+constants were not re-placed: the plant scales with κ, so 0.9 needs κ > 7.36 on B_K at
+9.61e-5 and 1e-4 (4.33 at 3e-4), a pass by scale, not by power. On A0 at F's window it needs only
+1.54. With no window opened, a revised rule could still be gated blind (Blocked 183). Neither
+event kind alone passes: the loss rise is 0.875 on B_K at two τ.
+
+**`/challenge-pr` on #389: accept with changes, all six taken.** (1) The two failures differ.
+At F's window the fall is smooth, so a trend-relative baseline would likely pass. At B_P's, B_K's
+g swings 0.31–2.54× update to update, and the loss rise misses too. So Blocked 183 (b) now says
+B_P probably refuses again unless it moves to "beside", a family change. (2) κ was placed on Δ ln g
+(trend-free), while the detector reads against a median (not trend-free), and A0's late log is
+≈ 10× quieter than B_K's window: added to the LESSONS 6 instance. (3) A0's rate at 17–48 is
+30–90× below F's, so an A0 pass under (b) says little about F: in Blocked 183 (b). (4) The
+diagnostic is now in `gate.json`. (5) The G-null's 5 joint placements are few; shifting each
+stand-in log on its own gives more. That is a precondition of any re-gate (Blocked 183 (b)), and
+it does not change this refusal. (6) Tests for a falling grad norm and for the reader's guard.
 
 **Deviations, fixed before any log was opened:** (1) B_K's log is 128 updates. At 3e-4, B_P's
 24-update window leaves it 2–3 background blocks at every placement, under the 4-block bar, so
