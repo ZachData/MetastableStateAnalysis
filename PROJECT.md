@@ -3165,6 +3165,29 @@ existed, and its prediction failed.
 
 ---
 
+## 3.89 Track C's C9 closed: the mean's term carries the count's drops on every model, the timeline's order is unread off 410m at Pythia's resolution, and 160m's ten seeds break at 256 (2026-11-26)
+
+**`trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"** holds the numbers; `paper/`
+carries them (table 2, §4, §5 "On other models", §7). Tier 1 throughout, nothing registered (D5 (a)).
+
+- **The mean's term, on every model.** M, the share of V's drops at which ½Δ‖m‖² is more than
+  half the drop, reads "carries" (over 410m's 0.96 less 0.1) on 410m, 160m, 70m, GPT-2 small and
+  the four 70m arms, and "partly" on `pythia-70m-warmup01` (one run, inside 70m's own seeds'
+  range). At the break ‖m‖² falls at every counted drop on every dated run. The mean's term is
+  over half of each drop there on the Pythia-shaped runs only, not on GPT-2 small.
+- **The timeline's order off 410m is unread.** On GPT-2 small every row's date, moved onto
+  Pythia's grid, fails its gate (its grid is much finer, so noise lands a date on either side of a
+  Pythia step). On the harness arms one pair is read (A0's E₁–induction, aligned as on 410m), on
+  unlike instruments. The null's bias for a max over heads was not fixed (Blocked 180 (a)).
+- **160m's ten seeds: E₁'s break is 256 on all ten**, against 410m's 512 on eight (an
+  unregistered contrast; size moves with the peak rate). The centred date is 1000 on 6 and
+  512–1000 across tolerances on 4, a margin of about one drop at the half-rise bar.
+- What C9 did not read: any cross-model date comparison (Pythia and GPT-2 differ in batch and
+  context), the order of the break, induction and the OV phase on any model, why 160m breaks a
+  step earlier.
+
+---
+
 ## 3.88 Track C's C4′ (d)+(f) closed: the flat arm's transient appears from init at a half and a tenth of the peak on no single clock, and on a trained state only after a fresh Adam at the peak; both registered entries falsified (2026-11-25)
 
 **`trackC_writeup/status-C.md` "C4′ (d)+(f) on one page (closed 2026-11-25)"** holds the numbers.

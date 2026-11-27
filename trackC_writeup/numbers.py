@@ -103,7 +103,17 @@ RECORDS = {
     # (`c4pc_read.py score`) and the measured readings M1–M4 (`measure`) on the replicate pair
     "c4pcscore": "data:trackC/c4pc/2026-11-22-u3/scores.json",
     "c4pcmeas": "data:trackC/c4pc/2026-11-22-u3/measured.json",
+    # C9 (§4, §4.2, §5, §7; the close-out with U4, 2026-11-26, Blocked 181 (i) (a)): U1's mean's
+    # term on every model, U2b's pairs off 410m, U3's ten 160m seeds
+    "c9u1": "data:trackC/c9/2026-11-25-u1/u1.json",
+    "c9u2b": "data:trackC/c9/2026-11-26-u2b/reading.json",
+    "c9u3": "data:trackC/c9/2026-11-26-u3/reading.json",
 }
+#: U1's models under the names a slot's `[sub]` can carry (`\w+`, no hyphens)
+C9_MODELS = {"p410": "pythia-410m", "p160": "pythia-160m", "p70": "pythia-70m",
+             "w01": "pythia-70m-warmup01", "gpt2": "gpt2-small", "harness": "70m-harness",
+             "flat": "70m-flat"}
+C9_GPT2 = ("alias", "battlestar", "caprica", "darkmatter", "expanse")
 SEEDS = tuple(str(s) for s in range(1, 10))
 #: The grid A5's V series are indexed on (`trackA_force.a1a.STEPS`); a claim checks A3's equals it.
 GRID = (0, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1000, 2000, 4000, 8000, 16000, 32000, 54000, 143000)
@@ -856,7 +866,59 @@ KEYS: Dict[str, tuple] = {
     "c4pc.m3_v": ("c4pcmeas", lambda m: {"F": m["M3"]["per_key"]["u"]["t_f"], "A0": m["M3"]["per_key"]["u"]["t_a0"]}),
     "c4pc.m3_v_band": ("c4pcmeas", lambda m: m["M3"]["per_key"]["u"]["bands"]["cumulative"]),
     "c4pc.m3_cen_f": ("c4pcmeas", lambda m: sorted({m["M3"]["per_key"][k]["t_f"] for k in m["M3"]["R2_centred"]["arms"]})),
+    # C9 U1: M, the share of V's drops at which the mean's term is more than half the drop,
+    # pooled over each model's runs and checkpoints, and its label against M₄₁₀ − 0.1 (D1 (a))
+    "c9u1.M": ("c9u1", lambda u: {s: u["models"][m]["M"] for s, m in C9_MODELS.items()}),
+    "c9u1.label": ("c9u1", lambda u: {s: u["models"][m]["label"] for s, m in C9_MODELS.items()}),
+    "c9u1.bar": ("c9u1", lambda u: u["bar"]),
+    "c9u1.M_others": ("c9u1", lambda u: _span(v["M"] for m, v in u["models"].items() if m != "pythia-410m")),
+    "c9u1.M_p70_runs": ("c9u1", lambda u: _span(v["M"] for v in u["models"]["pythia-70m"]["beside"]["per_run"].values())),
+    "c9u1.M_break_gpt2": ("c9u1", lambda u: _span(u["models"]["gpt2-small"]["beside"]["at_break"][s]["M"] for s in C9_GPT2)),
+    "c9u1.mfall_break_all": ("c9u1", lambda u: all(v["m_fall_at_drops"] == 1.0 for m in u["models"].values()
+                                                  for v in m["beside"]["at_break"].values() if v and v.get("drops"))),
+    # C9 U3: the ten 160m seeds (D5 (a), tier 1)
+    "c9u3.n": ("c9u3", lambda r: len(r["per_seed"])),
+    "c9u3.e1_256": ("c9u3", lambda r: sum(v["E1"] == 256 for v in r["per_seed"].values())),
+    "c9u3.e1c_1000": ("c9u3", lambda r: sum(v["E1c"] == [1000] for v in r["per_seed"].values())),
+    "c9u3.e1c_split": ("c9u3", lambda r: sum(v["E1c"] == [512, 1000] for v in r["per_seed"].values())),
+    "c9u3.M": ("c9u3", lambda r: r["u1"]["M"]),
+    "c9u3.label": ("c9u3", lambda r: r["u1"]["label"]),
+    "c9u3.tally_410m": ("c9u3", lambda r: r["beside"]["tally_410m_E1"]),
+    # 3b's schedule sets: E₁'s consistent with all three on every seed; the centred date excludes
+    # the instantaneous rate on this many seeds
+    "c9u3.e1_all3": ("c9u3", lambda r: sum(len(v["reading"]["uncentred"]["consistent"]) == 3 for v in r["per_seed"].values())),
+    "c9u3.cen_no_inst": ("c9u3", lambda r: sum("instantaneous" not in v["reading"]["centred"]["consistent"]
+                                               for v in r["per_seed"].values())),
+    # V_c(512) over its plateau, on the arms dated 512 and on the arms of those seeds dated 1000
+    "c9u3.at512_read512": ("c9u3", lambda r: _span(_c9_at512(r, 512))),
+    "c9u3.at512_read1000_max": ("c9u3", lambda r: max(_c9_at512(r, 1000, split_only=True))),
+    # C9 U2b: the pairs read off 410m (A3's eleven, D4 (a) snapped onto Pythia's grid)
+    "c9u2b.n_read": ("c9u2b", lambda r: sum(p["verdict"] != "unread" for v in r["runs"].values() for p in v["pairs"])),
+    "c9u2b.a0_e1e3": ("c9u2b", lambda r: _c9_pair(r, "A0", ["E1", "E3"])),
+    "c9u2b.gpt2_rows_refused": ("c9u2b", lambda r: all(v["reading"] == "refused" for s in C9_GPT2
+                                                       for k, v in r["runs"][s]["rows"].items() if k in ("E2", "E3", "E4", "E5", "E7", "E8"))),
 }
+
+
+def _c9_at512(r: dict, step: int, split_only: bool = False) -> List[float]:
+    """V_c(512) / plateau on each centred arm of each 160m seed whose date is `step`
+    (with `split_only`, only on the seeds whose arms disagree)."""
+    i = GRID.index(512)
+    out = []
+    for v in r["per_seed"].values():
+        if split_only and v["E1c"] != [512, 1000]:
+            continue
+        for tau, arm in v["reading"]["centred"]["arms"].items():
+            if arm["step"] == step:
+                out.append(v["beside"]["V_c"][tau][i] / arm["plateau"])
+    return out
+
+
+def _c9_pair(r: dict, run: str, pair: List[str]) -> dict:
+    p = next(p for p in r["runs"][run]["pairs"] if p["pair"] == pair)
+    return {"verdict": p["verdict"], "E1": p["steps"]["E1"][0], "E3": p["steps"]["E3"][0],
+            "E1s": p["steps"]["snapped"]["E1"][0], "E3s": p["steps"]["snapped"]["E3"][0],
+            "own": p["own_grid_distance"][0], "replicates": p["replicates"]}
 #: C4's dense grid (`c4_train.GRID`; a claim checks the close-out record's equals it)
 _C4GRID = (0, 1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128, 160, 192, 256, 320, 384, 512, 640, 768,
            1000, 1250, 1500, 2000, 3000, 4000)

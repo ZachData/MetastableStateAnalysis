@@ -339,6 +339,12 @@ the reading, pushed before any of their output). Where the text above left a cho
   break dates against 410m's ten (512 × 8, 256 × 2). D5 (a) leaves the 160m-against-410m
   split unregistered, so the tally carries no label.
 
+**Blocked 181 decided (i) (a), (ii) (a), (iii) (a)** (the user's, 2026-11-26, after #384 merged):
+U4's `paper/` edits are made inside the close-out (writing only, no new read); U3's reversal of
+"Carried in" is ratified and the `c2_seeds` refusals go to ROADMAP §8 C8; table 2's centred 160m
+cell is 3b's frozen set reading, "1000 on 6; 512–1000 on 4", with a note at the bar. C9 closed
+2026-11-26 (`status-C.md` "C9 on one page").
+
 ## Worth challenging (for the PR)
 
 1. U2 leaves out 70m and 160m on Pythia's grid (one run each) and the flat arms. The harness
