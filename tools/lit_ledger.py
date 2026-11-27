@@ -17,7 +17,8 @@ tier 0 can import it).
 What is read, and from where
 ----------------------------
 * **Files**: everything `git add -A` would commit with suffix .md, .py, .tex or
-  .bib, except `data/`, `tests/` (fixtures name ids on purpose) and the ledger.
+  .bib, except `data/`, `tests/` (fixtures name ids on purpose), the ledger and
+  this file.
 * **Ids**: new-style arXiv ids `YYMM.NNNN` (to 1412) and `YYMM.NNNNN` (from 1501),
   version suffix dropped, YY 07-30 and MM 01-12. Old-style ids (`hep-th/9901001`)
   are not read.
@@ -35,7 +36,7 @@ What is read, and from where
   A file in `docs/readings/<id>.md` counts as [R]. File-local legends are in
   `LOCAL_MARKS`.
 * **First cited**: the earliest author date of a commit whose diff adds a line
-  holding the id (one `git log -p` pass, ~2 s). That is this repo's history: a
+  holding the id (one `git log -p` pass; the whole build takes a few seconds). That is this repo's history: a
   paper cited before the history began dates from the import commit. Without git
   history (no `.git`, or a shallow clone) the column says so.
 
@@ -43,10 +44,12 @@ Usage
 -----
     python3 tools/lit_ledger.py            # rewrite docs/lit_ledger.md
     python3 tools/lit_ledger.py --stdout   # print it instead
+    python3 tools/lit_ledger.py --check    # tier 0 (scripts/check.sh)
 
 Re-run it in the commit that adds or changes a scan file (CLAUDE.md "Literature
-scans"). It is not a CI check: it needs full history, and every citation added
-anywhere would stale it.
+scans"). `--check` compares only the strongest and scans cells of ids a scan
+file cites: they need no git history, and a citation added elsewhere does not
+stale them. First cited and "elsewhere" are not checked.
 """
 from __future__ import annotations
 
@@ -60,6 +63,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 LEDGER = "docs/lit_ledger.md"
+#: Not read for citations: the ledger, and this file (its comments quote ids).
+NOT_READ = frozenset({LEDGER, "tools/lit_ledger.py"})
 INDEX = "docs/LITERATURE.md"
 INDEX_SECTION = "## 1. The files"
 READINGS = "docs/readings/"
@@ -75,10 +80,11 @@ STRENGTH = {"N": 0, "S": 1, "A": 2, "H": 3, "R": 4}
 #: Marks a scan file defines for itself, mapped onto the shared scale.
 #: A file's [P], [M], [K] ... not listed here are not on the scale and are not
 #: read (lit-1d's [P] is a pointer to an earlier reading, its [M] "measured").
-LOCAL_MARKS = {
+LOCAL_MARKS: dict[str, dict[str, str | None]] = {
     # "[T] the LaTeX source read at the lines named; [P] the PDF text or a
-    # figure read by eye" (its "Marks." line): both full text.
-    "trackC_writeup/lit-C2p-fulltext.md": {"T": "R", "P": "R"},
+    # figure read by eye" (its "Marks." line): both full text. Its [R] is "a
+    # Hugging Face repository queried", not a paper read: dropped.
+    "trackC_writeup/lit-C2p-fulltext.md": {"T": "R", "P": "R", "R": None},
     # "[F] full text read this session".
     "trackC_writeup/lit-C7.md": {"F": "R"},
     # "[P] primary text read (abstract page at least, as here)": the floor.
@@ -157,16 +163,24 @@ def assign_marks(ids: list[tuple[int, str]], marks: list[tuple[int, str]],
     """Each id's mark on one line (module docstring, "Marks"). `default` is a
     table header's mark, used by a row with no bracketed mark at all. Off a
     table row (`row=False`) only an adjacent mark counts; a mark in another
-    cell of `line_` is never adjacent."""
+    cell of `line_` is never adjacent. An id in a cell where another id has
+    its own adjacent mark inherits nothing ("2604.01978 [T] ... Fedorov et al.
+    2601.21942 (cited there)": the mark is the first paper's)."""
     out: dict[str, str] = {}
     distinct = {m for _, m in marks} if row else set()
     weakest = min(distinct, key=STRENGTH.__getitem__) if distinct else None
+    own: list[str | None] = []
     for i, (pos, pid) in enumerate(ids):
         end = ids[i + 1][0] if i + 1 < len(ids) else 10 ** 9
         after = [m for p, m in marks if pos < p < min(end, pos + ADJACENT)
                  and "|" not in line_[pos:p]]
-        if after:
-            mark = after[0]
+        own.append(after[0] if after else None)
+    cell = [line_.count("|", 0, pos) for pos, _ in ids]
+    for i, (pos, pid) in enumerate(ids):
+        if own[i]:
+            mark = own[i]
+        elif any(own[j] and cell[j] == cell[i] for j in range(len(ids)) if j != i):
+            mark = None                          # a sibling's mark, not this id's
         elif distinct:                           # one mark, or whose is whose unclear
             mark = weakest
         else:
@@ -199,7 +213,7 @@ def tree_files(root: Path) -> list[str]:
     else:
         rels = [p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()]
     return sorted(r for r in rels
-                  if r.endswith(SUFFIXES) and r != LEDGER
+                  if r.endswith(SUFFIXES) and r not in NOT_READ
                   and r.split("/", 1)[0] not in SKIP_TOP and (root / r).is_file())
 
 
@@ -222,7 +236,7 @@ def first_cited(root: Path) -> tuple[dict[str, tuple[str, str, str]], str]:
             _, commit, date = line.split(" ", 2)
         elif line.startswith("+++ "):
             path = line[6:] if line.startswith("+++ b/") else ""
-        elif line.startswith("+") and path and path != LEDGER \
+        elif line.startswith("+") and path and path not in NOT_READ \
                 and path.split("/", 1)[0] not in SKIP_TOP:
             for _, pid in arxiv_ids(line):
                 if pid not in first or date < first[pid][0]:
@@ -296,8 +310,7 @@ def render(root: Path) -> str:
     papers = collect(root)
     first, note = first_cited(root)
     head = (_git(root, "rev-parse", "--short", "HEAD") or "").strip() or "no git"
-    names = [Path(r).name for r in tree_files(root) if is_scan_file(r)]
-    unique = {n for n in names if names.count(n) == 1}
+    unique = _unique_scan_names(root)
 
     counts = defaultdict(int)
     for p in papers.values():
@@ -334,6 +347,7 @@ def render(root: Path) -> str:
         "| arXiv | first cited | strongest | scans | elsewhere |",
         "|---|---|---|---|---|",
     ]
+    cols = scan_columns(papers, unique)
     for pid in sorted(papers):
         p = papers[pid]
         if pid in first:
@@ -342,17 +356,58 @@ def render(root: Path) -> str:
                                   else "(a file since moved or deleted)")
         else:
             fc = "uncommitted" if not note else "—"
-        mark = f"[{p.mark}] {_short(p.mark_at, unique)}" if p.mark else "—"
-        out.append(f"| {pid} | {fc} | {mark} | {_short(p.scans, unique) or '—'} | "
+        mark, scans = cols[pid]
+        out.append(f"| {pid} | {fc} | {mark} | {scans} | "
                    f"{_short(p.files, unique) or '—'} |")
     return "\n".join(out) + "\n"
+
+
+def _unique_scan_names(root: Path) -> set[str]:
+    names = [Path(r).name for r in tree_files(root) if is_scan_file(r)]
+    return {n for n in names if names.count(n) == 1}
+
+
+def scan_columns(papers: dict[str, Paper], unique: set[str]) -> dict[str, tuple[str, str]]:
+    """id -> (strongest, scans) cells: the part of a row that only scan files,
+    `docs/LITERATURE.md` and `docs/readings/` decide."""
+    return {pid: (f"[{p.mark}] {_short(p.mark_at, unique)}" if p.mark else "—",
+                  _short(p.scans, unique) or "—") for pid, p in papers.items()}
+
+
+def check(root: Path) -> list[str]:
+    """Rows of the committed ledger whose strongest or scans cell differs from
+    the tree, for ids a scan file cites. Needs no git history, and a citation
+    added outside the scan files does not trip it."""
+    want = {pid: c for pid, c in scan_columns(collect(root), _unique_scan_names(root)).items()
+            if c[1] != "—"}
+    path = root / LEDGER
+    have = {}
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            cells = [c.strip() for c in line.split("|")]
+            if len(cells) == 7 and re.fullmatch(r"\d{4}\.\d{4,5}", cells[1]) and cells[4] != "—":
+                have[cells[1]] = (cells[3], cells[4])
+    return [f"{pid}: ledger {have.get(pid)} != tree {want.get(pid)}"
+            for pid in sorted(set(want) | set(have)) if want.get(pid) != have.get(pid)]
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--stdout", action="store_true", help="print instead of writing")
+    ap.add_argument("--check", action="store_true",
+                    help="fail if the ledger's strongest/scans cells differ from the tree")
     args = ap.parse_args(argv)
+    if args.check:
+        diffs = check(ROOT)
+        for d in diffs:
+            print(d)
+        if diffs:
+            print(f"{LEDGER} is stale on {len(diffs)} scan-cited id(s): "
+                  f"run python3 tools/lit_ledger.py")
+            return 1
+        print(f"{LEDGER} in step with the scan files")
+        return 0
     text = render(ROOT)
     if args.stdout:
         sys.stdout.write(text)

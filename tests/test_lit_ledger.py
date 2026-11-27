@@ -67,6 +67,19 @@ def test_one_mark_in_a_row_covers_its_ids():
         "2312.16903": "S", "2309.14322": "S"}
 
 
+def test_an_id_beside_a_marked_sibling_in_its_cell_inherits_nothing():
+    # lit-C2p-fulltext.md W3 (/challenge-pr on #388, finding 1).
+    line = ("| W3 | quote | Koubbi et al., **2604.01978** [T]: attention-only. "
+            "Fedorov et al. 2601.21942 (cited there) treat values |")
+    assert _marks(line, rel="trackC_writeup/lit-C2p-fulltext.md") == {"2604.01978": "R"}
+
+
+def test_a_files_own_r_can_be_dropped():
+    # lit-C2p-fulltext.md's [R] is "a Hugging Face repository queried".
+    assert _marks("| x | EleutherAI/pythia 2304.01373 [R] |",
+                  rel="trackC_writeup/lit-C2p-fulltext.md") == {}
+
+
 def test_prose_line_takes_only_an_adjacent_mark():
     line = "A long sentence about 2402.03698 and its withdrawal, then a word on [R]."
     assert _marks(line) == {}
@@ -132,3 +145,17 @@ def test_render_without_git(tmp_path):
     assert "[S] `lit-1.md`" in rows["2509.23024"]          # PLAN.md's [R] is a cost tag
     assert "`PLAN.md`" in rows["2509.23024"]
     assert "[R] `docs/readings/2411.04990.md`" in rows["2411.04990"]
+
+
+def test_check_sees_a_stale_mark_and_ignores_files_outside_scans(tmp_path):
+    (tmp_path / "docs").mkdir()
+    scan = tmp_path / "p1" / "lit-1.md"
+    scan.parent.mkdir()
+    scan.write_text("| a | **2509.23024** **[S]** |\n", encoding="utf-8")
+    (tmp_path / L.LEDGER).write_text(L.render(tmp_path), encoding="utf-8")
+    assert L.check(tmp_path) == []
+    (tmp_path / "PLAN.md").write_text("now cited here too: 2509.23024, 2411.04990\n",
+                                      encoding="utf-8")
+    assert L.check(tmp_path) == []                       # not a scan: not checked
+    scan.write_text("| a | **2509.23024** **[A]** |\n", encoding="utf-8")
+    assert [d.split(":")[0] for d in L.check(tmp_path)] == ["2509.23024"]

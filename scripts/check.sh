@@ -89,6 +89,12 @@ _lint_commands() {
   python3 tools/render_phases.py --check
 
   echo
+  echo "=== tier 0: docs/lit_ledger.md in step with the scan files ==="
+  # Only the strongest-mark and scans cells of ids a scan file cites: no git
+  # history needed, and a citation added elsewhere does not stale it.
+  python3 tools/lit_ledger.py --check
+
+  echo
   echo "=== tier 0: docs/index/ in step with PROJECT.md, POPPER_PLAN.md ==="
   # A stale index sends a session to the wrong line range; after editing either
   # document, run `python3 tools/build_doc_index.py`.
