@@ -1,6 +1,6 @@
 {
  "producer": "python -m trackC_writeup.numbers produce",
- "code": "a6ded57c6bb2",
+ "code": "cbe711348b3c",
  "records": {
   "data:trackA/a5/2026-10-20-u1/seed0/gate.json": "bbc4b679ca2f094f5e288c049cc4513ba39a4c62c2219d8e1fd6dc473ffcb22f",
   "data:trackA/a5/2026-10-20-u2/score.json": "cc357dbed89d7e091add05d9a2a7f6e1f0c22b05c4f020de590069b5487b1008",
@@ -38,7 +38,15 @@
   "data:trackC/c4p/2026-11-17-u2/reading.json": "25ef5d0cbaa8fdc79fbd713d10e2100b743e2d5136883cb39e4981c9f761a6c1",
   "data:trackC/c4p/2026-11-17-u2/gate.json": "528eaa4b293b4c86fd4bda256c44e04fb6d252ca70396c320ff170f548afef2b",
   "data:trackC/c4pc/2026-11-22-u3/scores.json": "c46276924bdcd8b0e20bf87e9afd09f00e09f84150bd20a8b94dc02c80124052",
-  "data:trackC/c4pc/2026-11-22-u3/measured.json": "d02a76b1d111b74e29e6a01e16687c01011827f4be899ba0352d14e7abf11feb"
+  "data:trackC/c4pc/2026-11-22-u3/measured.json": "d02a76b1d111b74e29e6a01e16687c01011827f4be899ba0352d14e7abf11feb",
+  "data:trackC/c9/2026-11-25-u1/u1.json": "bec23c78f4cf4bd74fdee113d291777b9dc5842682ab64feddb7564c991b1835",
+  "data:trackC/c9/2026-11-26-u2b/reading.json": "8f0b8ff2eee199ab334a8249282f6ec14a7cfd315e91a6d8510e5543d0f532a7",
+  "data:trackC/c9/2026-11-26-u3/reading.json": "8a0540bc513bab09f0f3f0559abab83c7e3f7b890501243e1df0391628b1d73f",
+  "data:trackC/c9/2026-11-26-u2b/gate/alias.json": "5a2144143801e93c3fe225b53ff29f8b49d86f28d5ed6b72d8940afe4a001732",
+  "data:trackC/c9/2026-11-26-u2b/gate/battlestar.json": "61e8d7eb2a9aac115e78ad9f159eb7a6e5cea84cd3bf077375bac591ead7943e",
+  "data:trackC/c9/2026-11-26-u2b/gate/caprica.json": "dede0a01d98857e83aab1c987f1b996e40cdb7e68047cbad9005bde0d0d73215",
+  "data:trackC/c9/2026-11-26-u2b/gate/darkmatter.json": "53527817182ac0bd1a1821c31801e86fdb201a29266f200aa719988a8e6382e4",
+  "data:trackC/c9/2026-11-26-u2b/gate/expanse.json": "3a18ab55b54536268be8f6a04902caad69de2b49eba38b332ebbc9a19fa252d0"
  },
  "keys": {
   "cfg.train_iters": {
@@ -10303,6 +10311,254 @@
     48
    ],
    "record": "data:trackC/c4pc/2026-11-22-u3/measured.json"
+  },
+  "c9u1.M": {
+   "value": {
+    "p410": 0.9628186968838527,
+    "p160": 0.9107981220657277,
+    "p70": 0.8828502415458938,
+    "w01": 0.8256880733944955,
+    "gpt2": 0.9440182459050384,
+    "harness": 0.9407894736842105,
+    "flat": 0.9591836734693877
+   },
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.label": {
+   "value": {
+    "p410": "carries",
+    "p160": "carries",
+    "p70": "carries",
+    "w01": "partly",
+    "gpt2": "carries",
+    "harness": "carries",
+    "flat": "carries"
+   },
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.bar": {
+   "value": 0.8628186968838527,
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.M_others": {
+   "value": [
+    0.8256880733944955,
+    0.9591836734693877
+   ],
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.M_read": {
+   "value": [
+    0.8828502415458938,
+    0.9628186968838527
+   ],
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.M_break_rest_all1": {
+   "value": true,
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.n_break_runs": {
+   "value": 21,
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.M_p70_runs": {
+   "value": [
+    0.8021978021978022,
+    0.9811320754716981
+   ],
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.M_break_gpt2": {
+   "value": [
+    0.7631578947368421,
+    0.8709677419354839
+   ],
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u1.mfall_break_all": {
+   "value": true,
+   "record": "data:trackC/c9/2026-11-25-u1/u1.json"
+  },
+  "c9u3.n": {
+   "value": 10,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.e1_256": {
+   "value": 10,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.e1c_1000": {
+   "value": 6,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.e1c_split": {
+   "value": 4,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.M": {
+   "value": 0.9269759450171822,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.label": {
+   "value": "carries",
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.tally_410m": {
+   "value": {
+    "256": 2,
+    "512": 8
+   },
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.e1_all3": {
+   "value": 10,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.cen_no_inst": {
+   "value": 6,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.at512_read512": {
+   "value": [
+    0.5,
+    0.5769230769230769
+   ],
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u3.at512_read1000_max": {
+   "value": 0.4827586206896552,
+   "record": "data:trackC/c9/2026-11-26-u3/reading.json"
+  },
+  "c9u2b.n_read": {
+   "value": 1,
+   "record": "data:trackC/c9/2026-11-26-u2b/reading.json"
+  },
+  "c9u2b.a0_e1e3": {
+   "value": {
+    "verdict": "aligned",
+    "E1": 384,
+    "E3": 768,
+    "E1s": 512,
+    "E3s": 1000,
+    "own": 3,
+    "replicates": true
+   },
+   "record": "data:trackC/c9/2026-11-26-u2b/reading.json"
+  },
+  "c9u2b.gpt2_rows_refused": {
+   "value": true,
+   "record": "data:trackC/c9/2026-11-26-u2b/reading.json"
+  },
+  "c9g.alias": {
+   "value": {
+    "rows": [
+     "E2",
+     "E3",
+     "E4",
+     "E5",
+     "E7",
+     "E8"
+    ],
+    "snapped_fails": [
+     "E2",
+     "E7",
+     "E8",
+     "E3",
+     "E4",
+     "E5"
+    ],
+    "any_pass": false
+   },
+   "record": "data:trackC/c9/2026-11-26-u2b/gate/alias.json"
+  },
+  "c9g.battlestar": {
+   "value": {
+    "rows": [
+     "E2",
+     "E3",
+     "E4",
+     "E5",
+     "E7",
+     "E8"
+    ],
+    "snapped_fails": [
+     "E2",
+     "E7",
+     "E8",
+     "E3",
+     "E4",
+     "E5"
+    ],
+    "any_pass": false
+   },
+   "record": "data:trackC/c9/2026-11-26-u2b/gate/battlestar.json"
+  },
+  "c9g.caprica": {
+   "value": {
+    "rows": [
+     "E2",
+     "E3",
+     "E4",
+     "E5",
+     "E7",
+     "E8"
+    ],
+    "snapped_fails": [
+     "E2",
+     "E7",
+     "E8",
+     "E3",
+     "E4",
+     "E5"
+    ],
+    "any_pass": false
+   },
+   "record": "data:trackC/c9/2026-11-26-u2b/gate/caprica.json"
+  },
+  "c9g.darkmatter": {
+   "value": {
+    "rows": [
+     "E2",
+     "E3",
+     "E4",
+     "E5",
+     "E7",
+     "E8"
+    ],
+    "snapped_fails": [
+     "E2",
+     "E7",
+     "E8",
+     "E3",
+     "E4",
+     "E5"
+    ],
+    "any_pass": false
+   },
+   "record": "data:trackC/c9/2026-11-26-u2b/gate/darkmatter.json"
+  },
+  "c9g.expanse": {
+   "value": {
+    "rows": [
+     "E2",
+     "E3",
+     "E4",
+     "E5",
+     "E7",
+     "E8"
+    ],
+    "snapped_fails": [
+     "E2",
+     "E7",
+     "E8",
+     "E3",
+     "E4",
+     "E5"
+    ],
+    "any_pass": false
+   },
+   "record": "data:trackC/c9/2026-11-26-u2b/gate/expanse.json"
   }
  }
 }

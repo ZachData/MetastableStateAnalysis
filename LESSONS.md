@@ -87,6 +87,11 @@ world moves, nobody updates the line, and the next session acts on it.
   draft gave 0.07–0.50: seed 4's B-matched arm (2 of 28) had been left out. No reading moved
   ("below half on every seed but the tie" holds). Caught only because the draft renders every
   number from its record; a post-hoc number typed into a status table had no such check.
+  **Recurred 2026-11-26 (C9 U3 → close-out):** U3's "Not established" paragraph, written after
+  `/challenge-pr` on #384, said the arms dated 512 sit at "0.48–0.58" of plateau, and STATE
+  repeated it. Keying it for `paper/` (`c9u3.at512_read512`) gave 0.50–0.58: 0.48 is an arm
+  dated 1000. The unit's own table, generated beside it, was right. Again caught only by the
+  render step; a prose range written from a table by eye is the same unchecked number.
 - 2026-10-22 (C2 unit 3c): `lit-C2-unit1.md` §5 recorded GPT-2 small's warmup as "4000 steps,
   linear" from the trainer config ([R]), and §5's prediction table was built on it. The logged LR
   in every seed's `trainer_state.json` is logarithmic (DeepSpeed's default warmup type; half the
