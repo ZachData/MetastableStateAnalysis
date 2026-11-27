@@ -67,7 +67,8 @@
   - C9 U2b, the GPU rows and the pairs (2026-11-26; Blocked 179 D7 (a), D8 (a), the user's; tier 1): every known answer exact. The snapped gate refuses every GPT-2 row, so no GPT-2 pair is read; one pair is read on the harness arms (A0's E1–E3 aligned, replicating 410m's verdict). Accepted as frozen (Blocked 180 (a), the user's) — `trackC_writeup/status-C.md` "C9 unit 2b"
   - C9 U3, the 160m seeds' two dates (2026-11-26; D5 (a), the user's: tier 1, nothing registered; rules pushed before output): known answer bit-equal on seed 0. E₁'s break is 256 on all ten 160m seeds. The centred date is 1000 at every arm on 6 seeds, and 512–1000 across arms on 4. U1's M on the ten seeds is 0.927, "carries" — `trackC_writeup/status-C.md` "C9 unit 3"
   - C9 closed 2026-11-26 at its exit and budget (5 units + close-out with U4, Blocked 181 (i)–(iii) (a), the user's; writing only): `paper/` now carries M on every model (table 2's last column; §4 scoped to the Pythia-shaped runs at the break), 160m's ten seeds (256 on 10 of 10; centred 1000 on 6, 512–1000 on 4 with a note at the bar), and §5 "On other models" (the order unread off 410m; one pair read on A0); `PROJECT.md` §3.89 — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
-  - C8 opened 2026-11-27 (the user's: "U0 ... candidate (i) first"; writing only, nothing computed): a scan and a proposed design for what triggers the transient. (i)'s rule is fixed in full: loss-rise and grad-spike events in a 16-update lead window on five arms with a transient, against each arm's own background, with a gate on the controls' real logs; "marked", "silent" or "mixed". (ii) sharpness against Adam's 38/η, (iv) causal arms and (iii)+(v) are fixed in shape. Budget 4 units + close-out, GPU ≈ 15–21.5 h; decisions Blocked 182 — `trackC_writeup/status-C.md` "C8 unit 0"
+  - C8 opened 2026-11-27 (the user's: "U0 ... candidate (i) first"; writing only, nothing computed): a scan and a proposed design for what triggers the transient. (i)'s rule is fixed in full: loss-rise and grad-spike events in a 16-update lead window on five arms with a transient, against each arm's own background, with a gate on the controls' real logs; "marked", "silent" or "mixed". (ii) sharpness against Adam's 38/η, (iv) causal arms and (iii)+(v) are fixed in shape. Budget 4 units + close-out, GPU ≈ 15–21.5 h; decisions Blocked 182, all (a) — `trackC_writeup/status-C.md` "C8 unit 0"
+  - C8 U1 (2026-11-27, CPU, logs only): (i) refused at its gate. G-plant's grad spike is found at 0.125–0.75 against 0.9 where the grad norm falls (B_K after the restart, A0 early). The G-null passes, and no with-transient window was opened. F′'s rule-T onset is F's at all three τ. Next: Blocked 183 — `trackC_writeup/status-C.md` "C8 unit 1"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -86,7 +87,7 @@
   - After C9 (closed 2026-11-26): the timeline's order off 410m (unread on GPT-2 at Pythia's resolution; A0′'s pair and A0's E4 wait on an unbiased max-over-heads null, ROADMAP §8 C9's standing note); why 160m breaks a step before most 410m seeds (unregistered); a per-transition split of R at GPT-2's breaks (ROADMAP §8 C5); the `c2_seeds` refusals (ROADMAP §8 C8) — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-27 · body `810ff1d2f6`
+- **Reviewed:** 2026-11-27 · body `8235288b55`
 <!-- /phase-card -->
 
 ## Units
@@ -157,6 +158,57 @@
 | C9 3. the 160m seeds' two dates (Blocked 180 (a); D5 (a), the user's) | **done 2026-11-26: tier 1, nothing registered; known answer bit-equal; gate passes; E₁ 256 on 10 of 10 seeds; centred 1000 at every arm on 6, 512–1000 across arms on 4; U1's M 0.927 "carries"** | `c9_u3_pass.py`, `c9_u3.py`, `data/trackC/c9/2026-11-26-u3/`; "C9 unit 3" below |
 | C9 close-out, with U4 (Blocked 181 (i) (a), (ii) (a), (iii) (a), the user's) | **done 2026-11-26: closed at its exit and budget (5 units + close-out); `paper/` edited (table 2's 160m row and M column, §4, §5 "On other models", §7, the scope lines), 27 new slots, `paper_check` 0; `PROJECT.md` §3.89** | `numbers.py` (`c9u1`, `c9u2b`, `c9u3` records); "C9 on one page" below |
 | C8 0. the scan and design (the user's, 2026-11-27) | **done 2026-11-27: writing only, nothing computed; proposed, D1–D5 Blocked 182; (i)'s rule fixed in full, (ii)–(v) in shape; budget 4 units + close-out** | `lit-C8.md`, `design-C8.md`, `tools/math_checks/c8_thresholds.py`; "C8 unit 0" below |
+| C8 1. candidate (i), the log rule (CPU) | **done 2026-11-27: refused at its gate** (G-plant's grad-spike power, 0.125–0.75 against 0.9, where the grad norm falls); no with-transient window opened; Blocked 182 all (a); Blocked 183 | `c8_rules.py`, `c8_read.py`; `data/trackC/c8/2026-11-27-u1/`; "C8 unit 1" below |
+
+## C8 unit 1, candidate (i): refused at its gate (2026-11-27)
+
+CPU, logs and saved records only. **Blocked 182 decided all (a), the user's** (D1 the 4-unit
+plan, D2 (viii) in U3, D3 the LLC out, D4 draft entries at U2's and U3's freezes, D5 F_w to 128
+then 1000 if H-w passes and no transient by 128). Tier 1 (D4). **No with-transient log was
+opened:** the reader refuses one before the gate passes, and `gate.json`'s `logs` lists only A0,
+A0′, B_K, BKO and B_O.
+
+**Input.** Rule `c8_rules.py` `f7da63aca1d1`, reader `c8_read.py`, committed (`b604e8c`) before
+any output. Output `data/trackC/c8/2026-11-27-u1/` (main tree): `reference.json` `50d062ebe2fd`,
+`constants.json` `3f8a0aa3edaa`, `gate.json` `eee68b76b446` (first 12 of sha256). Each holds the
+sha256 of every log, record set and file it read. A0's log `3c7a18a112b1`. Conda py3.10.
+
+| step | result |
+|---|---|
+| references (no log opened) | F (32, 48] / (32, 48] / (48, 64] at 9.61e-5 / 1e-4 / 3e-4, as the design's table. **F′'s, first computed here: the same three.** F½, F⅒, B_P, F¹, F¹′ as recorded (u3c `reading.json`, u3b `rep2/reference.json`) |
+| H-ref | **pass**: L7's sets on both arms' full-grid records are T3–T5 at every gated τ |
+| constants (A0 2001–4000) | σ̂_L 0.0269, ĉ_g 0.0674 → **δ_L 0.162, κ 1.5** (the floor; exp(6ĉ_g) = 1.4986) |
+| G-null | **pass**: 0 of 5 placements "marked" at each τ (shifts k = 0–4; F⅒'s window bounds k above, the branch restart below). Real windows: "mixed" (A0 has an event in F⅒'s window; B_O in B_P's at 3e-4) |
+| G-plant (1.5×) | **fail at every τ**: grad-spike detection 0.125 (9.61e-5, 1e-4) and 0.375 (3e-4) on B_K at B_P's window, 0.42 on B_O; 0.75 on A0 at F's and A0′ at F′'s window (9.61e-5, 1e-4). Loss rise ≥ 0.875 everywhere, 1.0 except B_K (0.875, 0.917) and B_O (0.958) |
+| G-edge (1×, no bar) | loss 0–0.03 at F's, F′'s, F½'s windows, 0.83 at F⅒'s; grad 0–0.46 |
+
+**Cause (checked on the controls' logs, `gate.json` and a diagnostic not kept):** the grad norm is
+falling in these windows, so the trailing median of 8 sits above g_s. A plant of κ^1.5 is found
+only if g_s / median > κ^(−½) = 0.816. On B_K, s = 265–280, that ratio is 0.27–0.83 (only 2 of 16
+above), since the trailing 8 still hold the restart spike's tail. On A0, s = 17–26, it is
+0.79–0.82 (the early fall, ≈ 5 % an update). Twin removal plays no part (B_O has no grad event
+there). A loss plant is missed only where L_s is more than 0.5 δ_L below the trailing
+minimum, so the loss misses on B_K and B_O come from the same post-restart fall (not checked one
+by one).
+
+**Reading: (i) refused at its gate (design "If a gate fails, U1 reports a refusal").** The
+constants were not re-placed: the plant scales with κ, so passing on B_K needs κ ≳ 7.3 (the
+second-lowest ratio is 0.369). That is a pass by scale, not by power. With no window opened, a
+revised rule could still be gated blind (Blocked 183). Neither event kind alone passes: the loss
+rise is 0.875 on B_K at two τ.
+
+**Deviations, fixed before any log was opened:** (1) B_K's log is 128 updates. At 3e-4, B_P's
+24-update window leaves it 2–3 background blocks at every placement, under the 4-block bar, so
+the G-null's B_P slot there is B_O, with B_K and BKO as the clean check. G-plant runs on both.
+(2) The A0 and A0′ stand-ins have no batch twin, because every other arm on their order has a
+transient, so all their events count.
+
+**Beside:** the G-null has 5 placements a τ, so its 5 % bar means 0 of 5. It is weak, as designed.
+
+**Re-run:** `METS_DATA=<main>/data python -m trackC_writeup.c8_read {reference,constants,gate}
+--out <dir>` (seconds). `read` refuses on this gate.
+
+**Next:** Blocked 183, yours.
 
 ## C8 unit 0, the scan and design (2026-11-27)
 

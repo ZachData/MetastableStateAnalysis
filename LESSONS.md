@@ -1223,6 +1223,16 @@ needs the user to enable it on GitHub.
 ## 6. Statistical designs that could not have rejected
 
 **Instances.**
+- 2026-11-27, C8 U1 (`status-C.md` "C8 unit 1"): (i)'s rule was fixed in full at U0 with its
+  block counts checked (`c8_thresholds.py` (2)), but only on the read arms' spans. The gate's
+  stand-in B_K has a 128-update log, too short for B_P's 24-update window at 3e-4. And the grad
+  spike (g_s > κ · median of the trailing 8) had never been tried on a control's log in the
+  windows chosen. There the grad norm is falling: the restart's tail on B_K, the early fall on
+  A0. So a κ^1.5 plant was found at 12.5–75 %, the gate failed, and the unit spent itself on a
+  refusal. Control logs are not blind, and a minute on them at U0 would have shown both. Rule:
+  **a gate's stand-ins get the same arithmetic checks as the read arms, and a detector relative
+  to a trailing baseline has its power tried on a control's log in the real windows before the
+  design freezes.**
 - 2026-11-23, C4′ (d)+(f) U0 (#371, `/challenge-pr` findings 1, 2): the design built its dose and
   step bands from F's onset as a point (48) with C4's ρ floor (1.25). F's grid holds 32, 48 and 64,
   so the onset is an interval, C4's own `rho_at` widens to 1.5 there, and at a half rate the two

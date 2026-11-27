@@ -6,6 +6,8 @@ import pytest
 
 from trackC_writeup import c8_rules as r
 
+pytestmark = pytest.mark.pure  # numpy only
+
 
 def _log(n=1000, start=1, seed=0, sd=0.003, gsd=0.02):
     rng = np.random.default_rng(seed)
