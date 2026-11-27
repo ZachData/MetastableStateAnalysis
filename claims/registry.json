@@ -1018,7 +1018,7 @@
       "evaluable": "e-value",
       "null_construction": "Exact binomial over seeds: K ~ Bin(9, 1/6) under H0 (D6 (b): the step uniform over the 12 non-zero grid steps up to 4000, of which 2 are inside), p = P(Bin(9, 1/6) >= K) in rationals, one-sided; E by core.evalues.calibrate at the registry's kappa. Seeds are independent by construction (separate training runs). Not a test of mechanism: all seeds share Pythia's LR schedule (warmup to about step 1430), so a high K cannot separate a training event from the schedule. A seed that fails to load or has a zero plateau median counts as outside. Fixed before any seed's intermediate step was downloaded or read (design-A5.md D1-D10, decided 2026-10-19 and 2026-10-20).",
       "calibration_record": "claims/audits/p_a5_dry_run.json",
-      "real_run_record": null,
+      "real_run_record": "claims/audits/p_a5_real_run.json",
       "relevance": 0.6,
       "source": "trackA_force/design-A5.md \"The draft entry\" (decided 2026-10-19, Blocked 68; D10 2026-10-20, Blocked 76)",
       "registered_commit": null,
@@ -1049,7 +1049,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; 410m by inference. Registered after A0's counts to 1000 were seen (H6, the harness check) and F's training loss to step 64 (the divergence check), before any F count. bf16 against Pythia's fp16. Input set at run time: the shard's sha256, the batch-0 hash, the prompts hash, code hashes.",
+      "notes": "70m only; 410m by inference. Registered after A0's counts to 1000 were seen (H6, the harness check) and F's training loss to step 64 (the divergence check), before any F count. bf16 against Pythia's fp16. Input set at run time: the shard's sha256, the batch-0 hash, the prompts hash, code hashes. Read 2026-11-14 (claude/c4-u3, #348): R2 'neither' at every gated tau arm (F 48 against A0 640; summed-rate band [91.7, 223.8], step's [512, 800]); the falsifier is met. trackC_writeup/status-C.md 'C4 unit 3'.",
       "superseded_by": null,
       "status": "active"
     },
@@ -1074,7 +1074,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. Registered after U1's gates and pi's file, before either arm took its first update (c4pc_train refuses until then).",
+      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. Registered after U1's gates and pi's file, before either arm took its first update (c4pc_train refuses until then). Read 2026-11-22 (C4′ (c) U3, `data/trackC/c4pc/2026-11-22-u3/scores.json`, rules `d7e674313486`, every gate passed): does not hold, every cell readable; falsifier met. F′'s transient {T3, T4, T5} and both end sets {T1, T2} are as stated, but A0′ has a transient {T3} at τ 9.61e-5 and 1e-4 (one grid step, 640, 5 of 7 prompts).",
       "superseded_by": null,
       "status": "active"
     },
@@ -1099,7 +1099,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. Near miss in the seed null: seed 1 has the pattern at 4000 but not at 1000. Registered after U1's gates and pi's file, before either arm took its first update.",
+      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. Near miss in the seed null: seed 1 has the pattern at 4000 but not at 1000. Registered after U1's gates and pi's file, before either arm took its first update. Read 2026-11-22 (C4′ (c) U3, `data/trackC/c4pc/2026-11-22-u3/scores.json`, rules `d7e674313486`, every gate passed): holds at 1000, 2000 and 4000: F′'s lowest V transition T1, A0′'s T2.",
       "superseded_by": null,
       "status": "active"
     },
@@ -1124,7 +1124,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. (i) alone is weak (C4's centred date also passed it). Fragile: one dense-grid step from failing on a replay of F (A0' at 640 instead of 768 puts the bar at 303, below F's 320). Registered after U1's gates and pi's file, before either arm took its first update.",
+      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. (i) alone is weak (C4's centred date also passed it). Fragile: one dense-grid step from failing on a replay of F (A0' at 640 instead of 768 puts the bar at 303, below F's 320). Registered after U1's gates and pi's file, before either arm took its first update. Read 2026-11-22 (C4′ (c) U3, `data/trackC/c4pc/2026-11-22-u3/scores.json`, rules `d7e674313486`, every gate passed): holds: induction F′ 320, A0′ 768; (i) 320 < 398; (ii) 0.44 < 1.09 at the three gated arms.",
       "superseded_by": null,
       "status": "active"
     },
@@ -1149,7 +1149,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. Near misses in the seed null: seeds 5 and 8 have a top head in layer 4, none in layer 2. Registered after U1's gates and pi's file, before either arm took its first update.",
+      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. Near misses in the seed null: seeds 5 and 8 have a top head in layer 4, none in layer 2. Registered after U1's gates and pi's file, before either arm took its first update. Read 2026-11-22 (C4′ (c) U3, `data/trackC/c4pc/2026-11-22-u3/scores.json`, rules `d7e674313486`, every gate passed): holds: F′ L2H2, A0′ L3H6.",
       "superseded_by": null,
       "status": "active"
     },
@@ -1174,7 +1174,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. (b) has no known answer on C4's pair. Registered after U1's gates and pi's file, before either arm took its first update.",
+      "notes": "70m only; the leans were formed post hoc on C4's pair, so a held entry is one replication at another order and the same init; bf16 against Pythia's fp16. (b) has no known answer on C4's pair. Registered after U1's gates and pi's file, before either arm took its first update. Read 2026-11-22 (C4′ (c) U3, `data/trackC/c4pc/2026-11-22-u3/scores.json`, rules `d7e674313486`, every gate passed): holds: (a) \"another path\" early, 0 of 16 steps on A0′'s path; (b)'s gate passed and r_F > r_A0′ at 12 of 12 late steps, by a factor falling from 7.5 at 320 to 1.2 at 3500 and 4000.",
       "superseded_by": null,
       "status": "active"
     },
@@ -1199,7 +1199,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "70m only; one run per rate; 'none by 1000' on F⅒ does not separate a threshold from a clock slower than the dose; rule T's span was placed after seeing A0′'s one-state run at 640; above 656 the grid is every 32 updates, so a transient shorter than 32 updates there reads 'none'. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering ((44, 48], (44, 48], (48, 52] at 9.61e-5, 1e-4, 3e-4; one grid step from F¹'s at 1e-4; status-C.md 'C4′ (d)+(f) unit 3b'); this score (presence) does not read them, and the onset labels beside use F¹'s first reference as frozen.",
+      "notes": "70m only; one run per rate; 'none by 1000' on F⅒ does not separate a threshold from a clock slower than the dose; rule T's span was placed after seeing A0′'s one-state run at 640; above 656 the grid is every 32 updates, so a transient shorter than 32 updates there reads 'none'. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering ((44, 48], (44, 48], (48, 52] at 9.61e-5, 1e-4, 3e-4; one grid step from F¹'s at 1e-4; status-C.md 'C4′ (d)+(f) unit 3b'); this score (presence) does not read them, and the onset labels beside use F¹'s first reference as frozen. Read 2026-11-25 (C4′ (d)+(f) U3c, `data/trackC/c4pdf/2026-11-25-u3c/reading.json` sha256 16150f06cc1b8a682eef49266d9911345ab142ef6b70baf500f03869d28acccd, rules `284f0d10f5ba`, the gate passed): does not hold, every cell readable; falsifier met. F½ has a transient at every gated arm (onsets (56, 60], (56, 60], (60, 64]), and so does F⅒ ((752, 784] at each, running to 1000).",
       "superseded_by": null,
       "status": "active"
     },
@@ -1224,7 +1224,7 @@
       "registered_commit": null,
       "registered_date": null,
       "registered_provenance": "gated",
-      "notes": "The bands are disjoint by a thin margin (r < 0.512 at r = ½), and F's own date is known only to (256, 320]; F⅒'s induction (d3) is not in the entry, since its dose band is past 1000. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering (status-C.md 'C4′ (d)+(f) unit 3b'); this score reads F's own date, not F¹'s references, and the onset labels beside P-SCH7 use F¹'s first reference as frozen; the null_construction's opening 'Calibration, not a p-value:' was added at registration (P-SCH7's words, for check_registry), confirmed by the user.",
+      "notes": "The bands are disjoint by a thin margin (r < 0.512 at r = ½), and F's own date is known only to (256, 320]; F⅒'s induction (d3) is not in the entry, since its dose band is past 1000. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering (status-C.md 'C4′ (d)+(f) unit 3b'); this score reads F's own date, not F¹'s references, and the onset labels beside P-SCH7 use F¹'s first reference as frozen; the null_construction's opening 'Calibration, not a p-value:' was added at registration (P-SCH7's words, for check_registry), confirmed by the user. Read 2026-11-25 (C4′ (d)+(f) U3c, `data/trackC/c4pdf/2026-11-25-u3c/reading.json` sha256 16150f06cc1b8a682eef49266d9911345ab142ef6b70baf500f03869d28acccd, rules `284f0d10f5ba`, the gate passed): does not hold; falsifier met. F½'s induction date is (304, 320], inside the step band [204.8, 400], not the dose band [409.6, 800].",
       "superseded_by": null,
       "status": "active"
     }
