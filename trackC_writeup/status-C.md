@@ -84,7 +84,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share); U2a, U2b done 2026-11-26 (the timeline's order off 410m: every GPT-2 row refused by D7 (a)'s snapped gate, one pair read on A0, replicating; Blocked 180 (a), accepted as frozen); U3 done 2026-11-26 (D5 (a): E₁ 256 on all ten 160m seeds, centred 1000 on 6 and 512–1000 on 4; M "carries"); Blocked 181, then U4 and the close-out — `trackC_writeup/status-C.md` "C9 unit 3"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `2e1324d6b4`
+- **Reviewed:** 2026-11-26 · body `2e80fe7706`
 <!-- /phase-card -->
 
 ## Units
@@ -180,18 +180,21 @@ not inside. Each arm's V_c moved one step earlier reads 512, readable.
 
 **Reading** (per seed; the centred date is the set over the four gated, readable arms):
 
-| seed | E₁'s break | plateau | centred date(s) | arms at 512 |
-|---|---|---|---|---|
-| 0 | 256 | 16 | 1000 | — |
-| 1 | 256 | 20 | 512, 1000 | 1e-4 |
-| 2 | 256 | 18 | 512, 1000 | 1.25e-4, 1e-4 |
-| 3 | 256 | 19 | 512, 1000 | 1.25e-4, 1e-4 |
-| 4 | 256 | 19 | 1000 | — |
-| 5 | 256 | 24 | 1000 | — |
-| 6 | 256 | 23 | 1000 | — |
-| 7 | 256 | 22 | 1000 | — |
-| 8 | 256 | 23 | 1000 | — |
-| 9 | 256 | 15 | 512, 1000 | 3e-4 |
+| seed | E₁'s break | plateau | centred date(s) | arms at 512 | V_c(512) / plateau at τ 1.25e-4 · 1e-4 · 3e-4 · 8.22e-4 (beside) | V_u(256) / plateau (beside) |
+|---|---|---|---|---|---|---|
+| 0 | 256 | 16 | 1000 | — | 0.42 · 0.41 · 0.41 · 0.26 | 1.12 |
+| 1 | 256 | 20 | 512, 1000 | 1e-4 | 0.48 · **0.50** · 0.37 · 0.30 | 1.10 |
+| 2 | 256 | 18 | 512, 1000 | 1.25e-4, 1e-4 | **0.54** · **0.54** · 0.42 · 0.29 | 1.06 |
+| 3 | 256 | 19 | 512, 1000 | 1.25e-4, 1e-4 | **0.58** · **0.56** · 0.46 · 0.17 | 1.21 |
+| 4 | 256 | 19 | 1000 | — | 0.31 · 0.30 · 0.29 · 0.29 | 0.63 |
+| 5 | 256 | 24 | 1000 | — | 0.39 · 0.42 · 0.29 · 0.12 | 0.54 |
+| 6 | 256 | 23 | 1000 | — | 0.25 · 0.25 · 0.26 · 0.27 | 0.61 |
+| 7 | 256 | 22 | 1000 | — | 0.41 · 0.41 · 0.30 · 0.05 | 0.68 |
+| 8 | 256 | 23 | 1000 | — | 0.26 · 0.26 · 0.26 · 0.25 | 0.57 |
+| 9 | 256 | 15 | 512, 1000 | 3e-4 | 0.48 · 0.48 · **0.52** · 0.30 | 1.07 |
+
+The two beside columns were added after `/challenge-pr` on #384 (findings 1, 4), post hoc, from
+`reading.json`. Bold marks an arm at or over the half-plateau bar (`>=`).
 
 - **E₁'s break is 256 on all ten 160m seeds.** None is unreadable: the step 0–128 counts are at
   most 2 against plateaus of 15–24. Table 2's 160m row becomes "256 (10 of 10)".
@@ -215,9 +218,28 @@ against 3e-4).
 "256" is a crossing in (128, 256]. It does not tell step, cumulative and instantaneous apart (3b's
 predictions overlap). The 512 arms are at the two smallest τ (1e-4, 1.25e-4) on 3 of the 4
 seeds and at 3e-4 on seed 9. Whether that is the arms' scale or the seeds is not read.
+**The 512 / 1000 split sits at the half-plateau bar** (`/challenge-pr` on #384, finding 1). The
+arms that read 512 have V_c(512) at 0.48–0.58 of their plateau, and seed 1's only 512 arm is
+exactly 15 / 30, read 512 by `>=`. Seed 0's arms are at 0.41–0.42. The two smallest τ give
+near-identical series (the same count at 512 on 8 of 10 seeds), so "two arms at 512" is about one
+piece of evidence. So the 6 / 4 split is a one-count margin at a frozen threshold, not a
+separation. *Post hoc, description only, 10 seeds* (finding 4): the four seeds with a 512 arm
+(1, 2, 3, 9) are four of the five whose uncentred count is over its plateau at 256; the fifth
+is seed 0. The other five are at 0.54–0.68. That points to faster seeds rather than the arms'
+scale. It was looked at after the reading.
+**The gate does not test that region** (finding 2). The "one step earlier" check puts V_c(512)
+at about 0.85–1.0 of a moved plateau, so it passes whatever the reader does near 0.5. The
+planted-null row at 4000 reads `None` and passes as "not inside". Both plants move the
+reference they are read against, which is the case this unit's `LESSONS.md` line names. The
+gate is frozen and not re-run. These limits bear mostly on the centred cells. E₁'s count at
+256 is 0.54–1.21 of its plateau (seed 5's 0.54 is near the bar too, so 512 is one count away
+there), and at 128 it is at most 1 count (≤ 0.05), so no seed is near reading 128.
 
 **Carried in, not made:** the two `c2_seeds` refusals. U3 derived no arm, so neither applies. They go
 to the close-out, which gives them a home (ROADMAP C8 or the next unit that derives an arm).
+*This reverses the frozen design's "Carried in" ("U3 derives centred tolerances on 160m, so it
+takes them"). That text did not leave the choice open, so the reversal is Claude's, not yours.
+It parks the refusals a third time (`/challenge-pr` on #384, finding 3): STATE Blocked 181 (ii).*
 
 **Re-run:** `METS_REPO=$PWD METS_DATA=<main>/data HF_HUB_OFFLINE=1 python -m
 trackC_writeup.c9_u3_pass --out <dir>` (GPU, about 14 min; seeds 1–9 from
@@ -227,7 +249,17 @@ trackC_writeup.c9_u3 known --out <dir>` and `read --out <dir>` (CPU, seconds).
 **Next:** U4 (`paper/`: table 2's 160m row, U1's column, §5's "on other models" paragraph with
 Blocked 180 (a)'s wording, the scope line) and the close-out. The budget's five units are spent.
 D6 (a) makes U4 a unit of its own, and the budget line counted it only under D6 (b), so **Blocked
-181**: U4 inside the close-out (writing only), or a budget extension. **Parked:** none new.
+181**: (i) U4 inside the close-out (writing only), or a budget extension; (ii) ratify or reverse
+the "Carried in" line above; (iii) table 2's centred 160m cell. **Parked:** none new.
+
+**After `/challenge-pr` on #384** (accept with changes; comment on #384, reviewed at `07eb3ce`):
+
+| # | finding | done |
+|---|---|---|
+| 1 | the 512 / 1000 split is at the half-plateau bar (seed 1's arm exactly 15 / 30; the two smallest τ near-identical) | taken: the V_c(512) / plateau column and a "Not established" paragraph; table 2's cell is Blocked 181 (iii) |
+| 2 | the gate does not exercise the region the reading turns on; the null's 4000 row passes on `None`; both plants move their reference | taken as a stated limit ("Not established"); the gate is frozen and was not re-run |
+| 3 | the "Carried in" reversal is Claude's, against the frozen text | taken: marked as Claude's, put to the user (Blocked 181 (ii)) |
+| 4 | the 512 seeds are four of the five at plateau by 256 (post hoc) | taken: the V_u(256) / plateau column and one post hoc line |
 
 ## C9 unit 2b, the GPU rows, the snapped gate and the pairs (2026-11-26)
 
