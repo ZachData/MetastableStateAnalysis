@@ -5,8 +5,11 @@ its values at C8's rates (1e-3, 5e-4, 1e-4); (2) (i)'s windows (t⁻ − 16, t],
 8 updates, and the background blocks each condition gets on its log span, all ≥ 4 (the refusal
 bar), at the onsets earlier units recorded (F's (32, 48] and (48, 64], F½'s (56, 60] and (60, 64],
 F⅒'s (752, 784], B_P's (272, 280] and (280, 288]); F¹'s own window gets < 4, which is why F reads
-and F¹ stands beside; (3) the Π bar: five conditions each at background b give Π = b⁵ ≤ 0.05 iff
-b ≤ 0.05^(1/5) ≈ 0.549; (4) Adam's second moment at β₂ = 0.95 after k zero-rate updates holds
+and F¹ stands beside; (3) the Π bar over factors (F and F½ merged, since their windows share
+updates; /challenge-pr on #387, finding 1): F and F½'s windows overlap at every gated τ, F⅒'s and
+B_P's overlap no other on C4's order; k factors at a common b give Π = b^k ≤ 0.05 iff
+b ≤ 0.05^(1/k), ≈ 0.473 at k = 4 ("marked") and ≈ 0.368 at k = 3 ("marked at ≥ half the peak");
+(4) Adam's second moment at β₂ = 0.95 after k zero-rate updates holds
 1 − β₂^k of its weight on the gradients seen, ≈ 0.963 at k = 64 (U3's warmed arm), with time
 constant 1/(1 − β₂) = 20 updates; β₁'s at k = 64 is ≈ 0.9988.
 
@@ -64,7 +67,26 @@ assert got["BP 9.61e-5/1e-4"] == (16, 13) and got["BP 3e-4"][0] == 24
 assert all(c >= MIN_BLOCKS for _, c in got.values()), got
 assert blocks(44, 48, (9, 128))[1] < MIN_BLOCKS     # F¹ on its own 128-update log: refused
 
-assert Fr(1, 2) ** 5 <= Fr(1, 20) and 0.549 < 0.05 ** 0.2 < 0.5494
+def wins(key):
+    tm, t, _, br = cases[key]
+    return window(tm, t, br)
+
+
+def overlap(a, b):
+    return max(a[0], b[0]) < min(a[1], b[1])
+
+
+for f, h in (("F 9.61e-5/1e-4", "Fh 9.61e-5/1e-4"), ("F 3e-4", "Fh 3e-4"),
+             ("F 9.61e-5/1e-4", "Fh 3e-4"), ("F 3e-4", "Fh 9.61e-5/1e-4")):
+    assert overlap(wins(f), wins(h))                    # F and F½ share updates: one factor
+for f in ("F 9.61e-5/1e-4", "F 3e-4", "Fh 9.61e-5/1e-4", "Fh 3e-4", "BP 9.61e-5/1e-4", "BP 3e-4"):
+    assert not overlap(wins("Ft"), wins(f))
+for f in ("F 9.61e-5/1e-4", "F 3e-4", "Fh 9.61e-5/1e-4", "Fh 3e-4"):
+    for bp in ("BP 9.61e-5/1e-4", "BP 3e-4"):           # B_P's update s reads A0's batch s − 1
+        lo, hi = wins(bp)
+        assert not overlap(wins(f), (lo - 1, hi - 1))
+assert 0.4728 < 0.05 ** 0.25 < 0.4729 and 0.3684 < 0.05 ** (1 / 3) < 0.3685
+assert Fr(47, 100) ** 4 <= Fr(1, 20) and Fr(37, 100) ** 3 > Fr(1, 20)
 
 k = 64
 assert abs((1 - 0.95 ** k) - 0.9625) < 1e-3 and abs((1 - 0.9 ** k) - 0.99882) < 1e-4

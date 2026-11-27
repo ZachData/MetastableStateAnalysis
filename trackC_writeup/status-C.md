@@ -86,7 +86,7 @@
   - After C9 (closed 2026-11-26): the timeline's order off 410m (unread on GPT-2 at Pythia's resolution; A0′'s pair and A0's E4 wait on an unbiased max-over-heads null, ROADMAP §8 C9's standing note); why 160m breaks a step before most 410m seeds (unregistered); a per-transition split of R at GPT-2's breaks (ROADMAP §8 C5); the `c2_seeds` refusals (ROADMAP §8 C8) — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-27 · body `ee50237fc8`
+- **Reviewed:** 2026-11-27 · body `810ff1d2f6`
 <!-- /phase-card -->
 
 ## Units
@@ -178,6 +178,18 @@ Writing only. Nothing computed or trained, and no log value opened. Opened by th
   opened. F′'s and F's references are computed by rule T first. Every input is hashed. **U2
   (ii)** raw and preconditioned sharpness; v̂ from F², B_P², B_K² re-runs. **U3 (iv)** F_w (moments
   warmed by 64 updates at rate 0) and B_K↑ (a rate overshoot), with (viii). **U4 (iii) + (v)**.
+- **`/challenge-pr` on #387: accept with changes, findings 1–6 taken in the design before any
+  output.**
+  1. Every arm on one order reads the same batch at the same update, so a batch twin (A0, A0′,
+     B_O) now voids an event of the same kind at the same update. Π runs over four factors, with
+     F and F½ merged because their windows overlap.
+  2. The first G-null (iid noise at 6σ) could not fail. It is now the full rule on the controls'
+     real logs, at the real and shifted windows. G-plant is at 1.5×, with power at 1× reported.
+  3. F_w gets H-w: its early drift has to differ from F²'s by more than the replicate spread, or
+     it gives no reading.
+  4. The U2 re-runs are new trajectories, so each is read against its own rule-T onset.
+  5. A label "marked at ≥ half the peak" is added, so a quiet F⅒ does not void the other four.
+  6. A path is fixed.
 - **Seen before the design:** F's log at 1, 4, 64; the branches' peaks at 257–259 and their
   values at 384; F⅒'s and F½'s at 1000. No window value is recorded in any file.
 - **Not triggered:** the `c2_seeds` refusals (no centred arm derived); C9's max-over-heads note.

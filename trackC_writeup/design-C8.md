@@ -5,7 +5,11 @@
 the user 2026-11-27 ("U0, the literature scan and design ... candidate (i) first"). The row is
 the user's, from 2026-11-24 at C4′ (d)+(f) U3b: "something ... seems to trigger the repulsive
 stage ... deeply linked to induction, but still a little mysterious". Decisions D1–D5 are in STATE
-Blocked 182. Scan: `lit-C8.md`. Arithmetic: `tools/math_checks/c8_thresholds.py`. (i)'s rule is
+Blocked 182. Revised after `/challenge-pr` on #387 (accept with changes; findings 1–6 taken
+before any output): (i) gains batch twins and Π over four factors (1), a real-log G-null (2) and
+the label "marked at ≥ half the peak" (5). U3 gains the manipulation check H-w (3). U2 reads each
+re-run against its own onset (4). One path is fixed (6). Scan: `lit-C8.md`. Arithmetic:
+`tools/math_checks/c8_thresholds.py`. (i)'s rule is
 fixed here in full. (ii)–(v) are fixed in shape here, and each unit pushes its constants in code
 before its output, as C4′ (d)+(f) did.
 
@@ -51,7 +55,8 @@ update s; `grad_norm`, the total norm before the clip at 1.0, as `clip_grad_norm
 every log and record it reads into its output. This is the carried item from `/challenge-pr` on
 #378, finding 3.
 
-**The references.** The onsets above, read from `c4pdf/2026-11-25-u3c/reading.json`. F's and F′'s
+**The references.** The onsets above, read from `data/trackC/c4pdf/2026-11-25-u3c/reading.json`
+(the main tree's `data/`, not HDD_1TB; `/challenge-pr` on #387, finding 6). F's and F′'s
 come from rule T on their own records (`c4_read`'s per-checkpoint records on C4's grid), computed
 and written to `reference.json` **before any log is opened**.
 
@@ -71,6 +76,14 @@ On a branch it also excludes the restart's first 8 updates (s ≤ 264), which ev
 An event is either. Each kind is reported beside. Under a falling loss, a rise above the trailing
 minimum is conservative: a fast fall cannot trigger it.
 
+**The batch-matched control** (`/challenge-pr` on #387, finding 1). Every arm on one order reads
+the same batch at the same update (`design-C4pdf.md` "The arms"). So one hard batch can put an
+event into several windows at once, whatever the arm's state. **An event at s does not count if
+the arm's batch twin has an event of the same kind at s.** The twins: A0 for F, F½ and F⅒ (C4's
+order), A0′ for F′ (order π), and B_O for B_P (A0's batches 256–511). A0 is not a twin for the
+dynamics, since it is on a ramp. It is the right control for an event the batch makes. Twin
+events are reported beside. The same exclusion applies inside the background.
+
 **The constants, placed before any window of a with-transient arm is opened**, on A0's updates
 2001–4000 (a control arm, smooth there): σ̂_L = 1.4826 · MAD(ΔL)/√2 and ĉ_g = 1.4826 ·
 MAD(Δ ln g)/√2. Then δ_L = max(0.02, 6 σ̂_L) and κ = max(1.5, exp(6 ĉ_g)).
@@ -81,13 +94,21 @@ block is dropped if it comes within 16 updates of the window. b_a is the share o
 blocks that hold an event. At least 4 blocks are needed (each condition has 8–46,
 `c8_thresholds.py`); with fewer, the condition is refused.
 
-**The gate (U1, before the read):**
+**The factors of Π** (finding 1). Conditions on one order whose windows share an update are one
+factor, with the larger b. F and F½ share updates (at 3e-4, F½'s 45–64 lies inside F's 33–64),
+so they are one factor. That leaves four: {F, F½}, F′, F⅒ and B_P. F⅒'s window (737–784) and
+B_P's batches (264–287) share no update with the others. Π ≤ 0.05 then needs some b below
+0.05^(1/4) ≈ 0.473 (`c8_thresholds.py` (3)).
+
+**The gate (U1, before the read; revised after `/challenge-pr` on #387, finding 2: the first
+G-null, on iid Gaussian noise at 6σ, could not fail):**
 
 | gate | what | bar |
 |---|---|---|
-| G-null | synthetic logs on each condition's own layout (a smooth decay, iid noise at σ̂_L and ĉ_g), 200 draws | "marked" in ≤ 5 % of draws |
-| G-plant | the control arms' **real** logs at matched positions: A0 at F's, F½'s and F⅒'s windows; A0′ at F′'s; B_O, B_K and BKO at B_P's. A loss rise of 2 δ_L and a grad jump of 2κ are planted at each update of the window in turn | detected at ≥ 90 % of positions in every window |
-| G-half | the same at δ_L/2 and √κ | reported (power), no bar |
+| G-null | **the full rule R_i on the control arms' real logs**: A0 stands in for F, F½ and F⅒ at their windows, A0′ for F′, B_K for B_P (with BKO as its twin check and B_O as its batch twin). It is run at the real windows and at every joint shift of all windows by a whole number of window lengths that keeps each inside its arm's span and clear of a branch's restart | "marked" or "marked at ≥ half the peak" at ≤ 5 % of placements; at the real windows, reported |
+| G-plant | the same control logs at the real windows. A loss rise of 1.5 δ_L and a grad jump of κ^1.5 are planted at each update of the window in turn (the twin left unplanted) | detected at ≥ 90 % of positions in every window |
+| G-edge | the same at 1 × δ_L and 1 × κ | reported (power at the threshold), no bar |
+| G-synth | iid synthetic logs on each layout | a code test only, not a gate |
 | H-ref | F's and F′'s rule-T references reproduce C4′ (c)'s L7 sets (T3–T5 on both) | exact |
 
 If a gate fails, U1 reports a refusal. The constants may be re-placed once, and only before any
@@ -97,12 +118,17 @@ with-transient window has been opened. That re-placement is recorded.
 
 | label | when |
 |---|---|
-| **marked** | every one of the five conditions has an event in its window, Π_a b_a ≤ 0.05, and none of B_O, B_K, BKO has one in B_P's window |
-| **silent** | none of the five has an event in its window |
+| **marked** | every one of the five conditions has a counted event in its window, Π over the four factors ≤ 0.05, and neither B_K nor BKO has one in B_P's window |
+| **marked at ≥ half the peak** | F, F′, F½ and B_P each have a counted event, Π over their three factors ({F, F½}, F′, B_P) ≤ 0.05, B_K and BKO clean, and F⅒ has none |
+| **silent** | none of the five has a counted event in its window |
 | **mixed** | otherwise; each condition's label shown |
 
-The joint reading holds only where it holds at all three gated τ. Otherwise it is "mixed across
-τ". The Π bar fails if every b_a exceeds ≈ 0.549 (`c8_thresholds.py` (3)).
+The second row was added before any output (`/challenge-pr` on #387, finding 5). F⅒ is the
+condition least like the others: it is a tenth of the peak, its transient comes after ~750
+updates and is a sixth of the size. So one quiet F⅒ window should not send a pattern the other
+four share to "mixed". The cells stay these five conditions and this one statistic. The joint
+reading holds only where it holds at all three gated τ. Otherwise it is "mixed across τ". The
+three-factor bar needs some b below 0.05^(1/3) ≈ 0.368 (`c8_thresholds.py` (3)).
 
 **Clip label C, per condition, a description with no bar:** the share of window updates with
 g_s > 1.0 (clipped). "clipped" if ≥ ½, "unclipped" if none, "partly" otherwise. This answers the
@@ -120,6 +146,8 @@ arm.
 - C [K]: F⅒ "unclipped" (1e-4, after ~750 updates). F and B_P not predicted.
 
 **What each reading changes:**
+- *marked at ≥ half the peak*: as *marked*, for the four peak-like conditions; F⅒'s trigger is
+  then a separate question, and U2's raw λ on F⅒ is read beside, not with the rest.
 - *marked*: the event gives a per-update date for the onset, finer than any saved grid. U2 reads
   sharpness at the saved states around it. U3's arms are read by the log first (free), then by
   rule T.
@@ -139,9 +167,15 @@ arm.
   checkpoints do not save. So **F² (F¹'s recipe) to 128 and B_P², B_K² (256 → 384) are re-run,
   saving weights and v̂ at their grids** (≈ 1 h each; 61 states × 2 × 282 MB ≈ 34 GB). F⅒'s v̂ at 752–784 would need ~800 updates
   (≈ 6 h), so it is not taken. F⅒ reads raw λ only.
+- **The re-runs are new trajectories, so each is read against its own onset** (`/challenge-pr`
+  on #387, finding 4: F, F¹ and F¹′ are bit-equal at 1 of 128 updates, and their losses differ by
+  up to ~1 %). Records (`c4_read`) are written on every saved state of F², B_P² and B_K², and
+  rule T gives each its own onset **before any λ is computed**. F²'s and B_P²'s windows are their
+  own, not F¹'s or B_P's. If F² or B_P² has no transient, or B_K² has one, the rule's premise
+  fails on that re-run and (ii) is refused there, with the cause named.
 - **Rule shape**, constants (the band θ, the batch, the iteration count) pushed in U2 before
   output, with a gate on a planted quadratic of known λ: **"crosses at the onset"** if, on F² and
-  B_P², the first saved state with λ_P ≥ θ · threshold lies in the window, and B_K² stays below
+  B_P², the first saved state with λ_P ≥ θ · threshold lies in that re-run's own window, and B_K² stays below
   θ · threshold through 128. **"crosses, not at the onset"** if a crossing falls outside the
   window. **"never crosses"** otherwise. θ is a band, since Cohen et al. is full-batch (`lit-C8.md`
   Parked 2, read before the freeze).
@@ -158,7 +192,16 @@ arm.
   sized so its drift after 16 matches B_P's (`drift.json`: 0.033 against 0.011 after one update).
   This tells fresh moments from large early steps on a trained state (`/challenge-pr` on #375,
   finding 1). The size is placed in U3 before training.
-- **Rule shape:** rule T on each, at the three gated τ. The joint reading:
+- **H-w, a manipulation check, before F_w's rule T is read** (`/challenge-pr` on #387, finding 3).
+  Warming the moments at the init's weights changes only how far the first updates move. Both arms
+  meet the same clipped first gradients (`c4_train.py` 290–291). So H-w compares F_w's relative
+  drift from init, ‖θ_s − θ_0‖/‖θ_0‖, at s = 1, 4, 16, 48 with F²'s at the same s. **It passes
+  if, at s = 1 or 4, F_w's drift differs from F²'s by more than F¹ and F¹′ differ from each other
+  there** (the replicate spread). If it fails, the warm-up did not change the early steps beyond
+  noise, and F_w gives **no reading** (not "fresh moments do not matter"). D5's extension then
+  does not run. B_K↑ gets the same check against B_K, and its overshoot has to reach B_P's drift
+  at 16 within the spread between B_P and B_P².
+- **Rule shape:** rule T on each that passes its check, at the three gated τ. The joint reading:
 
 | F_w | B_K↑ | reads |
 |---|---|---|
@@ -167,7 +210,7 @@ arm.
 | none | none | fresh moments themselves |
 | transient | none | the init and the trained state differ: no joint claim |
 
-- **D5:** F_w continued to 1000 if it has no transient by 128. Its induction date is then the
+- **D5:** F_w continued to 1000 if H-w passes and it has no transient by 128. Its induction date is then the
   direct test of the induction link: does induction form without the transient?
 - **(viii), D2 (a):** B_O continued from its `resume.pt` at 512 at A0's rate to 1000 (≈ 7 h). By
   rule T, does a low-rate restart make the transient after a dose like F⅒'s?
@@ -231,7 +274,7 @@ under its 250 GB cap with C9's 57 GB. (viii) resumes from HDD_1TB and writes the
   register or decline before they compute (**recommended**: their outputs are wholly unseen, and
   P-SCH7/8 were registered this way). (b) Tier 1 throughout. In both, U1 stays tier 1: its logs
   are partly seen.
-- **D5, F_w's horizon.** (a) To 128, and to 1000 only if it has no transient by 128 (+6.5 h;
+- **D5, F_w's horizon.** (a) To 128, and to 1000 only if H-w passes and it has no transient by 128 (+6.5 h;
   **recommended**: that is the one arm whose induction date answers "is the transient linked to
   induction"). (b) To 128 only.
 
@@ -240,9 +283,10 @@ under its 250 GB cap with C9's 57 GB. (viii) resumes from HDD_1TB and writes the
 1. **(i) reads the union of two event kinds**, with no bar on either alone. A grad-only or a
    loss-only reading could fit the edge-of-stability lean better. Rejected: two read families
    doubles the cells, and the kinds are reported beside.
-2. **Background from the arm's own log** rather than from a no-transient twin. Only B_P has
-   twins (B_O, B_K, BKO). The arms from init have none, since A0 is on a ramp. An own-log background
-   mixes regimes (F's background runs to 1000, through induction).
+2. **Background from the arm's own log**, with batch twins excluding shared-batch events
+   (revised after `/challenge-pr` on #387, finding 1: the first push let A0 be no control "since
+   it is on a ramp", which was about its dynamics, not its batches). The own-log background still
+   mixes regimes: F's background runs to 1000, through induction.
 3. **F reads for F¹ and F¹′.** F's onset is known only to C4's grid (a 16-update interval), so
    its window is 32 updates long. F¹ has the finer onset, but its log stops at 128.
 4. **The constants are placed on A0's late log**, where noise may be smaller than early. A
@@ -250,4 +294,8 @@ under its 250 GB cap with C9's 57 GB. (viii) resumes from HDD_1TB and writes the
    G-plant checks the real logs at the windows' own positions.
 5. **U2's preconditioned read skips F⅒** (≈ 6 h to rebuild its v̂ at 784). The arm least like the
    others then has raw λ only.
-6. **The Π bar treats the five conditions as independent.** F, F′ and F½ share an init.
+6. **The Π bar's factors.** F and F½ are merged into one factor, since their windows share
+   updates and batches (finding 1). F, F′, F½ and F⅒ still share an init, and Π treats the four
+   factors as independent beyond that.
+7. **The second label, "marked at ≥ half the peak"** (finding 5), adds a cell to (i)'s family.
+   It was added before any output, so the alternative of a separate family was rejected.
