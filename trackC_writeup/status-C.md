@@ -85,7 +85,7 @@
   - After C9 (closed 2026-11-26): the timeline's order off 410m (unread on GPT-2 at Pythia's resolution; A0′'s pair and A0's E4 wait on an unbiased max-over-heads null, ROADMAP §8 C9's standing note); why 160m breaks a step before most 410m seeds (unregistered); a per-transition split of R at GPT-2's breaks (ROADMAP §8 C5); the `c2_seeds` refusals (ROADMAP §8 C8) — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `2838c2777b`
+- **Reviewed:** 2026-11-26 · body `a223c7e5b5`
 <!-- /phase-card -->
 
 ## Units
@@ -197,7 +197,8 @@ warmup's. M's bar is placed, not calibrated, and the plants test the code, not M
    it is **carried to ROADMAP §8 C9's row** as a standing note: fix it before any later gate of a
    max-over-heads row.
 6. Blocked 177 (P-SCH7, P-SCH8 and the earlier entries' scoring sentences) is not C9's; it stays
-   open in STATE until `git log` shows the user's registry commit.
+   open in STATE until `git log` shows the user's registry commit. *Done 2026-11-26 on the user's
+   instruction: all eight sentences in the registry (#386, `52470c8`).*
 
 **Units at close:** 5 + close-out, the budget. Decisions: Blocked 178 (D1–D6; Claude on the user's
 "merged, continue", confirmed by the user), 179 (D7, D8), 180 (a), D5 (a), 181 (i)–(iii) (a), all
@@ -697,7 +698,7 @@ Anything on 410m.
    the five designs that carried them (C4, C4′, (c), (e)+(g), (d)+(f)) derived a centred arm.
 6. Blocked 177 (P-SCH7 and P-SCH8's scoring sentences, with P-SCH1's and P-SCH2–6's, none yet
    in the registry): **given a home**. It is the user's commit and stays open in STATE until
-   `git log` shows it.
+   `git log` shows it. *Done 2026-11-26 on the user's instruction (#386, `52470c8`).*
 
 **Units at close:** 7 + close-out, the extended budget (the design's 4, plus U3b on Blocked 174 and
 U2b, U3c on Blocked 175). GPU ≈ 25.5 h by the logged walls: B_P, B_O 4.1 h, the A0 rebuild 2.0 h,
@@ -799,7 +800,8 @@ sha256 of the sorted `sha256sum` listing of the arm's folder:
 
 **Scoring.** As Blocked 157 (a) set for `P-SCH1` and Blocked 168 drafted for `P-SCH2`–`6`,
 scoring is one `notes` sentence per entry, and the commit is yours (STATE Blocked 177). None of
-those earlier sentences is in the registry yet (finding 2), so Blocked 177 carries all eight. Each
+those earlier sentences is in the registry yet (finding 2), so Blocked 177 carries all eight
+*(all eight appended verbatim 2026-11-26 on the user's instruction, #386, `52470c8`)*. Each
 here is prefixed "Read 2026-11-25 (C4′ (d)+(f) U3c, `data/trackC/c4pdf/2026-11-25-u3c/reading.json`
 sha256 16150f06cc1b8a682eef49266d9911345ab142ef6b70baf500f03869d28acccd, rules `284f0d10f5ba`,
 the gate passed):":
@@ -1566,7 +1568,7 @@ check both, and not the one-step robustness, which `status-C.md` U3 checks by ha
 | 1. harness, π, rules, gates, drafts | #362 | gates for L7–L9h pass; H1′, H2′ pass; registered hash `d7e674313486` |
 | 2. registration, then the arms | #363 | `P-SCH2`–`6` registered before any update (Blocked 167 (a)); both arms to 4000; H4′ passes |
 | 3. the 3500 gate pinned, reads, scores, M1–M4 | #364 | L7 fails, L8–L10 hold; M3's V "cumulative" |
-| close-out | this | this page; `paper/` §7; Blocked 168 still the user's |
+| close-out | this | this page; `paper/` §7; Blocked 168 still the user's (*done 2026-11-26, #386*) |
 
 **Parked items at close:**
 - U0, `lit-C4pc.md` Parked 1 (Kosson et al.): **read here** (above). Not read before U3's
@@ -1642,7 +1644,8 @@ links (`gate3500/root/F` → `HDD_1TB/mets_data/c4pc/Fp`, `A0` → `…/A0p`) ar
 `heads` now refuses a reused file whose code is not `c4_close`'s (this run's are `019846e1561b`).
 
 **Not done here:** scoring `P-SCH2`–`6` in the registry is a `notes` sentence per entry, as
-`P-SCH1`'s was (Blocked 157 (a)), and the commit is the user's (STATE Blocked 168). The drafts,
+`P-SCH1`'s was (Blocked 157 (a)), and the commit is the user's (STATE Blocked 168; *made
+2026-11-26 on the user's instruction, #386, `52470c8`*). The drafts,
 each to be appended to the entry's `notes` and prefixed "Read 2026-11-22 (C4′ (c) U3,
 `data/trackC/c4pc/2026-11-22-u3/scores.json`, rules `d7e674313486`, every gate passed):":
 
