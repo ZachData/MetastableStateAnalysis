@@ -29,7 +29,15 @@ reports dates beside.
 
 1. **PolyPythias' full text for 160m** (why: which 160m seeds, if any, it names as outliers, and
    its training-phase section; cost: one reading; could change: which seeds U3 flags). Read
-   before U3's records are read.
+   before U3's records are read. **Done 2026-11-26** (U3, before any seed 1–9 record; arXiv HTML
+   v2, §1–5 verbatim, read by a fetch agent; §6–7, tables 2–3 and the appendices only as the
+   agent's summary). §3 names outliers only at 410m: "We (remarkably) find only two such
+   combinations: 410 M seed 3 and 4". §5: "The only exception is 410 M, for which we observe
+   variability caused by outlier seeds." No 160m seed is named, so **U3 flags none**. The phases
+   are given across sizes ("an initial learning phase between steps 10^3–10^4 and a critical
+   learning phase between steps 10^4–10^5"). They begin at 10^3, at or after 160m seed 0's
+   two dates (256, 1000), so nothing moves. Table 2's 160m transition steps (about 2k, 18k, 61k, 100k, from the
+   summary) are unverified and not used.
 2. **2509.22831's full text** (why: its 1-back onset steps on 160m and 70m seeds; cost: one
    reading; could change: E4's lean on the harness arms). Read before U2's rows are read.
    **Done 2026-11-26** (U2b, before any U2b record; arXiv HTML v1, read by a fetch agent; quotes
