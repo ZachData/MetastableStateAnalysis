@@ -98,6 +98,26 @@ the page before a draft cites it. Re-check reachability from a cloud session bef
 | 9 | — | Pre-design, **no scan yet**; `p9_metric_intervention/notes-9.md` §11 and `plan-9.md` §12 name the searches |
 | 10 | `p10_cluster_function/lit-10.md` | Pre-design. **PARTIAL** — one question settled as **[R]** from companion code, the rest named in `notes-10.md` §12. Does not follow the shape below |
 | Track T | `docs/lit-T.md`; `trackT_timaeus/status-T.md` "T1, the inventory" | The search log (abstracts only), then T1: 2402.02364 App. A.4.1 / F.1.1, 2507.21449 App. E, 2606.22389 from their arXiv HTML through a summarising fetch (sections named; not [R], no `docs/readings/` file); 2402.03698 abstract (withdrawn) |
+| Track A | `trackA_force/lit-A.md` | Scan 2026-10-14, at Track A's opening |
+| A2 | `trackA_force/lit-A2.md` | Scan 2026-10-16, at A2's opening |
+| A3 | `trackA_force/lit-A3.md` | Scan 2026-10-19, before A3's design froze |
+| C2, A5 | `trackA_force/lit-C2.md` | Scan 2026-10-18, before C2's inputs opened and A5 registered |
+| Track B | `trackB_circuit/lit-B.md` | Scan 2026-10-13, at Track B's opening |
+| C2 unit 1 | `trackC_writeup/lit-C2-unit1.md` | 2026-10-22: full texts, a delta scan, a suite for Blocked 92 (ii); has [R] rows |
+| C2′ | `trackC_writeup/lit-C2p-fulltext.md` | 2026-10-30: the draft's citations checked against the full texts in `docs/readings/`; has [R] rows |
+| C4 | `trackC_writeup/lit-C4.md` | Scan 2026-11-09, before C4's design froze (the schedule intervention) |
+| C4′ (a), (b) | `trackC_writeup/lit-C4p.md` | Scan 2026-11-15, before the design froze |
+| C4′ (c) | `trackC_writeup/lit-C4pc.md` | Scan 2026-11-17, before the design froze (the replicate pair) |
+| C4′ (d), (f) | `trackC_writeup/lit-C4pdf.md` | Scan 2026-11-23, before the design froze |
+| C4′ (e), (g) | `trackC_writeup/lit-C4peg.md` | Scan 2026-11-23, before the design froze |
+| C5 | `trackC_writeup/lit-C5.md` | Scan 2026-10-23, before C5's design froze (M2, massive-activation coordinates projected out) |
+| C7 | `trackC_writeup/lit-C7.md` | Scan 2026-11-09, before C7 (i)'s design froze (Isobe et al.'s depth profile on 410m) |
+| C9 | `trackC_writeup/lit-C9.md` | Scan 2026-11-25: does the developmental order hold across models and seeds |
+| S1 | `trackS_subspace/lit-S1.md` | Scan 2026-10-20, before S1's design froze (the shared-subspace atlas) |
+| S2 | `trackS_subspace/lit-S2.md` | Scan 2026-10-21, before S2's design froze (what rotation does) |
+| S4 | `trackS_subspace/lit-S4.md` | Scan 2026-11-08, literature and inventory before S4's design |
+| Prompt library | `docs/lit-L.md` | Scan 2026-11-07, literature and sources |
+| Track N | `docs/lit-N.md` | Scan 2026-11-08, before N1's design |
 | Track C, C8 | `trackC_writeup/lit-C8.md` | Scan 2026-11-27, every row [S]: 2312.16903, 2309.14322, 2504.02507, 2502.02732, 2508.12837, 2506.13688, 1908.03265, 1910.04209 (§1, loss and grad-norm spikes); 2207.14484 (§2, adaptive EoS); 2402.11004 (§3); 2509.23024, 2602.15997 (§4). Findings and verdicts live there |
 
 Each file has the same shape: what the phase rests on → finding-by-finding verdicts →
