@@ -20,6 +20,14 @@ If a new mistake fits no pattern, start a new numbered lesson.
 world moves, nobody updates the line, and the next session acts on it.
 
 **Instances.**
+- 2026-11-27 (the literature ledger): `docs/LITERATURE.md` §1, the one map of the scan files,
+  lacked 25 of 44: 20 track and thread scans (added in C8 U0, `cc7f14d`) and, found only when a
+  script read the tree, `lit-1d.md`, `lit-1e.md`, `literature-8.md` and the two
+  `archive/docs/` scans. Two §2 rows were joined on one line, so one paper read as another's
+  [R]. Nothing compared the index with the tree; each scan's session added its file and not
+  always its row. Rule: **a new scan file gets its §1 row in its commit** (lint
+  `lit-index-row`, `CLAUDE.md` "Literature scans"); the paper → file view is generated
+  (`tools/lit_ledger.py` → `docs/lit_ledger.md`), not kept by hand.
 - 2026-11-22 (C4′ (c)'s close-out): the same lapse again, five days after the rule below was
   written. `lit-C4pc.md` Parked 1 (Kosson et al.) said "read before U3's reading"; U3 read and
   scored without it and noted it as "goes to the close-out" only after the scores. It changed
