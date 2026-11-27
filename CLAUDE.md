@@ -107,14 +107,14 @@ the end of the session.
   `git merge-base --is-ancestor <tip> origin/main`.
 - `git fetch` and recheck HEAD before every commit.
 - Push with the default SSH key. Never set `GIT_SSH_COMMAND`.
-- The user merges on GitHub. After a merge: `git worktree remove ../Mets-work`
-  and delete the branch.
-- Never `git add` under `data/`.
+- **Never `git add` under `data/`.** The user merges on GitHub. After a merge:
+  `git worktree remove ../Mets-work` and delete the branch.
 
 ## Literature scans and the registry
 
 - Scan when a phase or subphase opens (before its `design-N.md` freezes) and
   before an entry lands in `claims/registry.json`; at a phase's end only if it
-  produced something publishable.
+  produced something publishable. A new scan file gets its `docs/LITERATURE.md`
+  §1 row and a `tools/lit_ledger.py` re-run in its commit (both are checked).
 - `claims/registry.json` is untouched unless the user deliberately registers
   something, **before** looking at the data it will be scored on.

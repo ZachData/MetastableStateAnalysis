@@ -681,3 +681,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
 | 2026-11-26 | Registry commits (Blocked 79, 157, 168, 177; /challenge-pr on #386 answered; same session as the row above, so this row is the difference: session totals 143 calls, 29.6M) · subagents: general-purpose opus-5-5 2.7M | 46 | 306k | 12.9M | 14k | #386 |
   - Two units in one session at the user's word ("continue here"): each later call re-read the C9 close-out's context, so this unit's 12.9M is mostly that carry, not its own work (`LESSONS.md` 9).
 | 2026-11-27 | C8 U0 (scan + design proposed; Blocked 182; /challenge-pr on #387 answered, findings 1-6 taken) · subagents: general-purpose opus-5-5 1.2M | 58 | 228k | 8.7M | 62k | #387 |
+| 2026-11-27 | Literature ledger (lint lit-index-row, tools/lit_ledger.py; /challenge-pr on #388 answered, findings 1-3 and nits taken) · subagents: general-purpose opus-5-5 1.6M | 82 | 168k | 9.3M | 32k | #388 |

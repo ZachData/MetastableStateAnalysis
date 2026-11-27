@@ -603,6 +603,34 @@ def rule_pyproject_packages(lint: Linter) -> None:
                    f"declares a non-package")
 
 
+# ---------------------------------------------------------------------------
+# Rule 10 — every literature scan file has a row in docs/LITERATURE.md §1
+# ---------------------------------------------------------------------------
+
+RULE_10_WHY = """\
+docs/LITERATURE.md §1 is the one map of the scan files, and twenty track and
+thread scans were missing from it when C8's scan landed (2026-11-27, cc7f14d);
+lit-1d, lit-1e, literature-8 and the two archive/docs scans were missing after
+that fix. A scan nobody can find is re-run or contradicted. The rule fails a
+scan file (`lit-*.md`, `literature-*.md`, `literature_scan_*.md`; the pattern
+is tools/lit_ledger.py's) that no §1 table row names by its repo path. Add the
+row in the commit that adds the file, and re-run tools/lit_ledger.py."""
+
+
+def rule_lit_index_rows(lint: Linter) -> None:
+    import lit_ledger                         # tools/, standard library only
+    tracked = _tracked()
+    if tracked is None:
+        rels = [p.relative_to(ROOT).as_posix() for p in _walk(frozenset())]
+    else:
+        rels = [p.relative_to(ROOT).as_posix() for p in tracked]
+    rels = [r for r in rels if r.split("/", 1)[0] not in ("data", "tests")]
+    for rel in lit_ledger.missing_index_rows(ROOT, rels):
+        lint.error("lit-index-row", ROOT / rel, 1,
+                   f"scan file has no row in {lit_ledger.INDEX} "
+                   f"'{lit_ledger.INDEX_SECTION}' naming `{rel}`")
+
+
 RULES = [
     ("orphan-module",         rule_no_orphan_modules,        RULE_1_WHY),
     ("test-tier-marker",      rule_test_tier_markers,        RULE_2_WHY),
@@ -613,6 +641,7 @@ RULES = [
     ("cited-md-path",         rule_cited_md_paths,           RULE_7_WHY),
     ("phase-card",            rule_phase_cards,              RULE_8_WHY),
     ("pyproject-packages",    rule_pyproject_packages,       RULE_9_WHY),
+    ("lit-index-row",         rule_lit_index_rows,           RULE_10_WHY),
 ]
 
 
