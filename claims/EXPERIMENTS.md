@@ -90,7 +90,7 @@ null that was tried and found invalid, kept visible rather than dropped.
 
 | experiment | prediction | claim | evaluable | status | gate | calibrated | real run | null (first line) |
 |---|---|---|---|---|---|---|---|---|
-| A5 | `P-A5` | `H-RESIST` | e-value | active | `trackA_force.a5_seeds:p_value_p_a5` | `claims/audits/p_a5_dry_run.json` | — | Exact binomial over seeds: K ~ Bin(9, 1/6) under H0 (D6 (b): the step uniform over the 12 non-zero grid steps up to 4000, of which 2 are inside), p =… |
+| A5 | `P-A5` | `H-RESIST` | e-value | active | `trackA_force.a5_seeds:p_value_p_a5` | `claims/audits/p_a5_dry_run.json` | `claims/audits/p_a5_real_run.json` | Exact binomial over seeds: K ~ Bin(9, 1/6) under H0 (D6 (b): the step uniform over the 12 non-zero grid steps up to 4000, of which 2 are inside), p =… |
 
 ### Phase C — `trackC_writeup/`
 
