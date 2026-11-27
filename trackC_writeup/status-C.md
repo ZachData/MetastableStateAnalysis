@@ -67,6 +67,7 @@
   - C9 U2b, the GPU rows and the pairs (2026-11-26; Blocked 179 D7 (a), D8 (a), the user's; tier 1): every known answer exact. The snapped gate refuses every GPT-2 row, so no GPT-2 pair is read; one pair is read on the harness arms (A0's E1–E3 aligned, replicating 410m's verdict). Accepted as frozen (Blocked 180 (a), the user's) — `trackC_writeup/status-C.md` "C9 unit 2b"
   - C9 U3, the 160m seeds' two dates (2026-11-26; D5 (a), the user's: tier 1, nothing registered; rules pushed before output): known answer bit-equal on seed 0. E₁'s break is 256 on all ten 160m seeds. The centred date is 1000 at every arm on 6 seeds, and 512–1000 across arms on 4. U1's M on the ten seeds is 0.927, "carries" — `trackC_writeup/status-C.md` "C9 unit 3"
   - C9 closed 2026-11-26 at its exit and budget (5 units + close-out with U4, Blocked 181 (i)–(iii) (a), the user's; writing only): `paper/` now carries M on every model (table 2's last column; §4 scoped to the Pythia-shaped runs at the break), 160m's ten seeds (256 on 10 of 10; centred 1000 on 6, 512–1000 on 4 with a note at the bar), and §5 "On other models" (the order unread off 410m; one pair read on A0); `PROJECT.md` §3.89 — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
+  - C8 opened 2026-11-27 (the user's: "U0 ... candidate (i) first"; writing only, nothing computed): a scan and a proposed design for what triggers the transient. (i)'s rule is fixed in full: loss-rise and grad-spike events in a 16-update lead window on five arms with a transient, against each arm's own background, with a gate on the controls' real logs; "marked", "silent" or "mixed". (ii) sharpness against Adam's 38/η, (iv) causal arms and (iii)+(v) are fixed in shape. Budget 4 units + close-out, GPU ≈ 15–21.5 h; decisions Blocked 182 — `trackC_writeup/status-C.md` "C8 unit 0"
   - Paper: every model read (2026-11-24; writing only, nothing computed): `paper/` §4.2 tabulates every model's two dates (on every warmup run that dates both, E₁'s break comes first) and Dodecahedron's gate refusal; §5 adds the finer 70m grid (E₁ before the centred break, which is one saved step before induction on both harness arms: aligned by §5's convention); the rest of the plan is ROADMAP §8 C9 — `trackC_writeup/status-C.md` "Paper: every model read"
 - **Superseded / wrong:**
   - C6 U0's schedule form (`c6_schedule.lr`: a cosine to `min_lr`) is not the one the runs trained under; the summed rate differs by 6.2 % at 143 000 and under 0.11 % to 20 000; U0's H0 statistic becomes 0.197 against 0.223 (still confirmed), no band or label moves — `trackC_writeup/status-C.md` "Corrections received"
@@ -85,7 +86,7 @@
   - After C9 (closed 2026-11-26): the timeline's order off 410m (unread on GPT-2 at Pythia's resolution; A0′'s pair and A0's E4 wait on an unbiased max-over-heads null, ROADMAP §8 C9's standing note); why 160m breaks a step before most 410m seeds (unregistered); a per-transition split of R at GPT-2's breaks (ROADMAP §8 C5); the `c2_seeds` refusals (ROADMAP §8 C8) — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `a223c7e5b5`
+- **Reviewed:** 2026-11-27 · body `ee50237fc8`
 <!-- /phase-card -->
 
 ## Units
@@ -155,6 +156,35 @@
 | C9 2b. the GPU rows, the snapped gate and the pairs (Blocked 179 D7 (a), D8 (a), the user's) | **done 2026-11-26: every known answer exact; the snapped arm refuses every row on GPT-2 × 5 and 6 of 9 on each harness arm; one pair read (A0, E1–E3 aligned, replicates 410m's); Blocked 180** | `c9_u2b_pass.py`, `c9_u2b.py`, `data/trackC/c9/2026-11-26-u2b/`; "C9 unit 2b" below |
 | C9 3. the 160m seeds' two dates (Blocked 180 (a); D5 (a), the user's) | **done 2026-11-26: tier 1, nothing registered; known answer bit-equal; gate passes; E₁ 256 on 10 of 10 seeds; centred 1000 at every arm on 6, 512–1000 across arms on 4; U1's M 0.927 "carries"** | `c9_u3_pass.py`, `c9_u3.py`, `data/trackC/c9/2026-11-26-u3/`; "C9 unit 3" below |
 | C9 close-out, with U4 (Blocked 181 (i) (a), (ii) (a), (iii) (a), the user's) | **done 2026-11-26: closed at its exit and budget (5 units + close-out); `paper/` edited (table 2's 160m row and M column, §4, §5 "On other models", §7, the scope lines), 27 new slots, `paper_check` 0; `PROJECT.md` §3.89** | `numbers.py` (`c9u1`, `c9u2b`, `c9u3` records); "C9 on one page" below |
+| C8 0. the scan and design (the user's, 2026-11-27) | **done 2026-11-27: writing only, nothing computed; proposed, D1–D5 Blocked 182; (i)'s rule fixed in full, (ii)–(v) in shape; budget 4 units + close-out** | `lit-C8.md`, `design-C8.md`, `tools/math_checks/c8_thresholds.py`; "C8 unit 0" below |
+
+## C8 unit 0, the scan and design (2026-11-27)
+
+Writing only. Nothing computed or trained, and no log value opened. Opened by the user
+2026-11-27 ("U0, the literature scan and design ... candidate (i) first"; ROADMAP §8 C8).
+
+- **Scan** `trackC_writeup/lit-C8.md` (nine searches, [S] only). Cohen et al.'s threshold form
+  checked: (2 + 2β₁)/((1 − β₁)η), 38/η at β₁ 0.9 (`tools/math_checks/c8_thresholds.py` (1)). For
+  (i), a grad-norm spike marks a stage jump (2508.12837), against the branches' seen spikes at
+  the restart. For (v), Edelman et al.'s stages are in-context statistics, the ROADMAP's lean the
+  corpus's, so U4 reads both. Parked: 2508.12837's and Cohen §3's full text, each before the
+  output it bears on. 2602.15997's title in `paper/refs.bib` is v4's (`docs/readings/`); the
+  search returned v1's, so it is not a defect.
+- **Design** `trackC_writeup/design-C8.md`, proposed. **U1 (i)**: the loss-rise and grad-spike
+  events in a 16-update lead window, on five conditions (F, F′, F½, F⅒, B_P), each against its
+  own log's background (8–46 blocks, `c8_thresholds.py` (2)). Labels: "marked", "silent",
+  "mixed"; the clip's share beside. The constants are placed on A0's updates 2001–4000. G-null
+  and G-plant (on the controls' real logs) pass before any window of an arm with a transient is
+  opened. F′'s and F's references are computed by rule T first. Every input is hashed. **U2
+  (ii)** raw and preconditioned sharpness; v̂ from F², B_P², B_K² re-runs. **U3 (iv)** F_w (moments
+  warmed by 64 updates at rate 0) and B_K↑ (a rate overshoot), with (viii). **U4 (iii) + (v)**.
+- **Seen before the design:** F's log at 1, 4, 64; the branches' peaks at 257–259 and their
+  values at 384; F⅒'s and F½'s at 1000. No window value is recorded in any file.
+- **Not triggered:** the `c2_seeds` refusals (no centred arm derived); C9's max-over-heads note.
+- **Corrects ROADMAP §8 C8's costing:** GPU ≈ 15–21.5 h, not ≈ 5. HDD_1TB has 37 GB free, so
+  new outputs go to `Mets_hdd_storage/c8/`.
+
+**Next:** Blocked 182, then U1 (CPU; fresh session). Parked: the scan's two.
 
 ## C9 on one page (closed 2026-11-26)
 
