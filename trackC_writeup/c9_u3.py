@@ -183,10 +183,12 @@ def read(out: Path) -> int:
             ev = {"refused": str(e)}
         brk = a3.d4a(vu)
         per[s] = {"E1": rd["uncentred"]["step"], "E1c": rd["centred"]["dates"],
-                  "E1c_agree": rd["centred"]["agree"], "reading": rd,
+                  "E1c_agree": rd["centred"]["agree"],
+                  "E1c_arms_read": sum(a["gated"] and not a["unreadable"] for a in rd["centred"]["arms"].values()),
+                  "reading": rd,
                   "beside": {"inside_A5_window": a5.inside(brk), "c2_3s_events": ev,
                              "V_u": vu.tolist(), "V_c": {k: v.tolist() for k, v in vcs.items()}}}
-    if len({tuple(v) for v in codes.values()}) != 1:
+    if len(set().union(*codes.values())) != 1:     # within and across seeds (CodeRabbit on #384)
         raise Refused(f"records from more than one producer version: {codes}")
     u1s = u1_stats(out)
     b410 = u1.breaks()["pythia-410m"]
@@ -200,7 +202,7 @@ def read(out: Path) -> int:
                       "label": "none (D5 (a))"}}
     (out / "reading.json").write_text(json.dumps(res, indent=1) + "\n")
     for s, r in per.items():
-        print(f"seed {s}: E1 {r['E1']}  E1c {r['E1c']}  agree {r['E1c_agree']}  "
+        print(f"seed {s}: E1 {r['E1']}  E1c {r['E1c']} ({r['E1c_arms_read']} arms)  agree {r['E1c_agree']}  "
               f"inside {r['beside']['inside_A5_window']}  events {r['beside']['c2_3s_events']}")
     print(f"U1 on 160m x10: M {u1s['M']:.4f} ({u1s['label']}, bar {u1s['bar']:.4f}); S_any {u1s['S_any']:.4f}")
     print(json.dumps(res["beside"]))

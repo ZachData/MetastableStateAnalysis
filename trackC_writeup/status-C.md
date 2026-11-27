@@ -84,7 +84,7 @@
   - The paper across every model: the mean-falls share beyond 410m, the timeline's rows on GPT-2 small and the harness arms, the 160m seeds: ROADMAP §8 C9, opened 2026-11-24 (Blocked 176, the user's; the 160m download done 2026-11-25, 57 GB in `WDS_500/Mets_hdd_storage`); U1 done 2026-11-25 (the mean-falls share); U2a, U2b done 2026-11-26 (the timeline's order off 410m: every GPT-2 row refused by D7 (a)'s snapped gate, one pair read on A0, replicating; Blocked 180 (a), accepted as frozen); U3 done 2026-11-26 (D5 (a): E₁ 256 on all ten 160m seeds, centred 1000 on 6 and 512–1000 on 4; M "carries"); Blocked 181, then U4 and the close-out — `trackC_writeup/status-C.md` "C9 unit 3"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `2e80fe7706`
+- **Reviewed:** 2026-11-26 · body `cdc0c84716`
 <!-- /phase-card -->
 
 ## Units
@@ -167,9 +167,12 @@ check was dropped before that push (the design says why).
 `pythia-160m-seed1`–`seed9`, Pythia's 18 steps, 7 v1 prompts, float32, tf32 off. That is 1260
 records with 13 states each, producer code `d4510f86170e`, 14 min on the 3080. The arms are C2
 3b's four centred τ (1.25e-4, 1e-4, 3e-4, 8.22e-4; derived and gated on 160m seed 0), not
-re-derived. Reading at code `4d324752a028`. Records: `data/trackC/c9/2026-11-26-u3/`
+re-derived. Reading at code `bf65c8396e27`. Records: `data/trackC/c9/2026-11-26-u3/`
 (`seed{0..9}/records/`, `plan.json`, `known.json`, `gate.json`, `reading.json` sha256
-`cebbfdec0a10…`).
+`8a0540bc513b…`). *The reading was re-run once after CodeRabbit on #384: the producer-version
+check now takes the union of codes (one code, `d4510f86170e`, on all 1260 records), and each
+seed's count of gated, readable arms is kept. Every other value is identical to the first
+reading (`4d324752a028`, sha256 `cebbfdec0a10…`).*
 
 **Known answer** (`known.json`): seed 0's rerun against 3b's 126 records. Ids are equal, and
 e1, e1c, e1r and cos are bit-equal (max relative difference 0, tolerance 1e-4). V_u and all
@@ -198,7 +201,8 @@ The two beside columns were added after `/challenge-pr` on #384 (findings 1, 4),
 
 - **E₁'s break is 256 on all ten 160m seeds.** None is unreadable: the step 0–128 counts are at
   most 2 against plateaus of 15–24. Table 2's 160m row becomes "256 (10 of 10)".
-- **The centred date is 1000 at every arm on 6 seeds.** On the other 4, one or two arms read 512
+- **The centred date is 1000 at every arm on 6 seeds** (all four arms gated and readable on all
+  ten seeds, `E1c_arms_read`). On the other 4, one or two arms read 512
   and the rest 1000, so the date is "512–1000, arms disagree". Every arm on every seed is later
   than that seed's break (C2 3s's event 1, 10 of 10). Event 2 (1000 at all four arms) holds on 6
   of 10.
@@ -243,8 +247,9 @@ It parks the refusals a third time (`/challenge-pr` on #384, finding 3): STATE B
 
 **Re-run:** `METS_REPO=$PWD METS_DATA=<main>/data HF_HUB_OFFLINE=1 python -m
 trackC_writeup.c9_u3_pass --out <dir>` (GPU, about 14 min; seeds 1–9 from
-`WDS_500/Mets_hdd_storage/hf/hub`, seed 0 from `HDD_1TB/mets_data/hf/hub`), then `python -m
-trackC_writeup.c9_u3 known --out <dir>` and `read --out <dir>` (CPU, seconds).
+`WDS_500/Mets_hdd_storage/hf/hub`, seed 0 from `HDD_1TB/mets_data/hf/hub`), then
+`METS_DATA=<main>/data python -m trackC_writeup.c9_u3 known --out <dir>` and `METS_DATA=<main>/data
+python -m trackC_writeup.c9_u3 read --out <dir>` (CPU, seconds).
 
 **Next:** U4 (`paper/`: table 2's 160m row, U1's column, §5's "on other models" paragraph with
 Blocked 180 (a)'s wording, the scope line) and the close-out. The budget's five units are spent.
