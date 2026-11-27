@@ -855,5 +855,7 @@
  {"slot": "{{c9u2b.a0_e1e3[E3]}}", "where": "§5 (C9 U2b): A0's induction date (max over heads) on its own grid"},
  {"slot": "{{c9u2b.a0_e1e3[E3s]}}", "where": "§5 (C9 U2b): that date snapped onto Pythia's grid"},
  {"slot": "{{c9u2b.a0_e1e3[own]}}", "where": "§5 (C9 U2b): the pair's distance in A0's saved steps"},
- {"slot": "{{c9u2b.n_read}}", "where": "§5, abstract (C9 U2b): pairs read off 410m (one)"}
+ {"slot": "{{c9u2b.n_read}}", "where": "§5, abstract (C9 U2b): pairs read off 410m (one)"},
+ {"slot": "{{c9u1.M_read|range2}}", "where": "abstract (after /challenge-pr on #385, findings 1, 4): M on every model whose count was read (warmup01 left out)"},
+ {"slot": "{{c9u1.n_break_runs}}", "where": "§4 (after /challenge-pr on #385, finding 2): the runs U1 dated at the break"}
 ]

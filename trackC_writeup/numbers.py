@@ -108,6 +108,9 @@ RECORDS = {
     "c9u1": "data:trackC/c9/2026-11-25-u1/u1.json",
     "c9u2b": "data:trackC/c9/2026-11-26-u2b/reading.json",
     "c9u3": "data:trackC/c9/2026-11-26-u3/reading.json",
+    # U2b's gates on GPT-2 small's five seeds (§5 "On other models": every gated row's snapped arm fails)
+    **{f"c9g_{s}": f"data:trackC/c9/2026-11-26-u2b/gate/{s}.json"
+       for s in ("alias", "battlestar", "caprica", "darkmatter", "expanse")},
 }
 #: U1's models under the names a slot's `[sub]` can carry (`\w+`, no hyphens)
 C9_MODELS = {"p410": "pythia-410m", "p160": "pythia-160m", "p70": "pythia-70m",
@@ -872,6 +875,12 @@ KEYS: Dict[str, tuple] = {
     "c9u1.label": ("c9u1", lambda u: {s: u["models"][m]["label"] for s, m in C9_MODELS.items()}),
     "c9u1.bar": ("c9u1", lambda u: u["bar"]),
     "c9u1.M_others": ("c9u1", lambda u: _span(v["M"] for m, v in u["models"].items() if m != "pythia-410m")),
+    # every model whose E₁ count was read (warmup01's failed its gate, C6 U1b; /challenge-pr on #385, finding 1)
+    "c9u1.M_read": ("c9u1", lambda u: _span(v["M"] for m, v in u["models"].items() if m != "pythia-70m-warmup01")),
+    "c9u1.M_break_rest_all1": ("c9u1", lambda u: all(v["M"] == 1.0 for m, x in u["models"].items() if m != "gpt2-small"
+                                                     for v in x["beside"]["at_break"].values() if v and v.get("drops"))),
+    "c9u1.n_break_runs": ("c9u1", lambda u: sum(1 for x in u["models"].values()
+                                               for v in x["beside"]["at_break"].values() if v and v.get("drops"))),
     "c9u1.M_p70_runs": ("c9u1", lambda u: _span(v["M"] for v in u["models"]["pythia-70m"]["beside"]["per_run"].values())),
     "c9u1.M_break_gpt2": ("c9u1", lambda u: _span(u["models"]["gpt2-small"]["beside"]["at_break"][s]["M"] for s in C9_GPT2)),
     "c9u1.mfall_break_all": ("c9u1", lambda u: all(v["m_fall_at_drops"] == 1.0 for m in u["models"].values()
@@ -897,6 +906,12 @@ KEYS: Dict[str, tuple] = {
     "c9u2b.a0_e1e3": ("c9u2b", lambda r: _c9_pair(r, "A0", ["E1", "E3"])),
     "c9u2b.gpt2_rows_refused": ("c9u2b", lambda r: all(v["reading"] == "refused" for s in C9_GPT2
                                                        for k, v in r["runs"][s]["rows"].items() if k in ("E2", "E3", "E4", "E5", "E7", "E8"))),
+    # from each gate record's own row list, not a hand-picked one (/challenge-pr on #385, finding 3)
+    **{f"c9g.{s}": (f"c9g_{s}", lambda g: {"rows": sorted(g["rows"]),
+                                          "snapped_fails": [r for r, v in g["rows"].items()
+                                                            if not all(e["pass"] for e in v["snapped"]["effect"])],
+                                          "any_pass": any(v["pass"] for v in g["rows"].values())})
+       for s in ("alias", "battlestar", "caprica", "darkmatter", "expanse")},
 }
 
 
@@ -1184,6 +1199,23 @@ CLAIMS: List[tuple] = [
                               "M3_R3_V": "consistent with cumulative"}
      and k["c4pc.m3_v_band"][0] <= k["c4pc.m3_v"]["F"] <= k["c4pc.m3_v_band"][1] and k["c4pc.m3_cen_f"] == [48]
      and k["c4.v_f"] < k["c4.v_band"]["cumulative"][0]),
+    # C9 (the close-out with U4; /challenge-pr on #385, finding 3: each worded claim asserted)
+    ("§4: at the break ‖m‖² falls at every counted drop on every run U1 dated, and the mean's term is over half "
+     "of each drop there on every such run but GPT-2 small's",
+     lambda k: k["c9u1.mfall_break_all"] is True and k["c9u1.M_break_rest_all1"] is True
+     and k["c9u1.M_break_gpt2"][1] < 1.0),
+    ("table 2: M 'carries' on every model but warmup01, 'partly' there, and on 160m's ten seeds",
+     lambda k: k["c9u1.label"] == {s: ("partly" if s == "w01" else "carries") for s in C9_MODELS}
+     and k["c9u3.label"] == "carries" and k["c9u1.M"]["w01"] < k["c9u1.bar"] <= k["c9u3.M"]),
+    ("table 2: 160m's E₁ break 256 on every seed; the centred date 1000 or 512–1000 on every seed",
+     lambda k: k["c9u3.e1_256"] == k["c9u3.n"] == 10 and k["c9u3.e1c_1000"] + k["c9u3.e1c_split"] == k["c9u3.n"]
+     and k["c9u3.at512_read1000_max"] < 0.5 <= k["c9u3.at512_read512"][0]),
+    ("§5: on GPT-2 small every gated row's snapped arm fails on every seed, so no row passes",
+     lambda k: all(k[f"c9g.{s}"]["snapped_fails"] and sorted(k[f"c9g.{s}"]["snapped_fails"]) == k[f"c9g.{s}"]["rows"]
+                   and not k[f"c9g.{s}"]["any_pass"] for s in C9_GPT2) and k["c9u2b.gpt2_rows_refused"] is True),
+    ("§5: one pair read off 410m, A0's E₁–E3, aligned and replicating seed 0's verdict, E₁ first on A0's grid",
+     lambda k: k["c9u2b.n_read"] == 1 and k["c9u2b.a0_e1e3"]["verdict"] == "aligned"
+     and k["c9u2b.a0_e1e3"]["replicates"] is True and k["c9u2b.a0_e1e3"]["E1"] < k["c9u2b.a0_e1e3"]["E3"]),
 ]
 
 

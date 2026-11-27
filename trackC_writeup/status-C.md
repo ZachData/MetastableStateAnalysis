@@ -85,7 +85,7 @@
   - After C9 (closed 2026-11-26): the timeline's order off 410m (unread on GPT-2 at Pythia's resolution; A0′'s pair and A0's E4 wait on an unbiased max-over-heads null, ROADMAP §8 C9's standing note); why 160m breaks a step before most 410m seeds (unregistered); a per-transition split of R at GPT-2's breaks (ROADMAP §8 C5); the `c2_seeds` refusals (ROADMAP §8 C8) — `trackC_writeup/status-C.md` "C9 on one page (closed 2026-11-26)"
 - **After Phase 10:**
   - none
-- **Reviewed:** 2026-11-26 · body `7aa74976f6`
+- **Reviewed:** 2026-11-26 · body `2838c2777b`
 <!-- /phase-card -->
 
 ## Units
@@ -169,7 +169,7 @@ Nothing registered (D5 (a)). GPU ≈ 1.5 h (U2b 75 min, U3 14 min) against the d
 
 | # | finding | where in `paper/` |
 |---|---|---|
-| 1 | **The count's drops are mostly the mean's falls on every model.** M (drops whose mean's term is over half the drop) is 0.83–0.96 pooled per model: "carries" on 410m, 160m (0.93 on ten seeds), 70m, GPT-2 small and the four 70m arms, "partly" on warmup01 (0.83, one run, inside 70m's seeds' 0.80–0.98). At the break ‖m‖² falls at every counted drop on every dated run; the mean's term is over half of each drop there on the Pythia-shaped runs, at 0.76–0.87 of them on GPT-2 small. | table 2's last column; §4 "How much of V the mean's term carries", last sentences; abstract |
+| 1 | **The count's drops are mostly the mean's falls on every model.** M (drops whose mean's term is over half the drop) is 0.83–0.96 pooled per model: "carries" on 410m, 160m (0.93 on ten seeds), 70m, GPT-2 small and the four 70m arms, "partly" on warmup01 (0.83, one run, inside 70m's seeds' 0.80–0.98; its count failed its gate, so the share describes undated drops, and the abstract's range, 0.88–0.96, leaves it out). At the break ‖m‖² falls at every counted drop on each of the 21 runs U1 dated (160m's seeds 1–9 were dated by U3 and not read for it); the mean's term is over half of each drop there on all of them but GPT-2 small's five (0.76–0.87). | table 2's last column; §4 "How much of V the mean's term carries", last sentences; abstract |
 | 2 | **The timeline's order is unread off 410m at Pythia's resolution.** GPT-2 small: every row's snapped arm fails its gate, so no pair. Harness arms: one pair, A0's E₁–E3 aligned (384 → 512, 768 → 1000), replicating seed 0's verdict on unlike instruments (like for like on 410m, E3 is censored). | §5 "On other models"; §5 "On a finer grid"'s last sentence; §1, abstract |
 | 3 | **160m's ten seeds: E₁ 256 on 10 of 10; centred 1000 on 6, 512–1000 on 4.** The four split seeds' arms at 512 are at 0.50–0.58 of plateau (the rest at most 0.48): about one drop at the bar. 410m's ten break at 512 × 8, 256 × 2: an unregistered contrast, size and peak LR confounded. | table 2's 160m row and note a; §4.2 "Read across the table"; §7 "Pythia 70m and 160m" |
 
@@ -205,7 +205,7 @@ the user's except 178's first pass.
 
 **U4, as it ran (this close-out).** `numbers.py` gains three records (`c9u1` U1's `u1.json`,
 `c9u2b` U2b's `reading.json`, `c9u3` U3's `reading.json`) and 21 keys; `paper_slots.json` 27
-slots. `produce` ran under the repo `.venv` (py3.14), which reproduces every existing key; conda
+slots (as first pushed; after `/challenge-pr` 8 records, 29 keys, 29 slots, below). `produce` ran under the repo `.venv` (py3.14), which reproduces every existing key; conda
 py3.10 refused on four keys' last ulp (the known interpreter noise). Table 2's centred 160m cell is
 3b's frozen set reading with a note at the bar (Blocked 181 (iii) (a)). §7's "one seed per size
 (… seeds of 70m and 160m, not read here)" was stale for both and is replaced. **Caught before
@@ -213,6 +213,17 @@ commit:** the first §4 sentence gave the other models' M as 0.83–0.94; the fl
 **Re-run:** `METS_DATA=<main>/data .venv/bin/python -m trackC_writeup.numbers produce`, then
 `python -m trackC_writeup.paper_check` (0); compile `paper/` with `pdflatex main; bibtex main;
 pdflatex main; pdflatex main`.
+
+**After `/challenge-pr` on #385** (accept with changes; comment
+https://github.com/ZachData/MetastableStateAnalysis/pull/385#issuecomment-7206591503, reviewed at
+`cf8fc0a`). All four taken, in wording and checks; nothing read anew:
+
+| # | finding | done |
+|---|---|---|
+| 1 | warmup01's count is "refused" in table 2 yet its M is printed and pooled into the abstract's range | caption: its share describes drops never dated; abstract's range is over models whose count was read (`c9u1.M_read`, 0.88–0.96); §4 names the failed gate |
+| 2 | "every dated run of every model" at the break covers 160m seeds 1–9, which U1 never read at the break | narrowed to the 21 runs U1 dated (`c9u1.n_break_runs`), here, in §4 and in `PROJECT.md` §3.89; reading seeds 1–9 would be a new read, not made |
+| 3 | the worded claims had keys but no `CLAIMS` entry; the GPT-2 row list was hand-picked | five `CLAIMS` added (at-break, labels, 160m's tallies and the bar, GPT-2's gates, the one pair); GPT-2's rows now come from each `gate/<seed>.json` (five records added: 8 records, 29 keys in all, 29 slots) |
+| 4 | the abstract's new sentence did not parse and sat beside the other 0.96 | split into its own sentence, "a share of drops, not of transitions as above" |
 
 ## C9 unit 3, the 160m seeds' two dates (2026-11-26)
 

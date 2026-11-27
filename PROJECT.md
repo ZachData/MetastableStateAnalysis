@@ -3173,8 +3173,10 @@ carries them (table 2, §4, §5 "On other models", §7). Tier 1 throughout, noth
 - **The mean's term, on every model.** M, the share of V's drops at which ½Δ‖m‖² is more than
   half the drop, reads "carries" (over 410m's 0.96 less 0.1) on 410m, 160m, 70m, GPT-2 small and
   the four 70m arms, and "partly" on `pythia-70m-warmup01` (one run, inside 70m's own seeds'
-  range). At the break ‖m‖² falls at every counted drop on every dated run. The mean's term is
-  over half of each drop there on the Pythia-shaped runs only, not on GPT-2 small.
+  range; its count failed its gate, so the share describes undated drops). At the break ‖m‖²
+  falls at every counted drop on each of the 21 runs U1 dated (160m's nine further seeds were
+  dated later and not read for it). The mean's term is over half of each drop there on all of
+  them but GPT-2 small's.
 - **The timeline's order off 410m is unread.** On GPT-2 small every row's date, moved onto
   Pythia's grid, fails its gate (its grid is much finer, so noise lands a date on either side of a
   Pythia step). On the harness arms one pair is read (A0's E₁–induction, aligned as on 410m), on
