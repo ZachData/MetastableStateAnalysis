@@ -1227,6 +1227,31 @@
       "notes": "The bands are disjoint by a thin margin (r < 0.512 at r = ½), and F's own date is known only to (256, 320]; F⅒'s induction (d3) is not in the entry, since its dose band is past 1000. Registered after U1's gates and F¹, before F½'s or F⅒'s first update. Added 2026-11-24 (STATE Blocked 175 (ii) (a), the user's): a second F¹ replicate was run and its references seen before registering (status-C.md 'C4′ (d)+(f) unit 3b'); this score reads F's own date, not F¹'s references, and the onset labels beside P-SCH7 use F¹'s first reference as frozen; the null_construction's opening 'Calibration, not a p-value:' was added at registration (P-SCH7's words, for check_registry), confirmed by the user. Read 2026-11-25 (C4′ (d)+(f) U3c, `data/trackC/c4pdf/2026-11-25-u3c/reading.json` sha256 16150f06cc1b8a682eef49266d9911345ab142ef6b70baf500f03869d28acccd, rules `284f0d10f5ba`, the gate passed): does not hold; falsifier met. F½'s induction date is (304, 320], inside the step band [204.8, 400], not the dose band [409.6, 800].",
       "superseded_by": null,
       "status": "active"
+    },
+    {
+      "id": "P-SCH9",
+      "claim": "H-RESIST",
+      "statement": "On pythia-70m, for the re-runs F2 (seed 0's init, C4's data order, flat 1e-3, states on grid D to 128), BP2 (A0's step-256 weights, fresh AdamW, flat 1e-3, states 256 + C4′'s offsets to 384) and BK2 (as BP2 with A0's rebuilt Adam moments kept), at every centred τ arm C4's gate passed on F (9.61e-5, 1e-4, 3e-4): the first saved state whose preconditioned sharpness λ_max(P⁻¹H) reaches 0.5 × 38/η (P = (1 − β₁^k)·diag(√(v/(1 − β₂^k)) + ε), v = 0 coordinates excluded; H the Hessian of the mean next-token loss on C4's held-out rows HELD_OUT[0] … + 32, first 1024 predictions each, fp32; by Lanczos) lies in F2's and in BP2's own window (t⁻ − 16, t] of rule T's onset (t⁻, t] on that re-run's records (a branch's from 256 + 8), and BK2 stays below it at every saved state through 384 (c8_sharp_rules R_ii 'crosses at the onset' at every arm).",
+      "h0": "The crossing is not tied to the onset: the first crossing on F2 or BP2 lies outside its window, BK2 crosses, or nothing crosses.",
+      "h1": "The statement.",
+      "falsifier": "At some gated arm R_ii reads 'crosses, not at the onset', 'never crosses' or 'mixed'. A refusal (the premise: F2 or BP2 without a transient by rule T, or BK2 with one; or an unconverged state that decides the label) or H-rerun failing scores nothing.",
+      "instrument": "trackC_writeup/c8_train.py 0daf988e9333 (calling c4_train.py 1c1e1d2df083, c4pdf_train.py 84662428cf73, c4pdf_bk.py 003164e7af61 unchanged), trackC_writeup/c8_sharp.py 481a777eb274, the rule trackC_writeup/c8_sharp_rules.py b7ba34a8b76a; records by c4_read._records_of, matrices by c4_close.per_transition, rule T c4pdf_rules.transient 284f0d10f5ba",
+      "phase": "C",
+      "experiment": "C8",
+      "gate": "",
+      "cost": "F",
+      "evaluable": "measurement",
+      "null_construction": "Calibration, not a p-value: G-quad (three planted quadratics of known spectrum through the same Lanczos and preconditioning code, ≤ 2 % relative) and G-hvp (on Pythia's released step128/256/512, not C8 arms: fp32 Rayleigh quotient against fp64's ≤ 1e-3, fp64 H·v against an fp64 central difference ≤ 1e-3, symmetry ≤ 1e-3). The record: data/trackC/c8/2026-11-27-u2/gate.json, sha256 89769d38262969faf14b637c2b07c6e91c99063d6670f8ce7464ba6b885d8310.",
+      "calibration_record": null,
+      "real_run_record": null,
+      "relevance": 0.6,
+      "source": "trackC_writeup/design-C8.md \"U2's draft entry\" (D4 (a), Blocked 182; registered by the user's choice 2026-11-27 'Register as P-SCH9'); status-C.md 'C8 unit 2'",
+      "registered_commit": null,
+      "registered_date": null,
+      "registered_provenance": "gated",
+      "notes": "70m only; one re-run per arm (new trajectories, each read against its own rule-T onset); λ on a 32 × 1024-token minibatch, not the full loss, and a lower bound by Lanczos; the threshold is full-batch theory (Cohen et al. 2207.14484 v2), θ = 0.5 placed from their §5 before any λ; the update is clipped at 1.0 and decays weights, neither in the threshold. Risk named before output: F2 and BP2 start a fresh AdamW at the peak with no warmup, so their first states may sit over the bar, which reads 'crosses, not at the onset' without dating the window. Registered after the gate passed and while the re-runs trained, before any λ was computed and before the re-runs' records or onsets were read.",
+      "superseded_by": null,
+      "status": "active"
     }
   ]
 }

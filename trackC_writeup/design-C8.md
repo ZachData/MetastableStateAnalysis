@@ -184,6 +184,54 @@ arm.
   Parked 2, read before the freeze).
 - **Lean** (the ROADMAP's): crosses at the onset.
 
+### U2 as frozen (2026-11-27, before any λ; Blocked 183 (a), the user's)
+
+Code `c8_train.py` `0daf988e9333`, `c8_sharp.py`, rule `c8_sharp_rules.py` (hashes in the draft
+below; pushed in `9015166` before any output). `lit-C8.md` Parked 2 read first (Cohen et al. v2:
+Eq. (2)'s preconditioner; §5, minibatch Adam "never rises more than a bit beyond" the full-batch
+threshold and "almost" reaches it at their largest batch). What the shape above left open, and
+the changes to it, all fixed before any λ:
+
+| item | fixed as | why |
+|---|---|---|
+| P | (1 − β₁^k)·diag(√(v/(1 − β₂^k)) + ε), k the optimiser step | Cohen et al. Eq. (2) = AdamW's step as PyTorch applies it; the shape's diag(√v̂ + ε) drops the (1 − β₁^k) |
+| v = 0 coordinates | excluded from P⁻¹H | embedding rows of tokens no batch has held since the optimiser's start: Adam never moved them, but a held-out token there adds ~1e8·H_ii. 118 of the batch's 6629 input tokens are unseen after one batch, 1 after four, 0 after sixteen (C4's order); the count masked is recorded per state |
+| iteration | **Lanczos**, not power iteration (10–40 steps, ≤ 1e-3 relative change twice) | on G-quad's planted negative-dominant case (gap 0.93) a shifted power iteration missed by 4 % at 40 steps; Lanczos uses the same H·v products. The top Ritz value errs low |
+| batch | C4's held-out rows `HELD_OUT[0]` … + 32, the first **1024** predictions each, fp32, eager | the double backward at 2048 does not fit the 3080's free memory (7.6 GB; 1536 peaks at 5.5 GiB). A 32k-token minibatch Hessian's top eigenvalue errs high against the full loss's |
+| θ | **0.5** (θ = 1 beside) | from Cohen et al. §5 and the clip and weight decay outside their threshold; no C8 λ seen |
+| windows | (i)'s, (t⁻ − 16, t], a branch's from 256 + 8 | "that re-run's own window" |
+| the label left open | per re-run "at" / "outside" / "never" (BK2 "crosses" / "below"); "at, at, below" → crosses at the onset; any "outside" or BK2 "crosses" → crosses, not at the onset; "never, never, below" → never crosses; else **mixed** | the shape's "otherwise" would have called "at" with "never" "never crosses" |
+| refusals | the premise (F2 or BP2 no transient, BK2 one), or an unconverged state whose being a crossing would flip the label | |
+| raw λ | on the originals only (F¹, F½, F⅒, B_P, B_O, B_K at U1's windows ± 2 saved states; A0's grid ≤ 128), beside | the shape's arms; not on the re-runs |
+| G-hvp | on Pythia's **released** step128/256/512 (not C8 arms): fp32 Rayleigh quotient against fp64's ≤ 1e-3 along u = H³r; fp64 H·u against an fp64 central difference (h = 1e-7) ≤ 1e-3; symmetry ≤ 1e-3 | a first version on step143000 failed: fp32 is off there by ~7e-3 (sharp late attention; 1.5e-7 at step128). The instrument is not claimed at the end of training |
+
+**Budget:** one H·v at the batch is 3.4 s, so ≤ 2.3 min a state; ≈ 59 preconditioned + ≈ 50 raw
+states ≈ 2.5–4 h, against the 2.5 h above (the 1024-token context halves the per-row cost; 32
+rows doubles it). **A risk seen before output:** F2 and BP2 start a fresh AdamW at the peak with
+no warmup, so their first states may already sit over θ·38/η. Then (ii) reads "crosses, not at
+the onset" from its first state and cannot date the window. That reading is kept if it comes.
+
+### U2's draft entry (D4 (a); yours to register or decline before any λ)
+
+`c8_sharp measure` refuses until `trackC_writeup/c8_entries.json` is committed as
+`{"ii": "<id>"}` (an id in `claims/registry.json`) or `{"ii": "declined"}`.
+
+- *id:* the next `P-SCH` number (`P-SCH9`); claim H-RESIST; experiment "C8"; relevance 0.6.
+- *statement:* On pythia-70m, for the re-runs F2 (seed 0's init, flat 1e-3, grid D to 128), BP2
+  (A0's step-256 weights, fresh AdamW, flat 1e-3, 256 + offsets to 384) and BK2 (as BP2 with A0's
+  rebuilt moments kept), at every gated centred τ arm (9.61e-5, 1e-4, 3e-4): the first saved state
+  whose preconditioned sharpness λ_max(P⁻¹H) reaches 0.5 × 38/η lies in F2's and in BP2's own
+  window (t⁻ − 16, t] of rule T's onset, and BK2 stays below it through 384 (`c8_sharp_rules`
+  R_ii "crosses at the onset" at every arm).
+- *h0:* the crossing is not tied to the onset: it comes outside a window, on BK2, or never.
+- *falsifier:* at some gated arm R_ii reads "crosses, not at the onset", "never crosses" or
+  "mixed". A refusal (premise, unconverged) or H-rerun failing scores nothing.
+- *instrument:* `c8_train.py`, `c8_sharp.py`, `c8_sharp_rules.py` at the hashes the commit names;
+  records by `c4_read._records_of`; rule T `c4pdf_rules.transient`.
+- *null_construction:* calibration, not a p-value: G-quad (planted spectra) and G-hvp.
+- *notes:* 70m only; one re-run per arm; λ on a 32 × 1024-token minibatch, a lower bound by
+  Lanczos; the threshold is full-batch theory; θ placed from the literature; the risk above.
+
 ## U3, candidate (iv): causal arms (GPU), with (viii) if D2 (a)
 
 - **F_w**: F with Adam's moments warmed by k = 64 updates at rate 0 (`c4_train.step_once`: an
