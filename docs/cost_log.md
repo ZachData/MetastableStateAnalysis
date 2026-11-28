@@ -682,3 +682,4 @@ Over 2× the median: a new instrument and gate (two modules, tests), one gate la
   - Two units in one session at the user's word ("continue here"): each later call re-read the C9 close-out's context, so this unit's 12.9M is mostly that carry, not its own work (`LESSONS.md` 9).
 | 2026-11-27 | C8 U0 (scan + design proposed; Blocked 182; /challenge-pr on #387 answered, findings 1-6 taken) · subagents: general-purpose opus-5-5 1.2M | 58 | 228k | 8.7M | 62k | #387 |
 | 2026-11-27 | Literature ledger (lint lit-index-row, tools/lit_ledger.py; /challenge-pr on #388 answered, findings 1-3 and nits taken) · subagents: general-purpose opus-5-5 1.6M | 82 | 168k | 9.3M | 32k | #388 |
+| 2026-11-27 | C8 U1: (i) refused at its gate (Blocked 182 all (a); /challenge-pr on #389 answered, findings 1-6 taken) · subagents: general-purpose opus-5-5 1.1M | 75 | 184k | 9.1M | 35k | #389 |

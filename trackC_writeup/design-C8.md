@@ -1,7 +1,10 @@
 <!-- trackC_writeup/design-C8.md -->
 # Track C — design: C8, what triggers the transient, and what it does
 
-**Status: proposed 2026-11-27 (U0, writing only; nothing computed, nothing trained).** Opened by
+**Status: frozen 2026-11-27 (Blocked 182 all (a), the user's). U1 ran the same day: (i) refused at
+its gate (G-plant's grad power; `status-C.md` "C8 unit 1"; Blocked 183). U1's two gate deviations,
+fixed before any log was opened, are in `c8_read.py`'s docstring.** Proposed 2026-11-27 (U0,
+writing only; nothing computed, nothing trained). Opened by
 the user 2026-11-27 ("U0, the literature scan and design ... candidate (i) first"). The row is
 the user's, from 2026-11-24 at C4′ (d)+(f) U3b: "something ... seems to trigger the repulsive
 stage ... deeply linked to induction, but still a little mysterious". Decisions D1–D5 are in STATE
