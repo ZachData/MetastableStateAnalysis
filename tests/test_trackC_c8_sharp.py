@@ -5,6 +5,8 @@ import pytest
 
 from trackC_writeup import c8_sharp_rules as sr
 
+pytestmark = pytest.mark.deps  # the Lanczos tests import c8_sharp (torch, a1a)
+
 BAR = sr.THETA * sr.THRESH
 F2_ST = [s for s in range(4, 129, 4)]
 BR_ST = [256 + k for k in (1, 2, 4, 8, 12, 16, 24, 32, 48, 64, 80, 96, 128)]
